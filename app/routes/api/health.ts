@@ -1,11 +1,15 @@
-// Health check endpoint
-export function GET(req: Request): Response {
-  return new Response(JSON.stringify({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: "4.0.0"
-  }), {
-    headers: { "Content-Type": "application/json" }
-  });
+import { ApiController } from "../../utils/api-controller";
+
+export class Controller extends ApiController {
+  async get(): Promise<Response> {
+    const healthData = {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: "4.0.0",
+      method: this.getMethod()
+    };
+
+    return this.json(healthData);
+  }
 }

@@ -1,0 +1,57 @@
+<div class="error-page">
+    <h1>⚠️ Error {{statusCode}}</h1>
+    <p class="error-message">{{message}}</p>
+
+    {{#if description}}
+        <p class="error-description">{{description}}</p>
+    {{/if}}
+
+    <div class="error-actions">
+        <a href="/" class="btn">← Back to Home</a>
+        <a href="javascript:history.back()" class="btn">Go Back</a>
+    </div>
+</div>
+
+<style>
+.error-page {
+    text-align: center;
+    padding: 4rem 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.error-page h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #ff9800;
+}
+
+.error-message {
+    font-size: 1.25rem;
+    color: #ccc;
+    margin-bottom: 1rem;
+}
+
+.error-description {
+    color: #999;
+    margin-bottom: 2rem;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .error-page h1 {
+        font-size: 2rem;
+    }
+
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>

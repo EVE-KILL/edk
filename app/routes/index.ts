@@ -1,33 +1,51 @@
-// Home page route
-export default function handler(req: Request): Response {
-  return new Response(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>EVE Kill v4</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          body { font-family: system-ui; margin: 2rem; }
-          .routes { margin: 2rem 0; }
-          .route { padding: 0.5rem; margin: 0.25rem 0; background: #f5f5f5; border-radius: 4px; }
-        </style>
-      </head>
-      <body>
-        <h1>🚀 EVE Kill v4</h1>
-        <p>Welcome to the new EVE Kill API built with Bun!</p>
-        
-        <div class="routes">
-          <h2>Available Routes:</h2>
-          <div class="route">GET / - This homepage</div>
-          <div class="route">GET /api/health - Health check</div>
-          <div class="route">GET /api/users/:id - Get user by ID</div>
-          <div class="route">POST /api/users - Create user</div>
-          <div class="route">GET /killmails/:id - Get killmail by ID</div>
-        </div>
-      </body>
-    </html>
-  `, {
-    headers: { "Content-Type": "text/html" }
-  });
+import { WebController } from "../utils/web-controller";
+
+export class Controller extends WebController {
+  async handle(): Promise<Response> {
+    // Mock data - in real app this would come from your database
+    const data = {
+      stats: {
+        totalKillmails: 15847293,
+        totalISK: 847293847293847,
+        activePilots: 12847,
+        recentKills: 1847
+      },
+      recentKillmails: [
+        {
+          id: 123456,
+          victim: {
+            character: { name: "Test Pilot Alpha" },
+            ship: { name: "Rifter" }
+          },
+          value: 15847293,
+          timestamp: new Date(Date.now() - 1000 * 60 * 15)
+        },
+        {
+          id: 123457,
+          victim: {
+            character: { name: "Beta Tester" },
+            ship: { name: "Stabber" }
+          },
+          value: 847293847,
+          timestamp: new Date(Date.now() - 1000 * 60 * 45)
+        },
+        {
+          id: 123458,
+          victim: {
+            character: { name: "Gamma Squadron" },
+            ship: { name: "Hurricane" }
+          },
+          value: 2847293847,
+          timestamp: new Date(Date.now() - 1000 * 60 * 120)
+        }
+      ]
+    };
+
+    return await this.renderPage(
+      "pages/home",
+      "EVE Kill v4 - The Ultimate Killmail Tracker",
+      "Track EVE Online killmails, losses, and statistics with EVE Kill v4. Real-time killmail tracking and comprehensive pilot statistics.",
+      data
+    );
+  }
 }

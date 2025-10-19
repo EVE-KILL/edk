@@ -1,19 +1,66 @@
 import { readdir } from "fs/promises";
 import { join, extname, relative } from "path";
+import { requestLogger, performanceMonitor, rateLimit } from "./middleware";
+import { createErrorResponse } from "./error-handler";
+import type { HttpMethod, MethodHandler } from "../types/request";
+import type { CacheConfig } from "../types/cache.d";
+import {
+  buildResponseCacheKey,
+  shouldCacheResponse,
+  serializeResponse,
+  deserializeResponse,
+} from "./cache/cache-key";
+import { cache } from "./cache";
+
+// Cache environment variables
+const API_RATE_LIMIT = parseInt(process.env.API_RATE_LIMIT || "100");
+const RESPONSE_CACHE_ENABLED =
+  process.env.RESPONSE_CACHE_ENABLED !== "false" && process.env.NODE_ENV === "production";
 
 export interface RouteHandler {
-  default?: (req: Request) => Response | Promise<Response>;
-  GET?: (req: Request) => Response | Promise<Response>;
-  POST?: (req: Request) => Response | Promise<Response>;
-  PUT?: (req: Request) => Response | Promise<Response>;
-  DELETE?: (req: Request) => Response | Promise<Response>;
-  PATCH?: (req: Request) => Response | Promise<Response>;
+  Controller: new (req: Request) => { handle(): Promise<Response> } & { methods?: string[] };
 }
 
 export interface Route {
   path: string;
-  handler: RouteHandler;
+  ControllerClass: new (req: Request) => { handle(): Promise<Response> };
   methods: string[];
+}
+
+/**
+ * Optimized route index for O(1) method lookup
+ */
+export interface RouteIndex {
+  staticRoutes: Map<string, Map<string, Route>>; // method -> path -> route
+  dynamicRoutes: Array<{ route: Route; pathParts: string[] }>; // routes with params
+}
+
+/**
+ * Build an optimized route index from discovered routes
+ */
+export function buildRouteIndex(routes: Route[]): RouteIndex {
+  const staticRoutes = new Map<string, Map<string, Route>>();
+  const dynamicRoutes: Array<{ route: Route; pathParts: string[] }> = [];
+
+  for (const route of routes) {
+    const pathParts = route.path.split("/").filter(Boolean);
+    const hasDynamicParams = pathParts.some(part => part.startsWith(":"));
+
+    if (hasDynamicParams || route.path === "/") {
+      // Dynamic route - keep for pattern matching
+      dynamicRoutes.push({ route, pathParts });
+    } else {
+      // Static route - index by method and path
+      for (const method of route.methods) {
+        if (!staticRoutes.has(method)) {
+          staticRoutes.set(method, new Map());
+        }
+        staticRoutes.get(method)!.set(route.path, route);
+      }
+    }
+  }
+
+  return { staticRoutes, dynamicRoutes };
 }
 
 /**
@@ -60,21 +107,36 @@ export async function discoverRoutes(dir: string = "./app/routes", baseUrl: stri
             routePath = routePath.slice(0, -1);
           }
 
-          // Determine available methods
-          const methods: string[] = [];
-          if (module.default) methods.push("ALL");
-          if (module.GET) methods.push("GET");
-          if (module.POST) methods.push("POST");
-          if (module.PUT) methods.push("PUT");
-          if (module.DELETE) methods.push("DELETE");
-          if (module.PATCH) methods.push("PATCH");
+          // Check if module exports a Controller class
+          if (module.Controller) {
+            // Auto-detect supported methods from the controller prototype
+            let methods = module.Controller.methods;
 
-          if (methods.length > 0) {
+            if (!methods) {
+              // If no static methods defined, detect from prototype
+              methods = [];
+              const prototype = module.Controller.prototype;
+              const httpMethods = ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'];
+
+              for (const method of httpMethods) {
+                if (typeof prototype[method] === 'function') {
+                  methods.push(method.toUpperCase());
+                }
+              }
+
+              // If no HTTP methods found and has handle method, default to GET
+              if (methods.length === 0 && typeof prototype.handle === 'function') {
+                methods = ["GET"];
+              }
+            }
+
             routes.push({
               path: routePath,
-              handler: module,
-              methods
+              ControllerClass: module.Controller,
+              methods: methods
             });
+          } else {
+            console.warn(`Route ${fullPath} does not export a Controller class`);
           }
         } catch (error) {
           console.warn(`Failed to import route ${fullPath}:`, error);
@@ -89,44 +151,57 @@ export async function discoverRoutes(dir: string = "./app/routes", baseUrl: stri
 }
 
 /**
- * Matches a request path and method to a discovered route
- * @param routes - Array of discovered routes
+ * Matches a request path and method to a discovered route (optimized)
+ * @param index - Pre-built route index
  * @param pathname - The request pathname
  * @param method - The HTTP method
  * @returns Matched route and extracted parameters, or null if no match
  */
-export function matchRoute(routes: Route[], pathname: string, method: string): { route: Route; params: Record<string, string> } | null {
-  for (const route of routes) {
-    if (!route.methods.includes("ALL") && !route.methods.includes(method)) {
+export function matchRoute(index: RouteIndex, pathname: string, method: string): { route: Route; params: Record<string, string> } | null {
+  // First, try O(1) lookup for static routes
+  const methodMap = index.staticRoutes.get(method);
+  if (methodMap) {
+    const staticRoute = methodMap.get(pathname);
+    if (staticRoute) {
+      return { route: staticRoute, params: {} };
+    }
+  }
+
+  // Then check dynamic routes (cached path parts)
+  const pathParts = pathname.split("/").filter(Boolean);
+
+  for (const { route, pathParts: routeParts } of index.dynamicRoutes) {
+    // Check if this route supports the HTTP method
+    if (!route.methods.includes(method)) {
       continue;
     }
 
-    const params: Record<string, string> = {};
-    const routeParts = route.path.split("/").filter(Boolean);
-    const pathParts = pathname.split("/").filter(Boolean);
-
+    // Special case for root path
     if (route.path === "/" && pathname === "/") {
-      return { route, params };
+      return { route, params: {} };
     }
 
+    // Length must match
     if (routeParts.length !== pathParts.length) {
       continue;
     }
 
+    const params: Record<string, string> = {};
     let matches = true;
+
     for (let i = 0; i < routeParts.length; i++) {
       const routePart = routeParts[i];
       const pathPart = pathParts[i];
 
-      if (routePart && pathPart) {
-        if (routePart.startsWith(":")) {
-          // Dynamic parameter
-          params[routePart.slice(1)] = pathPart;
-        } else if (routePart !== pathPart) {
-          matches = false;
-          break;
-        }
-      } else {
+      if (!routePart || !pathPart) {
+        matches = false;
+        break;
+      }
+
+      if (routePart.startsWith(":")) {
+        // Dynamic parameter
+        params[routePart.slice(1)] = pathPart;
+      } else if (routePart !== pathPart) {
         matches = false;
         break;
       }
@@ -141,30 +216,151 @@ export function matchRoute(routes: Route[], pathname: string, method: string): {
 }
 
 /**
- * Handles the incoming request by matching it to a route and calling the appropriate handler
- * @param routes - Array of discovered routes
+ * Handles the incoming request by matching it to a route and instantiating the controller
+ * @param index - Pre-built route index
  * @param req - The incoming request
- * @returns Response from the matched route handler
+ * @returns Response from the matched controller
  */
-export async function handleRequest(routes: Route[], req: Request): Promise<Response> {
+export async function handleRequest(index: RouteIndex, req: Request): Promise<Response> {
+  // Parse URL once and attach to request
   const url = new URL(req.url);
-  const match = matchRoute(routes, url.pathname, req.method);
+  req.parsedUrl = url;
+
+  // Serve static assets first (before any middleware)
+  if (url.pathname.startsWith("/static/")) {
+    try {
+      const filePath = `.${url.pathname}`; // ./static/...
+      const file = Bun.file(filePath);
+
+      if (await file.exists()) {
+        return new Response(file);
+      }
+    } catch (error) {
+      // File doesn't exist or error reading, continue to 404
+    }
+  }
+
+  // Start request logging
+  const logCompletion = requestLogger(req);
+
+  // Start performance monitoring
+  const addPerformanceHeaders = performanceMonitor(req);
+
+  // Check rate limiting for API routes
+  if (url.pathname.startsWith("/api")) {
+    const rateLimitResponse = rateLimit(req, API_RATE_LIMIT);
+    if (rateLimitResponse) {
+      logCompletion(rateLimitResponse.status);
+      return addPerformanceHeaders(rateLimitResponse);
+    }
+  }
+
+  const match = matchRoute(index, url.pathname, req.method);
 
   if (!match) {
-    return new Response("Not Found", { status: 404 });
+    // Use the error handler for 404
+    const notFoundResponse = await createErrorResponse(
+      req,
+      404,
+      `The page "${url.pathname}" could not be found.`,
+      {
+        path: url.pathname,
+        method: req.method,
+      }
+    );
+    logCompletion(404);
+    return addPerformanceHeaders(notFoundResponse);
+  }  const { route, params } = match;
+
+  // Add params to request for easy access (now properly typed via request.d.ts)
+  req.params = params;
+
+  // Check response cache if enabled and controller has cache config
+  const cacheConfig = (route.ControllerClass as any).cacheConfig as CacheConfig | undefined;
+  let cacheKey: string | null = null;
+  let isCacheHit = false;
+
+  if (RESPONSE_CACHE_ENABLED && cacheConfig && req.method === "GET") {
+    // Check if we should skip caching
+    const shouldSkip = cacheConfig.skipIf ? cacheConfig.skipIf(req) : false;
+    const hasNoCacheHeader = req.headers.get("cache-control") === "no-cache";
+
+    if (!shouldSkip && !hasNoCacheHeader) {
+      cacheKey = buildResponseCacheKey(req, cacheConfig, params);
+      const cachedResponse = await cache.get<any>(cacheKey);
+
+      if (cachedResponse) {
+        const response = deserializeResponse(cachedResponse);
+        isCacheHit = true;
+        logCompletion(response.status, isCacheHit);
+        return addPerformanceHeaders(response);
+      }
+    }
   }
 
-  const { route, params } = match;
+  try {
+    // Instantiate the controller and call its handle method
+    const controller = new route.ControllerClass(req);
+    const response = await controller.handle();
 
-  // Add params to request for easy access
-  (req as any).params = params;
+    // Cache the response if applicable
+    if (RESPONSE_CACHE_ENABLED && cacheConfig && cacheKey && req.method === "GET") {
+      // Only cache successful responses
+      if (response.status >= 200 && response.status < 300 && shouldCacheResponse(response)) {
+        const ttl =
+          cacheConfig.ttl || parseInt(process.env.RESPONSE_CACHE_DEFAULT_TTL || "60", 10);
 
-  // Call the appropriate handler
-  if (route.handler[req.method as keyof RouteHandler]) {
-    return await route.handler[req.method as keyof RouteHandler]!(req);
-  } else if (route.handler.default) {
-    return await route.handler.default(req);
+        // Clone response before reading body
+        const responseClone = response.clone();
+        const serialized = await serializeResponse(responseClone);
+
+        // Add cache control headers
+        const headers = new Headers(response.headers);
+        headers.set("X-Cache", "MISS");
+        if (cacheConfig.private) {
+          headers.set("Cache-Control", `private, max-age=${ttl}`);
+        } else {
+          headers.set("Cache-Control", `public, max-age=${ttl}`);
+        }
+
+        // Store in cache
+        await cache.set(cacheKey, serialized, ttl);
+
+        // Return response with updated headers
+        const finalResponse = new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers,
+        });
+
+        logCompletion(finalResponse.status, isCacheHit);
+        return addPerformanceHeaders(finalResponse);
+      }
+    }
+
+    // Log completion with status
+    logCompletion(response.status, isCacheHit);
+
+    // Add performance headers
+    return addPerformanceHeaders(response);
+  } catch (error) {
+    console.error("Controller error:", error);
+
+    // Use the error handler for 500 errors
+    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+    const errorResponse = await createErrorResponse(
+      req,
+      500,
+      errorMessage,
+      {
+        stack: error instanceof Error ? error.stack : undefined,
+        path: url.pathname,
+        method: req.method,
+        timestamp: new Date().toISOString(),
+      }
+    );
+
+    logCompletion(500);
+    return addPerformanceHeaders(errorResponse);
   }
-
-  return new Response("Method Not Allowed", { status: 405 });
 }

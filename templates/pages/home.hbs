@@ -1,0 +1,146 @@
+<div class="hero">
+    <h1>Welcome to EVE Kill v4 🚀</h1>
+    <p class="lead">The ultimate EVE Online killmail tracker, rebuilt with modern technology.</p>
+</div>
+
+<div class="stats-grid">
+    <div class="card">
+        <h3>📊 Latest Statistics</h3>
+        <ul class="stats-list">
+            <li><strong>Total Killmails:</strong> {{formatNumber stats.totalKillmails}}</li>
+            <li><strong>Total ISK Destroyed:</strong> <span class="isk-value">{{formatISK stats.totalISK}}</span></li>
+            <li><strong>Active Pilots:</strong> {{formatNumber stats.activePilots}}</li>
+            <li><strong>Last 24h Kills:</strong> {{formatNumber stats.recentKills}}</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h3>🔥 Recent Killmails</h3>
+        {{#if recentKillmails}}
+        <div class="killmail-list">
+            {{#each recentKillmails}}
+            <div class="killmail-item">
+                <div class="killmail-victim">
+                    <span class="character-name">{{victim.character.name}}</span>
+                    lost a <span class="ship-name">{{victim.ship.name}}</span>
+                </div>
+                <div class="killmail-meta">
+                    <span class="isk-value">{{formatISK value}}</span> •
+                    <span class="time">{{timeAgo timestamp}}</span>
+                </div>
+            </div>
+            {{/each}}
+        </div>
+        <a href="/killmails" class="btn">View All Killmails</a>
+        {{else}}
+        <p>No recent killmails found.</p>
+        {{/if}}
+    </div>
+</div>
+
+<div class="card">
+    <h3>🛠️ API Endpoints</h3>
+    <p>EVE Kill v4 provides a comprehensive REST API for developers:</p>
+    <ul class="api-list">
+        <li><code>GET /api/health</code> - API health check</li>
+        <li><code>GET /api/users</code> - List users</li>
+        <li><code>GET /api/users/:id</code> - Get user details</li>
+        <li><code>GET /killmails/:id</code> - Get killmail details</li>
+    </ul>
+    <a href="/api" class="btn">API Documentation</a>
+</div>
+
+<style>
+.hero {
+    text-align: center;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+}
+
+.hero h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(45deg, #ffd700, #ffed4e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.lead {
+    font-size: 1.25rem;
+    color: #ccc;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.stats-list {
+    list-style: none;
+    padding: 0;
+}
+
+.stats-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stats-list li:last-child {
+    border-bottom: none;
+}
+
+.killmail-list {
+    margin-bottom: 1rem;
+}
+
+.killmail-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.killmail-item:last-child {
+    border-bottom: none;
+}
+
+.killmail-victim {
+    margin-bottom: 0.5rem;
+}
+
+.killmail-meta {
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.api-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+.api-list li {
+    padding: 0.5rem 0;
+}
+
+.api-list code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    color: #ffd700;
+}
+
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

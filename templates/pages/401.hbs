@@ -1,0 +1,63 @@
+<div class="error-page">
+    <h1>🔐 401 - Unauthorized</h1>
+    <p class="error-message">{{message}}</p>
+    <p>You need to be logged in to access this page.</p>
+
+    <div class="error-actions">
+        <a href="/login" class="btn btn-primary">Login</a>
+        <a href="/" class="btn">← Back to Home</a>
+    </div>
+</div>
+
+<style>
+.error-page {
+    text-align: center;
+    padding: 4rem 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.error-page h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #2196f3;
+}
+
+.error-message {
+    font-size: 1.25rem;
+    color: #ccc;
+    margin-bottom: 1rem;
+}
+
+.error-page p {
+    color: #999;
+    margin-bottom: 2rem;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-primary {
+    background: #2196f3;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1976d2;
+}
+
+@media (max-width: 768px) {
+    .error-page h1 {
+        font-size: 2rem;
+    }
+
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>

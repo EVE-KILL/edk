@@ -1,0 +1,102 @@
+<div class="error-page">
+    <h1>⚠️ 500 - Internal Server Error</h1>
+    <p class="error-message">{{message}}</p>
+
+    {{#if isDevelopment}}
+        {{#if stack}}
+            <div class="error-details">
+                <h3>Error Details:</h3>
+                <pre class="error-stack">{{stack}}</pre>
+            </div>
+        {{/if}}
+        {{#if path}}
+            <div class="error-info">
+                <strong>Path:</strong> {{path}}<br>
+                <strong>Method:</strong> {{method}}<br>
+                <strong>Timestamp:</strong> {{timestamp}}
+            </div>
+        {{/if}}
+    {{else}}
+        <p>Something went wrong on our end. We've been notified and are working to fix it.</p>
+    {{/if}}
+
+    <div class="error-actions">
+        <a href="/" class="btn">← Back to Home</a>
+        <a href="javascript:history.back()" class="btn">Go Back</a>
+    </div>
+</div>
+
+<style>
+.error-page {
+    padding: 4rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.error-page h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #f44336;
+    text-align: center;
+}
+
+.error-message {
+    font-size: 1.25rem;
+    color: #ccc;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.error-details {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+}
+
+.error-details h3 {
+    color: #ff9800;
+    margin-bottom: 1rem;
+}
+
+.error-stack {
+    background: #0d0d0d;
+    color: #ff6b6b;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.error-info {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    line-height: 1.8;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+    .error-page h1 {
+        font-size: 2rem;
+    }
+
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>

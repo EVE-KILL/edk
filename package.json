@@ -3,10 +3,23 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bun run index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun run app/db/migrate.ts",
+    "db:studio": "drizzle-kit studio"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/handlebars": "^4.1.0",
+    "drizzle-kit": "^0.31.5"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.6",
+    "handlebars": "^4.7.8",
+    "lru-cache": "^10.4.3"
   }
 }
