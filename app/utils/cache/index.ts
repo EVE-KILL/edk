@@ -5,6 +5,7 @@
 
 import { createCache } from "./factory";
 import type { CacheAdapter } from "./adapter";
+import { logger } from "../logger";
 
 export type { CacheAdapter, CacheStats } from "./adapter";
 export { createCache } from "./factory";
@@ -30,8 +31,8 @@ export const cache: CacheAdapter = shouldEnableCache
 
 // Log cache status on startup
 if (!shouldEnableCache) {
-  console.log("📦 Cache: disabled (development mode or CACHE_ENABLED=false)");
+  logger.cache("disabled (development mode or CACHE_ENABLED=false)");
 } else {
   const driver = process.env.CACHE_DRIVER || "lru";
-  console.log(`📦 Cache: enabled (driver: ${driver})`);
+  logger.cache(`enabled (driver: ${driver})`);
 }

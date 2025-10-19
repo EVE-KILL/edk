@@ -2,6 +2,7 @@ import { eq, and, lte, lt, asc, sql } from "drizzle-orm";
 import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { jobs, type Job } from "./schema/jobs";
 import type { BaseWorker } from "./workers/base-worker";
+import { logger } from "../utils/logger";
 
 /**
  * Queue Manager - Coordinates job processing across workers
@@ -43,7 +44,7 @@ export class QueueManager {
       worker.onRegister();
     }
 
-    console.log(`📝 Registered worker: ${worker.queueName} (concurrency: ${worker.concurrency})`);
+    logger.queue(`Registered worker: ${worker.queueName} (concurrency: ${worker.concurrency})`);
   }
 
   /**
@@ -51,7 +52,7 @@ export class QueueManager {
    */
   async start() {
     if (this.running) {
-      console.warn("⚠️  Queue manager already running");
+      logger.warn("Queue manager already running");
       return;
     }
 
@@ -67,7 +68,7 @@ export class QueueManager {
       this.pollingIntervals.push(interval);
     }
 
-    console.log(`✅ Queue manager started with ${this.workers.size} workers`);
+    logger.success(`Queue manager started with ${this.workers.size} workers`);
   }
 
   /**
@@ -80,7 +81,7 @@ export class QueueManager {
       return;
     }
 
-    console.log("🛑 Stopping queue manager...");
+    logger.info("🛑 Stopping queue manager...");
     this.running = false;
 
     // Stop polling for new jobs
@@ -97,7 +98,7 @@ export class QueueManager {
       }
     }
 
-    console.log("✅ Queue manager stopped");
+    logger.success("Queue manager stopped");
   }
 
   /**
@@ -144,7 +145,7 @@ export class QueueManager {
       }
 
       this.activeJobs++;
-      console.log(`[${queueName}] 🔄 Processing job #${job.id} (attempt ${job.attempts}/${job.maxAttempts})`);
+      logger.debug(`[${queueName}] Processing job #${job.id} (attempt ${job.attempts}/${job.maxAttempts})`);
 
       try {
         // Parse payload from JSON
@@ -158,25 +159,22 @@ export class QueueManager {
         // Mark as completed
         await this.completeJob(job.id);
 
-        console.log(`[${queueName}] ✅ Job #${job.id} completed`);
+        logger.debug(`[${queueName}] ✅ Job #${job.id} completed`);
       } catch (error) {
         // Mark as failed (will retry if attempts < maxAttempts)
         await this.failJob(job.id, error);
 
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(
-          `[${queueName}] ❌ Job #${job.id} failed (${job.attempts}/${job.maxAttempts}):`,
-          errorMessage
+        logger.error(
+          `[${queueName}] Job #${job.id} failed (${job.attempts}/${job.maxAttempts}): ${errorMessage}`
         );
       } finally {
         this.activeJobs--;
       }
     } catch (error) {
-      console.error(`[${queueName}] Error processing job:`, error);
+      logger.error(`[${queueName}] Error processing job:`, error);
     }
-  }
-
-  /**
+  }  /**
    * Atomically claim the next available job
    *
    * This is the CRITICAL section that prevents race conditions:
@@ -282,10 +280,10 @@ export class QueueManager {
         return;
       }
 
-      console.log(`⏳ Waiting for ${this.activeJobs} active jobs to finish...`);
+      logger.debug(`⏳ Waiting for ${this.activeJobs} active jobs to finish...`);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    console.warn(`⚠️  Timeout waiting for ${this.activeJobs} active jobs to finish`);
+    logger.warn(`Timeout waiting for ${this.activeJobs} active jobs to finish`);
   }
 }

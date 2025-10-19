@@ -1,6 +1,7 @@
 import { BaseWorker } from "./base-worker";
 import type { Job } from "../schema/jobs";
 import { Killmails } from "../../models";
+import { logger } from "../../utils/logger";
 
 /**
  * Killmail Processor Worker
@@ -17,17 +18,17 @@ export class KillmailProcessor extends BaseWorker<{
   hash: string;
   data: any; // Raw zkillboard data
 }> {
-  queueName = "killmails";
-  concurrency = 5; // Process 5 killmails at once
-  pollInterval = 1000; // Check every second
+  override queueName = "killmails";
+  override concurrency = 5; // Process 5 killmails at once
+  override pollInterval = 1000; // Check every second
 
-  async handle(payload: { killmailId: number; hash: string; data: any }, job: Job) {
+  override async handle(payload: { killmailId: number; hash: string; data: any }, job: Job) {
     const { killmailId, hash, data } = payload;
 
     // Check if already exists
     const exists = await Killmails.existsByKillmailId(killmailId);
     if (exists) {
-      console.log(`  ↳ Killmail ${killmailId} already exists, skipping`);
+      logger.debug(`  ↳ Killmail ${killmailId} already exists, skipping`);
       return;
     }
 
@@ -41,7 +42,7 @@ export class KillmailProcessor extends BaseWorker<{
       ...killmail,
     });
 
-    console.log(
+    logger.debug(
       `  ↳ Inserted killmail ${killmailId} (${killmail.totalValue.toLocaleString()} ISK, ${killmail.attackerCount} attackers)`
     );
 

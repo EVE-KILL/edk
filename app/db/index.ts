@@ -1,6 +1,7 @@
 import { drizzle, BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { Database } from "bun:sqlite";
 import * as schema from "./schema";
+import { logger } from "../utils/logger";
 
 // Cache environment variables
 const DATABASE_PATH = process.env.DATABASE_PATH || "./data/ekv4.db";
@@ -68,9 +69,9 @@ class DatabaseConnection {
         logger: false, // Never log queue queries (too spammy)
       });
 
-      console.log(`📊 Database connected: ${DATABASE_PATH}`);
+      logger.database(`Connected: ${DATABASE_PATH}`);
     } catch (error) {
-      console.error("Failed to connect to database:", error);
+      logger.error("Failed to connect to database:", error);
       throw error;
     }
   }
@@ -84,7 +85,7 @@ class DatabaseConnection {
       this.sqlite = null;
       this.instance = null;
       this.queueInstance = null;
-      console.log("📊 Database connection closed");
+      logger.database("Connection closed");
     }
   }
 

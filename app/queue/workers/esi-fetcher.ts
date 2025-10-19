@@ -1,6 +1,7 @@
 import { BaseWorker } from "./base-worker";
 import type { Job } from "../schema/jobs";
 import { cache } from "../../utils/cache";
+import { logger } from "../../utils/logger";
 
 /**
  * ESI Fetcher Worker
@@ -18,14 +19,14 @@ export class ESIFetcher extends BaseWorker<{
   type: "character" | "corporation" | "alliance" | "type" | "system";
   id: number;
 }> {
-  queueName = "esi";
-  concurrency = 10; // ESI allows good concurrency
-  pollInterval = 500; // Poll faster for ESI jobs
+  override queueName = "esi";
+  override concurrency = 10; // ESI allows good concurrency
+  override pollInterval = 500; // Poll faster for ESI jobs
 
   private readonly ESI_BASE = "https://esi.evetech.net/latest";
   private readonly USER_AGENT = "EVE-Kill/4.0 (https://eve-kill.com)";
 
-  async handle(payload: { type: string; id: number }, job: Job) {
+  override async handle(payload: { type: string; id: number }, job: Job) {
     const { type, id } = payload;
 
     // Check cache first
@@ -33,7 +34,7 @@ export class ESIFetcher extends BaseWorker<{
     const cached = await cache.get(cacheKey);
 
     if (cached) {
-      console.log(`  ↳ ESI ${type} ${id} from cache`);
+      logger.debug(`  ↳ ESI ${type} ${id} from cache`);
       return;
     }
 
@@ -47,7 +48,7 @@ export class ESIFetcher extends BaseWorker<{
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.log(`  ↳ ESI ${type} ${id} not found (404)`);
+        logger.debug(`  ↳ ESI ${type} ${id} not found (404)`);
         // Cache the "not found" result to avoid repeated lookups
         await cache.set(cacheKey, { notFound: true }, 86400); // 24 hours
         return;
@@ -61,7 +62,7 @@ export class ESIFetcher extends BaseWorker<{
     // Cache for 1 hour (ESI data doesn't change often)
     await cache.set(cacheKey, data, 3600);
 
-    console.log(`  ↳ Fetched ESI ${type} ${id}: ${this.getDisplayName(type, data)}`);
+    logger.debug(`  ↳ Fetched ESI ${type} ${id}: ${this.getDisplayName(type, data)}`);
   }
 
   /**
