@@ -1,0 +1,77 @@
+<!-- Killmail List Table -->
+{{#if killmails.length}}
+<table class="kb-table kb-kl-table" cellspacing="1">
+    <tr class="kb-table-header">
+        <td class="kb-table-header" colspan="2" style="width:170px; text-align:center">Ship type</td>
+        <td class="kb-table-header" style="width:209px; text-align:center">Victim</td>
+        <td class="kb-table-header" style="width:176px; text-align:center">Final blow</td>
+        <td class="kb-table-header" style="width:147px; text-align:center">Location</td>
+        <td class="kb-table-header" style="width:70px; text-align:center">Time</td>
+    </tr>
+
+    {{#each killmails}}
+    <tr class="{{#if (mod @index 2)}}kb-table-row-odd{{else}}kb-table-row-even{{/if}}" onclick="window.location.href='/killmails/{{killmail_id}}';" style="cursor: pointer;">
+        <!-- Ship Image -->
+        <td class="kb-table-imgcell">
+            <img src="https://images.evetech.net/types/{{victim.ship.type_id}}/icon?size=32"
+                 style="border: 0px; width: 32px; height: 32px;"
+                 alt="{{victim.ship.name}}" />
+        </td>
+
+        <!-- Ship Type & Class -->
+        <td class="kb-table-cell" style="width: 153px; vertical-align: middle;">
+            <div class="no_stretch" style="width: 153px;">
+                <b>{{victim.ship.name}}</b>
+                <br />
+                <span style="color: #999; font-size: 9px;">{{victim.ship.group}}</span>
+            </div>
+        </td>
+
+        <!-- Victim -->
+        <td class="kb-table-cell" style="vertical-align: middle;">
+            <div class="no_stretch">
+                <b>{{victim.character.name}}</b>
+                <br />
+                <span style="color: #999; font-size: 9px;">
+                    {{victim.corporation.name}}
+                    {{#if victim.alliance.name}}
+                    / {{victim.alliance.name}}
+                    {{/if}}
+                </span>
+            </div>
+        </td>
+
+        <!-- Final Blow -->
+        <td class="kb-table-cell" style="vertical-align: middle;">
+            <div class="no_stretch">
+                {{#if attackers.[0]}}
+                <b>{{attackers.[0].character.name}}</b>
+                <br />
+                <span style="color: #999; font-size: 9px;">
+                    {{attackers.[0].corporation.name}}
+                </span>
+                {{else}}
+                <span style="color: #666;">Unknown</span>
+                {{/if}}
+            </div>
+        </td>
+
+        <!-- Location -->
+        <td class="kb-table-cell" style="text-align: center; vertical-align: middle;">
+            <b>{{solar_system.name}}</b>
+            <br />
+            <span style="color: #999; font-size: 9px;">{{solar_system.region}}</span>
+        </td>
+
+        <!-- Time -->
+        <td class="kb-table-cell" style="text-align: center; vertical-align: middle;">
+            <span style="font-size: 9px;">{{formatDate killmail_time}}</span>
+        </td>
+    </tr>
+    {{/each}}
+</table>
+{{else}}
+<div class="kb-table" style="padding: 20px; text-align: center;">
+    <p style="color: #999;">No killmails found.</p>
+</div>
+{{/if}}

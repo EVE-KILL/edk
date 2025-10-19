@@ -1,4 +1,5 @@
 import { WebController } from "../../utils/web-controller";
+import { generateKillmailDetail } from "../../generators/killmail";
 
 export class Controller extends WebController {
   // Cache killmail pages for 5 minutes
@@ -14,38 +15,29 @@ export class Controller extends WebController {
       return this.notFound("Killmail not found");
     }
 
-    // Try to fetch from database using the killmail ID (not the database ID)
-    const killmail = await this.models.Killmails.findByKillmailId(parseInt(killmailId, 10));
+    // Fetch killmail detail from generator
+    const killmailDetail = await generateKillmailDetail(parseInt(killmailId, 10));
 
-    if (!killmail) {
+    if (!killmailDetail) {
       return this.notFound(`Killmail #${killmailId} not found`);
     }
 
+    // Find final blow attacker
+    const finalBlow = killmailDetail.attackers.find(a => a.finalBlow);
+
     const data = {
-      killmail: {
-        id: killmail.id,
-        killmailId: killmail.killmailId,
-        hash: killmail.hash,
-        time: killmail.killmailTime,
-        victim: killmail.victim,
-        attackers: killmail.attackers,
-        items: killmail.items,
-        totalValue: killmail.totalValue,
-        attackerCount: killmail.attackerCount,
-        isSolo: killmail.isSolo,
-        solarSystemId: killmail.solarSystemId,
-      },
+      ...killmailDetail,
+      finalBlow,
     };
 
-    const victimInfo = killmail.victim as any;
-    const victimName = victimInfo?.characterId ? `Character ${victimInfo.characterId}` : "Unknown";
-    const shipType = victimInfo?.shipTypeId ? `Ship ${victimInfo.shipTypeId}` : "Unknown Ship";
-    const value = killmail.totalValue ? `${Math.floor(killmail.totalValue / 1000000)}M` : "0";
+    const victimName = killmailDetail.victim.character?.name || "Unknown";
+    const shipName = killmailDetail.victim.ship.name;
+    const valueMB = Math.floor(killmailDetail.stats.totalValue / 1000000);
 
     return await this.renderPage(
       "pages/killmail",
-      `Killmail #${killmail.killmailId} - ${victimName} (${shipType})`,
-      `Killmail details for ${victimName} who lost a ${shipType} worth ${value} ISK`,
+      `Killmail #${killmailDetail.killmail.killmailId} - ${victimName} (${shipName})`,
+      `${victimName} lost a ${shipName} worth ${valueMB}M ISK`,
       data
     );
   }

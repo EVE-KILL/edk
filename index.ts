@@ -1,6 +1,7 @@
 import { serve } from "bun";
+import { watch } from "fs/promises";
 import { discoverRoutes, buildRouteIndex, handleRequest } from "./app/utils/router";
-import { registerHelpers } from "./app/utils/templates";
+import { registerHelpers, registerPartials, clearTemplateCache } from "./app/utils/templates";
 import { queueManager } from "./app/queue";
 import { logger } from "./app/utils/logger";
 
@@ -8,8 +9,9 @@ import { logger } from "./app/utils/logger";
  * EVE Kill v4 - Bun server with automatic route injection
  */
 async function startServer() {
-  // Register Handlebars helpers
+  // Register Handlebars helpers and partials
   registerHelpers();
+  await registerPartials();
 
   logger.info("🔍 Discovering routes...");
   const routes = await discoverRoutes();
@@ -33,12 +35,8 @@ async function startServer() {
   const port = parseInt(process.env.PORT || "3000");
   const isDevelopment = process.env.NODE_ENV !== "production";
 
-  serve({
+  const server = serve({
     port,
-    development: {
-        hmr: isDevelopment,
-        console: isDevelopment
-    },
     fetch: (req) => handleRequest(routeIndex, req),
   });
 
@@ -47,6 +45,32 @@ async function startServer() {
   if (queueEnabled) {
     logger.success("Queue manager: running");
   }
+
+  // Hot reload for templates in development
+  if (isDevelopment) {
+    const watcher = watch("./templates", {
+      recursive: true,
+      persistent: true,
+    });
+
+    logger.info("🔥 Hot reload enabled for templates");
+
+    (async () => {
+      for await (const event of watcher) {
+        logger.info(`🔄 Template changed: ${event.filename}, reloading...`);
+
+        // Clear the template cache
+        clearTemplateCache();
+
+        // Re-register partials to pick up changes
+        await registerPartials();
+
+        logger.success("✅ Templates reloaded");
+      }
+    })();
+  }
+
+  return server;
 }
 
 // Graceful shutdown

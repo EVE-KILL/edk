@@ -2,6 +2,7 @@ import { BaseWorker } from "./base-worker";
 import type { Job } from "../schema/jobs";
 import { Killmails } from "../../models";
 import { logger } from "../../utils/logger";
+import { queue } from "../index";
 
 /**
  * Killmail Processor Worker
@@ -11,7 +12,7 @@ import { logger } from "../../utils/logger";
  * - Checks for duplicates
  * - Parses and normalizes data
  * - Inserts into database
- * - Optionally enqueues follow-up jobs (ESI fetches, stats updates)
+ * - Enqueues follow-up jobs (ESI fetches for all related entities)
  */
 export class KillmailProcessor extends BaseWorker<{
   killmailId: number;
@@ -46,11 +47,75 @@ export class KillmailProcessor extends BaseWorker<{
       `  ↳ Inserted killmail ${killmailId} (${killmail.totalValue.toLocaleString()} ISK, ${killmail.attackerCount} attackers)`
     );
 
-    // TODO: Enqueue follow-up jobs
-    // - Fetch character/corp/alliance names from ESI
-    // - Update statistics
-    // - Send notifications
-    // - Update search index
+    // Enqueue ESI fetch jobs for all related entities
+    await this.enqueueESIFetches(data);
+  }
+
+  /**
+   * Enqueue ESI fetch jobs for all entities in the killmail
+   */
+  private async enqueueESIFetches(data: any) {
+    const idsToFetch = new Set<string>();
+
+    // Solar system
+    if (data.solar_system_id) {
+      idsToFetch.add(`system:${data.solar_system_id}`);
+    }
+
+    // Victim
+    if (data.victim) {
+      if (data.victim.character_id) {
+        idsToFetch.add(`character:${data.victim.character_id}`);
+      }
+      if (data.victim.corporation_id) {
+        idsToFetch.add(`corporation:${data.victim.corporation_id}`);
+      }
+      if (data.victim.alliance_id) {
+        idsToFetch.add(`alliance:${data.victim.alliance_id}`);
+      }
+      if (data.victim.ship_type_id) {
+        idsToFetch.add(`type:${data.victim.ship_type_id}`);
+      }
+    }
+
+    // Attackers
+    for (const attacker of data.attackers || []) {
+      if (attacker.character_id) {
+        idsToFetch.add(`character:${attacker.character_id}`);
+      }
+      if (attacker.corporation_id) {
+        idsToFetch.add(`corporation:${attacker.corporation_id}`);
+      }
+      if (attacker.alliance_id) {
+        idsToFetch.add(`alliance:${attacker.alliance_id}`);
+      }
+      if (attacker.ship_type_id) {
+        idsToFetch.add(`type:${attacker.ship_type_id}`);
+      }
+      if (attacker.weapon_type_id) {
+        idsToFetch.add(`type:${attacker.weapon_type_id}`);
+      }
+    }
+
+    // Items
+    for (const item of data.victim?.items || []) {
+      if (item.item_type_id) {
+        idsToFetch.add(`type:${item.item_type_id}`);
+      }
+    }
+
+    // Enqueue all ESI jobs
+    for (const id of idsToFetch) {
+      const [type, idStr] = id.split(":");
+      if (!type || !idStr) continue;
+
+      await queue.dispatch("esi", type, {
+        type: type as "character" | "corporation" | "alliance" | "type" | "system",
+        id: Number.parseInt(idStr),
+      });
+    }
+
+    logger.debug(`  ↳ Enqueued ${idsToFetch.size} ESI fetch jobs`);
   }
 
   /**

@@ -1,54 +1,32 @@
-<div class="error-page">
-    <h1>🔒 403 - Forbidden</h1>
-    <p class="error-message">{{message}}</p>
-    <p>You don't have permission to access this resource.</p>
+<!-- 403 Error Page - EDK Style -->
+<div class="killlist" style="max-width: 700px; margin: 20px auto;">
+    <div class="kb-losses-header">403 - Forbidden</div>
 
-    <div class="error-actions">
-        <a href="/" class="btn">← Back to Home</a>
-        <a href="javascript:history.back()" class="btn">Go Back</a>
-    </div>
+    <table class="kb-table" cellspacing="1" style="width: 100%;">
+        <tr class="kb-table-header">
+            <td class="kb-table-header">
+                <span style="font-size: 14px;">🔒 Access Denied</span>
+            </td>
+        </tr>
+        <tr class="kb-table-row-even">
+            <td class="kb-table-cell" style="padding: 20px; text-align: center;">
+                <p style="font-size: 12px; color: #dfdfdf; margin-bottom: 15px;">
+                    {{#if message}}
+                        {{message}}
+                    {{else}}
+                        You don't have permission to access this resource.
+                    {{/if}}
+                </p>
+                <p style="font-size: 11px; color: #999;">
+                    If you believe this is an error, please contact an administrator.
+                </p>
+            </td>
+        </tr>
+        <tr class="kb-table-row-odd">
+            <td class="kb-table-cell" style="padding: 15px; text-align: center;">
+                <a href="/" style="background-color: #2a2a2a; color: #9bb3e8; font-size: 11px; padding: 8px 16px; margin-right: 10px; border: 1px solid #555; text-decoration: none;">🏠 Home</a>
+                <a href="javascript:history.back()" style="color: #9bb3e8; font-size: 11px;">← Go Back</a>
+            </td>
+        </tr>
+    </table>
 </div>
-
-<style>
-.error-page {
-    text-align: center;
-    padding: 4rem 2rem;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.error-page h1 {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    color: #ff9800;
-}
-
-.error-message {
-    font-size: 1.25rem;
-    color: #ccc;
-    margin-bottom: 1rem;
-}
-
-.error-page p {
-    color: #999;
-    margin-bottom: 2rem;
-}
-
-.error-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-@media (max-width: 768px) {
-    .error-page h1 {
-        font-size: 2rem;
-    }
-
-    .error-actions {
-        flex-direction: column;
-        align-items: center;
-    }
-}
-</style>

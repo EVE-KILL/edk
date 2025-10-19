@@ -240,6 +240,21 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
     }
   }
 
+  // Also serve CSS/JS/images from root for EDK theme compatibility
+  // e.g., /edk.css, /themes/default/default.css, /img/kills.png
+  if (url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico)$/i)) {
+    try {
+      const filePath = `./static${url.pathname}`; // ./static/edk.css
+      const file = Bun.file(filePath);
+
+      if (await file.exists()) {
+        return new Response(file);
+      }
+    } catch (error) {
+      // File doesn't exist, continue to 404
+    }
+  }
+
   // Start request logging
   const logCompletion = requestLogger(req);
 

@@ -1,211 +1,538 @@
-<div class="killmail-header">
-    <h1>Killmail #{{killmail.id}}</h1>
-    <div class="killmail-meta">
-        <span class="timestamp">{{formatDate killmail.timestamp}}</span> •
-        <span class="location">{{killmail.victim.location.system}}, {{killmail.victim.location.region}}</span>
+<!-- Killmail Detail - EDK Style -->
+
+<!-- Kill Header Info -->
+<div style="margin-bottom: 10px;">
+    <table class="kb-table" cellspacing="1" style="width: 100%;">
+        <tr class="kb-table-header">
+            <td class="kb-table-header" colspan="2">
+                Kill {{killmail.killmailId}} - {{formatDate killmail.killmailTime}}
+            </td>
+        </tr>
+        <tr class="kb-table-row-even">
+            <td class="kb-table-cell" style="width: 150px;"><b>System:</b></td>
+            <td class="kb-table-cell">
+                <b>{{solarSystem.name}}</b>
+                ({{solarSystem.security}} - {{solarSystem.region}})
+            </td>
+        </tr>
+        <tr class="kb-table-row-odd">
+            <td class="kb-table-cell"><b>Total Value:</b></td>
+            <td class="kb-table-cell">
+                <span class="isk-value">{{formatISK stats.totalValue}}</span>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- Two Column Layout -->
+<div style="display: flex; gap: 12px; margin-bottom: 20px;">
+    <!-- Left Column - Items -->
+    <div style="flex: 65; min-width: 0;">
+
+        <!-- Items Destroyed/Dropped -->
+        <div class="kl-detail-fitting">
+            <div class="block-header2">Items Destroyed & Dropped</div>
+
+            <table class="kb-table" cellspacing="1" style="width: 100%;">
+                <tr class="kb-table-header">
+                    <td class="kb-table-header" style="text-align: left;">Item</td>
+                    <td class="kb-table-header" style="text-align: center; width: 50px;">Qty</td>
+                    <td class="kb-table-header" style="text-align: center; width: 80px;">Status</td>
+                </tr>
+
+                {{#unless items.destroyed.highSlots.length}}
+                {{#unless items.dropped.highSlots.length}}
+                {{#unless items.destroyed.medSlots.length}}
+                {{#unless items.dropped.medSlots.length}}
+                {{#unless items.destroyed.lowSlots.length}}
+                {{#unless items.dropped.lowSlots.length}}
+                {{#unless items.destroyed.rigSlots.length}}
+                {{#unless items.dropped.rigSlots.length}}
+                {{#unless items.destroyed.droneBay.length}}
+                {{#unless items.dropped.droneBay.length}}
+                {{#unless items.destroyed.cargo.length}}
+                {{#unless items.dropped.cargo.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3" style="text-align: center; font-style: italic; color: #999;">No items destroyed or dropped</td>
+                </tr>
+                {{/unless}}
+                {{/unless}}
+                {{/unless}}
+                {{/unless}}
+                {{/unless}}
+                {{/unless}}
+                {{/unless}}
+                {{/unless}}
+                {{/unless}}
+                {{/unless}}
+                {{/unless}}
+                {{/unless}}
+
+                <!-- High Slots -->
+                {{#if items.destroyed.highSlots.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>High Slots</b></td>
+                </tr>
+                {{#each items.destroyed.highSlots}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-loss">Destroyed</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{/if}}
+                {{#if items.dropped.highSlots.length}}
+                {{#each items.dropped.highSlots}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-kill">Dropped</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{/if}}
+
+                <!-- Med Slots -->
+                {{#if items.destroyed.medSlots.length}}{{else}}{{#if items.dropped.medSlots.length}}{{/if}}{{/if}}
+                {{#if items.destroyed.medSlots.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Med Slots</b></td>
+                </tr>
+                {{#each items.destroyed.medSlots}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-loss">Destroyed</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{else}}
+                {{#if items.dropped.medSlots.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Med Slots</b></td>
+                </tr>
+                {{/if}}
+                {{/if}}
+                {{#if items.dropped.medSlots.length}}
+                {{#each items.dropped.medSlots}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-kill">Dropped</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{/if}}
+
+                <!-- Low Slots -->
+                {{#if items.destroyed.lowSlots.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Low Slots</b></td>
+                </tr>
+                {{#each items.destroyed.lowSlots}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-loss">Destroyed</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{else}}
+                {{#if items.dropped.lowSlots.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Low Slots</b></td>
+                </tr>
+                {{/if}}
+                {{/if}}
+                {{#if items.dropped.lowSlots.length}}
+                {{#each items.dropped.lowSlots}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-kill">Dropped</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{/if}}
+
+                <!-- Rig Slots -->
+                {{#if items.destroyed.rigSlots.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Rig Slots</b></td>
+                </tr>
+                {{#each items.destroyed.rigSlots}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-loss">Destroyed</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{else}}
+                {{#if items.dropped.rigSlots.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Rig Slots</b></td>
+                </tr>
+                {{/if}}
+                {{/if}}
+                {{#if items.dropped.rigSlots.length}}
+                {{#each items.dropped.rigSlots}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-kill">Dropped</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{/if}}
+
+                <!-- Subsystem Slots -->
+                {{#if items.destroyed.subSlots.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Subsystems</b></td>
+                </tr>
+                {{#each items.destroyed.subSlots}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-loss">Destroyed</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{else}}
+                {{#if items.dropped.subSlots.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Subsystems</b></td>
+                </tr>
+                {{/if}}
+                {{/if}}
+                {{#if items.dropped.subSlots.length}}
+                {{#each items.dropped.subSlots}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-kill">Dropped</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{/if}}
+
+                <!-- Drone Bay -->
+                {{#if items.destroyed.droneBay.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Drones</b></td>
+                </tr>
+                {{#each items.destroyed.droneBay}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-loss">Destroyed</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{else}}
+                {{#if items.dropped.droneBay.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Drones</b></td>
+                </tr>
+                {{/if}}
+                {{/if}}
+                {{#if items.dropped.droneBay.length}}
+                {{#each items.dropped.droneBay}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-kill">Dropped</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{/if}}
+
+                <!-- Cargo -->
+                {{#if items.destroyed.cargo.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Cargo</b></td>
+                </tr>
+                {{#each items.destroyed.cargo}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-loss">Destroyed</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{else}}
+                {{#if items.dropped.cargo.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="3"><b>Cargo</b></td>
+                </tr>
+                {{/if}}
+                {{/if}}
+                {{#if items.dropped.cargo.length}}
+                {{#each items.dropped.cargo}}
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell">
+                        <img src="https://images.evetech.net/types/{{typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; vertical-align: middle;"
+                             alt="{{name}}" />
+                        {{name}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: center;">
+                        <span class="kl-kill">Dropped</span>
+                    </td>
+                </tr>
+                {{/each}}
+                {{/if}}
+
+            </table>
+        </div>
+
+    </div>
+
+    <!-- Right Column - People -->
+    <div style="flex: 35; min-width: 0;">
+
+        <!-- Victim Info -->
+        <div style="margin-bottom: 10px;">
+            <div class="block-header2">Victim</div>
+
+            <table class="kb-table" cellspacing="1" style="width: 100%;">
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" style="width: 40px; padding: 4px; vertical-align: top;">
+                        {{#if victim.character.id}}
+                        <img src="https://images.evetech.net/characters/{{victim.character.id}}/portrait?size=32"
+                             style="width: 32px; height: 32px; display: block; border-radius: 2px;"
+                             alt="{{victim.character.name}}" />
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="padding: 4px; font-size: 9px; line-height: 1.3; overflow: hidden;">
+                        <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 10px;">{{victim.character.name}}</b></div>
+                        <div style="color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{victim.corporation.name}}</div>
+                        {{#if victim.alliance.name}}
+                        <div style="color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{victim.alliance.name}}</div>
+                        {{/if}}
+                    </td>
+                </tr>
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell" style="width: 40px; padding: 4px; vertical-align: top;">
+                        {{#if victim.ship.typeId}}
+                        <img src="https://images.evetech.net/types/{{victim.ship.typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; display: block;"
+                             alt="{{victim.ship.name}}" />
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="padding: 4px; font-size: 9px; line-height: 1.3; overflow: hidden;">
+                        <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 10px;">{{victim.ship.name}}</b></div>
+                        <div class="kl-loss" style="font-weight: bold; font-size: 10px;">{{victim.damageTaken}} damage</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Final Blow -->
+        {{#if finalBlow}}
+        <div style="margin-bottom: 10px;">
+            <div class="block-header2">Final Blow</div>
+
+            <table class="kb-table" cellspacing="1" style="width: 100%;">
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" style="width: 40px; padding: 4px; vertical-align: top;">
+                        {{#if finalBlow.character.id}}
+                        <img src="https://images.evetech.net/characters/{{finalBlow.character.id}}/portrait?size=32"
+                             style="width: 32px; height: 32px; display: block; border-radius: 2px;"
+                             alt="{{finalBlow.character.name}}" />
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="padding: 4px; font-size: 9px; line-height: 1.3; overflow: hidden;">
+                        <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 10px;">{{finalBlow.character.name}}</b></div>
+                        <div style="color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.corporation.name}}</div>
+                        {{#if finalBlow.alliance.name}}
+                        <div style="color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.alliance.name}}</div>
+                        {{/if}}
+                    </td>
+                </tr>
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell" style="width: 40px; padding: 4px; vertical-align: top;">
+                        {{#if finalBlow.ship.typeId}}
+                        <img src="https://images.evetech.net/types/{{finalBlow.ship.typeId}}/icon?size=32"
+                             style="width: 32px; height: 32px; display: block;"
+                             alt="{{finalBlow.ship.name}}" />
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="padding: 4px; font-size: 9px; line-height: 1.3; overflow: hidden;">
+                        <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 10px;">{{finalBlow.ship.name}}</b></div>
+                        {{#if finalBlow.weapon.name}}
+                        <div style="color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.weapon.name}}</div>
+                        {{/if}}
+                        <div class="kl-kill" style="font-weight: bold; font-size: 10px;">{{finalBlow.damageDone}} damage</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        {{/if}}
+
+        <!-- Involved Parties -->
+        {{#if attackers}}
+        <div style="margin-top: 10px;">
+            <table class="kb-table" cellspacing="1" style="width: 100%;">
+                <tr class="kb-table-header">
+                    <td class="kb-table-header" colspan="2" style="text-align: left; padding: 2px 4px;">Involved Parties ({{attackers.length}})</td>
+                </tr>
+
+                {{#each attackers}}
+                <tr class="{{#if (mod @index 2)}}kb-table-row-odd{{else}}kb-table-row-even{{/if}}{{#if finalBlow}} finalblow{{/if}}">
+                    <td class="kb-table-cell" style="width: 40px; padding: 4px; vertical-align: top;">
+                        <div style="position: relative; width: 32px; height: 32px;">
+                            {{#if character.id}}
+                            <img src="https://images.evetech.net/characters/{{character.id}}/portrait?size=32"
+                                 style="width: 32px; height: 32px; display: block; border-radius: 2px;"
+                                 alt="{{character.name}}" />
+                            {{/if}}
+                            {{#if corporation.id}}
+                            <img src="https://images.evetech.net/corporations/{{corporation.id}}/logo"
+                                 style="width: 16px; height: 16px; position: absolute; bottom: -2px; right: -2px; border: 1px solid #000; background: #000; border-radius: 1px;"
+                                 alt="{{corporation.name}}" />
+                            {{/if}}
+                        </div>
+                    </td>
+                    <td class="kb-table-cell" style="padding: 4px; font-size: 9px; line-height: 1.3; overflow: hidden;">
+                        <div style="margin-bottom: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 10px;">{{character.name}}</b></div>
+                        <div style="color: #999; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{corporation.name}}</div>
+                        {{#if alliance.name}}
+                        <div style="color: #999; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{alliance.name}}</div>
+                        {{/if}}
+                        <div style="margin-top: 2px; overflow: hidden;">
+                            {{#if ship.name}}
+                            <span style="color: #999; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; max-width: calc(100% - 60px);">{{ship.name}}</span>
+                            {{/if}}
+                            <span class="kl-kill" style="font-weight: bold; font-size: 9px; float: right;">{{damageDone}}</span>
+                        </div>
+                    </td>
+                </tr>
+                {{/each}}
+            </table>
+        </div>
+        {{/if}}
+
     </div>
 </div>
 
-<div class="killmail-grid">
-    <!-- Victim Information -->
-    <div class="card victim-card">
-        <h3>💀 Victim</h3>
-        <div class="pilot-info">
-            <h4 class="character-name">{{killmail.victim.character.name}}</h4>
-            <p class="corporation-name">{{killmail.victim.character.corporation}}</p>
-
-            <div class="ship-info">
-                <h5>Ship Lost:</h5>
-                <p class="ship-name">{{killmail.victim.ship.name}}</p>
-            </div>
-
-            <div class="loss-value">
-                <h5>Total Loss:</h5>
-                <p class="isk-value">{{formatISK killmail.value}}</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Attackers Information -->
-    <div class="card attackers-card">
-        <h3>⚔️ Attackers ({{killmail.attackers.length}})</h3>
-        <div class="attackers-list">
-            {{#each killmail.attackers}}
-            <div class="attacker-item {{#if finalBlow}}final-blow{{/if}}">
-                <div class="attacker-info">
-                    <span class="character-name">{{character.name}}</span>
-                    <span class="corporation-name">({{character.corporation}})</span>
-                    {{#if finalBlow}}
-                    <span class="final-blow-badge">💥 Final Blow</span>
-                    {{/if}}
-                </div>
-                <div class="attacker-ship">
-                    <span class="ship-name">{{ship.name}}</span>
-                </div>
-            </div>
-            {{/each}}
-        </div>
-    </div>
+<!-- Raw Killmail Link -->
+<div style="margin-top: 20px; text-align: center;">
+    <a href="#" onclick="ReverseContentDisplay('popup'); return false;" style="color: #9bb3e8;">
+        View Raw Killmail
+    </a>
+    |
+    <a href="/api/killmails/{{killmail.killmailId}}" style="color: #9bb3e8;">
+        JSON API
+    </a>
 </div>
 
-<!-- Location and Additional Info -->
-<div class="card location-card">
-    <h3>📍 Combat Details</h3>
-    <div class="location-grid">
-        <div class="location-info">
-            <h5>System:</h5>
-            <p>{{killmail.victim.location.system}}</p>
-        </div>
-        <div class="location-info">
-            <h5>Region:</h5>
-            <p>{{killmail.victim.location.region}}</p>
-        </div>
-        <div class="location-info">
-            <h5>Time:</h5>
-            <p>{{formatDate killmail.timestamp}}</p>
-        </div>
-        <div class="location-info">
-            <h5>Attackers:</h5>
-            <p>{{killmail.attackers.length}} pilots involved</p>
-        </div>
-    </div>
+<!-- Raw Killmail Popup (hidden by default) -->
+<div id="popup" style="display: none;">
+    <form>
+        <table class="popup-table" style="width: 700px;">
+            <tr>
+                <td align="center"><strong>Raw Killmail</strong></td>
+            </tr>
+            <tr>
+                <td align="center">
+                    <input type="button" value="Close" onClick="ReverseContentDisplay('popup');">
+                </td>
+            </tr>
+            <tr>
+                <td valign="top" align="center">
+                    <textarea class="killmail" name="killmail" cols="80" rows="30" readonly="readonly">{{rawKillmail}}</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td align="center">
+                    <input type="button" value="Select All"
+                           onClick="this.form.killmail.select(); this.form.killmail.focus(); document.execCommand('Copy')">
+                    &nbsp;
+                    <input type="button" value="Close" onClick="ReverseContentDisplay('popup');">
+                </td>
+            </tr>
+        </table>
+    </form>
 </div>
-
-<!-- Action Buttons -->
-<div class="actions">
-    <a href="/killmails" class="btn">← Back to Killmails</a>
-    <a href="/api/killmails/{{killmail.id}}" class="btn" target="_blank">View JSON Data</a>
-</div>
-
-<style>
-.killmail-header {
-    text-align: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #ffd700;
-}
-
-.killmail-header h1 {
-    color: #ffd700;
-    margin-bottom: 0.5rem;
-}
-
-.killmail-meta {
-    color: #ccc;
-    font-size: 1.1rem;
-}
-
-.killmail-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 2rem;
-    margin-bottom: 2rem;
-}
-
-.victim-card {
-    border-left: 4px solid #f44336;
-}
-
-.attackers-card {
-    border-left: 4px solid #ff9800;
-}
-
-.location-card {
-    border-left: 4px solid #2196f3;
-}
-
-.pilot-info h4 {
-    margin-bottom: 0.25rem;
-}
-
-.pilot-info p {
-    margin-bottom: 1rem;
-}
-
-.ship-info, .loss-value {
-    margin-top: 1rem;
-}
-
-.ship-info h5, .loss-value h5 {
-    margin-bottom: 0.25rem;
-    color: #ffd700;
-}
-
-.attackers-list {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.attacker-item {
-    padding: 1rem;
-    margin-bottom: 0.5rem;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 4px;
-    border-left: 3px solid transparent;
-}
-
-.attacker-item.final-blow {
-    border-left-color: #ff5722;
-    background: rgba(255, 87, 34, 0.1);
-}
-
-.attacker-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.25rem;
-}
-
-.final-blow-badge {
-    background: #ff5722;
-    color: white;
-    padding: 0.125rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: bold;
-}
-
-.attacker-ship {
-    font-size: 0.9rem;
-    color: #ccc;
-}
-
-.location-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-}
-
-.location-info h5 {
-    color: #ffd700;
-    margin-bottom: 0.25rem;
-}
-
-.actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-top: 2rem;
-}
-
-@media (max-width: 768px) {
-    .killmail-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .location-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    }
-
-    .actions {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .attacker-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.25rem;
-    }
-}
-</style>

@@ -1,7 +1,11 @@
 import { BaseWorker } from "./base-worker";
 import type { Job } from "../schema/jobs";
-import { cache } from "../../utils/cache";
 import { logger } from "../../utils/logger";
+import { CharacterService } from "../../services/esi/character-service";
+import { CorporationService } from "../../services/esi/corporation-service";
+import { AllianceService } from "../../services/esi/alliance-service";
+import { TypeService } from "../../services/esi/type-service";
+import { SolarSystemService } from "../../services/esi/solar-system-service";
 
 /**
  * ESI Fetcher Worker
@@ -13,7 +17,7 @@ import { logger } from "../../utils/logger";
  * - Ship types
  * - Solar systems
  *
- * Caches results to avoid repeated API calls
+ * Uses proper ESI services with rate limiting and database caching
  */
 export class ESIFetcher extends BaseWorker<{
   type: "character" | "corporation" | "alliance" | "type" | "system";
@@ -23,92 +27,48 @@ export class ESIFetcher extends BaseWorker<{
   override concurrency = 10; // ESI allows good concurrency
   override pollInterval = 500; // Poll faster for ESI jobs
 
-  private readonly ESI_BASE = "https://esi.evetech.net/latest";
-  private readonly USER_AGENT = "EVE-Kill/4.0 (https://eve-kill.com)";
+  private characterService = new CharacterService();
+  private corporationService = new CorporationService();
+  private allianceService = new AllianceService();
+  private typeService = new TypeService();
+  private systemService = new SolarSystemService();
 
   override async handle(payload: { type: string; id: number }, job: Job) {
     const { type, id } = payload;
 
-    // Check cache first
-    const cacheKey = `esi:${type}:${id}`;
-    const cached = await cache.get(cacheKey);
-
-    if (cached) {
-      logger.debug(`  ↳ ESI ${type} ${id} from cache`);
-      return;
-    }
-
-    // Fetch from ESI
-    const url = this.getUrl(type, id);
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": this.USER_AGENT,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        logger.debug(`  ↳ ESI ${type} ${id} not found (404)`);
-        // Cache the "not found" result to avoid repeated lookups
-        await cache.set(cacheKey, { notFound: true }, 86400); // 24 hours
-        return;
+    try {
+      let result;
+      switch (type) {
+        case "character":
+          result = await this.characterService.getCharacter(id);
+          logger.debug(`  ↳ Fetched character ${id}: ${result?.name || "Unknown"}`);
+          break;
+        case "corporation":
+          result = await this.corporationService.getCorporation(id);
+          logger.debug(`  ↳ Fetched corporation ${id}: ${result?.name || "Unknown"}`);
+          break;
+        case "alliance":
+          result = await this.allianceService.getAlliance(id);
+          logger.debug(`  ↳ Fetched alliance ${id}: ${result?.name || "Unknown"}`);
+          break;
+        case "type":
+          result = await this.typeService.getType(id);
+          logger.debug(`  ↳ Fetched type ${id}: ${result?.name || "Unknown"}`);
+          break;
+        case "system":
+          result = await this.systemService.getSolarSystem(id);
+          logger.debug(`  ↳ Fetched system ${id}: ${result?.name || "Unknown"}`);
+          break;
+        default:
+          throw new Error(`Unknown ESI type: ${type}`);
       }
 
-      throw new Error(`ESI returned ${response.status}: ${await response.text()}`);
+      if (!result) {
+        logger.debug(`  ↳ ESI ${type} ${id} not found`);
+      }
+    } catch (error) {
+      logger.error(`  ↳ Failed to fetch ESI ${type} ${id}:`, error);
+      throw error;
     }
-
-    const data = await response.json();
-
-    // Cache for 1 hour (ESI data doesn't change often)
-    await cache.set(cacheKey, data, 3600);
-
-    logger.debug(`  ↳ Fetched ESI ${type} ${id}: ${this.getDisplayName(type, data)}`);
-  }
-
-  /**
-   * Get ESI URL for the given type and ID
-   */
-  private getUrl(type: string, id: number): string {
-    switch (type) {
-      case "character":
-        return `${this.ESI_BASE}/characters/${id}`;
-      case "corporation":
-        return `${this.ESI_BASE}/corporations/${id}`;
-      case "alliance":
-        return `${this.ESI_BASE}/alliances/${id}`;
-      case "type":
-        return `${this.ESI_BASE}/universe/types/${id}`;
-      case "system":
-        return `${this.ESI_BASE}/universe/systems/${id}`;
-      default:
-        throw new Error(`Unknown ESI type: ${type}`);
-    }
-  }
-
-  /**
-   * Extract display name from ESI response
-   */
-  private getDisplayName(type: string, data: any): string {
-    switch (type) {
-      case "character":
-      case "corporation":
-      case "alliance":
-        return data.name || "Unknown";
-      case "type":
-        return data.name || "Unknown";
-      case "system":
-        return data.name || "Unknown";
-      default:
-        return "Unknown";
-    }
-  }
-
-  /**
-   * Optional: Add rate limiting to respect ESI's limits
-   * ESI allows 150 requests/second, but we should be conservative
-   */
-  private async rateLimit() {
-    // Add small delay to avoid hammering ESI
-    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }

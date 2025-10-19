@@ -15,6 +15,27 @@
       "when": 1760886441653,
       "tag": "0001_cold_xorn",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1760891214528,
+      "tag": "0002_wooden_screwball",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1760893246983,
+      "tag": "0003_kind_shockwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1760893541669,
+      "tag": "0004_youthful_blob",
+      "breakpoints": true
     }
   ]
 }

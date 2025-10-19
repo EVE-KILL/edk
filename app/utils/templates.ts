@@ -1,5 +1,5 @@
 import Handlebars from "handlebars";
-import { readFile } from "fs/promises";
+import { readFile, readdir } from "fs/promises";
 import { join } from "path";
 
 // Cache environment variables
@@ -91,6 +91,27 @@ async function getTemplate(templatePath: string): Promise<HandlebarsTemplateDele
 }
 
 /**
+ * Register all partials from the templates/partials directory
+ */
+export async function registerPartials() {
+  try {
+    const partialsDir = join(process.cwd(), "templates/partials");
+    const files = await readdir(partialsDir, { recursive: true });
+
+    for (const file of files) {
+      if (file.endsWith(".hbs")) {
+        const partialName = file.replace(".hbs", "").replace(/\\/g, "/");
+        const partialPath = join(partialsDir, file);
+        const partialSource = await readFile(partialPath, "utf-8");
+        Handlebars.registerPartial(`partials/${partialName}`, partialSource);
+      }
+    }
+  } catch (error) {
+    console.error("Error registering partials:", error);
+  }
+}
+
+/**
  * Register Handlebars helpers for common functionality
  */
 export function registerHelpers() {
@@ -149,6 +170,23 @@ export function registerHelpers() {
     return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
   });
 
+  // Comparison helpers
+  Handlebars.registerHelper("gte", function(a: number, b: number) {
+    return a >= b;
+  });
+
+  Handlebars.registerHelper("gt", function(a: number, b: number) {
+    return a > b;
+  });
+
+  Handlebars.registerHelper("lt", function(a: number, b: number) {
+    return a < b;
+  });
+
+  Handlebars.registerHelper("lte", function(a: number, b: number) {
+    return a <= b;
+  });
+
   // Math helpers
   Handlebars.registerHelper("add", function(a: number, b: number) {
     return a + b;
@@ -156,6 +194,39 @@ export function registerHelpers() {
 
   Handlebars.registerHelper("multiply", function(a: number, b: number) {
     return a * b;
+  });
+
+  // Modulo helper for alternating rows
+  Handlebars.registerHelper("mod", function(a: number, b: number) {
+    return a % b;
+  });
+
+  // EDK-style date formatting (YYYY-MM-DD HH:MM)
+  Handlebars.registerHelper("formatDateEDK", function(date: string | Date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  });
+
+  // EDK-style short date for tables
+  Handlebars.registerHelper("formatDateShort", function(date: string | Date) {
+    const d = new Date(date);
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${month}/${day} ${hours}:${minutes}`;
+  });
+
+  // Security status formatting
+  Handlebars.registerHelper("formatSecStatus", function(sec: number) {
+    if (sec >= 0.5) return `<span style="color: #2fef2f;">${sec.toFixed(1)}</span>`;
+    if (sec >= 0.1) return `<span style="color: #efef2f;">${sec.toFixed(1)}</span>`;
+    return `<span style="color: #ef2f2f;">${sec.toFixed(1)}</span>`;
   });
 }
 

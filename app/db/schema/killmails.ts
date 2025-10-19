@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 
 /**
  * Killmails table
- * Stores EVE Online killmail data
+ * Stores core killmail data (normalized - victim/attackers/items in separate tables)
  */
 export const killmails = sqliteTable(
   "killmails",
@@ -23,75 +23,37 @@ export const killmails = sqliteTable(
     // Solar system ID where kill occurred
     solarSystemId: integer("solar_system_id").notNull(),
 
-    // Victim data (stored as JSON)
-    victim: text("victim", { mode: "json" }).$type<{
-      characterId?: number;
-      corporationId: number;
-      allianceId?: number;
-      shipTypeId: number;
-      damageTaken: number;
-      position?: {
-        x: number;
-        y: number;
-        z: number;
-      };
-    }>(),
-
-    // Attackers data (stored as JSON array)
-    attackers: text("attackers", { mode: "json" }).$type<
-      Array<{
-        characterId?: number;
-        corporationId?: number;
-        allianceId?: number;
-        shipTypeId?: number;
-        weaponTypeId?: number;
-        damageDone: number;
-        finalBlow: boolean;
-      }>
-    >(),
-
-    // Fitted items (stored as JSON array)
-    items: text("items", { mode: "json" }).$type<
-      Array<{
-        typeId: number;
-        flag: number;
-        quantityDropped?: number;
-        quantityDestroyed?: number;
-        singleton: number;
-      }>
-    >(),
-
-    // Total ISK value of the killmail
-    totalValue: integer("total_value"),
-
-    // Number of attackers involved
+    // Attacker count
     attackerCount: integer("attacker_count").notNull().default(0),
 
-    // Points value (for zkillboard)
-    points: integer("points"),
+    // Total ISK value (from zkillboard)
+    totalValue: text("total_value").notNull().default("0"),
 
-    // Is this killmail a solo kill?
+    // Points (from zkillboard)
+    points: integer("points").notNull().default(0),
+
+    // Flags
     isSolo: integer("is_solo", { mode: "boolean" }).notNull().default(false),
-
-    // Is this an NPC kill?
     isNpc: integer("is_npc", { mode: "boolean" }).notNull().default(false),
 
     // Metadata
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
-
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
   },
   (table) => ({
     // Indexes for common queries
-    killmailIdIdx: index("killmail_id_idx").on(table.killmailId),
-    hashIdx: index("hash_idx").on(table.hash),
+    killmailIdIdx: index("killmail_killmail_id_idx").on(table.killmailId),
     killmailTimeIdx: index("killmail_time_idx").on(table.killmailTime),
-    solarSystemIdIdx: index("solar_system_id_idx").on(table.solarSystemId),
-    totalValueIdx: index("total_value_idx").on(table.totalValue),
+    solarSystemIdIdx: index("killmail_solar_system_id_idx").on(
+      table.solarSystemId
+    ),
+    isSoloIdx: index("killmail_is_solo_idx").on(table.isSolo),
+    isNpcIdx: index("killmail_is_npc_idx").on(table.isNpc),
+    totalValueIdx: index("killmail_total_value_idx").on(table.totalValue),
   })
 );
 

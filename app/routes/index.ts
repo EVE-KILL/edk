@@ -1,51 +1,54 @@
 import { WebController } from "../utils/web-controller";
+import { generateKilllist, getKillboardStats } from "../generators/killlist";
 
 export class Controller extends WebController {
-  async handle(): Promise<Response> {
-    // Mock data - in real app this would come from your database
-    const data = {
-      stats: {
-        totalKillmails: 15847293,
-        totalISK: 847293847293847,
-        activePilots: 12847,
-        recentKills: 1847
-      },
-      recentKillmails: [
-        {
-          id: 123456,
-          victim: {
-            character: { name: "Test Pilot Alpha" },
-            ship: { name: "Rifter" }
-          },
-          value: 15847293,
-          timestamp: new Date(Date.now() - 1000 * 60 * 15)
-        },
-        {
-          id: 123457,
-          victim: {
-            character: { name: "Beta Tester" },
-            ship: { name: "Stabber" }
-          },
-          value: 847293847,
-          timestamp: new Date(Date.now() - 1000 * 60 * 45)
-        },
-        {
-          id: 123458,
-          victim: {
-            character: { name: "Gamma Squadron" },
-            ship: { name: "Hurricane" }
-          },
-          value: 2847293847,
-          timestamp: new Date(Date.now() - 1000 * 60 * 120)
-        }
-      ]
-    };
+  override async handle(): Promise<Response> {
+    try {
+      // Fetch real data from database
+      const [killmails, statistics] = await Promise.all([
+        generateKilllist(20),
+        getKillboardStats(),
+      ]);
 
-    return await this.renderPage(
-      "pages/home",
-      "EVE Kill v4 - The Ultimate Killmail Tracker",
-      "Track EVE Online killmails, losses, and statistics with EVE Kill v4. Real-time killmail tracking and comprehensive pilot statistics.",
-      data
-    );
+      const data = {
+        config: {
+          title: "EVE Kill v4",
+          subtitle: "The Ultimate EVE Online Killboard"
+        },
+        killmails,
+        statistics,
+      };
+
+      return await this.renderPage(
+        "pages/home",
+        "EVE Kill v4",
+        "Track EVE Online killmails with classic EVEDEV-KB layout. Real-time killmail tracking and comprehensive statistics.",
+        data
+      );
+    } catch (error) {
+      console.error("Error loading home page:", error);
+
+      // Fallback to empty data if there's an error
+      const data = {
+        config: {
+          title: "EVE Kill v4",
+          subtitle: "The Ultimate EVE Online Killboard"
+        },
+        killmails: [],
+        statistics: {
+          totalKillmails: 0,
+          totalISK: 0,
+          activePilots: 0,
+          recentKills: 0,
+        },
+      };
+
+      return await this.renderPage(
+        "pages/home",
+        "EVE Kill v4",
+        "Track EVE Online killmails with classic EVEDEV-KB layout. Real-time killmail tracking and comprehensive statistics.",
+        data
+      );
+    }
   }
 }
