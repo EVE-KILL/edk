@@ -194,6 +194,19 @@ export abstract class BaseController {
    * Get common template data that should be available on all pages
    */
   protected async getCommonTemplateData(): Promise<TemplateData> {
+    // Parse followed entities from environment variables
+    const followedCharacters = process.env.FOLLOWED_CHARACTER_IDS
+      ? process.env.FOLLOWED_CHARACTER_IDS.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+      : [];
+
+    const followedCorporations = process.env.FOLLOWED_CORPORATION_IDS
+      ? process.env.FOLLOWED_CORPORATION_IDS.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+      : [];
+
+    const followedAlliances = process.env.FOLLOWED_ALLIANCE_IDS
+      ? process.env.FOLLOWED_ALLIANCE_IDS.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+      : [];
+
     return {
       // Current URL for navigation highlighting
       currentUrl: this.url.pathname,
@@ -213,6 +226,14 @@ export abstract class BaseController {
         killmails: this.url.pathname.startsWith("/killmails"),
         api: this.url.pathname.startsWith("/api"),
         leaderboard: this.url.pathname.startsWith("/leaderboard"),
+      },
+
+      // Followed entities for Statistics dropdown
+      followedEntities: {
+        characters: followedCharacters,
+        corporations: followedCorporations,
+        alliances: followedAlliances,
+        hasEntities: followedCharacters.length > 0 || followedCorporations.length > 0 || followedAlliances.length > 0
       },
 
       // User session (would come from auth system)
