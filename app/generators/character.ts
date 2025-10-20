@@ -1,0 +1,368 @@
+import { db } from "../../src/db";
+import {
+  killmails,
+  victims,
+  attackers,
+  characters,
+  corporations,
+  alliances,
+  types,
+  solarSystems,
+  prices,
+} from "../../db/schema";
+import { eq, and, desc, or, sum, sql } from "drizzle-orm";
+
+export interface CharacterStats {
+  character: {
+    id: number;
+    name: string;
+  };
+  stats: {
+    kills: number;
+    losses: number;
+    killLossRatio: number;
+    totalDamageDone: number;
+    efficiency: number;
+  };
+  recentKills: any[];
+  recentLosses: any[];
+}
+
+/**
+ * Get the price for a ship type on a specific date (ignores time component)
+ * Falls back to closest price within last 14 days if exact date not found
+ */
+async function getShipPrice(
+  shipTypeId: number,
+  targetDate: Date
+): Promise<number> {
+  // Format date as YYYY-MM-DD for SQLite date comparison
+  const dateString = targetDate.toISOString().split('T')[0];
+
+  // Try exact date match first
+  let priceRecord = await db
+    .select()
+    .from(prices)
+    .where(
+      and(
+        eq(prices.typeId, shipTypeId),
+        sql`date(${prices.date}, 'unixepoch') = ${dateString}`
+      )
+    )
+    .limit(1);
+
+  if (priceRecord.length > 0) {
+    return priceRecord[0]?.average || 0;
+  }
+
+  // Fallback: Get prices from last 14 days and find closest
+  const fourteenDaysAgo = new Date(targetDate);
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+  const fourteenDaysAgoString = fourteenDaysAgo.toISOString().split('T')[0];
+
+  const priceRecords = await db
+    .select()
+    .from(prices)
+    .where(
+      and(
+        eq(prices.typeId, shipTypeId),
+        sql`date(${prices.date}, 'unixepoch') >= ${fourteenDaysAgoString}`,
+        sql`date(${prices.date}, 'unixepoch') <= ${dateString}`
+      )
+    );
+
+  if (priceRecords.length === 0) {
+    return 0;
+  }
+
+  // Find closest date to target
+  let closestRecord = priceRecords[0];
+  let minDiff = Math.abs(new Date(closestRecord.date).getTime() - targetDate.getTime());
+
+  for (const record of priceRecords) {
+    const diff = Math.abs(new Date(record.date).getTime() - targetDate.getTime());
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestRecord = record;
+    }
+  }
+
+  return closestRecord?.average || 0;
+}
+
+export async function generateCharacterDetail(
+  characterId: number
+): Promise<CharacterStats | null> {
+  try {
+    // Get character info
+    const character = await db
+      .select({
+        id: characters.characterId,
+        name: characters.name,
+      })
+      .from(characters)
+      .where(eq(characters.characterId, characterId))
+      .limit(1)
+      .then((r) => r[0]);
+
+    if (!character) {
+      return null;
+    }
+
+    // Get kill count
+    const killCount = await db
+      .select({ count: killmails.id })
+      .from(attackers)
+      .innerJoin(killmails, eq(killmails.id, attackers.killmailId))
+      .where(eq(attackers.characterId, characterId));
+
+    const kills = killCount.length;
+
+    // Get loss count
+    const lossCount = await db
+      .select({ count: victims.id })
+      .from(victims)
+      .innerJoin(killmails, eq(killmails.id, victims.killmailId))
+      .where(eq(victims.characterId, characterId));
+
+    const losses = lossCount.length;
+
+    // Define aliases for victim and final blow characters/corps
+    const victimChar = characters;
+    const victimCorp = corporations;
+    const victimAllianceAlias = alliances;
+
+    // Get recent kills - single efficient query with final blow info
+    // We need to fetch kills and their final blow attackers in one go
+    const killsWithFinalBlow = await db
+      .select({
+        killmail_internal_id: killmails.id,
+        killmail_id: killmails.killmailId,
+        killmail_time: killmails.killmailTime,
+        total_value: killmails.totalValue,
+        victim_char_id: victims.characterId,
+        victim_char_name: characters.name,
+        victim_corp_id: victims.corporationId,
+        victim_corp_name: corporations.name,
+        victim_alliance_id: victims.allianceId,
+        victim_alliance_name: alliances.name,
+        ship_type_id: victims.shipTypeId,
+        ship_name: types.name,
+        ship_group_id: types.groupId,
+        system_id: solarSystems.systemId,
+        system_name: solarSystems.name,
+        region: solarSystems.rawData,
+      })
+      .from(attackers)
+      .innerJoin(killmails, eq(killmails.id, attackers.killmailId))
+      .leftJoin(victims, eq(killmails.id, victims.killmailId))
+      .leftJoin(characters, eq(victims.characterId, characters.characterId))
+      .leftJoin(corporations, eq(victims.corporationId, corporations.corporationId))
+      .leftJoin(alliances, eq(victims.allianceId, alliances.allianceId))
+      .leftJoin(types, eq(victims.shipTypeId, types.typeId))
+      .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId))
+      .where(eq(attackers.characterId, characterId))
+      .orderBy(desc(killmails.killmailTime))
+      .limit(10);
+
+    // For each kill, fetch the final blow attacker info and calculate ship value
+    const recentKills = await Promise.all(
+      killsWithFinalBlow.map(async (kill) => {
+        // Single query to get final blow attacker - very fast with index
+        const finalBlowData = await db
+          .select({
+            char_id: characters.characterId,
+            char_name: characters.name,
+            corp_id: corporations.corporationId,
+            corp_name: corporations.name,
+          })
+          .from(attackers)
+          .leftJoin(characters, eq(attackers.characterId, characters.characterId))
+          .leftJoin(corporations, eq(attackers.corporationId, corporations.corporationId))
+          .where(
+            and(
+              eq(attackers.killmailId, kill.killmail_internal_id),
+              eq(attackers.finalBlow, true)
+            )
+          )
+          .limit(1);
+
+        const regionData = kill.region as any;
+        const regionName = regionData?.region_name || "Unknown Region";
+        const finalBlowInfo = finalBlowData[0] || null;
+
+        // Get ship price for value calculation
+        const shipPrice = kill.ship_type_id
+          ? await getShipPrice(kill.ship_type_id, kill.killmail_time)
+          : 0;
+        return {
+          killmail_id: kill.killmail_id,
+          killmail_time: kill.killmail_time,
+          ship_value: shipPrice,
+          victim: {
+            character: {
+              id: kill.victim_char_id || 0,
+              name: kill.victim_char_name || "Unknown",
+            },
+            corporation: {
+              id: kill.victim_corp_id || 0,
+              name: kill.victim_corp_name || "Unknown",
+            },
+            alliance: {
+              id: kill.victim_alliance_id || 0,
+              name: kill.victim_alliance_name || "",
+            },
+            ship: {
+              type_id: kill.ship_type_id || 0,
+              name: kill.ship_name || "Unknown Ship",
+              group: `Group ${kill.ship_group_id || 0}`,
+            },
+          },
+          solar_system: {
+            id: kill.system_id || 0,
+            name: kill.system_name || "Unknown System",
+            region: regionName,
+          },
+          attackers: finalBlowInfo
+            ? [
+                {
+                  character: {
+                    id: finalBlowInfo.char_id || 0,
+                    name: finalBlowInfo.char_name || "NPC",
+                  },
+                  corporation: {
+                    id: finalBlowInfo.corp_id || 0,
+                    name: finalBlowInfo.corp_name || "Unknown",
+                  },
+                },
+              ]
+            : [],
+        };
+      })
+    );
+
+    // Get recent losses - single efficient query with final blow info
+    const lossesWithFinalBlow = await db
+      .select({
+        killmail_internal_id: killmails.id,
+        killmail_id: killmails.killmailId,
+        killmail_time: killmails.killmailTime,
+        total_value: killmails.totalValue,
+        victim_char_id: victims.characterId,
+        victim_char_name: characters.name,
+        victim_corp_id: victims.corporationId,
+        victim_corp_name: corporations.name,
+        victim_alliance_id: victims.allianceId,
+        victim_alliance_name: alliances.name,
+        ship_type_id: victims.shipTypeId,
+        ship_name: types.name,
+        ship_group_id: types.groupId,
+        system_id: solarSystems.systemId,
+        system_name: solarSystems.name,
+        region: solarSystems.rawData,
+      })
+      .from(victims)
+      .innerJoin(killmails, eq(killmails.id, victims.killmailId))
+      .leftJoin(characters, eq(victims.characterId, characters.characterId))
+      .leftJoin(corporations, eq(victims.corporationId, corporations.corporationId))
+      .leftJoin(alliances, eq(victims.allianceId, alliances.allianceId))
+      .leftJoin(types, eq(victims.shipTypeId, types.typeId))
+      .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId))
+      .where(eq(victims.characterId, characterId))
+      .orderBy(desc(killmails.killmailTime))
+      .limit(10);
+
+    // For each loss, fetch the final blow attacker info and calculate ship value
+    const recentLosses = await Promise.all(
+      lossesWithFinalBlow.map(async (loss) => {
+        // Single query to get final blow attacker - very fast with index
+        const finalBlowData = await db
+          .select({
+            char_id: characters.characterId,
+            char_name: characters.name,
+            corp_id: corporations.corporationId,
+            corp_name: corporations.name,
+          })
+          .from(attackers)
+          .leftJoin(characters, eq(attackers.characterId, characters.characterId))
+          .leftJoin(corporations, eq(attackers.corporationId, corporations.corporationId))
+          .where(
+            and(
+              eq(attackers.killmailId, loss.killmail_internal_id),
+              eq(attackers.finalBlow, true)
+            )
+          )
+          .limit(1);
+
+        const regionData = loss.region as any;
+        const regionName = regionData?.region_name || "Unknown Region";
+        const finalBlowInfo = finalBlowData[0] || null;
+
+        // Get ship price for value calculation
+        const shipPrice = loss.ship_type_id
+          ? await getShipPrice(loss.ship_type_id, loss.killmail_time)
+          : 0;
+
+        return {
+          killmail_id: loss.killmail_id,
+          killmail_time: loss.killmail_time,
+          ship_value: shipPrice,
+          victim: {
+            character: {
+              id: loss.victim_char_id || 0,
+              name: loss.victim_char_name || "Unknown",
+            },
+            corporation: {
+              id: loss.victim_corp_id || 0,
+              name: loss.victim_corp_name || "Unknown",
+            },
+            alliance: {
+              id: loss.victim_alliance_id || 0,
+              name: loss.victim_alliance_name || "",
+            },
+            ship: {
+              type_id: loss.ship_type_id || 0,
+              name: loss.ship_name || "Unknown Ship",
+              group: `Group ${loss.ship_group_id || 0}`,
+            },
+          },
+          solar_system: {
+            id: loss.system_id || 0,
+            name: loss.system_name || "Unknown System",
+            region: regionName,
+          },
+          attackers: finalBlowInfo
+            ? [
+                {
+                  character: {
+                    id: finalBlowInfo.char_id || 0,
+                    name: finalBlowInfo.char_name || "NPC",
+                  },
+                  corporation: {
+                    id: finalBlowInfo.corp_id || 0,
+                    name: finalBlowInfo.corp_name || "Unknown",
+                  },
+                },
+              ]
+            : [],
+        };
+      })
+    );
+
+    return {
+      character,
+      stats: {
+        kills,
+        losses,
+        killLossRatio: losses > 0 ? kills / losses : kills,
+        totalDamageDone: 0,
+        efficiency: kills + losses > 0 ? (kills / (kills + losses)) * 100 : 0,
+      },
+      recentKills,
+      recentLosses,
+    };
+  } catch (error) {
+    console.error("[Character Generator] Error:", error);
+    return null;
+  }
+}

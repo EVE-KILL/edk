@@ -1,0 +1,43 @@
+<!-- Corporation Detail - EDK Style -->
+
+<!-- Corporation Header with Logo and Stats -->
+<div style="margin-bottom: 20px;">
+    <table class="kb-table" cellspacing="1" style="width: 100%;">
+        <tr class="kb-table-header">
+            <td class="kb-table-header" colspan="2">
+                <img src="https://images.evetech.net/corporations/{{corporation.id}}/logo?size=64"
+                     alt="{{corporation.name}}"
+                     style="width: 64px; height: 64px; vertical-align: middle; margin-right: 10px; border-radius: 4px;" />
+                <b>{{corporation.name}} [{{corporation.ticker}}]</b>
+            </td>
+        </tr>
+        <tr class="kb-table-row-even">
+            <td class="kb-table-cell" style="width: 50%;"><b>Kills:</b></td>
+            <td class="kb-table-cell"><span class="isk-value">{{stats.kills}}</span></td>
+        </tr>
+        <tr class="kb-table-row-odd">
+            <td class="kb-table-cell"><b>Losses:</b></td>
+            <td class="kb-table-cell"><span class="isk-value">{{stats.losses}}</span></td>
+        </tr>
+        <tr class="kb-table-row-even">
+            <td class="kb-table-cell"><b>Kill/Loss Ratio:</b></td>
+            <td class="kb-table-cell"><span class="isk-value">{{formatNumber stats.killLossRatio}}</span></td>
+        </tr>
+        <tr class="kb-table-row-odd">
+            <td class="kb-table-cell"><b>Efficiency:</b></td>
+            <td class="kb-table-cell"><span class="isk-value">{{formatNumber stats.efficiency}}%</span></td>
+        </tr>
+    </table>
+</div>
+
+<!-- Recent Kills -->
+<div style="margin-bottom: 20px;">
+    <div class="block-header2">Recent Kills (Last 10)</div>
+    {{> partials/killmail-list killmails=recentKills}}
+</div>
+
+<!-- Recent Losses -->
+<div style="margin-bottom: 20px;">
+    <div class="block-header2">Recent Losses (Last 10)</div>
+    {{> partials/killmail-list killmails=recentLosses}}
+</div>

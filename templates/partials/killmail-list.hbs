@@ -31,12 +31,20 @@
         <!-- Victim -->
         <td class="kb-table-cell" style="vertical-align: middle;">
             <div class="no_stretch">
+                {{#if victim.character.id}}
+                <b><a href="/character/{{victim.character.id}}" style="color: #fff; text-decoration: none;">{{victim.character.name}}</a></b>
+                {{else}}
                 <b>{{victim.character.name}}</b>
+                {{/if}}
                 <br />
                 <span style="color: #999; font-size: 9px;">
+                    {{#if victim.corporation.id}}
+                    <a href="/corporation/{{victim.corporation.id}}" style="color: #999; text-decoration: none;">{{victim.corporation.name}}</a>
+                    {{else}}
                     {{victim.corporation.name}}
+                    {{/if}}
                     {{#if victim.alliance.name}}
-                    / {{victim.alliance.name}}
+                    / {{#if victim.alliance.id}}<a href="/alliance/{{victim.alliance.id}}" style="color: #999; text-decoration: none;">{{victim.alliance.name}}</a>{{else}}{{victim.alliance.name}}{{/if}}
                     {{/if}}
                 </span>
             </div>
@@ -46,10 +54,18 @@
         <td class="kb-table-cell" style="vertical-align: middle;">
             <div class="no_stretch">
                 {{#if attackers.[0]}}
+                {{#if attackers.[0].character.id}}
+                <b><a href="/character/{{attackers.[0].character.id}}" style="color: #fff; text-decoration: none;">{{attackers.[0].character.name}}</a></b>
+                {{else}}
                 <b>{{attackers.[0].character.name}}</b>
+                {{/if}}
                 <br />
                 <span style="color: #999; font-size: 9px;">
+                    {{#if attackers.[0].corporation.id}}
+                    <a href="/corporation/{{attackers.[0].corporation.id}}" style="color: #999; text-decoration: none;">{{attackers.[0].corporation.name}}</a>
+                    {{else}}
                     {{attackers.[0].corporation.name}}
+                    {{/if}}
                 </span>
                 {{else}}
                 <span style="color: #666;">Unknown</span>
@@ -66,8 +82,8 @@
 
         <!-- Value -->
         <td class="kb-table-cell" style="text-align: right; vertical-align: middle; font-weight: bold;">
-            {{#if zkb.calculatedValue}}
-                <span style="color: #FFF;">{{abbreviateISK zkb.calculatedValue}}</span>
+            {{#if ship_value}}
+                <span style="color: #FFF;">{{abbreviateISK ship_value}}</span>
             {{else}}
                 <span style="color: #999; font-size: 9px;">N/A</span>
             {{/if}}

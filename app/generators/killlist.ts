@@ -8,7 +8,7 @@ import { alliances } from "../../db/schema/alliances";
 import { types } from "../../db/schema/types";
 import { solarSystems } from "../../db/schema/solar-systems";
 import { items as itemsTable, prices } from "../../db/schema";
-import { desc, lt, eq, and, gte, count } from "drizzle-orm";
+import { desc, lt, eq, and, gte, count, sql } from "drizzle-orm";
 
 /**
  * Killmail data structure for display
@@ -16,6 +16,7 @@ import { desc, lt, eq, and, gte, count } from "drizzle-orm";
 export interface KillmailDisplay {
   killmail_id: number;
   killmail_time: Date;
+  ship_value: number;
   victim: {
     character: { id: number | null; name: string };
     corporation: { id: number; name: string };
@@ -37,38 +38,60 @@ export interface KillmailDisplay {
     region: string;
     security_status: number;
   };
-  zkb: {
-    totalValue: string;
-    calculatedValue?: number;
-    points: number;
-  };
 }
 
 /**
- * Get price for a single item closest to a specific date
+ * Get the price for a ship type on a specific date (ignores time component)
+ * Falls back to closest price within last 14 days if exact date not found
  */
-async function getClosestPrice(
-  typeId: number,
+async function getShipPrice(
+  shipTypeId: number,
   targetDate: Date
-): Promise<number | null> {
+): Promise<number> {
+  // Format date as YYYY-MM-DD for SQLite date comparison
+  const dateString = targetDate.toISOString().split('T')[0];
+
+  // Try exact date match first
+  let priceRecord = await db
+    .select()
+    .from(prices)
+    .where(
+      and(
+        eq(prices.typeId, shipTypeId),
+        sql`date(${prices.date}, 'unixepoch') = ${dateString}`
+      )
+    )
+    .limit(1);
+
+  if (priceRecord.length > 0) {
+    return priceRecord[0]?.average || 0;
+  }
+
+  // Fallback: Get prices from last 14 days and find closest
+  const fourteenDaysAgo = new Date(targetDate);
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+  const fourteenDaysAgoString = fourteenDaysAgo.toISOString().split('T')[0];
+
   const priceRecords = await db
     .select()
     .from(prices)
-    .where(eq(prices.typeId, typeId));
+    .where(
+      and(
+        eq(prices.typeId, shipTypeId),
+        sql`date(${prices.date}, 'unixepoch') >= ${fourteenDaysAgoString}`,
+        sql`date(${prices.date}, 'unixepoch') <= ${dateString}`
+      )
+    );
 
   if (priceRecords.length === 0) {
-    return null;
+    return 0;
   }
 
-  let closestRecord = priceRecords[0];
-  if (!closestRecord?.date) {
-    return closestRecord?.average || null;
-  }
-
+  // Find closest date to target
+  let closestRecord = priceRecords[0]!;
   let minDiff = Math.abs(new Date(closestRecord.date).getTime() - targetDate.getTime());
 
   for (const record of priceRecords) {
-    if (!record.date) continue;
     const diff = Math.abs(new Date(record.date).getTime() - targetDate.getTime());
     if (diff < minDiff) {
       minDiff = diff;
@@ -76,7 +99,9 @@ async function getClosestPrice(
     }
   }
 
-  return closestRecord?.average || null;
+  return closestRecord?.average || 0;
+
+  return closestRecord?.average || 0;
 }
 
 /**
@@ -117,7 +142,7 @@ export async function generateKilllist(
     .orderBy(desc(killmails.killmailTime))
     .limit(limit);
 
-  // For each killmail, fetch attackers
+  // For each killmail, fetch the final blow attacker only
   const result: KillmailDisplay[] = [];
 
   for (const km of killmailsData) {
@@ -127,8 +152,8 @@ export async function generateKilllist(
       continue;
     }
 
-    // Fetch attackers for this killmail (get final blow first, then others)
-    const attackersData = await db
+    // Fetch only the final blow attacker for this killmail - single efficient query
+    const finalBlowAttackerData = await db
       .select({
         attacker: attackers,
         character: characters,
@@ -139,17 +164,21 @@ export async function generateKilllist(
       .leftJoin(characters, eq(attackers.characterId, characters.characterId))
       .leftJoin(corporations, eq(attackers.corporationId, corporations.corporationId))
       .leftJoin(types, eq(attackers.shipTypeId, types.typeId))
-      .where(eq(attackers.killmailId, km.killmail.id))
-      .orderBy(desc(attackers.finalBlow))
-      .limit(10); // Limit to 10 attackers for display
+      .where(
+        and(
+          eq(attackers.killmailId, km.killmail.id),
+          eq(attackers.finalBlow, true)
+        )
+      )
+      .limit(1); // Only get the final blow attacker
 
     // Format the data
-    const shipPrice = await getClosestPrice(km.victim.shipTypeId, km.killmail.killmailTime);
-    const calculatedValue = shipPrice ? shipPrice : undefined;
+    const shipPrice = await getShipPrice(km.victim.shipTypeId, km.killmail.killmailTime);
 
     const formattedKillmail: KillmailDisplay = {
       killmail_id: km.killmail.killmailId,
       killmail_time: km.killmail.killmailTime,
+      ship_value: shipPrice,
       victim: {
         character: {
           id: km.victim.characterId,
@@ -170,36 +199,33 @@ export async function generateKilllist(
         },
         damage_taken: km.victim.damageTaken,
       },
-      attackers: attackersData.map((att) => ({
-        character: {
-          id: att.attacker.characterId,
-          name: att.character?.name || "Unknown",
-        },
-        corporation: {
-          id: att.attacker.corporationId,
-          name: att.corporation?.name || "Unknown",
-        },
-        ship: {
-          type_id: att.attacker.shipTypeId,
-          name: att.ship?.name || "Unknown",
-        },
-        weapon: {
-          type_id: att.attacker.weaponTypeId,
-          name: "Unknown", // TODO: Implement weapon lookup
-        },
-        damage_done: att.attacker.damageDone,
-        final_blow: att.attacker.finalBlow,
-      })),
+      attackers: finalBlowAttackerData.length > 0
+        ? finalBlowAttackerData.map((att) => ({
+            character: {
+              id: att.attacker.characterId,
+              name: att.character?.name || "Unknown",
+            },
+            corporation: {
+              id: att.attacker.corporationId,
+              name: att.corporation?.name || "Unknown",
+            },
+            ship: {
+              type_id: att.attacker.shipTypeId,
+              name: att.ship?.name || "Unknown",
+            },
+            weapon: {
+              type_id: att.attacker.weaponTypeId,
+              name: "Unknown", // TODO: Implement weapon lookup
+            },
+            damage_done: att.attacker.damageDone,
+            final_blow: att.attacker.finalBlow,
+          }))
+        : [],
       solar_system: {
         id: km.killmail.solarSystemId,
         name: km.solarSystem?.name || "Unknown System",
         region: "Unknown", // TODO: Add region lookup
         security_status: parseFloat(km.solarSystem?.securityStatus || "0"),
-      },
-      zkb: {
-        totalValue: km.killmail.totalValue,
-        calculatedValue,
-        points: km.killmail.points,
       },
     };
 
