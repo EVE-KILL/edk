@@ -40,7 +40,7 @@
             const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=20`, {
                 signal: controller.signal
             });
-            
+
             if (!response.ok) {
                 throw new Error('Search failed');
             }
@@ -108,12 +108,12 @@
             if (grouped[type].length > 0) {
                 html += `<div class="search-group">`;
                 html += `<div class="search-group-header">${typeLabels[type]}</div>`;
-                
+
                 grouped[type].forEach(result => {
                     const url = typeUrls[type] + result.id;
                     const ticker = result.ticker ? ` [${result.ticker}]` : '';
                     const description = result.description ? `<span class="search-item-description">${result.description}</span>` : '';
-                    
+
                     html += `<a href="${url}" class="search-item">`;
                     html += `<span class="search-item-name">${escapeHtml(result.name)}${ticker}</span>`;
                     if (description) {
@@ -121,7 +121,7 @@
                     }
                     html += `</a>`;
                 });
-                
+
                 html += `</div>`;
             }
         });

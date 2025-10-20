@@ -29,7 +29,7 @@ Implemented a global search feature that searches across multiple entity types i
 ### 3. JavaScript (`/static/search.js`)
 - **Debounced search**: 300ms delay to reduce API calls
 - **Auto-complete**: Results appear as you type
-- **Keyboard navigation**: 
+- **Keyboard navigation**:
   - Arrow Up/Down to navigate results
   - Enter to select
   - Escape to close
