@@ -1,6 +1,6 @@
 import { BaseWorker } from "./base-worker";
 import type { Job } from "../schema/jobs";
-import { logger } from "../../utils/logger";
+import { logger } from "../../../src/utils/logger";
 import { CharacterService } from "../../services/esi/character-service";
 import { CorporationService } from "../../services/esi/corporation-service";
 import { AllianceService } from "../../services/esi/alliance-service";

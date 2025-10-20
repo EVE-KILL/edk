@@ -1,8 +1,8 @@
 import { eq, and, lte, lt, asc, sql } from "drizzle-orm";
 import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
-import { jobs, type Job } from "./schema/jobs";
-import type { BaseWorker } from "./workers/base-worker";
-import { logger } from "../utils/logger";
+import { jobs, type Job } from "../../db/schema/jobs";
+import type { BaseWorker } from "../../src/queue/base-worker";
+import { logger } from "../../src/utils/logger";
 
 /**
  * Queue Manager - Coordinates job processing across workers
@@ -287,3 +287,16 @@ export class QueueManager {
     logger.warn(`Timeout waiting for ${this.activeJobs} active jobs to finish`);
   }
 }
+
+// Create singleton instance and register workers
+import { DatabaseConnection } from "../../src/db";
+import { KillmailProcessor } from "./killmail-processor";
+import { KillmailFetcher } from "./killmail-fetcher";
+import { ESIFetcher } from "./esi-fetcher";
+
+export const queueManager = new QueueManager(DatabaseConnection.getQueueInstance());
+
+// Register all workers
+queueManager.registerWorker(new KillmailProcessor());
+queueManager.registerWorker(new KillmailFetcher());
+queueManager.registerWorker(new ESIFetcher());

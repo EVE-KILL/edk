@@ -1,7 +1,7 @@
-import { db } from "../../db";
-import { solarSystems } from "../../db/schema";
+import { db } from "../../../src/db";
+import { solarSystems } from "../../../db/schema";
 import { eq } from "drizzle-orm";
-import { BaseESIService } from "./base-service";
+import { BaseESIService } from "../../../src/services/esi/base-service";
 
 interface ESISolarSystem {
   constellation_id: number;

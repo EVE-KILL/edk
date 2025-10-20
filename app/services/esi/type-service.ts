@@ -1,7 +1,7 @@
-import { db } from "../../db";
-import { types } from "../../db/schema";
+import { db } from "../../../src/db";
+import { types } from "../../../db/schema";
 import { eq } from "drizzle-orm";
-import { BaseESIService } from "./base-service";
+import { BaseESIService } from "../../../src/services/esi/base-service";
 
 interface ESIType {
   capacity?: number;

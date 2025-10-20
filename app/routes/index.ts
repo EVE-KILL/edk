@@ -1,4 +1,4 @@
-import { WebController } from "../utils/web-controller";
+import { WebController } from "../../src/controllers/web-controller";
 import { generateKilllist, getKillboardStats } from "../generators/killlist";
 
 export class Controller extends WebController {

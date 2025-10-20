@@ -1,9 +1,9 @@
 import { serve } from "bun";
 import { watch } from "fs/promises";
-import { discoverRoutes, buildRouteIndex, handleRequest } from "./app/utils/router";
-import { registerHelpers, registerPartials, clearTemplateCache } from "./app/utils/templates";
-import { queueManager } from "./app/queue";
-import { logger } from "./app/utils/logger";
+import { discoverRoutes, buildRouteIndex, handleRequest } from "./src/server/router";
+import { registerHelpers, registerPartials, clearTemplateCache } from "./src/server/templates";
+import { queueManager } from "./app/queue/queue-manager";
+import { logger } from "./src/utils/logger";
 
 /**
  * EVE Kill v4 - Bun server with automatic route injection

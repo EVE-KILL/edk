@@ -1,6 +1,6 @@
-import { ApiController } from "../../../utils/api-controller";
-import { db } from "../../../db";
-import { killmails } from "../../../db/schema";
+import { ApiController } from "../../../../src/controllers/api-controller";
+import { db } from "../../../../src/db";
+import { killmails } from "../../../../db/schema";
 import { eq } from "drizzle-orm";
 
 /**

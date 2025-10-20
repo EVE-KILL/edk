@@ -1,7 +1,7 @@
 import { BaseWorker } from "./base-worker";
 import type { Job } from "../schema/jobs";
 import { Killmails } from "../../models";
-import { logger } from "../../utils/logger";
+import { logger } from "../../../src/utils/logger";
 import { queue } from "../index";
 
 /**

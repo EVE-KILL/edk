@@ -1,5 +1,5 @@
-import { db } from "../db";
-import type { BunSQLiteDatabase } from "../db";
+import { db } from "../../src/db";
+import type { BunSQLiteDatabase } from "../../src/db";
 import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 import { eq, and, or, desc, asc, sql, type SQL } from "drizzle-orm";
 

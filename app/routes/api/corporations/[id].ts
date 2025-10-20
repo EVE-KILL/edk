@@ -1,4 +1,4 @@
-import { ApiController } from "../../../utils/api-controller";
+import { ApiController } from "../../../../src/controllers/api-controller";
 import { corporationService } from "../../../services/esi/corporation-service";
 
 /**

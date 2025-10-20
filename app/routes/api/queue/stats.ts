@@ -1,5 +1,6 @@
-import { ApiController } from "../../../utils/api-controller";
-import { queue, queueManager } from "../../../queue";
+import { ApiController } from "../../../../src/controllers/api-controller";
+import { queue } from "../../../../src/queue/job-dispatcher";
+import { queueManager } from "../../../queue/queue-manager";
 
 /**
  * Queue Stats API Endpoint

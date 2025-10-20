@@ -1,4 +1,4 @@
-import { WebController } from "../../utils/web-controller";
+import { WebController } from "../../../src/controllers/web-controller";
 import { generateKillmailDetail } from "../../generators/killmail";
 
 export class Controller extends WebController {

@@ -1,4 +1,4 @@
-import { WebController } from "../utils/web-controller";
+import { WebController } from "../../src/controllers/web-controller";
 
 export class Controller extends WebController {
   async handle(): Promise<Response> {

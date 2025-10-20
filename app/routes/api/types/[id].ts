@@ -1,4 +1,4 @@
-import { ApiController } from "../../../utils/api-controller";
+import { ApiController } from "../../../../src/controllers/api-controller";
 import { TypeService } from "../../../services/esi/type-service";
 
 export class Controller extends ApiController {

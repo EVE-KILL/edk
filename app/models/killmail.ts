@@ -1,5 +1,5 @@
 import { BaseModel, eq, and, or, desc, asc, sql, type SQL } from "./base-model";
-import { killmails, type Killmail, type NewKillmail } from "../db/schema/killmails";
+import { killmails, type Killmail, type NewKillmail } from "../../db/schema/killmails";
 
 /**
  * Killmail Model

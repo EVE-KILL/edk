@@ -2,18 +2,18 @@
 
 /**
  * CLI Entry Point
- * Auto-discovers and executes commands from /app/console/commands/
+ * Auto-discovers and executes commands from /app/commands/
  * Supports subdirectories with colon notation (e.g., db/migrate.ts → db:migrate)
  */
 
 import { join, basename, relative } from "path";
-import type { CliCommand } from "./app/console/types";
+import type { CliCommand } from "./src/commands/types";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const COMMANDS_DIR = join(__dirname, "app/console/commands");
+const COMMANDS_DIR = join(__dirname, "app/commands");
 
 /**
  * Recursively discover all command files

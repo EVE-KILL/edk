@@ -1,6 +1,6 @@
 import { BaseWorker } from "./base-worker";
 import type { Job } from "../schema/jobs";
-import { logger } from "../../utils/logger";
+import { logger } from "../../../src/utils/logger";
 import { KillmailService } from "../../services/esi/killmail-service";
 import { queue } from "../index";
 

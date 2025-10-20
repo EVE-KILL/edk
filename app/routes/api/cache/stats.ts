@@ -1,5 +1,5 @@
-import { ApiController } from "../../../utils/api-controller";
-import { cache } from "../../../utils/cache";
+import { ApiController } from "../../../../src/controllers/api-controller";
+import { cache } from "../../../../src/cache";
 
 /**
  * Cache statistics endpoint

@@ -1,8 +1,8 @@
-import { db } from "../../db";
-import { killmails, victims, attackers, items } from "../../db/schema";
+import { db } from "../../../src/db";
+import { killmails, victims, attackers, items } from "../../../db/schema";
 import { eq, and } from "drizzle-orm";
-import { logger } from "../../utils/logger";
-import { BaseESIService, ESINotFoundError } from "./base-service";
+import { logger } from "../../../src/utils/logger";
+import { BaseESIService, ESINotFoundError } from "../../../src/services/esi/base-service";
 
 /**
  * ESI Killmail Response

@@ -1,4 +1,4 @@
-import { ApiController } from "../../utils/api-controller";
+import { ApiController } from "../../../src/controllers/api-controller";
 
 export class Controller extends ApiController {
   async get(): Promise<Response> {

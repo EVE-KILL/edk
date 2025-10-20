@@ -1,6 +1,6 @@
 import { eq, and, or, lt, sql } from "drizzle-orm";
 import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
-import { jobs, type Job, type NewJob } from "./schema/jobs";
+import { jobs, type Job, type NewJob } from "../../db/schema/jobs";
 
 /**
  * Job Dispatcher - Enqueue and manage jobs

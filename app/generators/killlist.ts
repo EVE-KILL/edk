@@ -1,12 +1,12 @@
-import { db } from "../db";
-import { killmails } from "../db/schema/killmails";
-import { victims } from "../db/schema/victims";
-import { attackers } from "../db/schema/attackers";
-import { characters } from "../db/schema/characters";
-import { corporations } from "../db/schema/corporations";
-import { alliances } from "../db/schema/alliances";
-import { types } from "../db/schema/types";
-import { solarSystems } from "../db/schema/solar-systems";
+import { db } from "../../src/db";
+import { killmails } from "../../db/schema/killmails";
+import { victims } from "../../db/schema/victims";
+import { attackers } from "../../db/schema/attackers";
+import { characters } from "../../db/schema/characters";
+import { corporations } from "../../db/schema/corporations";
+import { alliances } from "../../db/schema/alliances";
+import { types } from "../../db/schema/types";
+import { solarSystems } from "../../db/schema/solar-systems";
 import { desc, lt, eq, and, gte, count } from "drizzle-orm";
 
 /**

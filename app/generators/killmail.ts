@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { db } from "../../src/db";
 import {
   killmails,
   victims,
@@ -9,7 +9,7 @@ import {
   solarSystems,
   types,
   items as itemsTable,
-} from "../db/schema";
+} from "../../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export interface KillmailDetail {
