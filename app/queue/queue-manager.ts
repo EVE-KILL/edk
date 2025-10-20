@@ -28,7 +28,7 @@ export class QueueManager {
    *
    * @example
    * ```typescript
-   * queueManager.registerWorker(new KillmailProcessor());
+   * queueManager.registerWorker(new KillmailFetcher());
    * queueManager.registerWorker(new ESIFetcher());
    * ```
    */

@@ -36,8 +36,9 @@ app/
       job-locks.ts         # Optional: distributed locks
     workers/
       base-worker.ts       # Base worker class
-      killmail-processor.ts # Example: process new killmails
-      esi-fetcher.ts       # Example: fetch ESI data
+      killmail-fetcher.ts  # Fetches killmails from ESI
+      esi-fetcher.ts       # Fetches entity data from ESI
+      price-fetcher.ts     # Fetches price data
       index.ts             # Worker registry
     queue-manager.ts       # Queue coordination
     job-dispatcher.ts      # Enqueue jobs
@@ -436,61 +437,46 @@ export class JobDispatcher {
 
 ## Example Workers
 
-### Killmail Processor
+### Killmail Fetcher
 
 ```typescript
-export class KillmailProcessor extends BaseWorker<{
+export class KillmailFetcher extends BaseWorker<{
   killmailId: number;
   hash: string;
-  data: any;
 }> {
-  queueName = "killmails";
-  concurrency = 5; // Process 5 killmails at once
+  queueName = "killmail-fetch";
+  concurrency = 5; // Fetch 5 killmails at once
+  pollInterval = 1000;
 
-  constructor(
-    private models: typeof import("../models")
-  ) {
-    super();
-  }
+  private killmailService = new KillmailService();
 
   async handle(payload, job) {
-    const { killmailId, hash, data } = payload;
+    const { killmailId, hash } = payload;
 
-    // Check if already exists
-    const exists = await this.models.Killmails.existsByKillmailId(killmailId);
-    if (exists) {
-      console.log(`Killmail ${killmailId} already exists, skipping`);
-      return;
+    try {
+      // Fetch from ESI and save to database
+      const killmail = await this.killmailService.getKillmail(killmailId, hash);
+
+      if (!killmail) {
+        console.log(`Killmail ${killmailId} not found`);
+        return;
+      }
+
+      console.log(`Fetched and saved killmail ${killmailId}`);
+
+      // Enqueue price fetch job
+      await queue.dispatch("prices", "fetch", {
+        killmailId,
+        killmailTime: killmail.killmail.killmailTime,
+        itemTypeIds: this.getItemTypeIds(killmail),
+      });
+
+      // Enqueue ESI fetch jobs for related entities
+      await this.enqueueESIFetches(killmail);
+    } catch (error) {
+      console.error(`Failed to fetch killmail ${killmailId}:`, error);
+      throw error;
     }
-
-    // Parse and validate killmail data
-    const killmail = this.parseKillmail(data);
-
-    // Insert into database
-    await this.models.Killmails.create({
-      killmailId,
-      hash,
-      ...killmail,
-    });
-
-    // Maybe dispatch follow-up jobs
-    // e.g., fetch character names, calculate stats, etc.
-  }
-
-  private parseKillmail(data: any) {
-    // Transform zkillboard data into our schema
-    return {
-      killmailTime: new Date(data.killmail_time),
-      solarSystemId: data.solar_system_id,
-      victim: data.victim,
-      attackers: data.attackers,
-      items: data.victim.items || [],
-      totalValue: data.zkb?.totalValue || 0,
-      attackerCount: data.attackers.length,
-      points: data.zkb?.points || 0,
-      isSolo: data.attackers.length === 1,
-      isNpc: data.zkb?.npc || false,
-    };
   }
 }
 ```
@@ -529,13 +515,14 @@ export class ESIFetcher extends BaseWorker<{
 ```typescript
 // index.ts
 import { QueueManager } from "./app/queue";
-import { KillmailProcessor, ESIFetcher } from "./app/queue/workers";
+import { KillmailFetcher, ESIFetcher, PriceFetcher } from "./app/queue/workers";
 
 const queueManager = new QueueManager(db);
 
 // Register workers
-queueManager.registerWorker(new KillmailProcessor(models));
+queueManager.registerWorker(new KillmailFetcher());
 queueManager.registerWorker(new ESIFetcher());
+queueManager.registerWorker(new PriceFetcher());
 
 // Start queue processing
 await queueManager.start();
