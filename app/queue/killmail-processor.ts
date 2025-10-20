@@ -1,5 +1,5 @@
 import { BaseWorker } from "../../src/queue/base-worker";
-import type { Job } from "../../app/db/schema/jobs";
+import type { Job } from "../../db/schema/jobs";
 import { Killmails } from "../models/killmail";
 import { logger } from "../../src/utils/logger";
 import { queue } from "../../src/queue/job-dispatcher";
@@ -46,6 +46,13 @@ export class KillmailProcessor extends BaseWorker<{
     logger.debug(
       `  ↳ Inserted killmail ${killmailId} (${killmail.totalValue.toLocaleString()} ISK, ${killmail.attackerCount} attackers)`
     );
+
+    // Enqueue price fetch job for this killmail
+    await queue.dispatch("prices", "fetch", {
+      killmailId,
+      killmailTime: killmail.killmailTime,
+      itemTypeIds: this.getItemTypeIds(data),
+    });
 
     // Enqueue ESI fetch jobs for all related entities
     await this.enqueueESIFetches(data);
@@ -116,6 +123,41 @@ export class KillmailProcessor extends BaseWorker<{
     }
 
     logger.debug(`  ↳ Enqueued ${idsToFetch.size} ESI fetch jobs`);
+  }
+
+  /**
+   * Extract all item type IDs from killmail data
+   */
+  private getItemTypeIds(data: any): number[] {
+    const typeIds = new Set<number>();
+
+    // Add victim ship
+    if (data.victim?.ship_type_id) {
+      typeIds.add(data.victim.ship_type_id);
+    }
+
+    // Add victim items (dropped and destroyed)
+    if (data.victim?.items) {
+      for (const item of data.victim.items) {
+        if (item.item_type_id) {
+          typeIds.add(item.item_type_id);
+        }
+      }
+    }
+
+    // Add attacker ships and weapons
+    if (data.attackers) {
+      for (const attacker of data.attackers) {
+        if (attacker.ship_type_id) {
+          typeIds.add(attacker.ship_type_id);
+        }
+        if (attacker.weapon_type_id) {
+          typeIds.add(attacker.weapon_type_id);
+        }
+      }
+    }
+
+    return Array.from(typeIds);
   }
 
   /**

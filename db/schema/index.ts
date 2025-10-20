@@ -3,16 +3,20 @@
  * Central location for all table schemas
  */
 
-export * from "./killmails";
-
 // Queue schemas
 export * from "./jobs";
+
+// Task schemas
+export * from "./tasks";
 
 // Killmail data
 export * from "./killmails";
 export * from "./victims";
 export * from "./attackers";
 export * from "./items";
+
+// Market data
+export * from "./prices";
 
 // ESI entities
 export * from "./characters";

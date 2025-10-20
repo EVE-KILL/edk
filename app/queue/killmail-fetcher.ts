@@ -10,7 +10,7 @@ import { queue } from "../../src/queue/job-dispatcher";
  * Fetches killmail data from ESI using killmailId and hash:
  * - Fetches from ESI /killmails/{id}/{hash}/
  * - Stores in database
- * - Enqueues processor job to fetch related entities
+ * - Enqueues price fetch and ESI entity fetch jobs
  */
 export class KillmailFetcher extends BaseWorker<{
   killmailId: number;
@@ -26,7 +26,7 @@ export class KillmailFetcher extends BaseWorker<{
     const { killmailId, hash } = payload;
 
     try {
-      // Fetch from ESI (getKillmail will check database first)
+      // Fetch from ESI and save to database
       const killmail = await this.killmailService.getKillmail(killmailId, hash);
 
       if (!killmail) {
@@ -34,14 +34,56 @@ export class KillmailFetcher extends BaseWorker<{
         return;
       }
 
-      logger.debug(`  ↳ Fetched killmail ${killmailId}`);
+      logger.debug(`  ↳ Fetched and saved killmail ${killmailId}`);
 
-      // Enqueue processor job to fetch all related entities
+      // Enqueue price fetch job for this killmail
+      await queue.dispatch("prices", "fetch", {
+        killmailId,
+        killmailTime: killmail.killmail.killmailTime,
+        itemTypeIds: this.getItemTypeIds(killmail),
+      });
+
+      // Enqueue ESI fetch jobs for all related entities
       await this.enqueueESIFetches(killmail);
     } catch (error) {
       logger.error(`  ↳ Failed to fetch killmail ${killmailId}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Extract all item type IDs from killmail
+   */
+  private getItemTypeIds(killmail: any): number[] {
+    const typeIds = new Set<number>();
+
+    // Add victim ship
+    if (killmail.victim?.shipTypeId) {
+      typeIds.add(killmail.victim.shipTypeId);
+    }
+
+    // Add victim items
+    if (killmail.items) {
+      for (const item of killmail.items) {
+        if (item.itemTypeId) {
+          typeIds.add(item.itemTypeId);
+        }
+      }
+    }
+
+    // Add attacker ships and weapons
+    if (killmail.attackers) {
+      for (const attacker of killmail.attackers) {
+        if (attacker.shipTypeId) {
+          typeIds.add(attacker.shipTypeId);
+        }
+        if (attacker.weaponTypeId) {
+          typeIds.add(attacker.weaponTypeId);
+        }
+      }
+    }
+
+    return Array.from(typeIds);
   }
 
   /**
@@ -51,8 +93,8 @@ export class KillmailFetcher extends BaseWorker<{
     const idsToFetch = new Set<string>();
 
     // Solar system
-    if (data.solarSystemId) {
-      idsToFetch.add(`system:${data.solarSystemId}`);
+    if (data.killmail.solarSystemId) {
+      idsToFetch.add(`system:${data.killmail.solarSystemId}`);
     }
 
     // Victim

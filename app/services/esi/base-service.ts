@@ -2,7 +2,7 @@ import { db } from "../../../src/db";
 import { esiCache } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../../../src/utils/logger";
-import { esiRateLimiter } from "./rate-limiter";
+import { esiRateLimiter } from "../../../src/services/esi/rate-limiter";
 
 /**
  * ESI Configuration

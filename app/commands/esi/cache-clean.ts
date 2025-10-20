@@ -1,15 +1,15 @@
 import { BaseCommand } from "../../../src/commands/base-command";
-import { BaseESIService } from "../../../services/esi/base-service";
+import { BaseESIService } from "../../services/esi/base-service";
 
 /**
  * ESI Cache Cleaner Command
  * Removes expired ESI cache entries from database
  */
 export default class ESICacheCleanCommand extends BaseCommand {
-  name = "esi:cache-clean";
-  description = "Clean expired ESI cache entries";
-  usage = "esi:cache-clean [options]";
-  examples = [
+  override name = "esi:cache-clean";
+  override description = "Clean expired ESI cache entries";
+  override usage = "esi:cache-clean [options]";
+  override examples = [
     "bun cli esi:cache-clean           # Clean expired cache entries",
     "bun cli esi:cache-clean --force   # Skip confirmation",
   ];

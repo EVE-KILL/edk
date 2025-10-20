@@ -1,14 +1,15 @@
 import { ApiController } from "../../../../src/controllers/api-controller";
 import { db } from "../../../../src/db";
 import { killmails } from "../../../../db/schema";
+import { generateKillmailDetail } from "../../../generators/killmail";
 import { eq } from "drizzle-orm";
 
 /**
  * Killmail API Controller
- * GET /api/killmails/:id - Get killmail by ID (looks up hash from database)
+ * GET /api/killmails/:id - Get killmail detail by ID with prices
  */
 export class Controller extends ApiController {
-  // Cache health endpoint responses for 30 seconds
+  // Cache killmail API responses for 1 hour
   static cacheConfig = {
     ttl: 3600,
   };
@@ -38,7 +39,14 @@ export class Controller extends ApiController {
         return this.error(`Killmail ${killmailId} not found`, 404);
       }
 
-      return this.success(killmail);
+      // Fetch the detailed killmail with prices
+      const killmailDetail = await generateKillmailDetail(killmail.id);
+
+      if (!killmailDetail) {
+        return this.error(`Failed to generate killmail detail`, 500);
+      }
+
+      return this.success(killmailDetail);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";

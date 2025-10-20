@@ -577,3 +577,259 @@ textarea.killmail {
 .finalblow {
     border: 2px solid #ffd700 !important;
 }
+
+/* ========================================
+   Fitting Wheel Styles
+   ======================================== */
+.fitting-wheel-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.fitting-wheel {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    border-radius: 50%;
+    background-color: transparent;
+    overflow: hidden;
+}
+
+.fitting-wheel::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+    border-radius: 50%;
+    border: 1px solid rgba(40, 40, 40, 0.8);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.outer-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 4;
+    pointer-events: none;
+}
+
+.outer-ring svg {
+    width: 100%;
+    height: 100%;
+}
+
+.inner-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.inner-ring svg {
+    width: 100%;
+    height: 100%;
+}
+
+.ship-container {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: transparent;
+}
+
+.ship-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    clip-path: circle(49%);
+}
+
+.ship-container.darkened .ship-image {
+    filter: brightness(0.4) blur(1px);
+    transition: filter 0.2s ease-in-out;
+}
+
+.slots-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.slot {
+    position: absolute;
+    width: 42px;
+    height: 42px;
+    background-color: rgba(20, 20, 20, 0.2);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 6;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    pointer-events: auto;
+    cursor: pointer;
+    border: 1px solid rgba(100, 100, 100, 0.3);
+    transition: all 0.1s ease-in-out;
+}
+
+.slot:hover {
+    background-color: rgba(20, 20, 20, 0.4);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+.module-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 7;
+    position: relative;
+}
+
+.module-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
+    transition: transform 0.1s ease-in-out;
+    position: relative;
+    z-index: 8;
+}
+
+.module-icon:hover {
+    transform: scale(1.05);
+}
+
+/* Slot type colors */
+.high-slot {
+    border-color: rgba(180, 60, 60, 0.4);
+}
+
+.mid-slot {
+    border-color: rgba(60, 120, 180, 0.4);
+}
+
+.low-slot {
+    border-color: rgba(180, 140, 60, 0.4);
+}
+
+.rig-slot {
+    border-color: rgba(150, 150, 150, 0.4);
+    background-color: rgba(40, 40, 40, 0.2);
+    box-shadow: 0 0 6px rgba(100, 100, 100, 0.3);
+}
+
+.subsystem-slot {
+    border-color: rgba(140, 60, 140, 0.4);
+    background-color: rgba(40, 20, 40, 0.2);
+    box-shadow: 0 0 6px rgba(120, 40, 120, 0.3);
+}
+
+/* Tooltip overlay */
+.center-tooltip-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 50%;
+    backdrop-filter: blur(3px);
+    transition: all 0.2s ease-in-out;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.center-tooltip-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.center-tooltip {
+    width: 80%;
+    max-width: 280px;
+    padding: 1.25rem;
+    background: radial-gradient(
+        circle,
+        rgba(26, 32, 44, 0.85) 0%,
+        rgba(22, 28, 40, 0.7) 50%,
+        rgba(15, 23, 42, 0.4) 80%,
+        rgba(15, 23, 42, 0) 100%
+    );
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    animation: fadeIn 0.15s ease-out;
+    color: #e2e8f0;
+}
+
+.tooltip-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.tooltip-value {
+    font-size: 1rem;
+    color: #4fc3f7;
+    margin-bottom: 10px;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.tooltip-status {
+    font-size: 0.95rem;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Mobile responsive */
+@media (max-width: 500px) {
+    .slot {
+        width: 36px;
+        height: 36px;
+    }
+}
+

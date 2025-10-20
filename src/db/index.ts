@@ -3,6 +3,11 @@ import { Database } from "bun:sqlite";
 import * as schema from "../../db/schema";
 import { logger } from "../utils/logger";
 
+// Declare global VERBOSE_MODE
+declare global {
+  var VERBOSE_MODE: boolean;
+}
+
 // Cache environment variables
 const DATABASE_PATH = process.env.DATABASE_PATH || "./data/ekv4.db";
 const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
@@ -57,10 +62,12 @@ class DatabaseConnection {
       // Enable foreign keys
       this.sqlite.run("PRAGMA foreign_keys = ON;");
 
-      // Create Drizzle instance with logging for main app
+      // Create Drizzle instance with logging for main app (only if verbose mode enabled)
+      const shouldLog = IS_DEVELOPMENT && globalThis.VERBOSE_MODE;
+
       this.instance = drizzle(this.sqlite, {
         schema,
-        logger: IS_DEVELOPMENT, // Log queries in development
+        logger: shouldLog,
       });
 
       // Create separate Drizzle instance without logging for queue (shares same SQLite connection)

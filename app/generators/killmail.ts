@@ -9,6 +9,7 @@ import {
   solarSystems,
   types,
   items as itemsTable,
+  prices,
 } from "../../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -55,6 +56,9 @@ export interface KillmailDetail {
     totalValue: number;
     shipValue: number;
     itemsValue: number;
+    destroyedValue: number;
+    droppedValue: number;
+    fitValue: number;
     isSolo: boolean;
   };
 }
@@ -66,6 +70,12 @@ export interface ItemSlot {
   flag: number;
   flagName: string;
   singleton: number;
+  price?: {
+    average: number;
+    highest: number;
+    lowest: number;
+  };
+  totalValue?: number;
 }
 
 export interface ItemsBySlot {
@@ -177,6 +187,67 @@ function categorizeItems(items: any[]): { destroyed: ItemsBySlot; dropped: Items
   }
 
   return { destroyed, dropped };
+}
+
+/**
+ * Get price information for items closest to a specific date
+ */
+async function getPriceForItems(
+  typeIds: number[],
+  targetDate: Date
+): Promise<Map<number, { average: number; highest: number; lowest: number }>> {
+  if (typeIds.length === 0) {
+    return new Map();
+  }
+
+  // Get prices for each type, ordered by date distance from targetDate
+  const priceMap = new Map<number, { average: number; highest: number; lowest: number }>();
+
+  for (const typeId of typeIds) {
+    const priceRecords = await db
+      .select()
+      .from(prices)
+      .where(eq(prices.typeId, typeId));
+
+    // Find the closest price record to the target date
+    if (priceRecords.length > 0) {
+      let closestRecord: typeof priceRecords[0] | undefined = priceRecords[0];
+      let minDiff = closestRecord && closestRecord.date
+        ? Math.abs(new Date(closestRecord.date).getTime() - targetDate.getTime())
+        : Infinity;
+
+      for (const record of priceRecords) {
+        if (!record.date) continue;
+        const diff = Math.abs(
+          new Date(record.date).getTime() - targetDate.getTime()
+        );
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestRecord = record;
+        }
+      }
+
+      if (closestRecord && closestRecord.date) {
+        priceMap.set(typeId, {
+          average: closestRecord.average || 0,
+          highest: closestRecord.highest || 0,
+          lowest: closestRecord.lowest || 0,
+        });
+      }
+    }
+  }
+
+  return priceMap;
+}
+
+/**
+ * Calculate total ISK value for items using prices
+ */
+function calculateItemValue(items: ItemSlot[]): number {
+  return items.reduce((total, item) => {
+    const itemValue = (item.price?.average || 0) * item.quantity;
+    return total + itemValue;
+  }, 0);
 }
 
 export async function generateKillmailDetail(killmailId: number): Promise<KillmailDetail | null> {
@@ -323,6 +394,79 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
     // Categorize items
     const categorized = categorizeItems(transformedItems);
 
+    // Get all unique item type IDs (including victim ship)
+    const itemTypeIds = [
+      km.victimShipTypeId,
+      ...transformedItems.map(i => i.itemTypeId).filter(Boolean),
+    ].filter((id, idx, arr) => id && arr.indexOf(id) === idx) as number[];
+
+    // Fetch prices for all items closest to killmail date
+    const priceMap = await getPriceForItems(itemTypeIds, km.killmailTime);
+
+    // Add prices to categorized items
+    const addPricesToItems = (items: ItemSlot[]): ItemSlot[] => {
+      return items.map(item => {
+        const price = priceMap.get(item.typeId);
+        if (price) {
+          return {
+            ...item,
+            price,
+            totalValue: item.quantity * price.average,
+          };
+        }
+        return item;
+      });
+    };
+
+    // Apply prices to all item slots
+    const categorizedWithPrices = {
+      destroyed: {
+        highSlots: addPricesToItems(categorized.destroyed.highSlots),
+        medSlots: addPricesToItems(categorized.destroyed.medSlots),
+        lowSlots: addPricesToItems(categorized.destroyed.lowSlots),
+        rigSlots: addPricesToItems(categorized.destroyed.rigSlots),
+        subSlots: addPricesToItems(categorized.destroyed.subSlots),
+        droneBay: addPricesToItems(categorized.destroyed.droneBay),
+        cargo: addPricesToItems(categorized.destroyed.cargo),
+        other: addPricesToItems(categorized.destroyed.other),
+      },
+      dropped: {
+        highSlots: addPricesToItems(categorized.dropped.highSlots),
+        medSlots: addPricesToItems(categorized.dropped.medSlots),
+        lowSlots: addPricesToItems(categorized.dropped.lowSlots),
+        rigSlots: addPricesToItems(categorized.dropped.rigSlots),
+        subSlots: addPricesToItems(categorized.dropped.subSlots),
+        droneBay: addPricesToItems(categorized.dropped.droneBay),
+        cargo: addPricesToItems(categorized.dropped.cargo),
+        other: addPricesToItems(categorized.dropped.other),
+      },
+    };
+
+    // Calculate ISK values
+    const getAllItems = (bySlot: ItemsBySlot): ItemSlot[] =>
+      Object.values(bySlot).flat();
+
+    const destroyedItems = getAllItems(categorizedWithPrices.destroyed);
+    const droppedItems = getAllItems(categorizedWithPrices.dropped);
+
+    const destroyedValue = calculateItemValue(destroyedItems);
+    const droppedValue = calculateItemValue(droppedItems);
+    const itemsValue = destroyedValue + droppedValue;
+
+    const shipPrice = priceMap.get(km.victimShipTypeId || 0);
+    const shipValue = shipPrice ? shipPrice.average : 0;
+    const totalValue = shipValue + itemsValue;
+
+    // Calculate fit value (high+med+low+rig+subsystem)
+    const fitItems = [
+      ...categorizedWithPrices.destroyed.highSlots,
+      ...categorizedWithPrices.destroyed.medSlots,
+      ...categorizedWithPrices.destroyed.lowSlots,
+      ...categorizedWithPrices.destroyed.rigSlots,
+      ...categorizedWithPrices.destroyed.subSlots,
+    ];
+    const fitValue = calculateItemValue(fitItems);
+
     // Calculate totals
     const totalDestroyed = transformedItems
       .filter(i => i.quantityDestroyed > 0)
@@ -381,16 +525,19 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         securityStatus: parseFloat(a.securityStatus || "0"),
       })),
       items: {
-        destroyed: categorized.destroyed,
-        dropped: categorized.dropped,
+        destroyed: categorizedWithPrices.destroyed,
+        dropped: categorizedWithPrices.dropped,
         totalDestroyed,
         totalDropped,
       },
       stats: {
         attackerCount: attackersData.length,
-        totalValue: 0, // TODO: Calculate from item values
-        shipValue: 0, // TODO: Get from ship type
-        itemsValue: 0, // TODO: Calculate from items
+        totalValue,
+        shipValue,
+        itemsValue,
+        destroyedValue,
+        droppedValue,
+        fitValue,
         isSolo: attackersData.length === 1,
       },
     };

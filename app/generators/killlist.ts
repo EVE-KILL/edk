@@ -7,6 +7,7 @@ import { corporations } from "../../db/schema/corporations";
 import { alliances } from "../../db/schema/alliances";
 import { types } from "../../db/schema/types";
 import { solarSystems } from "../../db/schema/solar-systems";
+import { items as itemsTable, prices } from "../../db/schema";
 import { desc, lt, eq, and, gte, count } from "drizzle-orm";
 
 /**
@@ -38,8 +39,44 @@ export interface KillmailDisplay {
   };
   zkb: {
     totalValue: string;
+    calculatedValue?: number;
     points: number;
   };
+}
+
+/**
+ * Get price for a single item closest to a specific date
+ */
+async function getClosestPrice(
+  typeId: number,
+  targetDate: Date
+): Promise<number | null> {
+  const priceRecords = await db
+    .select()
+    .from(prices)
+    .where(eq(prices.typeId, typeId));
+
+  if (priceRecords.length === 0) {
+    return null;
+  }
+
+  let closestRecord = priceRecords[0];
+  if (!closestRecord?.date) {
+    return closestRecord?.average || null;
+  }
+
+  let minDiff = Math.abs(new Date(closestRecord.date).getTime() - targetDate.getTime());
+
+  for (const record of priceRecords) {
+    if (!record.date) continue;
+    const diff = Math.abs(new Date(record.date).getTime() - targetDate.getTime());
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestRecord = record;
+    }
+  }
+
+  return closestRecord?.average || null;
 }
 
 /**
@@ -107,6 +144,9 @@ export async function generateKilllist(
       .limit(10); // Limit to 10 attackers for display
 
     // Format the data
+    const shipPrice = await getClosestPrice(km.victim.shipTypeId, km.killmail.killmailTime);
+    const calculatedValue = shipPrice ? shipPrice : undefined;
+
     const formattedKillmail: KillmailDisplay = {
       killmail_id: km.killmail.killmailId,
       killmail_time: km.killmail.killmailTime,
@@ -158,6 +198,7 @@ export async function generateKilllist(
       },
       zkb: {
         totalValue: km.killmail.totalValue,
+        calculatedValue,
         points: km.killmail.points,
       },
     };

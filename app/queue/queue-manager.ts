@@ -290,13 +290,13 @@ export class QueueManager {
 
 // Create singleton instance and register workers
 import { DatabaseConnection } from "../../src/db";
-import { KillmailProcessor } from "./killmail-processor";
 import { KillmailFetcher } from "./killmail-fetcher";
 import { ESIFetcher } from "./esi-fetcher";
+import { PriceFetcher } from "./price-fetcher";
 
 export const queueManager = new QueueManager(DatabaseConnection.getQueueInstance());
 
 // Register all workers
-queueManager.registerWorker(new KillmailProcessor());
 queueManager.registerWorker(new KillmailFetcher());
 queueManager.registerWorker(new ESIFetcher());
+queueManager.registerWorker(new PriceFetcher());

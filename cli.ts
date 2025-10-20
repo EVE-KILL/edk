@@ -11,6 +11,11 @@ import type { CliCommand } from "./src/commands/types";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
+// Declare global VERBOSE_MODE
+declare global {
+  var VERBOSE_MODE: boolean;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const COMMANDS_DIR = join(__dirname, "app/commands");
@@ -48,7 +53,9 @@ async function discoverCommands(): Promise<Map<string, any>> {
  */
 function showHelp(commands: Map<string, any>): void {
   console.log("\x1b[1m\nEVE-Kill CLI\x1b[0m");
-  console.log("\nUsage: bun cli <command> [options] [args]");
+  console.log("\nUsage: bun cli [options] <command> [command-args]");
+  console.log("\n\x1b[1mGlobal Options:\x1b[0m");
+  console.log("  -v, --verbose              Enable verbose output (query logging, etc.)");
   console.log("\n\x1b[1mAvailable Commands:\x1b[0m");
 
   // Group commands by category
@@ -85,7 +92,22 @@ function showHelp(commands: Map<string, any>): void {
  * Main CLI execution
  */
 async function main() {
-  const [commandName, ...args] = process.argv.slice(2);
+  // Extract verbose flag from the beginning of args
+  let verboseEnabled = false;
+  const allArgs = process.argv.slice(2);
+  let argsToProcess = allArgs;
+
+  // Check if -v or --verbose is in the arguments
+  if (allArgs.includes("-v") || allArgs.includes("--verbose")) {
+    verboseEnabled = true;
+    // Filter out the verbose flag from args to process
+    argsToProcess = allArgs.filter((arg) => arg !== "-v" && arg !== "--verbose");
+  }
+
+  // Set global verbose mode
+  globalThis.VERBOSE_MODE = verboseEnabled;
+
+  const [commandName, ...args] = argsToProcess;
 
   // Discover all commands
   const commands = await discoverCommands();

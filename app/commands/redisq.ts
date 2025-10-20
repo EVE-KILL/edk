@@ -1,5 +1,5 @@
 import { BaseCommand } from "../../src/commands/base-command";
-import { queue } from "../queue";
+import { JobDispatcher } from "../../src/queue/job-dispatcher";
 import { db } from "../../src/db";
 import { killmails } from "../../db/schema";
 import { eq } from "drizzle-orm";
@@ -23,7 +23,8 @@ export default class RedisQCommand extends BaseCommand {
   override usage = "bun cli redisq [--queue-id=<id>]";
 
   private readonly REDISQ_URL = "https://zkillredisq.stream/listen.php";
-  private queueId: string;
+  private queueId: string = "";
+  private dispatcher: JobDispatcher | null = null;
   private running = false;
   private stats = {
     received: 0,
@@ -34,6 +35,9 @@ export default class RedisQCommand extends BaseCommand {
 
   override async execute(args: string[]): Promise<void> {
     const parsedArgs = this.parseArgs(args);
+
+    // Initialize dispatcher
+    this.dispatcher = new JobDispatcher(db);
 
     // Get queue ID from args or env
     this.queueId = (parsedArgs.options["queue-id"] as string) || process.env.REDISQ_ID || "ekv4-default";
@@ -87,18 +91,18 @@ export default class RedisQCommand extends BaseCommand {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as { package?: any };
 
       // RedisQ returns {"package": null} when queue is empty
       if (!data.package) {
         // No killmail available, wait a bit
-        await this.sleep(1000);
+        await this.sleep(2000);
         return;
       }
 
       this.stats.received++;
       await this.processKillmail(data.package);
-      await this.sleep(1000);
+      await this.sleep(2000);
       this.printStats();
     } catch (error) {
       // Log more detailed error information
@@ -135,7 +139,7 @@ export default class RedisQCommand extends BaseCommand {
 
     // New killmail - enqueue fetch job
     this.stats.new++;
-    await queue.dispatch("killmail-fetch", "fetch", {
+    await this.dispatcher!.dispatch("killmail-fetch", "fetch", {
       killmailId,
       hash,
     });

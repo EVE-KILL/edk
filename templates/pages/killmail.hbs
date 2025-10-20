@@ -4,13 +4,13 @@
 <div style="margin-bottom: 10px;">
     <table class="kb-table" cellspacing="1" style="width: 100%;">
         <tr class="kb-table-header">
-            <td class="kb-table-header" colspan="2">
+            <td class="kb-table-header" colspan="4">
                 Kill {{killmail.killmailId}} - {{formatDate killmail.killmailTime}}
             </td>
         </tr>
         <tr class="kb-table-row-even">
             <td class="kb-table-cell" style="width: 150px;"><b>System:</b></td>
-            <td class="kb-table-cell">
+            <td class="kb-table-cell" colspan="3">
                 <b>{{solarSystem.name}}</b>
                 ({{solarSystem.security}} - {{solarSystem.region}})
             </td>
@@ -19,6 +19,20 @@
             <td class="kb-table-cell"><b>Total Value:</b></td>
             <td class="kb-table-cell">
                 <span class="isk-value">{{formatISK stats.totalValue}}</span>
+            </td>
+            <td class="kb-table-cell" style="text-align: right; padding-right: 10px;"><b>Ship Value:</b></td>
+            <td class="kb-table-cell">
+                <span class="isk-value">{{formatISK stats.shipValue}}</span>
+            </td>
+        </tr>
+        <tr class="kb-table-row-even">
+            <td class="kb-table-cell"><b>Items Value:</b></td>
+            <td class="kb-table-cell">
+                <span class="isk-value">{{formatISK stats.itemsValue}}</span>
+            </td>
+            <td class="kb-table-cell" style="text-align: right; padding-right: 10px;"><b>Fit Value:</b></td>
+            <td class="kb-table-cell">
+                <span class="isk-value">{{formatISK stats.fitValue}}</span>
             </td>
         </tr>
     </table>
@@ -29,6 +43,12 @@
     <!-- Left Column - Items -->
     <div style="flex: 65; min-width: 0;">
 
+        <!-- Fitting Wheel -->
+        <div style="margin-bottom: 20px;">
+            <div class="block-header2">Fitting Wheel</div>
+            {{> partials/fitting-wheel}}
+        </div>
+
         <!-- Items Destroyed/Dropped -->
         <div class="kl-detail-fitting">
             <div class="block-header2">Items Destroyed & Dropped</div>
@@ -37,6 +57,8 @@
                 <tr class="kb-table-header">
                     <td class="kb-table-header" style="text-align: left;">Item</td>
                     <td class="kb-table-header" style="text-align: center; width: 50px;">Qty</td>
+                    <td class="kb-table-header" style="text-align: right; width: 100px;">Price</td>
+                    <td class="kb-table-header" style="text-align: right; width: 120px;">Total ISK</td>
                     <td class="kb-table-header" style="text-align: center; width: 80px;">Status</td>
                 </tr>
 
@@ -71,7 +93,7 @@
                 <!-- High Slots -->
                 {{#if items.destroyed.highSlots.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>High Slots</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>High Slots</b></td>
                 </tr>
                 {{#each items.destroyed.highSlots}}
                 <tr class="kb-table-row-odd">
@@ -82,6 +104,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-loss">Destroyed</span>
                     </td>
@@ -89,6 +125,11 @@
                 {{/each}}
                 {{/if}}
                 {{#if items.dropped.highSlots.length}}
+                {{#unless items.destroyed.highSlots.length}}
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell" colspan="5"><b>High Slots</b></td>
+                </tr>
+                {{/unless}}
                 {{#each items.dropped.highSlots}}
                 <tr class="kb-table-row-odd">
                     <td class="kb-table-cell">
@@ -98,6 +139,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-kill">Dropped</span>
                     </td>
@@ -106,10 +161,9 @@
                 {{/if}}
 
                 <!-- Med Slots -->
-                {{#if items.destroyed.medSlots.length}}{{else}}{{#if items.dropped.medSlots.length}}{{/if}}{{/if}}
                 {{#if items.destroyed.medSlots.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Med Slots</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Med Slots</b></td>
                 </tr>
                 {{#each items.destroyed.medSlots}}
                 <tr class="kb-table-row-odd">
@@ -120,6 +174,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-loss">Destroyed</span>
                     </td>
@@ -128,7 +196,7 @@
                 {{else}}
                 {{#if items.dropped.medSlots.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Med Slots</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Med Slots</b></td>
                 </tr>
                 {{/if}}
                 {{/if}}
@@ -142,6 +210,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-kill">Dropped</span>
                     </td>
@@ -152,7 +234,7 @@
                 <!-- Low Slots -->
                 {{#if items.destroyed.lowSlots.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Low Slots</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Low Slots</b></td>
                 </tr>
                 {{#each items.destroyed.lowSlots}}
                 <tr class="kb-table-row-odd">
@@ -163,6 +245,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-loss">Destroyed</span>
                     </td>
@@ -171,7 +267,7 @@
                 {{else}}
                 {{#if items.dropped.lowSlots.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Low Slots</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Low Slots</b></td>
                 </tr>
                 {{/if}}
                 {{/if}}
@@ -185,6 +281,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-kill">Dropped</span>
                     </td>
@@ -195,7 +305,7 @@
                 <!-- Rig Slots -->
                 {{#if items.destroyed.rigSlots.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Rig Slots</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Rig Slots</b></td>
                 </tr>
                 {{#each items.destroyed.rigSlots}}
                 <tr class="kb-table-row-odd">
@@ -206,6 +316,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-loss">Destroyed</span>
                     </td>
@@ -214,7 +338,7 @@
                 {{else}}
                 {{#if items.dropped.rigSlots.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Rig Slots</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Rig Slots</b></td>
                 </tr>
                 {{/if}}
                 {{/if}}
@@ -228,6 +352,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-kill">Dropped</span>
                     </td>
@@ -235,10 +373,10 @@
                 {{/each}}
                 {{/if}}
 
-                <!-- Subsystem Slots -->
+                                <!-- Subsystem Slots -->
                 {{#if items.destroyed.subSlots.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Subsystems</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Subsystem Slots</b></td>
                 </tr>
                 {{#each items.destroyed.subSlots}}
                 <tr class="kb-table-row-odd">
@@ -249,6 +387,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-loss">Destroyed</span>
                     </td>
@@ -257,7 +409,7 @@
                 {{else}}
                 {{#if items.dropped.subSlots.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Subsystems</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Subsystem Slots</b></td>
                 </tr>
                 {{/if}}
                 {{/if}}
@@ -271,6 +423,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-kill">Dropped</span>
                     </td>
@@ -281,7 +447,7 @@
                 <!-- Drone Bay -->
                 {{#if items.destroyed.droneBay.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Drones</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Drones</b></td>
                 </tr>
                 {{#each items.destroyed.droneBay}}
                 <tr class="kb-table-row-odd">
@@ -292,6 +458,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-loss">Destroyed</span>
                     </td>
@@ -300,7 +480,7 @@
                 {{else}}
                 {{#if items.dropped.droneBay.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Drones</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Drones</b></td>
                 </tr>
                 {{/if}}
                 {{/if}}
@@ -314,6 +494,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-kill">Dropped</span>
                     </td>
@@ -324,7 +518,7 @@
                 <!-- Cargo -->
                 {{#if items.destroyed.cargo.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Cargo</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Cargo</b></td>
                 </tr>
                 {{#each items.destroyed.cargo}}
                 <tr class="kb-table-row-odd">
@@ -335,6 +529,20 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-loss">Destroyed</span>
                     </td>
@@ -343,7 +551,7 @@
                 {{else}}
                 {{#if items.dropped.cargo.length}}
                 <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="3"><b>Cargo</b></td>
+                    <td class="kb-table-cell" colspan="5"><b>Cargo</b></td>
                 </tr>
                 {{/if}}
                 {{/if}}
@@ -357,12 +565,55 @@
                         {{name}}
                     </td>
                     <td class="kb-table-cell" style="text-align: center;">{{quantity}}</td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if price}}
+                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
+                    <td class="kb-table-cell" style="text-align: right;">
+                        {{#if totalValue}}
+                            <span class="isk-value">{{formatISK totalValue}}</span>
+                        {{else}}
+                            <span style="color: #999;">N/A</span>
+                        {{/if}}
+                    </td>
                     <td class="kb-table-cell" style="text-align: center;">
                         <span class="kl-kill">Dropped</span>
                     </td>
                 </tr>
                 {{/each}}
                 {{/if}}
+
+                <!-- Totals Row -->
+                <tr class="kb-table-header">
+                    <td class="kb-table-cell" colspan="5" style="text-align: left;"><b>TOTALS</b></td>
+                </tr>
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell"><b>Total Destroyed:</b></td>
+                    <td class="kb-table-cell" style="text-align: right;" colspan="4">
+                        <span class="isk-value">{{formatISK stats.destroyedValue}}</span>
+                    </td>
+                </tr>
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell"><b>Total Dropped:</b></td>
+                    <td class="kb-table-cell" style="text-align: right;" colspan="4">
+                        <span class="isk-value">{{formatISK stats.droppedValue}}</span>
+                    </td>
+                </tr>
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell"><b>Fit Value:</b></td>
+                    <td class="kb-table-cell" style="text-align: right;" colspan="4">
+                        <span class="isk-value">{{formatISK stats.fitValue}}</span>
+                    </td>
+                </tr>
+                <tr class="kb-table-row-even">
+                    <td class="kb-table-cell"><b>Ship Value:</b></td>
+                    <td class="kb-table-cell" style="text-align: right;" colspan="4">
+                        <span class="isk-value">{{formatISK stats.shipValue}}</span>
+                    </td>
+                </tr>
 
             </table>
         </div>
