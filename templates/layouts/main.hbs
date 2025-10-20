@@ -23,25 +23,23 @@
             width: 100%;
             table-layout: fixed;
         }
-
+        
         .navigation td {
-            width: 25%; /* 4 items = 25% each */
+            width: 20%; /* 5 items = 20% each */
             text-align: center;
             position: relative;
             padding: 0;
         }
-
+        
         .navigation td > a {
             display: block;
             width: 100%;
             box-sizing: border-box;
         }
-
+        
         .nav-dropdown {
             overflow: visible;
-        }
-
-        .nav-dropdown-wrapper {
+        }        .nav-dropdown-wrapper {
             position: relative;
             display: block;
             width: 100%;
@@ -103,6 +101,118 @@
             text-transform: uppercase;
             background-color: #1a2939;
         }
+
+        /* Search Box Styles */
+        .nav-search {
+            position: relative;
+            overflow: visible !important;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        #globalSearch {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 13px;
+            border: 1px solid #374957;
+            background: #0a1929;
+            color: #aaa;
+            border-radius: 0;
+            box-sizing: border-box;
+        }
+
+        #globalSearch:focus {
+            outline: none;
+            border-color: #8ab4f8;
+            background: #1a2939;
+        }
+
+        #globalSearch::placeholder {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .search-results {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            min-width: 300px;
+            background: #0a1929;
+            border: 1px solid #374957;
+            border-top: none;
+            max-height: 500px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3);
+            margin-top: -1px;
+        }
+
+        .search-group {
+            border-bottom: 1px solid #374957;
+        }
+
+        .search-group:last-child {
+            border-bottom: none;
+        }
+
+        .search-group-header {
+            color: #8ab4f8;
+            padding: 10px 15px;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+            background-color: #1a2939;
+            border-bottom: 1px solid #374957;
+        }
+
+        .search-item {
+            display: block;
+            padding: 10px 15px;
+            color: #aaa;
+            text-decoration: none;
+            border-bottom: 1px solid #2a3f54;
+            transition: background-color 0.2s;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:hover,
+        .search-item.active {
+            background-color: #2a3f54;
+            color: #8ab4f8;
+        }
+
+        .search-item-name {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .search-item-description {
+            display: block;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .search-no-results,
+        .search-error {
+            padding: 20px 15px;
+            text-align: center;
+            color: #666;
+        }
+
+        .search-error {
+            color: #d9534f;
+        }
     </style>
 
     {{{headerContent}}}
@@ -157,6 +267,17 @@
                         </div>
                     </td>
                     <td><a href="/post">Post</a></td>
+                    <td class="nav-search">
+                        <div class="search-container">
+                            <input 
+                                type="text" 
+                                id="globalSearch" 
+                                placeholder="Search..." 
+                                autocomplete="off"
+                            />
+                            <div id="searchResults" class="search-results"></div>
+                        </div>
+                    </td>
                 </tr>
             </table>
         </nav>
@@ -210,6 +331,9 @@
 
     <!-- Fitting Wheel Script -->
     <script type="text/javascript" src="/fitting-wheel.js"></script>
+
+    <!-- Search Script -->
+    <script type="text/javascript" src="/search.js"></script>
 
     {{{footerContent}}}
 </body>
