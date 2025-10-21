@@ -50,6 +50,13 @@
       "when": 1760990136911,
       "tag": "0006_add_prices_table",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1761060318743,
+      "tag": "0007_familiar_proemial_gods",
+      "breakpoints": true
     }
   ]
 }

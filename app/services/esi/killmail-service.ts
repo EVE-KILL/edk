@@ -1,8 +1,9 @@
 import { db } from "../../../src/db";
-import { killmails, victims, attackers, items } from "../../../db/schema";
+import { killmails, victims, attackers, items, prices } from "../../../db/schema";
 import { eq, and } from "drizzle-orm";
 import { logger } from "../../../src/utils/logger";
 import { BaseESIService, ESINotFoundError } from "../../../src/services/esi/base-service";
+import { priceService } from "../price-service";
 
 /**
  * ESI Killmail Response
@@ -120,14 +121,30 @@ export class KillmailService extends BaseESIService {
   /**
    * Save killmail and all related data to database
    * Handles inserts for killmail, victim, attackers, and items
+   * Now also calculates and stores ISK values
    */
-  async saveKillmail(esiData: ESIKillmailResponse, hash: string): Promise<void> {
+  async saveKillmail(
+    esiData: ESIKillmailResponse,
+    hash: string,
+    priceMap?: Map<number, { average: number }>
+  ): Promise<void> {
     try {
       // Calculate metadata
       const attackerCount = esiData.attackers.length;
       const firstAttacker = esiData.attackers[0];
       const isSolo = attackerCount === 1 && firstAttacker && !firstAttacker.faction_id;
       const isNpc = esiData.attackers.every((a) => a.faction_id || !a.character_id);
+
+      // Calculate ISK values if prices are provided
+      const values = priceMap
+        ? this.calculateValues(esiData, priceMap)
+        : {
+            shipValue: "0",
+            fittedValue: "0",
+            droppedValue: "0",
+            destroyedValue: "0",
+            totalValue: "0",
+          };
 
       // Insert main killmail
       const [insertedKillmail] = await db
@@ -138,7 +155,11 @@ export class KillmailService extends BaseESIService {
           killmailTime: new Date(esiData.killmail_time),
           solarSystemId: esiData.solar_system_id,
           attackerCount,
-          totalValue: "0", // Will be updated by zkillboard data
+          shipValue: values.shipValue,
+          fittedValue: values.fittedValue,
+          droppedValue: values.droppedValue,
+          destroyedValue: values.destroyedValue,
+          totalValue: values.totalValue,
           points: 0,
           isSolo,
           isNpc,
@@ -150,6 +171,11 @@ export class KillmailService extends BaseESIService {
             killmailTime: new Date(esiData.killmail_time),
             solarSystemId: esiData.solar_system_id,
             attackerCount,
+            shipValue: values.shipValue,
+            fittedValue: values.fittedValue,
+            droppedValue: values.droppedValue,
+            destroyedValue: values.destroyedValue,
+            totalValue: values.totalValue,
             isSolo,
             isNpc,
             updatedAt: new Date(),
@@ -255,8 +281,29 @@ export class KillmailService extends BaseESIService {
         return null;
       }
 
-      // Save to database using our save method
-      await this.saveKillmail(esiData, hash);
+      // Collect all type IDs for price fetching
+      const typeIds = new Set<number>();
+
+      // Add victim ship
+      if (esiData.victim.ship_type_id) {
+        typeIds.add(esiData.victim.ship_type_id);
+      }
+
+      // Add items
+      if (esiData.victim.items) {
+        for (const item of esiData.victim.items) {
+          typeIds.add(item.item_type_id);
+        }
+      }
+
+      // Fetch prices for all types
+      const priceMap = await this.fetchPricesForTypes(
+        Array.from(typeIds),
+        new Date(esiData.killmail_time)
+      );
+
+      // Save to database with calculated values
+      await this.saveKillmail(esiData, hash, priceMap);
 
       // Fetch the stored killmail from database
       const stored = await this.fetchKillmail(killmailId, hash);
@@ -280,6 +327,173 @@ export class KillmailService extends BaseESIService {
   async refreshKillmail(killmailId: number, hash: string): Promise<FullKillmail | null> {
     logger.info(`Force refreshing killmail ${killmailId} from ESI`);
     return await this.fetchAndStore(killmailId, hash);
+  }
+
+  /**
+   * Calculate ISK values for a killmail based on items and prices
+   */
+  private calculateValues(
+    esiData: ESIKillmailResponse,
+    priceMap: Map<number, { average: number }>
+  ): {
+    shipValue: string;
+    fittedValue: string;
+    droppedValue: string;
+    destroyedValue: string;
+    totalValue: string;
+  } {
+    let shipValue = 0;
+    let fittedValue = 0;
+    let droppedValue = 0;
+    let destroyedValue = 0;
+
+    // Ship value (victim's ship)
+    if (esiData.victim.ship_type_id) {
+      const shipPrice = priceMap.get(esiData.victim.ship_type_id);
+      if (shipPrice) {
+        shipValue = shipPrice.average;
+      }
+    }
+
+    // Calculate item values
+    if (esiData.victim.items) {
+      for (const item of esiData.victim.items) {
+        const price = priceMap.get(item.item_type_id);
+        if (!price) continue;
+
+        const droppedQty = item.quantity_dropped || 0;
+        const destroyedQty = item.quantity_destroyed || 0;
+
+        if (droppedQty > 0) {
+          droppedValue += droppedQty * price.average;
+        }
+        if (destroyedQty > 0) {
+          destroyedValue += destroyedQty * price.average;
+        }
+      }
+    }
+
+    fittedValue = droppedValue + destroyedValue;
+    const totalValue = shipValue + fittedValue;
+
+    return {
+      shipValue: shipValue.toFixed(2),
+      fittedValue: fittedValue.toFixed(2),
+      droppedValue: droppedValue.toFixed(2),
+      destroyedValue: destroyedValue.toFixed(2),
+      totalValue: totalValue.toFixed(2),
+    };
+  }
+
+  /**
+   * Fetch prices for item type IDs, finding closest to target date
+   * If prices don't exist in database, fetch from EVE-KILL API and save
+   */
+  async fetchPricesForTypes(
+    typeIds: number[],
+    targetDate: Date
+  ): Promise<Map<number, { average: number }>> {
+    logger.info(`[KillmailService] fetchPricesForTypes called with ${typeIds.length} types for date ${targetDate.toISOString()}`);
+
+    if (typeIds.length === 0) {
+      return new Map();
+    }
+
+    const priceMap = new Map<number, { average: number }>();
+
+    for (const typeId of typeIds) {
+      // Check database first
+      const priceRecords = await db
+        .select()
+        .from(prices)
+        .where(eq(prices.typeId, typeId));
+
+      // If we have prices in database, find closest to target date
+      if (priceRecords.length > 0) {
+        let closestRecord: (typeof priceRecords)[0] | undefined = priceRecords[0];
+        let minDiff =
+          closestRecord && closestRecord.date
+            ? Math.abs(new Date(closestRecord.date).getTime() - targetDate.getTime())
+            : Infinity;
+
+        for (const record of priceRecords) {
+          if (!record.date) continue;
+          const diff = Math.abs(
+            new Date(record.date).getTime() - targetDate.getTime()
+          );
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestRecord = record;
+          }
+        }
+
+        if (closestRecord && closestRecord.average) {
+          priceMap.set(typeId, {
+            average: closestRecord.average,
+          });
+          continue; // Found in database, move to next type
+        }
+      }
+
+      // No prices in database - fetch from EVE-KILL API
+      try {
+        logger.info(`Fetching price for type ${typeId} from EVE-KILL API`);
+
+        // Get price history from the target date
+        const targetDateUnix = Math.floor(targetDate.getTime() / 1000);
+        const priceData = await priceService.getPriceForTypeOnDate(typeId, targetDateUnix);
+
+        if (priceData.length > 0) {
+          // Find the closest date to our target date
+          const firstRecord = priceData[0];
+          if (!firstRecord) {
+            logger.warn(`No valid price record for type ${typeId}`);
+            continue;
+          }
+
+          let closestPriceRecord = firstRecord;
+          let minDiff = Math.abs(new Date(firstRecord.date).getTime() - targetDate.getTime());
+
+          for (const record of priceData) {
+            const diff = Math.abs(new Date(record.date).getTime() - targetDate.getTime());
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestPriceRecord = record;
+            }
+          }
+
+          const avgPrice = closestPriceRecord.average;
+          logger.debug(`[KillmailService] Found price for type ${typeId}: ${avgPrice.toFixed(2)} ISK (from ${closestPriceRecord.date})`);
+
+          // Save to database for future use
+          const priceDate = new Date(closestPriceRecord.date);
+          priceDate.setHours(0, 0, 0, 0);
+
+          await db.insert(prices).values({
+            typeId,
+            date: priceDate,
+            average: avgPrice,
+            highest: closestPriceRecord.highest,
+            lowest: closestPriceRecord.lowest,
+            orderCount: closestPriceRecord.order_count,
+            volume: closestPriceRecord.volume,
+          }).onConflictDoNothing();
+
+          priceMap.set(typeId, {
+            average: avgPrice,
+          });
+
+          logger.debug(`Saved price for type ${typeId}: ${avgPrice.toFixed(2)} ISK`);
+        } else {
+          logger.warn(`No price data available for type ${typeId}`);
+        }
+      } catch (error) {
+        logger.error(`Failed to fetch price for type ${typeId}:`, error);
+        // Continue without price for this item
+      }
+    }
+
+    return priceMap;
   }
 }
 

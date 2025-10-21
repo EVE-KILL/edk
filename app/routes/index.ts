@@ -1,5 +1,47 @@
 import { WebController } from "../../src/controllers/web-controller";
-import { generateKilllist, getKillboardStats } from "../generators/killlist";
+import { generateKilllist } from "../generators/killlist";
+import {
+  getKillboardStatistics,
+  type StatsFilters,
+} from "../generators/statistics";
+
+// Parse .env followed entities configuration
+// Empty strings should result in empty arrays, not arrays with NaN
+const FOLLOWED_CHARACTER_IDS =
+  process.env.FOLLOWED_CHARACTER_IDS?.trim()
+    ? process.env.FOLLOWED_CHARACTER_IDS.split(",").map((id) =>
+        parseInt(id.trim(), 10)
+      )
+    : [];
+const FOLLOWED_CORPORATION_IDS =
+  process.env.FOLLOWED_CORPORATION_IDS?.trim()
+    ? process.env.FOLLOWED_CORPORATION_IDS.split(",").map((id) =>
+        parseInt(id.trim(), 10)
+      )
+    : [];
+const FOLLOWED_ALLIANCE_IDS =
+  process.env.FOLLOWED_ALLIANCE_IDS?.trim()
+    ? process.env.FOLLOWED_ALLIANCE_IDS.split(",").map((id) =>
+        parseInt(id.trim(), 10)
+      )
+    : [];
+
+// Build stats filters from .env
+const statsFilters: StatsFilters | undefined =
+  FOLLOWED_CHARACTER_IDS.length > 0 ||
+  FOLLOWED_CORPORATION_IDS.length > 0 ||
+  FOLLOWED_ALLIANCE_IDS.length > 0
+    ? {
+        characterIds:
+          FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
+        corporationIds:
+          FOLLOWED_CORPORATION_IDS.length > 0
+            ? FOLLOWED_CORPORATION_IDS
+            : undefined,
+        allianceIds:
+          FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
+      }
+    : undefined;
 
 export class Controller extends WebController {
   override async handle(): Promise<Response> {
@@ -15,8 +57,8 @@ export class Controller extends WebController {
       // Fetch killmails with offset
       const killmails = await generateKilllist(limit, { offset });
 
-      // Fetch statistics (always show them for consistency)
-      const statistics = await getKillboardStats();
+      // Fetch comprehensive statistics with .env filtering
+      const statistics = await getKillboardStatistics(statsFilters);
 
       // Calculate pagination
       const totalPages = statistics ? Math.ceil(statistics.totalKillmails / limit) : 999;

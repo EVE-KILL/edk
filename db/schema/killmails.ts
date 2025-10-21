@@ -26,7 +26,11 @@ export const killmails = sqliteTable(
     // Attacker count
     attackerCount: integer("attacker_count").notNull().default(0),
 
-    // Total ISK value (from zkillboard)
+    // ISK Values (calculated from items + prices)
+    shipValue: text("ship_value").notNull().default("0"),
+    fittedValue: text("fitted_value").notNull().default("0"),
+    droppedValue: text("dropped_value").notNull().default("0"),
+    destroyedValue: text("destroyed_value").notNull().default("0"),
     totalValue: text("total_value").notNull().default("0"),
 
     // Points (from zkillboard)

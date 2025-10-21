@@ -14,24 +14,84 @@
 
     <table class="kb-table" cellspacing="1" style="width: 100%;">
         <tr class="kb-table-header">
-            <td class="kb-table-header" colspan="2">Statistics</td>
+            <td class="kb-table-header" colspan="4" style="text-align: center;">Overall Statistics</td>
         </tr>
         <tr class="kb-table-row-even">
-            <td class="kb-table-cell" style="width: 200px;"><b>Total Killmails:</b></td>
-            <td class="kb-table-cell">{{statistics.totalKillmails}}</td>
+            <td class="kb-table-cell" style="width: 25%;"><b>Total Killmails:</b></td>
+            <td class="kb-table-cell" style="width: 25%;">{{statistics.totalKillmails}}</td>
+            <td class="kb-table-cell" style="width: 25%;"><b>Total ISK Destroyed:</b></td>
+            <td class="kb-table-cell" style="width: 25%;"><span class="isk-value">{{formatISK statistics.totalISKDestroyed}}</span></td>
         </tr>
         <tr class="kb-table-row-odd">
-            <td class="kb-table-cell"><b>Total ISK Destroyed:</b></td>
-            <td class="kb-table-cell"><span class="isk-value">{{formatISK statistics.totalISK}}</span></td>
+            <td class="kb-table-cell"><b>Solo Kills:</b></td>
+            <td class="kb-table-cell">{{statistics.soloKills}}</td>
+            <td class="kb-table-cell"><b>NPC Kills:</b></td>
+            <td class="kb-table-cell">{{statistics.npcKills}}</td>
         </tr>
         <tr class="kb-table-row-even">
-            <td class="kb-table-cell"><b>Active Pilots:</b></td>
-            <td class="kb-table-cell">{{statistics.activePilots}}</td>
+            <td class="kb-table-cell"><b>Avg Attackers/Kill:</b></td>
+            <td class="kb-table-cell">{{statistics.averageAttackersPerKill}}</td>
+            <td class="kb-table-cell"><b>Unique Pilots:</b></td>
+            <td class="kb-table-cell">{{statistics.totalUniquePilots}}</td>
+        </tr>
+
+        <tr class="kb-table-header">
+            <td class="kb-table-header" colspan="4" style="text-align: center;">Activity</td>
+        </tr>
+        <tr class="kb-table-row-even">
+            <td class="kb-table-cell"><b>Active Pilots (24h):</b></td>
+            <td class="kb-table-cell">{{statistics.activePilotsLast24Hours}}</td>
+            <td class="kb-table-cell"><b>Active Pilots (7d):</b></td>
+            <td class="kb-table-cell">{{statistics.activePilotsLast7Days}}</td>
         </tr>
         <tr class="kb-table-row-odd">
-            <td class="kb-table-cell"><b>Last 24h Kills:</b></td>
-            <td class="kb-table-cell">{{statistics.recentKills}}</td>
+            <td class="kb-table-cell"><b>Kills (Last 24h):</b></td>
+            <td class="kb-table-cell">{{statistics.killsLast24Hours}}</td>
+            <td class="kb-table-cell"><b>Kills (Last 7d):</b></td>
+            <td class="kb-table-cell">{{statistics.killsLast7Days}}</td>
         </tr>
+        <tr class="kb-table-row-even">
+            <td class="kb-table-cell"><b>Kills (Last 30d):</b></td>
+            <td class="kb-table-cell">{{statistics.killsLast30Days}}</td>
+            <td class="kb-table-cell"></td>
+            <td class="kb-table-cell"></td>
+        </tr>
+
+        {{#if statistics.topKiller}}
+        <tr class="kb-table-header">
+            <td class="kb-table-header" colspan="4" style="text-align: center;">Top Players & Organizations</td>
+        </tr>
+        <tr class="kb-table-row-even">
+            <td class="kb-table-cell"><b>Top Killer:</b></td>
+            <td class="kb-table-cell"><a href="/character/{{statistics.topKiller.id}}">{{statistics.topKiller.name}}</a> ({{statistics.topKiller.kills}} kills)</td>
+            <td class="kb-table-cell"><b>Top Corporation:</b></td>
+            <td class="kb-table-cell"><a href="/corporation/{{statistics.topCorporation.id}}">{{statistics.topCorporation.name}}</a> ({{statistics.topCorporation.kills}} kills)</td>
+        </tr>
+        <tr class="kb-table-row-odd">
+            <td class="kb-table-cell"><b>Top Alliance:</b></td>
+            <td class="kb-table-cell"><a href="/alliance/{{statistics.topAlliance.id}}">{{statistics.topAlliance.name}}</a> ({{statistics.topAlliance.kills}} kills)</td>
+            <td class="kb-table-cell"></td>
+            <td class="kb-table-cell"></td>
+        </tr>
+        {{/if}}
+
+        {{#if statistics.mostDestroyedShip}}
+        <tr class="kb-table-header">
+            <td class="kb-table-header" colspan="4" style="text-align: center;">Ships & Systems</td>
+        </tr>
+        <tr class="kb-table-row-even">
+            <td class="kb-table-cell"><b>Most Destroyed Ship:</b></td>
+            <td class="kb-table-cell"><a href="/type/{{statistics.mostDestroyedShip.id}}">{{statistics.mostDestroyedShip.name}}</a> ({{statistics.mostDestroyedShip.count}}x)</td>
+            <td class="kb-table-cell"><b>Most Used Ship:</b></td>
+            <td class="kb-table-cell"><a href="/type/{{statistics.mostUsedShip.id}}">{{statistics.mostUsedShip.name}}</a> ({{statistics.mostUsedShip.count}}x)</td>
+        </tr>
+        <tr class="kb-table-row-odd">
+            <td class="kb-table-cell"><b>Most Dangerous System:</b></td>
+            <td class="kb-table-cell"><a href="/system/{{statistics.mostDangerousSystem.id}}">{{statistics.mostDangerousSystem.name}}</a> ({{statistics.mostDangerousSystem.count}} kills)</td>
+            <td class="kb-table-cell"></td>
+            <td class="kb-table-cell"></td>
+        </tr>
+        {{/if}}
     </table>
 </div>
 {{/if}}

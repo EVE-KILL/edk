@@ -261,6 +261,15 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         killmailHash: killmails.hash,
         killmailTime: killmails.killmailTime,
         killmailSolarSystemId: killmails.solarSystemId,
+        killmailAttackerCount: killmails.attackerCount,
+        killmailIsSolo: killmails.isSolo,
+
+        // Pre-calculated ISK values
+        killmailShipValue: killmails.shipValue,
+        killmailFittedValue: killmails.fittedValue,
+        killmailDroppedValue: killmails.droppedValue,
+        killmailDestroyedValue: killmails.destroyedValue,
+        killmailTotalValue: killmails.totalValue,
 
         // Victim
         victimCharacterId: victims.characterId,
@@ -442,28 +451,25 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
       },
     };
 
-    // Calculate ISK values
-    const getAllItems = (bySlot: ItemsBySlot): ItemSlot[] =>
-      Object.values(bySlot).flat();
+    // Use pre-calculated ISK values from database
+    const shipValue = parseFloat(km.killmailShipValue || "0");
+    const itemsValue = parseFloat(km.killmailFittedValue || "0");
+    const destroyedValue = parseFloat(km.killmailDestroyedValue || "0");
+    const droppedValue = parseFloat(km.killmailDroppedValue || "0");
+    const totalValue = parseFloat(km.killmailTotalValue || "0");
 
-    const destroyedItems = getAllItems(categorizedWithPrices.destroyed);
-    const droppedItems = getAllItems(categorizedWithPrices.dropped);
-
-    const destroyedValue = calculateItemValue(destroyedItems);
-    const droppedValue = calculateItemValue(droppedItems);
-    const itemsValue = destroyedValue + droppedValue;
-
-    const shipPrice = priceMap.get(km.victimShipTypeId || 0);
-    const shipValue = shipPrice ? shipPrice.average : 0;
-    const totalValue = shipValue + itemsValue;
-
-    // Calculate fit value (high+med+low+rig+subsystem)
+    // Calculate fit value (high+med+low+rig+subsystem) - still need this for display
     const fitItems = [
       ...categorizedWithPrices.destroyed.highSlots,
       ...categorizedWithPrices.destroyed.medSlots,
       ...categorizedWithPrices.destroyed.lowSlots,
       ...categorizedWithPrices.destroyed.rigSlots,
       ...categorizedWithPrices.destroyed.subSlots,
+      ...categorizedWithPrices.dropped.highSlots,
+      ...categorizedWithPrices.dropped.medSlots,
+      ...categorizedWithPrices.dropped.lowSlots,
+      ...categorizedWithPrices.dropped.rigSlots,
+      ...categorizedWithPrices.dropped.subSlots,
     ];
     const fitValue = calculateItemValue(fitItems);
 
@@ -531,14 +537,14 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         totalDropped,
       },
       stats: {
-        attackerCount: attackersData.length,
+        attackerCount: km.killmailAttackerCount || attackersData.length,
         totalValue,
         shipValue,
         itemsValue,
         destroyedValue,
         droppedValue,
         fitValue,
-        isSolo: attackersData.length === 1,
+        isSolo: km.killmailIsSolo || false,
       },
     };
   } catch (error) {

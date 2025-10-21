@@ -122,19 +122,24 @@ export function registerHelpers() {
   });
 
   // Format ISK values with appropriate suffix
-  Handlebars.registerHelper("formatISK", function(value: number) {
-    if (typeof value !== "number") return value;
+  Handlebars.registerHelper("formatISK", function(value: number | string) {
+    // Convert string to number if needed
+    const numValue = typeof value === "string" ? parseFloat(value) : value;
 
-    if (value >= 1e12) {
-      return `${(value / 1e12).toFixed(1)}T ISK`;
-    } else if (value >= 1e9) {
-      return `${(value / 1e9).toFixed(1)}B ISK`;
-    } else if (value >= 1e6) {
-      return `${(value / 1e6).toFixed(1)}M ISK`;
-    } else if (value >= 1e3) {
-      return `${(value / 1e3).toFixed(1)}K ISK`;
+    if (typeof numValue !== "number" || isNaN(numValue)) {
+      return "0 ISK";
     }
-    return `${value.toLocaleString()} ISK`;
+
+    if (numValue >= 1e12) {
+      return `${(numValue / 1e12).toFixed(1)}T ISK`;
+    } else if (numValue >= 1e9) {
+      return `${(numValue / 1e9).toFixed(1)}B ISK`;
+    } else if (numValue >= 1e6) {
+      return `${(numValue / 1e6).toFixed(1)}M ISK`;
+    } else if (numValue >= 1e3) {
+      return `${(numValue / 1e3).toFixed(1)}K ISK`;
+    }
+    return `${numValue.toLocaleString()} ISK`;
   });
 
   // Abbreviate ISK to closest common denominator (B, M, K)

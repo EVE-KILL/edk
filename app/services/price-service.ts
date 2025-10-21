@@ -82,6 +82,9 @@ export class PriceService {
   /**
    * Get price for a specific type on a specific date
    * Pass Unix timestamp (seconds) as dateUnix
+   * Returns array of IPrice objects with fallback logic:
+   * 1. Try date - 3 days for 14 days forward
+   * 2. If empty, try last 30 days without date filter
    */
   async getPriceForTypeOnDate(
     typeId: number,
@@ -90,7 +93,11 @@ export class PriceService {
     await this.throttle();
 
     try {
-      const url = `${this.baseUrl}/type_id/${typeId}?date=${dateUnix}`;
+      // Strategy 1: Request from 3 days before the target date to account for missing data
+      const threeDaysBeforeUnix = dateUnix - (3 * 24 * 60 * 60); // 3 days in seconds
+      const url = `${this.baseUrl}/type_id/${typeId}?date=${threeDaysBeforeUnix}&days=14`;
+      logger.debug(`[PriceService] Fetching price for type ${typeId} from date ${threeDaysBeforeUnix} (3 days before ${dateUnix})`);
+
       const response = await fetch(url, {
         headers: {
           "User-Agent": "EVE-Kill/4.0 (https://eve-kill.com)",
@@ -99,15 +106,48 @@ export class PriceService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        logger.warn(`[PriceService] HTTP ${response.status} for type ${typeId}`);
+        return [];
       }
 
-      const data = await response.json() as any;
+      const data = await response.json() as IPrice[];
       const prices = Array.isArray(data) ? data : [];
-      return prices;
+
+      if (prices.length > 0) {
+        logger.debug(`[PriceService] Fetched ${prices.length} price entries for type ${typeId} from date strategy`);
+        return prices;
+      }
+
+      // Strategy 2: If no results, try last 30 days without date filter
+      logger.debug(`[PriceService] No prices from date strategy, trying last 30 days for type ${typeId}`);
+      await this.throttle();
+
+      const fallbackUrl = `${this.baseUrl}/type_id/${typeId}?days=30`;
+      const fallbackResponse = await fetch(fallbackUrl, {
+        headers: {
+          "User-Agent": "EVE-Kill/4.0 (https://eve-kill.com)",
+          Accept: "application/json",
+        },
+      });
+
+      if (!fallbackResponse.ok) {
+        logger.warn(`[PriceService] Fallback HTTP ${fallbackResponse.status} for type ${typeId}`);
+        return [];
+      }
+
+      const fallbackData = await fallbackResponse.json() as IPrice[];
+      const fallbackPrices = Array.isArray(fallbackData) ? fallbackData : [];
+
+      if (fallbackPrices.length > 0) {
+        logger.debug(`[PriceService] Fetched ${fallbackPrices.length} price entries for type ${typeId} from 30-day fallback`);
+      } else {
+        logger.warn(`[PriceService] No price data available for type ${typeId} in last 30 days`);
+      }
+
+      return fallbackPrices;
     } catch (error) {
       logger.error(
-        `Failed to fetch prices for type ${typeId} on date ${dateUnix}: ${error instanceof Error ? error.message : "Unknown error"}`
+        `[PriceService] Failed to fetch prices for type ${typeId} on date ${dateUnix}: ${error instanceof Error ? error.message : "Unknown error"}`
       );
       return [];
     }

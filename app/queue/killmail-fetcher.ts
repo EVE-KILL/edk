@@ -36,54 +36,12 @@ export class KillmailFetcher extends BaseWorker<{
 
       logger.debug(`  ↳ Fetched and saved killmail ${killmailId}`);
 
-      // Enqueue price fetch job for this killmail
-      await queue.dispatch("prices", "fetch", {
-        killmailId,
-        killmailTime: killmail.killmail.killmailTime,
-        itemTypeIds: this.getItemTypeIds(killmail),
-      });
-
       // Enqueue ESI fetch jobs for all related entities
       await this.enqueueESIFetches(killmail);
     } catch (error) {
       logger.error(`  ↳ Failed to fetch killmail ${killmailId}:`, error);
       throw error;
     }
-  }
-
-  /**
-   * Extract all item type IDs from killmail
-   */
-  private getItemTypeIds(killmail: any): number[] {
-    const typeIds = new Set<number>();
-
-    // Add victim ship
-    if (killmail.victim?.shipTypeId) {
-      typeIds.add(killmail.victim.shipTypeId);
-    }
-
-    // Add victim items
-    if (killmail.items) {
-      for (const item of killmail.items) {
-        if (item.itemTypeId) {
-          typeIds.add(item.itemTypeId);
-        }
-      }
-    }
-
-    // Add attacker ships and weapons
-    if (killmail.attackers) {
-      for (const attacker of killmail.attackers) {
-        if (attacker.shipTypeId) {
-          typeIds.add(attacker.shipTypeId);
-        }
-        if (attacker.weaponTypeId) {
-          typeIds.add(attacker.weaponTypeId);
-        }
-      }
-    }
-
-    return Array.from(typeIds);
   }
 
   /**
