@@ -22,7 +22,10 @@ export class Controller extends WebController {
 
     const data = {
       ...characterDetail,
+      entityName: characterDetail.character.name,
+      imageUrl: `https://images.evetech.net/characters/${characterDetail.character.id}/portrait?size=64`,
       currentTab: 'dashboard',
+      baseUrl: `/character/${characterId}`,
     };
 
     return await this.renderPage(

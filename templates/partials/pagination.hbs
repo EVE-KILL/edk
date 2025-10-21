@@ -4,7 +4,7 @@
     <div style="display: inline-block;">
         <!-- Previous Button -->
         {{#if pagination.hasPrevPage}}
-        <a href="{{pagination.prevPageUrl}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        <a href="{{#if pagination.prevPageUrl}}{{pagination.prevPageUrl}}{{else}}{{pagination.prevUrl}}{{/if}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
             ← Previous
         </a>
         {{else}}
@@ -15,7 +15,7 @@
 
         <!-- First Page -->
         {{#if pagination.showFirst}}
-        <a href="/" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        <a href="{{#if pagination.firstUrl}}{{pagination.firstUrl}}{{else}}/{{/if}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
             1
         </a>
         <span style="display: inline-block; padding: 8px 12px; margin: 0 2px; color: #666; font-size: 12px;">...</span>
@@ -28,9 +28,16 @@
             {{this}}
         </span>
         {{else}}
-        <a href="/?page={{this}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        {{! Generate URL based on context}}
+        {{#if ../pagination.basePageUrl}}
+        <a href="{{../pagination.basePageUrl}}{{#unless (eq this 1)}}?page={{this}}{{/unless}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
             {{this}}
         </a>
+        {{else}}
+        <a href="{{#if (eq this 1)}}/{{else}}/?page={{this}}{{/if}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+            {{this}}
+        </a>
+        {{/if}}
         {{/if}}
         {{/each}}
 
@@ -38,7 +45,7 @@
         {{#if pagination.showLast}}
         <span style="display: inline-block; padding: 8px 12px; margin: 0 2px; color: #666; font-size: 12px;">...</span>
         {{#if pagination.totalPages}}
-        <a href="/?page={{pagination.totalPages}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        <a href="{{#if pagination.lastUrl}}{{pagination.lastUrl}}{{else}}/?page={{pagination.totalPages}}{{/if}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
             {{pagination.totalPages}}
         </a>
         {{/if}}
@@ -46,7 +53,7 @@
 
         <!-- Next Button -->
         {{#if pagination.hasNextPage}}
-        <a href="{{pagination.nextPageUrl}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        <a href="{{#if pagination.nextPageUrl}}{{pagination.nextPageUrl}}{{else}}{{pagination.nextUrl}}{{/if}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
             Next →
         </a>
         {{else}}

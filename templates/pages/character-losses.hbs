@@ -1,0 +1,23 @@
+<!-- Character Losses Page -->
+
+<!-- Character Stats Header -->
+{{> partials/entity-stats}}
+
+<!-- Character Navigation Tabs -->
+{{> partials/entity-navbar}}
+
+<!-- Pagination (Top) -->
+{{#if pagination}}
+    {{> partials/pagination}}
+{{/if}}
+
+<!-- Losses List -->
+<div style="margin-bottom: 20px;">
+    <div class="block-header2">Losses</div>
+    {{> partials/killmail-list}}
+</div>
+
+<!-- Pagination (Bottom) -->
+{{#if pagination}}
+    {{> partials/pagination}}
+{{/if}}

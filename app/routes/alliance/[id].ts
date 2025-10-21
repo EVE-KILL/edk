@@ -22,6 +22,11 @@ export class Controller extends WebController {
 
     const data = {
       ...allianceDetail,
+      entityName: allianceDetail.alliance.name,
+      ticker: allianceDetail.alliance.ticker,
+      imageUrl: `https://images.evetech.net/alliances/${allianceDetail.alliance.id}/logo?size=64`,
+      currentTab: "dashboard",
+      baseUrl: `/alliance/${allianceId}`,
     };
 
     return await this.renderPage(

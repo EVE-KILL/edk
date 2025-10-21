@@ -1,0 +1,44 @@
+<!-- Entity Navigation Tabs -->
+<div style="border-bottom: 1px solid #777; margin-bottom: 20px;">
+    <a href="{{baseUrl}}"
+       style="display: inline-block;
+              padding: 10px 20px;
+              background-color: {{#if (eq currentTab 'dashboard')}}#2a2a2a{{else}}transparent{{/if}};
+              color: #ffffff;
+              text-decoration: none;
+              border: 1px solid #777;
+              border-bottom: 1px solid {{#if (eq currentTab 'dashboard')}}#2a2a2a{{else}}#777{{/if}};
+              margin-bottom: -1px;
+              font-weight: {{#if (eq currentTab 'dashboard')}}bold{{else}}normal{{/if}};
+              transition: background-color 0.2s;">
+        DASHBOARD
+    </a>
+    <a href="{{baseUrl}}/kills"
+       style="display: inline-block;
+              padding: 10px 20px;
+              background-color: {{#if (eq currentTab 'kills')}}#2a2a2a{{else}}transparent{{/if}};
+              color: #ffffff;
+              text-decoration: none;
+              border: 1px solid #777;
+              border-bottom: 1px solid {{#if (eq currentTab 'kills')}}#2a2a2a{{else}}#777{{/if}};
+              margin-bottom: -1px;
+              margin-left: -1px;
+              font-weight: {{#if (eq currentTab 'kills')}}bold{{else}}normal{{/if}};
+              transition: background-color 0.2s;">
+        KILLS
+    </a>
+    <a href="{{baseUrl}}/losses"
+       style="display: inline-block;
+              padding: 10px 20px;
+              background-color: {{#if (eq currentTab 'losses')}}#2a2a2a{{else}}transparent{{/if}};
+              color: #ffffff;
+              text-decoration: none;
+              border: 1px solid #777;
+              border-bottom: 1px solid {{#if (eq currentTab 'losses')}}#2a2a2a{{else}}#777{{/if}};
+              margin-bottom: -1px;
+              margin-left: -1px;
+              font-weight: {{#if (eq currentTab 'losses')}}bold{{else}}normal{{/if}};
+              transition: background-color 0.2s;">
+        LOSSES
+    </a>
+</div>

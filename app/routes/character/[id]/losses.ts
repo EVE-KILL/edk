@@ -3,18 +3,13 @@ import { generateKilllist } from "../../../generators/killlist";
 import { db } from "../../../../src/db";
 import {
   characters,
-  killmails as killmailsTable,
+  killmails,
   victims,
-  attackers
+  attackers,
 } from "../../../../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export class Controller extends WebController {
-  static cacheConfig = {
-    ttl: 300,
-    vary: ["id", "page"],
-  };
-
   override async handle(): Promise<Response> {
     const characterId = this.getParam("id");
 
@@ -22,39 +17,40 @@ export class Controller extends WebController {
       return this.notFound("Character not found");
     }
 
-    const characterIdInt = parseInt(characterId, 10);
-
-    // Get character info
+    // Fetch character info
     const character = await db
       .select({
         id: characters.characterId,
         name: characters.name,
+        corporationId: characters.corporationId,
+        allianceId: characters.allianceId,
       })
       .from(characters)
-      .where(eq(characters.characterId, characterIdInt))
+      .where(eq(characters.characterId, parseInt(characterId, 10)))
       .limit(1)
-      .then((r) => r[0]);
+      .execute();
 
-    if (!character) {
+    if (!character || character.length === 0) {
       return this.notFound(`Character #${characterId} not found`);
     }
 
-    // Get stats (kills and losses count)
-    const killCount = await db
-      .select({ count: killmailsTable.id })
+    const char = character[0];
+
+    // Calculate stats
+    const killsResult = await db
+      .select({ count: sql<number>`COUNT(DISTINCT ${attackers.killmailId})` })
       .from(attackers)
-      .innerJoin(killmailsTable, eq(killmailsTable.id, attackers.killmailId))
-      .where(eq(attackers.characterId, characterIdInt));
+      .where(eq(attackers.characterId, parseInt(characterId, 10)))
+      .execute();
 
-    const kills = killCount.length;
-
-    const lossCount = await db
-      .select({ count: victims.id })
+    const lossesResult = await db
+      .select({ count: sql<number>`COUNT(*)` })
       .from(victims)
-      .innerJoin(killmailsTable, eq(killmailsTable.id, victims.killmailId))
-      .where(eq(victims.characterId, characterIdInt));
+      .where(eq(victims.characterId, parseInt(characterId, 10)))
+      .execute();
 
-    const losses = lossCount.length;
+    const kills = killsResult[0]?.count || 0;
+    const losses = lossesResult[0]?.count || 0;
 
     const stats = {
       kills,
@@ -72,10 +68,10 @@ export class Controller extends WebController {
     const limit = 20;
     const offset = (currentPage - 1) * limit;
 
-    // Fetch character kills with pagination
+    // Fetch character losses with pagination
     const killmails = await generateKilllist(limit + 1, {
       characterIds: [parseInt(characterId, 10)],
-      killsOnly: true,
+      lossesOnly: true,
       offset
     });
 
@@ -87,8 +83,8 @@ export class Controller extends WebController {
 
     const hasPrevPage = currentPage > 1;
 
-    // For now, we don't have total kill count, so we'll use a high number
-    // TODO: Add a query to get total kill count for accurate page numbers
+    // For now, we don't have total loss count, so we'll use a high number
+    // TODO: Add a query to get total loss count for accurate page numbers
     const totalPages = 999; // Unknown total
 
     // Calculate page numbers to display
@@ -96,6 +92,7 @@ export class Controller extends WebController {
     let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
     let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
 
+    // Adjust if we're near the end
     if (endPage - startPage < maxPagesToShow - 1) {
       startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
@@ -106,20 +103,20 @@ export class Controller extends WebController {
     }
 
     const data = {
-      character,
+      character: char,
       stats,
       killmails,
-      entityName: character.name,
-      imageUrl: `https://images.evetech.net/characters/${character.id}/portrait?size=64`,
-      currentTab: 'kills',
+      entityName: char.name,
+      imageUrl: `https://images.evetech.net/characters/${char.id}/portrait?size=64`,
+      currentTab: 'losses',
       baseUrl: `/character/${characterId}`,
       pagination: {
         currentPage,
         totalPages: null, // We don't know total yet
         hasNextPage,
         hasPrevPage,
-        nextPageUrl: hasNextPage ? `/character/${characterId}/kills?page=${currentPage + 1}` : null,
-        prevPageUrl: hasPrevPage ? (currentPage > 2 ? `/character/${characterId}/kills?page=${currentPage - 1}` : `/character/${characterId}/kills`) : null,
+        nextPageUrl: hasNextPage ? `/character/${characterId}/losses?page=${currentPage + 1}` : null,
+        prevPageUrl: hasPrevPage ? (currentPage > 2 ? `/character/${characterId}/losses?page=${currentPage - 1}` : `/character/${characterId}/losses`) : null,
         pages,
         showFirst: startPage > 1,
         showLast: hasNextPage && endPage < totalPages,
@@ -127,9 +124,9 @@ export class Controller extends WebController {
     };
 
     return await this.renderPage(
-      "pages/character-kills",
-      `${character.name} - Kills`,
-      `Kill history for ${character.name}`,
+      "pages/character-losses",
+      `${char.name} - Losses`,
+      `Loss history for ${char.name}`,
       data
     );
   }
