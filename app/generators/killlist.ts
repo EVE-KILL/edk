@@ -122,6 +122,8 @@ export interface KilllistFilters {
   lossesOnly?: boolean;
   /** Timestamp to fetch killmails before (for pagination) */
   before?: Date;
+  /** Offset for pagination (alternative to 'before') */
+  offset?: number;
 }
 
 /**
@@ -291,11 +293,17 @@ export async function generateKilllist(
     query = query.innerJoin(attackers, eq(killmails.id, attackers.killmailId)) as any;
   }
 
-  // Apply where condition and ordering
-  const killmailsData = await query
+  // Apply where condition, ordering, offset, and limit
+  let finalQuery = query
     .where(whereCondition)
-    .orderBy(desc(killmails.killmailTime))
-    .limit(limit);
+    .orderBy(desc(killmails.killmailTime));
+
+  // Add offset if provided
+  if (filters?.offset) {
+    finalQuery = finalQuery.offset(filters.offset) as any;
+  }
+
+  const killmailsData = await finalQuery.limit(limit);
 
   if (killmailsData.length === 0) {
     return [];

@@ -11,7 +11,7 @@
     </tr>
 
     {{#each killmails}}
-    <tr class="{{#if (mod @index 2)}}kb-table-row-odd{{else}}kb-table-row-even{{/if}}" onclick="window.location.href='/killmails/{{killmail_id}}';" style="cursor: pointer;">
+    <tr class="{{#if (mod @index 2)}}kb-table-row-odd{{else}}kb-table-row-even{{/if}}" onclick="window.location.href='/killmail/{{killmail_id}}';" style="cursor: pointer;">
         <!-- Ship Image -->
         <td class="kb-table-imgcell">
             <img src="https://images.evetech.net/types/{{victim.ship.type_id}}/icon?size=32"
