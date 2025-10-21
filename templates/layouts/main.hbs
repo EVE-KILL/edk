@@ -299,6 +299,20 @@
                 Version {{version}} | Build {{buildDate}}
             </p>
             {{/if}}
+            {{#if performance}}
+            <p style="color: #555; margin: 5px 0 0 0; font-size: 9px;">
+                Page loaded in {{performance.totalTime}}ms
+                {{#if performance.queryCount}}
+                | {{performance.queryCount}} {{#if (eq performance.queryCount 1)}}query{{else}}queries{{/if}} ({{performance.queryTime}}ms)
+                {{/if}}
+                {{#if performance.templateTime}}
+                | Template: {{performance.templateTime}}ms
+                {{/if}}
+                {{#if performance.cacheHit}}
+                | Cached
+                {{/if}}
+            </p>
+            {{/if}}
         </footer>
     </div>
 

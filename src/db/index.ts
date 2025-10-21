@@ -2,6 +2,9 @@ import { drizzle, BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import { Database } from "bun:sqlite";
 import * as schema from "../../db/schema";
 import { logger } from "../utils/logger";
+import { PerformanceLogger, wrapDatabaseForPerformance } from "./performance-logger";
+import { DefaultLogger } from "drizzle-orm/logger";
+import type { PerformanceTracker } from "../utils/performance";
 
 // Declare global VERBOSE_MODE
 declare global {
@@ -11,6 +14,28 @@ declare global {
 // Cache environment variables
 const DATABASE_PATH = process.env.DATABASE_PATH || "./data/ekv4.db";
 const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
+
+/**
+ * Global performance logger instance
+ * Shared across all requests to track query performance
+ */
+export const performanceLogger = new PerformanceLogger(
+  IS_DEVELOPMENT && globalThis.VERBOSE_MODE ? new DefaultLogger() : undefined
+);
+
+/**
+ * Global performance tracker getter
+ * Controllers set this per-request to track their query performance
+ */
+let currentPerformanceTracker: PerformanceTracker | null = null;
+
+export function setCurrentPerformanceTracker(tracker: PerformanceTracker | null): void {
+  currentPerformanceTracker = tracker;
+}
+
+export function getCurrentPerformanceTracker(): PerformanceTracker | null {
+  return currentPerformanceTracker;
+}
 
 /**
  * Database connection singleton
@@ -54,24 +79,26 @@ class DatabaseConnection {
       }
 
       // Create SQLite connection
-      this.sqlite = new Database(DATABASE_PATH, { create: true });
+      const rawSqlite = new Database(DATABASE_PATH, { create: true });
 
       // Enable WAL mode for better concurrency
-      this.sqlite.run("PRAGMA journal_mode = WAL;");
+      rawSqlite.run("PRAGMA journal_mode = WAL;");
 
       // Enable foreign keys
-      this.sqlite.run("PRAGMA foreign_keys = ON;");
+      rawSqlite.run("PRAGMA foreign_keys = ON;");
 
-      // Create Drizzle instance with logging for main app (only if verbose mode enabled)
-      const shouldLog = IS_DEVELOPMENT && globalThis.VERBOSE_MODE;
+      // Wrap SQLite connection with performance tracking
+      const wrappedSqlite = wrapDatabaseForPerformance(rawSqlite, getCurrentPerformanceTracker);
+      this.sqlite = wrappedSqlite;
 
-      this.instance = drizzle(this.sqlite, {
+      // Create Drizzle instance with performance logger for tracking
+      this.instance = drizzle(wrappedSqlite, {
         schema,
-        logger: shouldLog,
+        logger: performanceLogger,
       });
 
       // Create separate Drizzle instance without logging for queue (shares same SQLite connection)
-      this.queueInstance = drizzle(this.sqlite, {
+      this.queueInstance = drizzle(wrappedSqlite, {
         schema,
         logger: false, // Never log queue queries (too spammy)
       });

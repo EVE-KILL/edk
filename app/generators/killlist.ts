@@ -8,7 +8,13 @@ import { alliances } from "../../db/schema/alliances";
 import { types } from "../../db/schema/types";
 import { solarSystems } from "../../db/schema/solar-systems";
 import { items as itemsTable, prices } from "../../db/schema";
-import { desc, lt, eq, and, gte, count, sql } from "drizzle-orm";
+import { desc, lt, eq, and, or, gte, count, sql } from "drizzle-orm";
+
+// Create aliases for final blow attacker joins
+const fbAttackers = attackers;
+const fbCharacters = characters;
+const fbCorporations = corporations;
+const fbShips = types;
 
 /**
  * Killmail data structure for display
@@ -44,84 +50,225 @@ export interface KillmailDisplay {
  * Get the price for a ship type on a specific date (ignores time component)
  * Falls back to closest price within last 14 days if exact date not found
  */
-async function getShipPrice(
-  shipTypeId: number,
+/**
+ * Get ship prices for multiple ships at once (batch query optimization)
+ */
+async function getShipPricesBatch(
+  shipTypeIds: number[],
   targetDate: Date
-): Promise<number> {
-  // Format date as YYYY-MM-DD for SQLite date comparison
-  const dateString = targetDate.toISOString().split('T')[0];
-
-  // Try exact date match first
-  let priceRecord = await db
-    .select()
-    .from(prices)
-    .where(
-      and(
-        eq(prices.typeId, shipTypeId),
-        sql`date(${prices.date}, 'unixepoch') = ${dateString}`
-      )
-    )
-    .limit(1);
-
-  if (priceRecord.length > 0) {
-    return priceRecord[0]?.average || 0;
+): Promise<Map<number, number>> {
+  if (shipTypeIds.length === 0) {
+    return new Map();
   }
 
-  // Fallback: Get prices from last 14 days and find closest
+  const dateString = targetDate.toISOString().split('T')[0];
   const fourteenDaysAgo = new Date(targetDate);
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
   const fourteenDaysAgoString = fourteenDaysAgo.toISOString().split('T')[0];
 
+  // Fetch all prices for all ships in date range in a single query
   const priceRecords = await db
     .select()
     .from(prices)
     .where(
       and(
-        eq(prices.typeId, shipTypeId),
-        sql`date(${prices.date}, 'unixepoch') >= ${fourteenDaysAgoString}`,
-        sql`date(${prices.date}, 'unixepoch') <= ${dateString}`
+        sql`${prices.typeId} IN (${sql.join(shipTypeIds.map(id => sql`${id}`), sql`, `)})`,
+        sql`date(${prices.date}, 'unixepoch') BETWEEN ${fourteenDaysAgoString} AND ${dateString}`
       )
     );
 
-  if (priceRecords.length === 0) {
-    return 0;
-  }
+  // Build map of typeId -> price (prefer exact date, fallback to closest)
+  const priceMap = new Map<number, number>();
 
-  // Find closest date to target
-  let closestRecord = priceRecords[0]!;
-  let minDiff = Math.abs(new Date(closestRecord.date).getTime() - targetDate.getTime());
+  for (const typeId of shipTypeIds) {
+    // Find exact date match first
+    const exactMatch = priceRecords.find(
+      p => p.typeId === typeId &&
+      new Date(Number(p.date) * 1000).toISOString().split('T')[0] === dateString
+    );
 
-  for (const record of priceRecords) {
-    const diff = Math.abs(new Date(record.date).getTime() - targetDate.getTime());
-    if (diff < minDiff) {
-      minDiff = diff;
-      closestRecord = record;
+    if (exactMatch) {
+      priceMap.set(typeId, exactMatch.average || 0);
+      continue;
+    }
+
+    // Fallback: find closest date
+    const typeRecords = priceRecords.filter(p => p.typeId === typeId);
+    if (typeRecords.length > 0) {
+      // Sort by date and pick the most recent
+      typeRecords.sort((a, b) => Number(b.date) - Number(a.date));
+      priceMap.set(typeId, typeRecords[0]!.average || 0);
+    } else {
+      priceMap.set(typeId, 0);
     }
   }
 
-  return closestRecord?.average || 0;
-
-  return closestRecord?.average || 0;
+  return priceMap;
 }
 
 /**
- * Generate killmail list data from database
+ * Filter options for killmail queries
+ */
+export interface KilllistFilters {
+  /** Character IDs to filter by (involved as victim OR attacker) */
+  characterIds?: number[];
+  /** Corporation IDs to filter by (involved as victim OR attacker) */
+  corporationIds?: number[];
+  /** Alliance IDs to filter by (involved as victim OR attacker) */
+  allianceIds?: number[];
+  /** Filter for kills only (character/corp/alliance as attacker) */
+  killsOnly?: boolean;
+  /** Filter for losses only (character/corp/alliance as victim) */
+  lossesOnly?: boolean;
+  /** Timestamp to fetch killmails before (for pagination) */
+  before?: Date;
+}
+
+/**
+ * Generate killmail list data from database with optional filters
  *
  * @param limit Number of killmails to fetch (default: 20)
- * @param before Timestamp to fetch killmails before (for pagination)
+ * @param filters Optional filters for character, corporation, alliance, kills/losses
  * @returns Array of formatted killmail data
  */
 export async function generateKilllist(
   limit: number = 20,
-  before?: Date
+  filters?: KilllistFilters
 ): Promise<KillmailDisplay[]> {
-  // Build the where condition
-  const whereCondition = before
-    ? lt(killmails.killmailTime, before)
+  // Build the where conditions
+  const whereConditions: any[] = [];
+
+  // Add timestamp filter
+  if (filters?.before) {
+    whereConditions.push(lt(killmails.killmailTime, filters.before));
+  }
+
+  // For entity filters, we need to handle two scenarios:
+  // 1. If killsOnly/lossesOnly is specified, filter on the appropriate table
+  // 2. Otherwise, we need to query both kills and losses separately and combine
+
+  let needsEntityJoin: 'attackers' | 'victims' | false = false;
+  const entityConditions: any[] = [];
+
+  if (filters?.killsOnly && (filters?.characterIds || filters?.corporationIds || filters?.allianceIds)) {
+    // Filter on attackers table - we'll join this later
+    needsEntityJoin = 'attackers';
+
+    if (filters.characterIds && filters.characterIds.length > 0) {
+      entityConditions.push(
+        sql`${attackers.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+    if (filters.corporationIds && filters.corporationIds.length > 0) {
+      entityConditions.push(
+        sql`${attackers.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+    if (filters.allianceIds && filters.allianceIds.length > 0) {
+      entityConditions.push(
+        sql`${attackers.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+  } else if (filters?.lossesOnly && (filters?.characterIds || filters?.corporationIds || filters?.allianceIds)) {
+    // Filter on victims table - we'll use the existing join
+    needsEntityJoin = 'victims';
+
+    if (filters.characterIds && filters.characterIds.length > 0) {
+      entityConditions.push(
+        sql`${victims.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+    if (filters.corporationIds && filters.corporationIds.length > 0) {
+      entityConditions.push(
+        sql`${victims.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+    if (filters.allianceIds && filters.allianceIds.length > 0) {
+      entityConditions.push(
+        sql`${victims.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+  } else if (!filters?.killsOnly && !filters?.lossesOnly && (filters?.characterIds || filters?.corporationIds || filters?.allianceIds)) {
+    // Both kills and losses - need to use a subquery to get killmail IDs first
+    const killmailIdsFromAttackers: number[] = [];
+    const killmailIdsFromVictims: number[] = [];
+
+    // Get killmail IDs where entity is an attacker
+    const attackerConditions: any[] = [];
+    if (filters.characterIds && filters.characterIds.length > 0) {
+      attackerConditions.push(
+        sql`${attackers.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+    if (filters.corporationIds && filters.corporationIds.length > 0) {
+      attackerConditions.push(
+        sql`${attackers.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+    if (filters.allianceIds && filters.allianceIds.length > 0) {
+      attackerConditions.push(
+        sql`${attackers.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+
+    if (attackerConditions.length > 0) {
+      const attackerKills = await db
+        .selectDistinct({ killmailId: attackers.killmailId })
+        .from(attackers)
+        .where(attackerConditions.length === 1 ? attackerConditions[0] : or(...attackerConditions));
+      killmailIdsFromAttackers.push(...attackerKills.map(k => k.killmailId));
+    }
+
+    // Get killmail IDs where entity is a victim
+    const victimConditions: any[] = [];
+    if (filters.characterIds && filters.characterIds.length > 0) {
+      victimConditions.push(
+        sql`${victims.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+    if (filters.corporationIds && filters.corporationIds.length > 0) {
+      victimConditions.push(
+        sql`${victims.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+    if (filters.allianceIds && filters.allianceIds.length > 0) {
+      victimConditions.push(
+        sql`${victims.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    }
+
+    if (victimConditions.length > 0) {
+      const victimLosses = await db
+        .selectDistinct({ killmailId: victims.killmailId })
+        .from(victims)
+        .where(victimConditions.length === 1 ? victimConditions[0] : or(...victimConditions));
+      killmailIdsFromVictims.push(...victimLosses.map(v => v.killmailId));
+    }
+
+    // Combine and deduplicate killmail IDs
+    const allKillmailIds = [...new Set([...killmailIdsFromAttackers, ...killmailIdsFromVictims])];
+
+    if (allKillmailIds.length > 0) {
+      whereConditions.push(
+        sql`${killmails.id} IN (${sql.join(allKillmailIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    } else {
+      // No results found, return early
+      return [];
+    }
+  }
+
+  // Combine entity conditions with OR if multiple
+  if (entityConditions.length > 0) {
+    whereConditions.push(entityConditions.length === 1 ? entityConditions[0] : or(...entityConditions));
+  }
+
+  const whereCondition = whereConditions.length > 0
+    ? (whereConditions.length === 1 ? whereConditions[0] : and(...whereConditions))
     : undefined;
 
-  // Fetch killmails with all related data
-  const killmailsData = await db
+  // Build the base query
+  let query = db
     .select({
       killmail: killmails,
       victim: victims,
@@ -137,12 +284,56 @@ export async function generateKilllist(
     .leftJoin(corporations, eq(victims.corporationId, corporations.corporationId))
     .leftJoin(alliances, eq(victims.allianceId, alliances.allianceId))
     .leftJoin(types, eq(victims.shipTypeId, types.typeId))
-    .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId))
+    .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId));
+
+  // Add attackers join if we need to filter on kills
+  if (needsEntityJoin === 'attackers') {
+    query = query.innerJoin(attackers, eq(killmails.id, attackers.killmailId)) as any;
+  }
+
+  // Apply where condition and ordering
+  const killmailsData = await query
     .where(whereCondition)
     .orderBy(desc(killmails.killmailTime))
     .limit(limit);
 
-  // For each killmail, fetch the final blow attacker only
+  if (killmailsData.length === 0) {
+    return [];
+  }
+
+  // Fetch ALL final blow attackers in a single batch query
+  const killmailIds = killmailsData.map(km => km.killmail?.id).filter(Boolean) as number[];
+
+  const finalBlowAttackersData = await db
+    .select({
+      killmailId: attackers.killmailId,
+      attacker: attackers,
+      character: characters,
+      corporation: corporations,
+      ship: types,
+    })
+    .from(attackers)
+    .leftJoin(characters, eq(attackers.characterId, characters.characterId))
+    .leftJoin(corporations, eq(attackers.corporationId, corporations.corporationId))
+    .leftJoin(types, eq(attackers.shipTypeId, types.typeId))
+    .where(
+      and(
+        sql`${attackers.killmailId} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`,
+        eq(attackers.finalBlow, true)
+      )
+    );
+
+  // Create a map for quick lookup: killmailId -> final blow attacker
+  const finalBlowMap = new Map();
+  for (const fb of finalBlowAttackersData) {
+    finalBlowMap.set(fb.killmailId, fb);
+  }
+
+  // Batch fetch all ship prices - get unique ship type IDs
+  const shipTypeIds = [...new Set(killmailsData.map(km => km.victim?.shipTypeId).filter(Boolean))] as number[];
+  const shipPricesMap = await getShipPricesBatch(shipTypeIds, killmailsData[0]?.killmail?.killmailTime || new Date());
+
+  // Format the data
   const result: KillmailDisplay[] = [];
 
   for (const km of killmailsData) {
@@ -152,28 +343,11 @@ export async function generateKilllist(
       continue;
     }
 
-    // Fetch only the final blow attacker for this killmail - single efficient query
-    const finalBlowAttackerData = await db
-      .select({
-        attacker: attackers,
-        character: characters,
-        corporation: corporations,
-        ship: types,
-      })
-      .from(attackers)
-      .leftJoin(characters, eq(attackers.characterId, characters.characterId))
-      .leftJoin(corporations, eq(attackers.corporationId, corporations.corporationId))
-      .leftJoin(types, eq(attackers.shipTypeId, types.typeId))
-      .where(
-        and(
-          eq(attackers.killmailId, km.killmail.id),
-          eq(attackers.finalBlow, true)
-        )
-      )
-      .limit(1); // Only get the final blow attacker
+    // Get final blow attacker from the map
+    const finalBlowData = finalBlowMap.get(km.killmail.id);
 
-    // Format the data
-    const shipPrice = await getShipPrice(km.victim.shipTypeId, km.killmail.killmailTime);
+    // Get ship price from batch results
+    const shipPrice = shipPricesMap.get(km.victim.shipTypeId) || 0;
 
     const formattedKillmail: KillmailDisplay = {
       killmail_id: km.killmail.killmailId,
@@ -199,27 +373,27 @@ export async function generateKilllist(
         },
         damage_taken: km.victim.damageTaken,
       },
-      attackers: finalBlowAttackerData.length > 0
-        ? finalBlowAttackerData.map((att) => ({
+      attackers: finalBlowData
+        ? [{
             character: {
-              id: att.attacker.characterId,
-              name: att.character?.name || "Unknown",
+              id: finalBlowData.attacker.characterId,
+              name: finalBlowData.character?.name || "Unknown",
             },
             corporation: {
-              id: att.attacker.corporationId,
-              name: att.corporation?.name || "Unknown",
+              id: finalBlowData.attacker.corporationId,
+              name: finalBlowData.corporation?.name || "Unknown",
             },
             ship: {
-              type_id: att.attacker.shipTypeId,
-              name: att.ship?.name || "Unknown",
+              type_id: finalBlowData.attacker.shipTypeId,
+              name: finalBlowData.ship?.name || "Unknown",
             },
             weapon: {
-              type_id: att.attacker.weaponTypeId,
-              name: "Unknown", // TODO: Implement weapon lookup
+              type_id: finalBlowData.attacker.weaponTypeId,
+              name: "Unknown Weapon", // TODO: Add weapon lookup
             },
-            damage_done: att.attacker.damageDone,
-            final_blow: att.attacker.finalBlow,
-          }))
+            final_blow: true,
+            damage_done: finalBlowData.attacker.damageDone,
+          }]
         : [],
       solar_system: {
         id: km.killmail.solarSystemId,

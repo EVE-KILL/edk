@@ -184,6 +184,11 @@ export function registerHelpers() {
     return (arg1 == arg2) ? options.fn(this) : options.inverse(this);
   });
 
+  // Equality check helper
+  Handlebars.registerHelper("eq", function(a: any, b: any) {
+    return a === b;
+  });
+
   // Comparison helpers
   Handlebars.registerHelper("gte", function(a: number, b: number) {
     return a >= b;

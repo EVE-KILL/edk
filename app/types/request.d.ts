@@ -2,6 +2,20 @@
  * Type definitions for extending global interfaces
  */
 
+/**
+ * Performance statistics for a request
+ */
+export interface PerformanceStats {
+  startTime: number;
+  endTime?: number;
+  duration?: number;
+  queryCount: number;
+  queryTime: number;
+  templateTime?: number;
+  cacheHit?: boolean;
+  cacheKey?: string;
+}
+
 declare global {
   /**
    * Extend the Request interface to include route params and parsed URL
@@ -9,6 +23,7 @@ declare global {
   interface Request {
     params?: Record<string, string>;
     parsedUrl?: URL;
+    stats?: PerformanceStats;
   }
 }
 

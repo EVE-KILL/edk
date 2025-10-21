@@ -1,9 +1,10 @@
 import { renderTemplate, type TemplateData } from "../server/templates";
 import type {} from "../../app/types/request.d"; // Import Request type extensions
 import { cache } from "../cache";
-import { db } from "../db";
+import { db, setCurrentPerformanceTracker } from "../db";
 import { BaseModel } from "../../app/models/base-model";
 import { KillmailModel, Killmails } from "../../app/models/killmail";
+import { PerformanceTracker, formatStats } from "../utils/performance";
 
 /**
  * Base Controller class that all route controllers should extend
@@ -18,12 +19,13 @@ export abstract class BaseController {
   protected params: Record<string, string> = {};
   protected headers: Record<string, string> = {};
   protected statusCode: number = 200;
+  protected performanceTracker: PerformanceTracker;
 
   /**
-   * Database access
-   * Direct access to Drizzle ORM instance
+   * Database access with query tracking
+   * Wrapped Drizzle ORM instance that tracks query count and timing
    */
-  protected db = db;
+  protected db: typeof db;
 
   /**
    * Models - Easy access to all models
@@ -77,10 +79,25 @@ export abstract class BaseController {
     this.request = request;
     this.url = request.parsedUrl || new URL(request.url); // Use pre-parsed URL if available
     this.params = request.params || {};
-    this.setupCommonHeaders();
-  }
 
-  /**
+    // Initialize or use existing performance tracker
+    if (request.stats) {
+      this.performanceTracker = new PerformanceTracker();
+      Object.assign(this.performanceTracker, request.stats);
+    } else {
+      this.performanceTracker = new PerformanceTracker();
+      request.stats = this.performanceTracker.getCurrentStats();
+    }
+
+    // Set the global performance tracker for this request
+    // This allows the wrapped SQLite database to track query timing
+    setCurrentPerformanceTracker(this.performanceTracker);
+
+    // Assign database directly
+    this.db = db;
+
+    this.setupCommonHeaders();
+  }  /**
    * Set up common security and CORS headers
    */
   protected setupCommonHeaders(): void {
@@ -241,6 +258,9 @@ export abstract class BaseController {
 
       // Environment info
       isDevelopment: process.env.NODE_ENV !== "production",
+
+      // Performance stats - renamed to avoid conflict with entity stats
+      performance: formatStats(this.performanceTracker.getCurrentStats()),
     };
   }
 
@@ -266,11 +286,19 @@ export abstract class BaseController {
     layout: string = "main"
   ): Promise<Response> {
     try {
-      // Merge common template data with specific data
+      // Track template rendering time
+      const renderStart = performance.now();
+
+      // Merge common template data with specific data (this includes current stats)
       const commonData = await this.getCommonTemplateData();
       const mergedData = { ...commonData, ...data };
 
       const html = await renderTemplate(template, mergedData, layout);
+
+      const renderEnd = performance.now();
+
+      // Record template rendering time for next request/logging
+      this.performanceTracker.recordTemplateRender(renderEnd - renderStart);
 
       this.setHeader("Content-Type", "text/html");
 
