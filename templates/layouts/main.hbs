@@ -18,17 +18,17 @@
 
     <!-- Dropdown Menu Styles -->
     <style>
-        /* Equal width navigation items */
+        /* Equal width navigation items - flexible for dynamic columns */
         .navigation table {
             width: 100%;
             table-layout: fixed;
         }
 
         .navigation td {
-            width: 20%; /* 5 items = 20% each */
             text-align: center;
             position: relative;
             padding: 0;
+            flex: 1;
         }
 
         .navigation td > a {
@@ -238,11 +238,14 @@
             <table cellspacing="0" cellpadding="0">
                 <tr>
                     <td><a href="/">Home</a></td>
+                    {{#if followedEntities.hasEntities}}
                     <td><a href="/kills">Kills</a></td>
-                    <td class="nav-dropdown">
+                    <td><a href="/losses">Losses</a></td>
+                    {{/if}}
+                    <td {{#if followedEntities.hasEntities}}class="nav-dropdown"{{/if}}>
+                        {{#if followedEntities.hasEntities}}
                         <div class="nav-dropdown-wrapper">
                             <a href="/statistics">Statistics</a>
-                            {{#if followedEntities.hasEntities}}
                             <div class="nav-dropdown-content">
                                 {{#if followedEntities.characters.length}}
                                 <div class="dropdown-section-header">Characters</div>
@@ -263,8 +266,10 @@
                                 {{/each}}
                                 {{/if}}
                             </div>
-                            {{/if}}
                         </div>
+                        {{else}}
+                        <a href="/statistics">Statistics</a>
+                        {{/if}}
                     </td>
                     <td><a href="/post">Post</a></td>
                     <td class="nav-search">

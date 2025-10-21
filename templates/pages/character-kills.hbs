@@ -6,15 +6,17 @@
 <!-- Character Navigation Tabs -->
 {{> partials/entity-navbar}}
 
+<!-- Pagination (Top) -->
+{{#if pagination}}
+    {{> partials/pagination pagination=pagination}}
+{{/if}}
+
 <!-- Kills List -->
-<div class="killlist">
-    <div class="block-header2">All Kills</div>
-
-    <!-- Pagination Top -->
-    {{> partials/pagination pagination=pagination}}
-
+<div style="margin-bottom: 20px;">
     {{> partials/killmail-list killmails=killmails}}
-
-    <!-- Pagination Bottom -->
-    {{> partials/pagination pagination=pagination}}
 </div>
+
+<!-- Pagination (Bottom) -->
+{{#if pagination}}
+    {{> partials/pagination pagination=pagination}}
+{{/if}}

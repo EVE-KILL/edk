@@ -7,6 +7,7 @@ import { corporations } from "../../db/schema/corporations";
 import { alliances } from "../../db/schema/alliances";
 import { types } from "../../db/schema/types";
 import { solarSystems } from "../../db/schema/solar-systems";
+import { regions } from "../../db/schema/regions";
 import { items as itemsTable, prices } from "../../db/schema";
 import { desc, lt, eq, and, or, gte, count, sql } from "drizzle-orm";
 
@@ -279,6 +280,7 @@ export async function generateKilllist(
       victimAlliance: alliances,
       victimShip: types,
       solarSystem: solarSystems,
+      region: regions,
     })
     .from(killmails)
     .leftJoin(victims, eq(killmails.id, victims.killmailId))
@@ -286,7 +288,8 @@ export async function generateKilllist(
     .leftJoin(corporations, eq(victims.corporationId, corporations.corporationId))
     .leftJoin(alliances, eq(victims.allianceId, alliances.allianceId))
     .leftJoin(types, eq(victims.shipTypeId, types.typeId))
-    .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId));
+    .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId))
+    .leftJoin(regions, eq(solarSystems.regionId, regions.regionId));
 
   // Add attackers join if we need to filter on kills
   if (needsEntityJoin === 'attackers') {
@@ -406,7 +409,7 @@ export async function generateKilllist(
       solar_system: {
         id: km.killmail.solarSystemId,
         name: km.solarSystem?.name || "Unknown System",
-        region: "Unknown", // TODO: Add region lookup
+        region: km.region?.name || "Unknown Region",
         security_status: parseFloat(km.solarSystem?.securityStatus || "0"),
       },
     };

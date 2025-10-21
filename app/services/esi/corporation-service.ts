@@ -37,7 +37,6 @@ export class CorporationService extends BaseESIService {
     // Check database first
     const cached = await this.getFromDatabase(corporationId);
     if (cached) {
-      logger.info(`Found corporation ${corporationId} in database`);
       return cached;
     }
 

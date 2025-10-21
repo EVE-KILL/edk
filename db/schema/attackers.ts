@@ -46,5 +46,7 @@ export const attackers = sqliteTable(
     shipTypeIdIdx: index("attacker_ship_type_id_idx").on(table.shipTypeId),
     weaponTypeIdIdx: index("attacker_weapon_type_id_idx").on(table.weaponTypeId),
     finalBlowIdx: index("attacker_final_blow_idx").on(table.finalBlow),
+    // Composite index for top killers query (final_blow + character_id)
+    finalBlowCharacterIdx: index("attacker_final_blow_character_id_idx").on(table.finalBlow, table.characterId),
   })
 );

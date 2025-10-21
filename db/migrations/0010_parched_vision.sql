@@ -1,0 +1,2 @@
+CREATE INDEX `killmail_time_desc_system_idx` ON `killmails` (`killmail_time`,`solar_system_id`);--> statement-breakpoint
+CREATE INDEX `attacker_final_blow_character_id_idx` ON `attackers` (`final_blow`,`character_id`);

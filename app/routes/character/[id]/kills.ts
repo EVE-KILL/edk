@@ -1,11 +1,6 @@
 import { WebController } from "../../../../src/controllers/web-controller";
 import { generateKilllist } from "../../../generators/killlist";
 import { generateCharacterDetail } from "../../../generators/character";
-import { db } from "../../../../src/db";
-import {
-  characters,
-} from "../../../../db/schema";
-import { eq } from "drizzle-orm";
 
 export class Controller extends WebController {
   static cacheConfig = {
@@ -22,21 +17,6 @@ export class Controller extends WebController {
 
     const characterIdInt = parseInt(characterId, 10);
 
-    // Get character info
-    const character = await db
-      .select({
-        id: characters.characterId,
-        name: characters.name,
-      })
-      .from(characters)
-      .where(eq(characters.characterId, characterIdInt))
-      .limit(1)
-      .then((r) => r[0]);
-
-    if (!character) {
-      return this.notFound(`Character #${characterId} not found`);
-    }
-
     // Get full character stats (reuse the generator for consistency)
     const characterDetail = await generateCharacterDetail(characterIdInt);
 
@@ -44,6 +24,7 @@ export class Controller extends WebController {
       return this.notFound(`Character #${characterId} not found`);
     }
 
+    const character = characterDetail.character;
     const stats = characterDetail.stats;
 
     // Get pagination parameters

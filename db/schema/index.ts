@@ -23,6 +23,7 @@ export * from "./characters";
 export * from "./corporations";
 export * from "./alliances";
 export * from "./solar-systems";
+export * from "./regions";
 export * from "./types";
 export * from "./esi-cache";
 

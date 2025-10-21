@@ -34,7 +34,6 @@ export class CharacterService extends BaseESIService {
     // Check database first
     const cached = await this.getFromDatabase(characterId);
     if (cached) {
-      logger.info(`Found character ${characterId} in database`);
       return cached;
     }
 

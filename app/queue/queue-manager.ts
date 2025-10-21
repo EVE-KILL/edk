@@ -293,6 +293,7 @@ import { DatabaseConnection } from "../../src/db";
 import { KillmailFetcher } from "./killmail-fetcher";
 import { ESIFetcher } from "./esi-fetcher";
 import { PriceFetcher } from "./price-fetcher";
+import { TypeFetcher } from "./type-fetcher";
 
 export const queueManager = new QueueManager(DatabaseConnection.getQueueInstance());
 
@@ -300,3 +301,4 @@ export const queueManager = new QueueManager(DatabaseConnection.getQueueInstance
 queueManager.registerWorker(new KillmailFetcher());
 queueManager.registerWorker(new ESIFetcher());
 queueManager.registerWorker(new PriceFetcher());
+queueManager.registerWorker(new TypeFetcher());

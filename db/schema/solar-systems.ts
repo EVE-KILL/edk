@@ -17,6 +17,9 @@ export const solarSystems = sqliteTable(
     // Constellation ID
     constellationId: integer("constellation_id").notNull(),
 
+    // Region ID
+    regionId: integer("region_id"),
+
     // Security status
     securityStatus: text("security_status").notNull(),
 
@@ -49,6 +52,7 @@ export const solarSystems = sqliteTable(
     constellationIdIdx: index("solar_system_constellation_id_idx").on(
       table.constellationId
     ),
+    regionIdIdx: index("solar_system_region_id_idx").on(table.regionId),
     securityStatusIdx: index("solar_system_security_status_idx").on(
       table.securityStatus
     ),

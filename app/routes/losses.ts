@@ -1,7 +1,7 @@
 import { WebController } from "../../src/controllers/web-controller";
 import { generateKilllist } from "../generators/killlist";
 import {
-  getKillsStatistics,
+  getLossesStatistics,
   type StatsFilters,
 } from "../generators/statistics";
 
@@ -47,19 +47,12 @@ const statsFilters: StatsFilters | undefined = HAS_FOLLOWED_ENTITIES
 
 export class Controller extends WebController {
   override async handle(): Promise<Response> {
-    // If no followed entities are configured, show a placeholder page
+    // If no followed entities are configured, redirect to kills
     if (!HAS_FOLLOWED_ENTITIES) {
-      const data = {};
-
-      return await this.renderPage(
-        "pages/kills",
-        "Kills - EVE Kill v4",
-        "Browse recent killmails on EVE Kill v4",
-        data
-      );
+      return this.redirect("/kills");
     }
 
-    // Otherwise, show kills only for the followed entities
+    // Show losses only for the followed entities
     const url = new URL(this.request.url);
     const pageParam = url.searchParams.get("page");
     const currentPage = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
@@ -67,10 +60,10 @@ export class Controller extends WebController {
     const limit = 20;
     const offset = (currentPage - 1) * limit;
 
-    // Fetch killmails with offset - KILLS ONLY
+    // Fetch killmails with offset - LOSSES ONLY
     const killmails = await generateKilllist(limit + 1, {
       offset,
-      killsOnly: true,
+      lossesOnly: true,
       characterIds:
         FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
       corporationIds:
@@ -87,12 +80,12 @@ export class Controller extends WebController {
       killmails.pop();
     }
 
-    // Fetch comprehensive statistics with .env filtering - KILLS ONLY
-    const statistics = await getKillsStatistics(statsFilters);
+    // Fetch comprehensive statistics with .env filtering - LOSSES ONLY
+    const statistics = await getLossesStatistics(statsFilters);
 
-    // Calculate pagination based on kills only
+    // Calculate pagination based on losses only
     const totalPages = statistics
-      ? Math.ceil(statistics.totalKills / limit)
+      ? Math.ceil(statistics.totalLosses / limit)
       : 999;
     const hasPrevPage = currentPage > 1;
 
@@ -107,7 +100,7 @@ export class Controller extends WebController {
       startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
 
-    const pages = [];
+    const pages: number[] = [];
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
@@ -115,7 +108,7 @@ export class Controller extends WebController {
     const data = {
       config: {
         title: "EVE Kill v4",
-        subtitle: "Kills for Followed Entities",
+        subtitle: "Losses for Followed Entities",
       },
       killmails,
       statistics,
@@ -124,11 +117,11 @@ export class Controller extends WebController {
         totalPages: statistics ? totalPages : null,
         hasNextPage,
         hasPrevPage,
-        nextPageUrl: hasNextPage ? `/kills?page=${currentPage + 1}` : null,
+        nextPageUrl: hasNextPage ? `/losses?page=${currentPage + 1}` : null,
         prevPageUrl: hasPrevPage
           ? currentPage > 2
-            ? `/kills?page=${currentPage - 1}`
-            : "/kills"
+            ? `/losses?page=${currentPage - 1}`
+            : "/losses"
           : null,
         pages,
         showFirst: startPage > 1,
@@ -137,9 +130,9 @@ export class Controller extends WebController {
     };
 
     return await this.renderPage(
-      "pages/kills",
-      "Kills - EVE Kill v4",
-      "Browse kills for followed entities on EVE Kill v4",
+      "pages/losses",
+      "Losses - EVE Kill v4",
+      "Browse losses for followed entities on EVE Kill v4",
       data
     );
   }

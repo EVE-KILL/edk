@@ -252,6 +252,40 @@ export function registerHelpers() {
     if (sec >= 0.1) return `<span style="color: #efef2f;">${sec.toFixed(1)}</span>`;
     return `<span style="color: #ef2f2f;">${sec.toFixed(1)}</span>`;
   });
+
+  // Format security status (plain text)
+  Handlebars.registerHelper("formatSecurity", function(sec: number | string | undefined) {
+    if (sec === undefined || sec === null) return "?";
+    const numSec = typeof sec === "string" ? parseFloat(sec) : sec;
+    if (isNaN(numSec)) return "?";
+    return numSec.toFixed(1);
+  });
+
+  // Format time ago (e.g., "2 hours ago")
+  Handlebars.registerHelper("formatTimeAgo", function(date: string | Date) {
+    const now = new Date();
+    const past = new Date(date);
+    const diffMs = now.getTime() - past.getTime();
+
+    const seconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
+
+    if (years > 0) return `${years} year${years > 1 ? "s" : ""} ago`;
+    if (months > 0) return `${months} month${months > 1 ? "s" : ""} ago`;
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    return "Just now";
+  });
+
+  // Length helper to get array length
+  Handlebars.registerHelper("length", function(array: any[]) {
+    return Array.isArray(array) ? array.length : 0;
+  });
 }
 
 /**

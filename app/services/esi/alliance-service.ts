@@ -30,7 +30,6 @@ export class AllianceService extends BaseESIService {
     // Check database first
     const cached = await this.getFromDatabase(allianceId);
     if (cached) {
-      logger.info(`Found alliance ${allianceId} in database`);
       return cached;
     }
 

@@ -1,9 +1,10 @@
 import { db } from "../../../src/db";
-import { killmails, victims, attackers, items, prices } from "../../../db/schema";
-import { eq, and } from "drizzle-orm";
+import { killmails, victims, attackers, items, prices, types } from "../../../db/schema";
+import { eq, and, inArray } from "drizzle-orm";
 import { logger } from "../../../src/utils/logger";
 import { BaseESIService, ESINotFoundError } from "../../../src/services/esi/base-service";
 import { priceService } from "../price-service";
+import { queue } from "../../../src/queue/job-dispatcher";
 
 /**
  * ESI Killmail Response
@@ -239,6 +240,49 @@ export class KillmailService extends BaseESIService {
         await db.insert(items).values(itemsData).onConflictDoNothing();
       }
 
+      // Collect all type IDs from the killmail
+      const typeIds = new Set<number>();
+      typeIds.add(esiData.victim.ship_type_id);
+
+      for (const attacker of esiData.attackers) {
+        if (attacker.ship_type_id) typeIds.add(attacker.ship_type_id);
+        if (attacker.weapon_type_id) typeIds.add(attacker.weapon_type_id);
+      }
+
+      if (esiData.victim.items) {
+        for (const item of esiData.victim.items) {
+          typeIds.add(item.item_type_id);
+        }
+      }
+
+      // Check which types are missing or have null category_id
+      const typeIdArray = Array.from(typeIds);
+      const existingTypes = await db
+        .select({ typeId: types.typeId, categoryId: types.categoryId })
+        .from(types)
+        .where(inArray(types.typeId, typeIdArray));
+
+      const existingTypeMap = new Map(
+        existingTypes.map((t) => [t.typeId, t.categoryId])
+      );
+
+      // Queue type-fetch jobs for missing or incomplete types
+      const typesToFetch = typeIdArray.filter(
+        (typeId) => !existingTypeMap.has(typeId) || existingTypeMap.get(typeId) === null
+      );
+
+      if (typesToFetch.length > 0) {
+        logger.info(
+          `Queueing ${typesToFetch.length} type-fetch jobs for killmail ${esiData.killmail_id}`
+        );
+
+        await Promise.all(
+          typesToFetch.map((typeId) =>
+            queue.dispatch("type-fetch", "fetch", { typeId }, { priority: 5 })
+          )
+        );
+      }
+
       logger.info(
         `Saved killmail ${esiData.killmail_id} with ${attackerCount} attackers and ${esiData.victim.items?.length || 0} items`
       );
@@ -255,7 +299,6 @@ export class KillmailService extends BaseESIService {
     // Check database first
     const cached = await this.fetchKillmail(killmailId, hash);
     if (cached) {
-      logger.info(`Found killmail ${killmailId} in database`);
       return cached;
     }
 

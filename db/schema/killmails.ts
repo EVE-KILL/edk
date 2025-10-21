@@ -58,6 +58,8 @@ export const killmails = sqliteTable(
     isSoloIdx: index("killmail_is_solo_idx").on(table.isSolo),
     isNpcIdx: index("killmail_is_npc_idx").on(table.isNpc),
     totalValueIdx: index("killmail_total_value_idx").on(table.totalValue),
+    // Composite index for common list queries (time DESC + system)
+    timeSystemIdx: index("killmail_time_desc_system_idx").on(table.killmailTime, table.solarSystemId),
   })
 );
 

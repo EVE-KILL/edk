@@ -7,6 +7,7 @@ import {
   corporations,
   alliances,
   solarSystems,
+  regions,
   types,
   items as itemsTable,
   prices,
@@ -51,6 +52,10 @@ export interface KillmailDetail {
     totalDestroyed: number;
     totalDropped: number;
   };
+  fittingWheel: {
+    destroyed: ItemsBySlot;
+    dropped: ItemsBySlot;
+  };
   stats: {
     attackerCount: number;
     totalValue: number;
@@ -70,6 +75,9 @@ export interface ItemSlot {
   flag: number;
   flagName: string;
   singleton: number;
+  categoryId?: number;
+  isAmmo?: boolean;
+  ammo?: ItemSlot; // Ammo loaded in this slot
   price?: {
     average: number;
     highest: number;
@@ -122,7 +130,11 @@ const SLOT_NAMES: Record<number, string> = {
   5: "Cargo Hold",
 };
 
-function categorizeItems(items: any[]): { destroyed: ItemsBySlot; dropped: ItemsBySlot } {
+/**
+ * Categorize items for display - groups items by typeId for item lists
+ * Ammo is included in the lists AND attached to their parent modules by flag
+ */
+function categorizeItemsGrouped(items: any[]): { destroyed: ItemsBySlot; dropped: ItemsBySlot } {
   const destroyed: ItemsBySlot = {
     highSlots: [], medSlots: [], lowSlots: [], rigSlots: [],
     subSlots: [], droneBay: [], cargo: [], other: []
@@ -132,7 +144,6 @@ function categorizeItems(items: any[]): { destroyed: ItemsBySlot; dropped: Items
     subSlots: [], droneBay: [], cargo: [], other: []
   };
 
-  // Use maps to combine items with same typeId per slot category
   const destroyedMaps: Record<keyof ItemsBySlot, Map<number, ItemSlot>> = {
     highSlots: new Map(), medSlots: new Map(), lowSlots: new Map(), rigSlots: new Map(),
     subSlots: new Map(), droneBay: new Map(), cargo: new Map(), other: new Map()
@@ -142,7 +153,30 @@ function categorizeItems(items: any[]): { destroyed: ItemsBySlot; dropped: Items
     subSlots: new Map(), droneBay: new Map(), cargo: new Map(), other: new Map()
   };
 
+  const AMMO_CATEGORY_ID = 8; // Charges category
+
+  // Helper to check if item is ammo/charge
+  const isAmmo = (item: any): boolean => {
+    // First try category_id if available on itemType
+    if (item.itemType?.categoryId === AMMO_CATEGORY_ID) return true;
+
+    // Then try to parse from raw_data
+    if (item.itemType?.raw_data) {
+      try {
+        const rawData = typeof item.itemType.raw_data === 'string'
+          ? JSON.parse(item.itemType.raw_data)
+          : item.itemType.raw_data;
+        if (rawData.category_id === AMMO_CATEGORY_ID) return true;
+      } catch (e) {
+        // Continue to next check
+      }
+    }
+
+    return false;
+  };
+
   for (const item of items) {
+    const itemIsAmmo = isAmmo(item);
     const slotKey = SLOT_MAPPING[item.flag.toString()] || "other";
     const typeId = item.itemTypeId;
     const quantity = item.quantityDestroyed || item.quantityDropped || 1;
@@ -160,9 +194,13 @@ function categorizeItems(items: any[]): { destroyed: ItemsBySlot; dropped: Items
           flag: item.flag,
           flagName: SLOT_NAMES[item.flag] || `Slot ${item.flag}`,
           singleton: item.singleton || 0,
+          categoryId: item.itemType?.categoryId,
+          isAmmo: itemIsAmmo,
         });
       }
-    } else if (item.quantityDropped > 0) {
+    }
+
+    if (item.quantityDropped > 0) {
       // Add to dropped map, combining quantities
       const existing = droppedMaps[slotKey].get(typeId);
       if (existing) {
@@ -175,6 +213,8 @@ function categorizeItems(items: any[]): { destroyed: ItemsBySlot; dropped: Items
           flag: item.flag,
           flagName: SLOT_NAMES[item.flag] || `Slot ${item.flag}`,
           singleton: item.singleton || 0,
+          categoryId: item.itemType?.categoryId,
+          isAmmo: itemIsAmmo,
         });
       }
     }
@@ -187,6 +227,140 @@ function categorizeItems(items: any[]): { destroyed: ItemsBySlot; dropped: Items
   }
 
   return { destroyed, dropped };
+}
+
+/**
+ * Categorize items for fitting wheel - organize by slot flag position
+ * Uses the same base data as categorizeItemsGrouped but organizes by slot position
+ * Ammo is attached to modules by matching flag values
+ */
+function categorizeItemsUngrouped(items: Array<any>): { destroyed: ItemsBySlot; dropped: ItemsBySlot } {
+  const HIGH_SLOT_FLAGS = [27, 28, 29, 30, 31, 32, 33, 34];
+  const MID_SLOT_FLAGS = [19, 20, 21, 22, 23, 24, 25, 26];
+  const LOW_SLOT_FLAGS = [11, 12, 13, 14, 15, 16, 17, 18];
+  const RIG_SLOT_FLAGS = [92, 93, 94];
+  const SUBSYSTEM_FLAGS = [125, 126, 127, 128];
+  const AMMO_CATEGORY_ID = 8;
+
+  const destroyed: ItemsBySlot = {
+    highSlots: [],
+    medSlots: [],
+    lowSlots: [],
+    rigSlots: [],
+    subSlots: [],
+    droneBay: [],
+    cargo: [],
+    other: []
+  };
+
+  const dropped: ItemsBySlot = {
+    highSlots: [],
+    medSlots: [],
+    lowSlots: [],
+    rigSlots: [],
+    subSlots: [],
+    droneBay: [],
+    cargo: [],
+    other: []
+  };
+
+  // Helper to check if item is ammo/charge
+  const isAmmo = (item: any): boolean => {
+    // First try category_id if available on itemType
+    if (item.itemType?.categoryId === AMMO_CATEGORY_ID) return true;
+
+    // Then try to parse from raw_data
+    if (item.itemType?.raw_data) {
+      try {
+        const rawData = typeof item.itemType.raw_data === 'string'
+          ? JSON.parse(item.itemType.raw_data)
+          : item.itemType.raw_data;
+        if (rawData.category_id === AMMO_CATEGORY_ID) return true;
+      } catch (e) {
+        // Continue to next check
+      }
+    }
+
+    return false;
+  };
+
+  // Separate ammo and non-ammo items
+  const ammoItems = items.filter(i => isAmmo(i));
+  const moduleItems = items.filter(i => !isAmmo(i));
+
+  // Helper to organize items into slot arrays by flag position
+  const organizeSlots = (moduleItems: any[], ammoItems: any[], flagRange: number[], isDestroyed: boolean): ItemSlot[] => {
+    const slots: ItemSlot[] = [];
+
+    // Create slot positions
+    for (let i = 0; i < flagRange.length; i++) {
+      slots[i] = null as any;
+    }
+
+    // Place modules by flag index
+    for (const item of moduleItems) {
+      const flagIndex = flagRange.indexOf(item.flag);
+      if (flagIndex !== -1) {
+        const quantity = isDestroyed ? (item.quantityDestroyed || 0) : (item.quantityDropped || 0);
+        if (quantity === 0) continue;
+
+        const moduleSlot: ItemSlot = {
+          typeId: item.itemTypeId,
+          name: item.itemType?.name || `Item ${item.itemTypeId}`,
+          quantity: quantity,
+          flag: item.flag,
+          flagName: SLOT_NAMES[item.flag] || `Slot ${item.flag}`,
+          singleton: item.singleton || 0,
+          categoryId: item.itemType?.categoryId,
+          isAmmo: false,
+        };
+
+        // Find and attach ammo that shares this flag (check both destroyed and dropped)
+        const ammoForSlot = ammoItems.find(a => a.flag === item.flag);
+        if (ammoForSlot) {
+          // Ammo can be destroyed OR dropped, attach whichever exists
+          const ammoQuantity = (ammoForSlot.quantityDestroyed || 0) + (ammoForSlot.quantityDropped || 0);
+          if (ammoQuantity > 0) {
+            moduleSlot.ammo = {
+              typeId: ammoForSlot.itemTypeId,
+              name: ammoForSlot.itemType?.name || `Ammo ${ammoForSlot.itemTypeId}`,
+              quantity: ammoQuantity,
+              flag: ammoForSlot.flag,
+              flagName: SLOT_NAMES[ammoForSlot.flag] || `Slot ${ammoForSlot.flag}`,
+              singleton: ammoForSlot.singleton || 0,
+              categoryId: ammoForSlot.itemType?.categoryId,
+              isAmmo: true,
+            };
+          }
+        }
+
+        slots[flagIndex] = moduleSlot;
+      }
+    }
+
+    // Filter out nulls and return
+    return slots.filter((item): item is ItemSlot => item !== null);
+  };
+
+  // Organize each slot type for destroyed items
+  destroyed.highSlots = organizeSlots(moduleItems, ammoItems, HIGH_SLOT_FLAGS, true);
+  destroyed.medSlots = organizeSlots(moduleItems, ammoItems, MID_SLOT_FLAGS, true);
+  destroyed.lowSlots = organizeSlots(moduleItems, ammoItems, LOW_SLOT_FLAGS, true);
+  destroyed.rigSlots = organizeSlots(moduleItems, ammoItems, RIG_SLOT_FLAGS, true);
+  destroyed.subSlots = organizeSlots(moduleItems, ammoItems, SUBSYSTEM_FLAGS, true);
+
+  // Organize each slot type for dropped items
+  dropped.highSlots = organizeSlots(moduleItems, ammoItems, HIGH_SLOT_FLAGS, false);
+  dropped.medSlots = organizeSlots(moduleItems, ammoItems, MID_SLOT_FLAGS, false);
+  dropped.lowSlots = organizeSlots(moduleItems, ammoItems, LOW_SLOT_FLAGS, false);
+  dropped.rigSlots = organizeSlots(moduleItems, ammoItems, RIG_SLOT_FLAGS, false);
+  dropped.subSlots = organizeSlots(moduleItems, ammoItems, SUBSYSTEM_FLAGS, false);
+
+  return { destroyed, dropped };
+}
+
+function categorizeItems(items: any[]): { destroyed: ItemsBySlot; dropped: ItemsBySlot } {
+  return categorizeItemsGrouped(items);
 }
 
 /**
@@ -305,6 +479,12 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
           name: solarSystems.name,
           securityStatus: solarSystems.securityStatus,
         },
+
+        // Region
+        region: {
+          id: regions.regionId,
+          name: regions.name,
+        },
       })
       .from(killmails)
       .leftJoin(victims, eq(victims.killmailId, killmails.id))
@@ -313,6 +493,7 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
       .leftJoin(alliances, eq(alliances.allianceId, victims.allianceId))
       .leftJoin(types, eq(types.typeId, victims.shipTypeId))
       .leftJoin(solarSystems, eq(solarSystems.systemId, killmails.solarSystemId))
+      .leftJoin(regions, eq(regions.regionId, solarSystems.regionId))
       .where(eq(killmails.killmailId, killmailId))
       .limit(1);
 
@@ -387,6 +568,8 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         itemType: {
           typeId: types.typeId,
           name: types.name,
+          categoryId: types.categoryId,
+          raw_data: types.rawData,
         },
       })
       .from(itemsTable)
@@ -400,8 +583,11 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
       quantityDropped: item.dropped ? item.quantity : 0,
     }));
 
-    // Categorize items
+    // Categorize items (grouped for display)
     const categorized = categorizeItems(transformedItems);
+
+    // Categorize items (ungrouped for fitting wheel)
+    const categorizedUngrouped = categorizeItemsUngrouped(transformedItems);
 
     // Get all unique item type IDs (including victim ship)
     const itemTypeIds = [
@@ -450,6 +636,56 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         other: addPricesToItems(categorized.dropped.other),
       },
     };
+
+    // Apply prices to ungrouped items for fitting wheel
+    const categorizedUngroupedWithPrices = {
+      destroyed: {
+        highSlots: addPricesToItems(categorizedUngrouped.destroyed.highSlots),
+        medSlots: addPricesToItems(categorizedUngrouped.destroyed.medSlots),
+        lowSlots: addPricesToItems(categorizedUngrouped.destroyed.lowSlots),
+        rigSlots: addPricesToItems(categorizedUngrouped.destroyed.rigSlots),
+        subSlots: addPricesToItems(categorizedUngrouped.destroyed.subSlots),
+        droneBay: addPricesToItems(categorizedUngrouped.destroyed.droneBay),
+        cargo: addPricesToItems(categorizedUngrouped.destroyed.cargo),
+        other: addPricesToItems(categorizedUngrouped.destroyed.other),
+      },
+      dropped: {
+        highSlots: addPricesToItems(categorizedUngrouped.dropped.highSlots),
+        medSlots: addPricesToItems(categorizedUngrouped.dropped.medSlots),
+        lowSlots: addPricesToItems(categorizedUngrouped.dropped.lowSlots),
+        rigSlots: addPricesToItems(categorizedUngrouped.dropped.rigSlots),
+        subSlots: addPricesToItems(categorizedUngrouped.dropped.subSlots),
+        droneBay: addPricesToItems(categorizedUngrouped.dropped.droneBay),
+        cargo: addPricesToItems(categorizedUngrouped.dropped.cargo),
+        other: addPricesToItems(categorizedUngrouped.dropped.other),
+      },
+    };
+
+    // Add prices to ammo items in the fittingWheel
+    const addPricesToAmmo = (slots: ItemSlot[]) => {
+      for (const slot of slots) {
+        if (slot.ammo) {
+          const ammoPrice = priceMap.get(slot.ammo.typeId);
+          if (ammoPrice) {
+            slot.ammo.price = ammoPrice;
+            slot.ammo.totalValue = slot.ammo.quantity * ammoPrice.average;
+          }
+        }
+      }
+    };
+
+    // Apply prices to all ammo in fittingWheel
+    addPricesToAmmo(categorizedUngroupedWithPrices.destroyed.highSlots);
+    addPricesToAmmo(categorizedUngroupedWithPrices.destroyed.medSlots);
+    addPricesToAmmo(categorizedUngroupedWithPrices.destroyed.lowSlots);
+    addPricesToAmmo(categorizedUngroupedWithPrices.destroyed.rigSlots);
+    addPricesToAmmo(categorizedUngroupedWithPrices.destroyed.subSlots);
+
+    addPricesToAmmo(categorizedUngroupedWithPrices.dropped.highSlots);
+    addPricesToAmmo(categorizedUngroupedWithPrices.dropped.medSlots);
+    addPricesToAmmo(categorizedUngroupedWithPrices.dropped.lowSlots);
+    addPricesToAmmo(categorizedUngroupedWithPrices.dropped.rigSlots);
+    addPricesToAmmo(categorizedUngroupedWithPrices.dropped.subSlots);
 
     // Use pre-calculated ISK values from database
     const shipValue = parseFloat(km.killmailShipValue || "0");
@@ -511,7 +747,7 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         name: km.solarSystem?.name || `System ${km.killmailSolarSystemId}`,
         security: securityFormatted,
         securityStatus,
-        region: "Unknown Region", // TODO: Add region lookup
+        region: km.region?.name || "Unknown Region",
       },
       attackers: attackersData.map(a => ({
         character: a.character?.id ? a.character : null,
@@ -535,6 +771,10 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         dropped: categorizedWithPrices.dropped,
         totalDestroyed,
         totalDropped,
+      },
+      fittingWheel: {
+        destroyed: categorizedUngroupedWithPrices.destroyed,
+        dropped: categorizedUngroupedWithPrices.dropped,
       },
       stats: {
         attackerCount: km.killmailAttackerCount || attackersData.length,

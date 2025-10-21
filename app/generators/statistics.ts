@@ -67,7 +67,7 @@ export interface KillboardStatistics {
 export async function getKillboardStatistics(
   filters?: StatsFilters
 ): Promise<KillboardStatistics> {
-  // Build filter conditions
+  // Build filter conditions only for functions that need the complex OR logic
   const filterConditions = buildFilterConditions(filters);
 
   // Run all queries in parallel for performance
@@ -81,14 +81,98 @@ export async function getKillboardStatistics(
     topEntities,
     miscStats,
   ] = await Promise.all([
-    getTotalStats(filterConditions),
-    getISKStats(filterConditions),
-    getActivePilotsStats(filterConditions),
-    getTimeBasedStats(filterConditions),
-    getShipStats(filterConditions),
-    getSystemStats(filterConditions),
-    getTopEntities(filterConditions),
-    getMiscStats(filterConditions),
+    getTotalStats(filters, filterConditions),
+    getISKStats(filters, filterConditions),
+    getActivePilotsStats(filters),
+    getTimeBasedStats(filters),
+    getShipStats(filters),
+    getSystemStats(filters),
+    getTopEntities(filters),
+    getMiscStats(filters),
+  ]);
+
+  return {
+    ...totalStats,
+    ...iskStats,
+    ...activePilotsStats,
+    ...timeBasedStats,
+    ...shipStats,
+    ...systemStats,
+    ...topEntities,
+    ...miscStats,
+  };
+}
+
+/**
+ * Get statistics for KILLS only (where entity is an attacker)
+ */
+export async function getKillsStatistics(
+  filters?: StatsFilters
+): Promise<KillboardStatistics> {
+  // Build kill-specific filter conditions (entity as attacker)
+  const killFilterConditions = buildKillFilterConditions(filters);
+
+  // Run all queries in parallel for performance
+  const [
+    totalStats,
+    iskStats,
+    activePilotsStats,
+    timeBasedStats,
+    shipStats,
+    systemStats,
+    topEntities,
+    miscStats,
+  ] = await Promise.all([
+    getTotalStatsForKills(filters, killFilterConditions),
+    getISKStats(filters, killFilterConditions),
+    getActivePilotsStats(filters),
+    getTimeBasedStats(filters),
+    getShipStats(filters),
+    getSystemStats(filters),
+    getTopEntities(filters),
+    getMiscStats(filters),
+  ]);
+
+  return {
+    ...totalStats,
+    ...iskStats,
+    ...activePilotsStats,
+    ...timeBasedStats,
+    ...shipStats,
+    ...systemStats,
+    ...topEntities,
+    ...miscStats,
+  };
+}
+
+/**
+ * Get statistics for LOSSES only (where entity is a victim)
+ */
+export async function getLossesStatistics(
+  filters?: StatsFilters
+): Promise<KillboardStatistics> {
+  // Build loss-specific filter conditions (entity as victim)
+  const lossFilterConditions = buildLossFilterConditions(filters);
+
+  // Run all queries in parallel for performance
+  const [
+    totalStats,
+    iskStats,
+    activePilotsStats,
+    timeBasedStats,
+    shipStats,
+    systemStats,
+    topEntities,
+    miscStats,
+  ] = await Promise.all([
+    getTotalStatsForLosses(filters, lossFilterConditions),
+    getISKStats(filters, lossFilterConditions),
+    getActivePilotsStats(filters),
+    getTimeBasedStats(filters),
+    getShipStats(filters),
+    getSystemStats(filters),
+    getTopEntities(filters),
+    getMiscStats(filters),
   ]);
 
   return {
@@ -105,6 +189,7 @@ export async function getKillboardStatistics(
 
 /**
  * Build filter conditions for queries
+ * Uses OR logic: (victim matches filter OR attacker matches filter)
  */
 function buildFilterConditions(filters?: StatsFilters): any[] {
   if (!filters) return [];
@@ -143,35 +228,142 @@ function buildFilterConditions(filters?: StatsFilters): any[] {
 }
 
 /**
- * Get total killmail stats
+ * Build optimized filter conditions using OR of EXISTS subqueries
+ * This avoids joining victims and lets SQLite use better query plans
  */
-async function getTotalStats(filterConditions: any[]) {
-  const query = db
-    .select({
-      total: count(),
-    })
-    .from(killmails)
-    .leftJoin(victims, eq(killmails.id, victims.killmailId));
+function buildOptimizedFilterConditions(filters?: StatsFilters): any[] {
+  if (!filters) return [];
 
-  if (filterConditions.length > 0) {
-    query.where(and(...filterConditions));
+  const conditions: any[] = [];
+
+  if (filters.characterIds && filters.characterIds.length > 0) {
+    // Use OR of EXISTS subqueries - avoids joins and allows better index usage
+    conditions.push(
+      sql`(EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${victims.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})) 
+           OR EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${attackers.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})))`
+    );
   }
 
-  const [result] = await query.execute();
+  if (filters.corporationIds && filters.corporationIds.length > 0) {
+    conditions.push(
+      sql`(EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${victims.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})) 
+           OR EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${attackers.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})))`
+    );
+  }
 
-  // For filtered stats, calculate kills vs losses
+  if (filters.allianceIds && filters.allianceIds.length > 0) {
+    conditions.push(
+      sql`(EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${victims.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})) 
+           OR EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${attackers.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})))`
+    );
+  }
+
+  return conditions;
+}
+
+/**
+ * Build filter conditions for KILLS (where entity is attacker)
+ */
+function buildKillFilterConditions(filters?: StatsFilters): any[] {
+  if (!filters) return [];
+
+  const conditions: any[] = [];
+
+  if (filters.characterIds && filters.characterIds.length > 0) {
+    conditions.push(
+      sql`EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${attackers.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)}))`
+    );
+  }
+
+  if (filters.corporationIds && filters.corporationIds.length > 0) {
+    conditions.push(
+      sql`EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${attackers.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)}))`
+    );
+  }
+
+  if (filters.allianceIds && filters.allianceIds.length > 0) {
+    conditions.push(
+      sql`EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${attackers.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)}))`
+    );
+  }
+
+  return conditions;
+}
+
+/**
+ * Build filter conditions for LOSSES (where entity is victim)
+ */
+function buildLossFilterConditions(filters?: StatsFilters): any[] {
+  if (!filters) return [];
+
+  const conditions: any[] = [];
+
+  if (filters.characterIds && filters.characterIds.length > 0) {
+    conditions.push(inArray(victims.characterId, filters.characterIds));
+  }
+
+  if (filters.corporationIds && filters.corporationIds.length > 0) {
+    conditions.push(inArray(victims.corporationId, filters.corporationIds));
+  }
+
+  if (filters.allianceIds && filters.allianceIds.length > 0) {
+    conditions.push(inArray(victims.allianceId, filters.allianceIds));
+  }
+
+  return conditions;
+}
+
+/**
+ * Get total killmail stats
+ * Optimized: Uses COUNT(DISTINCT) instead of fetching all rows
+ */
+async function getTotalStats(filters?: StatsFilters, filterConditions: any[] = []) {
+  let totalKillmails = 0;
   let kills = 0;
   let losses = 0;
 
-  if (filterConditions.length > 0) {
-    // This is approximate - we'll count based on victims for now
-    // A more accurate count would require separate queries
-    kills = result?.total || 0;
-    losses = 0; // TODO: Implement proper kill/loss separation
+  if (filters) {
+    // When filters are provided, count kills and losses separately using SQL COUNT(DISTINCT)
+
+    // Count KILLS - where the entity is an attacker (appears in attackers table)
+    const killFilterConditions = buildKillFilterConditions(filters);
+    const [killsResult] = await db
+      .select({
+        count: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
+      })
+      .from(killmails)
+      .innerJoin(attackers, eq(killmails.id, attackers.killmailId))
+      .where(killFilterConditions.length > 0 ? and(...killFilterConditions) : undefined)
+      .execute();
+
+    // Count LOSSES - where the entity is a victim
+    const lossFilterConditions = buildLossFilterConditions(filters);
+    const [lossesResult] = await db
+      .select({
+        count: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
+      })
+      .from(killmails)
+      .leftJoin(victims, eq(killmails.id, victims.killmailId))
+      .where(lossFilterConditions.length > 0 ? and(...lossFilterConditions) : undefined)
+      .execute();
+
+    kills = killsResult?.count || 0;
+    losses = lossesResult?.count || 0;
+    totalKillmails = kills + losses;
+  } else {
+    // No filters - count all killmails
+    const [result] = await db
+      .select({
+        total: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
+      })
+      .from(killmails)
+      .execute();
+
+    totalKillmails = result?.total || 0;
   }
 
   return {
-    totalKillmails: result?.total || 0,
+    totalKillmails,
     totalKills: kills,
     totalLosses: losses,
   };
@@ -180,17 +372,24 @@ async function getTotalStats(filterConditions: any[]) {
 /**
  * Get ISK statistics
  */
-async function getISKStats(filterConditions: any[]) {
+async function getISKStats(filters?: StatsFilters, filterConditions: any[] = []) {
   // SQLite doesn't have BIGINT, so we sum as REAL (float64) which can handle large numbers
-  const query = db
+  let query = db
     .select({
       totalDestroyed: sql<string>`CAST(COALESCE(SUM(CAST(${killmails.totalValue} AS REAL)), 0) AS TEXT)`,
     })
-    .from(killmails)
-    .leftJoin(victims, eq(killmails.id, victims.killmailId));
+    .from(killmails) as any;
 
-  if (filterConditions.length > 0) {
-    query.where(and(...filterConditions));
+  // Use optimized conditions if available, otherwise fall back to original
+  const optimizedConditions = buildOptimizedFilterConditions(filters);
+  
+  if (optimizedConditions.length > 0) {
+    // Use optimized EXISTS-based conditions without join
+    query = query.where(and(...optimizedConditions));
+  } else if (filterConditions.length > 0) {
+    // Fall back to original approach if provided
+    query = query.leftJoin(victims, eq(killmails.id, victims.killmailId));
+    query = query.where(and(...filterConditions));
   }
 
   const [result] = await query.execute();
@@ -203,108 +402,111 @@ async function getISKStats(filterConditions: any[]) {
 
 /**
  * Get active pilots statistics
+ * Optimized: Uses COUNT(DISTINCT) and single query with CASE for all time periods
  */
-async function getActivePilotsStats(filterConditions: any[]) {
+async function getActivePilotsStats(filters?: StatsFilters) {
   const now = Date.now();
   const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
-  // Last 24 hours
-  const last24hQuery = db
-    .selectDistinct({ characterId: attackers.characterId })
-    .from(attackers)
-    .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
-    .where(
-      and(
-        gte(killmails.killmailTime, oneDayAgo),
-        sql`${attackers.characterId} IS NOT NULL`,
-        ...(filterConditions.length > 0 ? filterConditions : [])
-      )
-    );
+  // Build optimized filter conditions
+  const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
 
-  // Last 7 days
-  const last7dQuery = db
-    .selectDistinct({ characterId: attackers.characterId })
+  // Single query with CASE to get all time periods at once
+  let query = db
+    .select({
+      period: sql<string>`CASE
+        WHEN ${killmails.killmailTime} >= ${oneDayAgo} THEN '24h'
+        WHEN ${killmails.killmailTime} >= ${sevenDaysAgo} THEN '7d'
+        ELSE 'all'
+      END`,
+      count: sql<number>`COUNT(DISTINCT ${attackers.characterId})`.mapWith(Number),
+    })
     .from(attackers)
-    .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
-    .where(
-      and(
-        gte(killmails.killmailTime, sevenDaysAgo),
-        sql`${attackers.characterId} IS NOT NULL`,
-        ...(filterConditions.length > 0 ? filterConditions : [])
-      )
-    );
+    .innerJoin(killmails, eq(attackers.killmailId, killmails.id)) as any;
 
-  // All time unique pilots
-  const allTimeQuery = db
-    .selectDistinct({ characterId: attackers.characterId })
-    .from(attackers)
-    .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
+  const results = await query
     .where(
       and(
         sql`${attackers.characterId} IS NOT NULL`,
-        ...(filterConditions.length > 0 ? filterConditions : [])
+        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
       )
-    );
+    )
+    .groupBy(sql`CASE
+      WHEN ${killmails.killmailTime} >= ${oneDayAgo} THEN '24h'
+      WHEN ${killmails.killmailTime} >= ${sevenDaysAgo} THEN '7d'
+      ELSE 'all'
+    END`)
+    .execute();
 
-  const [last24h, last7d, allTime] = await Promise.all([
-    last24hQuery.execute(),
-    last7dQuery.execute(),
-    allTimeQuery.execute(),
-  ]);
+  // Extract counts from result
+  const resultMap = new Map(results.map((r: any) => [r.period, r.count]));
 
   return {
-    activePilotsLast24Hours: last24h.length,
-    activePilotsLast7Days: last7d.length,
-    totalUniquePilots: allTime.length,
+    activePilotsLast24Hours: (resultMap.get('24h') as number) || 0,
+    activePilotsLast7Days: (resultMap.get('7d') as number) || 0,
+    totalUniquePilots: (resultMap.get('all') as number) || 0,
   };
 }
 
 /**
  * Get time-based statistics
+ * Optimized: Uses single query with CASE statement instead of 3 separate queries
  */
-async function getTimeBasedStats(filterConditions: any[]) {
+async function getTimeBasedStats(filters?: StatsFilters) {
   const now = Date.now();
   const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
   const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-  // Build base query
-  const buildQuery = (since: Date) => {
-    const query = db
-      .select({ count: count() })
-      .from(killmails)
-      .leftJoin(victims, eq(killmails.id, victims.killmailId))
-      .where(
-        and(
-          gte(killmails.killmailTime, since),
-          ...(filterConditions.length > 0 ? filterConditions : [])
-        )
-      );
-    return query;
-  };
+  // Build optimized filter conditions
+  const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
 
-  const [last24h, last7d, last30d] = await Promise.all([
-    buildQuery(oneDayAgo).execute(),
-    buildQuery(sevenDaysAgo).execute(),
-    buildQuery(thirtyDaysAgo).execute(),
-  ]);
+  // Single query with CASE to get all time periods at once
+  let query = db
+    .select({
+      period: sql<string>`CASE
+        WHEN ${killmails.killmailTime} >= ${oneDayAgo} THEN '24h'
+        WHEN ${killmails.killmailTime} >= ${sevenDaysAgo} THEN '7d'
+        WHEN ${killmails.killmailTime} >= ${thirtyDaysAgo} THEN '30d'
+        ELSE 'other'
+      END`,
+      count: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
+    })
+    .from(killmails) as any;
+
+  const results = await query
+    .where(
+      optimizedFilterConditions.length > 0
+        ? and(...optimizedFilterConditions)
+        : undefined
+    )
+    .groupBy(sql`CASE
+      WHEN ${killmails.killmailTime} >= ${oneDayAgo} THEN '24h'
+      WHEN ${killmails.killmailTime} >= ${sevenDaysAgo} THEN '7d'
+      WHEN ${killmails.killmailTime} >= ${thirtyDaysAgo} THEN '30d'
+      ELSE 'other'
+    END`)
+    .execute();
+
+  // Extract counts from result
+  const resultMap = new Map(results.map((r: any) => [r.period, r.count]));
 
   return {
-    killsLast24Hours: last24h[0]?.count || 0,
-    killsLast7Days: last7d[0]?.count || 0,
-    killsLast30Days: last30d[0]?.count || 0,
+    killsLast24Hours: (resultMap.get('24h') as number) || 0,
+    killsLast7Days: (resultMap.get('7d') as number) || 0,
+    killsLast30Days: (resultMap.get('30d') as number) || 0,
   };
 }
 
 /**
  * Get ship statistics
  */
-async function getShipStats(filterConditions: any[]) {
-  // Most destroyed ship (victim ships)
+async function getShipStats(filters?: StatsFilters) {
+  // Build optimized filter conditions (uses EXISTS for proper index usage)
+  const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
+
+  // Most destroyed ship (victim ships) - separate query for better index usage
   const destroyedQuery = db
     .select({
       shipTypeId: victims.shipTypeId,
@@ -314,12 +516,17 @@ async function getShipStats(filterConditions: any[]) {
     .from(victims)
     .innerJoin(killmails, eq(victims.killmailId, killmails.id))
     .leftJoin(types, eq(victims.shipTypeId, types.typeId))
-    .where(filterConditions.length > 0 ? and(...filterConditions) : undefined)
+    .where(
+      and(
+        sql`${victims.shipTypeId} IS NOT NULL`,
+        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
+      )
+    )
     .groupBy(victims.shipTypeId)
     .orderBy(desc(count()))
     .limit(1);
 
-  // Most used ship (attacker ships)
+  // Most used ship (attacker ships) - separate query for better index usage
   const usedQuery = db
     .select({
       shipTypeId: attackers.shipTypeId,
@@ -328,12 +535,11 @@ async function getShipStats(filterConditions: any[]) {
     })
     .from(attackers)
     .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
     .leftJoin(types, eq(attackers.shipTypeId, types.typeId))
     .where(
       and(
         sql`${attackers.shipTypeId} IS NOT NULL`,
-        ...(filterConditions.length > 0 ? filterConditions : [])
+        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
       )
     )
     .groupBy(attackers.shipTypeId)
@@ -358,7 +564,10 @@ async function getShipStats(filterConditions: any[]) {
 /**
  * Get system statistics
  */
-async function getSystemStats(filterConditions: any[]) {
+async function getSystemStats(filters?: StatsFilters) {
+  // Build optimized filter conditions (uses EXISTS for proper index usage)
+  const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
+
   const query = db
     .select({
       solarSystemId: killmails.solarSystemId,
@@ -366,9 +575,8 @@ async function getSystemStats(filterConditions: any[]) {
       count: count(),
     })
     .from(killmails)
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
     .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId))
-    .where(filterConditions.length > 0 ? and(...filterConditions) : undefined)
+    .where(optimizedFilterConditions.length > 0 ? and(...optimizedFilterConditions) : undefined)
     .groupBy(killmails.solarSystemId)
     .orderBy(desc(count()))
     .limit(1);
@@ -385,7 +593,10 @@ async function getSystemStats(filterConditions: any[]) {
 /**
  * Get top entities (killer, corporation, alliance)
  */
-async function getTopEntities(filterConditions: any[]) {
+async function getTopEntities(filters?: StatsFilters) {
+  // Build optimized filter conditions (uses EXISTS for proper index usage)
+  const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
+
   // Top killer (character with most final blows)
   const topKillerQuery = db
     .select({
@@ -395,13 +606,12 @@ async function getTopEntities(filterConditions: any[]) {
     })
     .from(attackers)
     .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
     .leftJoin(characters, eq(attackers.characterId, characters.characterId))
     .where(
       and(
         eq(attackers.finalBlow, true),
         sql`${attackers.characterId} IS NOT NULL`,
-        ...(filterConditions.length > 0 ? filterConditions : [])
+        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
       )
     )
     .groupBy(attackers.characterId)
@@ -417,12 +627,11 @@ async function getTopEntities(filterConditions: any[]) {
     })
     .from(attackers)
     .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
     .leftJoin(corporations, eq(attackers.corporationId, corporations.corporationId))
     .where(
       and(
         sql`${attackers.corporationId} IS NOT NULL`,
-        ...(filterConditions.length > 0 ? filterConditions : [])
+        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
       )
     )
     .groupBy(attackers.corporationId)
@@ -438,12 +647,11 @@ async function getTopEntities(filterConditions: any[]) {
     })
     .from(attackers)
     .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
     .leftJoin(alliances, eq(attackers.allianceId, alliances.allianceId))
     .where(
       and(
         sql`${attackers.allianceId} IS NOT NULL`,
-        ...(filterConditions.length > 0 ? filterConditions : [])
+        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
       )
     )
     .groupBy(attackers.allianceId)
@@ -484,49 +692,113 @@ async function getTopEntities(filterConditions: any[]) {
 /**
  * Get miscellaneous statistics
  */
-async function getMiscStats(filterConditions: any[]) {
-  // Solo kills
-  const soloQuery = db
-    .select({ count: count() })
-    .from(killmails)
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
-    .where(
-      and(
-        eq(killmails.isSolo, true),
-        ...(filterConditions.length > 0 ? filterConditions : [])
-      )
-    );
+async function getMiscStats(filters?: StatsFilters) {
+  // Build optimized filter conditions
+  const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
 
-  // NPC kills
-  const npcQuery = db
-    .select({ count: count() })
-    .from(killmails)
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
-    .where(
-      and(
-        eq(killmails.isNpc, true),
-        ...(filterConditions.length > 0 ? filterConditions : [])
-      )
-    );
-
-  // Average attackers per kill
-  const avgQuery = db
+  // Optimized: Combine 3 queries into 1
+  let query = db
     .select({
-      avg: sql<number>`AVG(${killmails.attackerCount})`,
+      soloCount: sql<number>`SUM(CASE WHEN ${killmails.isSolo} = 1 THEN 1 ELSE 0 END)`.mapWith(Number),
+      npcCount: sql<number>`SUM(CASE WHEN ${killmails.isNpc} = 1 THEN 1 ELSE 0 END)`.mapWith(Number),
+      avgAttackers: sql<number>`AVG(${killmails.attackerCount})`.mapWith(Number),
     })
-    .from(killmails)
-    .leftJoin(victims, eq(killmails.id, victims.killmailId))
-    .where(filterConditions.length > 0 ? and(...filterConditions) : undefined);
+    .from(killmails) as any;
 
-  const [solo, npc, avg] = await Promise.all([
-    soloQuery.execute(),
-    npcQuery.execute(),
-    avgQuery.execute(),
-  ]);
+  const [result] = await query
+    .where(optimizedFilterConditions.length > 0 ? and(...optimizedFilterConditions) : undefined)
+    .execute();
 
   return {
-    soloKills: solo[0]?.count || 0,
-    npcKills: npc[0]?.count || 0,
-    averageAttackersPerKill: Math.round((avg[0]?.avg || 0) * 10) / 10,
+    soloKills: result?.soloCount || 0,
+    npcKills: result?.npcCount || 0,
+    averageAttackersPerKill: result?.avgAttackers ? Math.round(result.avgAttackers * 10) / 10 : 0,
+  };
+}
+
+/**
+ * Get total stats for KILLS only (entity as attacker)
+ */
+async function getTotalStatsForKills(filters?: StatsFilters, filterConditions: any[] = []) {
+  let totalKillmails = 0;
+  let kills = 0;
+  let losses = 0;
+
+  if (filters) {
+    // For kills, we only count kills
+    const killFilterConditions = buildKillFilterConditions(filters);
+    const killsQuery = db
+      .selectDistinct({ killmailId: killmails.id })
+      .from(killmails)
+      .innerJoin(attackers, eq(killmails.id, attackers.killmailId))
+      .leftJoin(victims, eq(killmails.id, victims.killmailId));
+
+    if (killFilterConditions.length > 0) {
+      killsQuery.where(and(...killFilterConditions));
+    }
+
+    const killsResult = await killsQuery.execute();
+    kills = killsResult.length;
+    totalKillmails = kills;
+  } else {
+    // No filters - count all killmails
+    const query = db
+      .select({
+        total: count(),
+      })
+      .from(killmails)
+      .leftJoin(victims, eq(killmails.id, victims.killmailId));
+
+    const [result] = await query.execute();
+    totalKillmails = result?.total || 0;
+  }
+
+  return {
+    totalKillmails,
+    totalKills: kills,
+    totalLosses: losses,
+  };
+}
+
+/**
+ * Get total stats for LOSSES only (entity as victim)
+ */
+async function getTotalStatsForLosses(filters?: StatsFilters, filterConditions: any[] = []) {
+  let totalKillmails = 0;
+  let kills = 0;
+  let losses = 0;
+
+  if (filters) {
+    // For losses, we only count losses
+    const lossFilterConditions = buildLossFilterConditions(filters);
+    const lossesQuery = db
+      .selectDistinct({ killmailId: killmails.id })
+      .from(killmails)
+      .leftJoin(victims, eq(killmails.id, victims.killmailId));
+
+    if (lossFilterConditions.length > 0) {
+      lossesQuery.where(and(...lossFilterConditions));
+    }
+
+    const lossesResult = await lossesQuery.execute();
+    losses = lossesResult.length;
+    totalKillmails = losses;
+  } else {
+    // No filters - count all killmails
+    const query = db
+      .select({
+        total: count(),
+      })
+      .from(killmails)
+      .leftJoin(victims, eq(killmails.id, victims.killmailId));
+
+    const [result] = await query.execute();
+    totalKillmails = result?.total || 0;
+  }
+
+  return {
+    totalKillmails,
+    totalKills: kills,
+    totalLosses: losses,
   };
 }
