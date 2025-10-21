@@ -1,116 +1,125 @@
 <!-- Killmail List Table -->
 {{#if killmails.length}}
 <table class="kb-table kb-kl-table" cellspacing="1">
-    <tr class="kb-table-header">
-        <td class="kb-table-header" colspan="2" style="width:220px; text-align:center">Ship type</td>
-        <td class="kb-table-header" style="width:180px; text-align:center">Victim</td>
-        <td class="kb-table-header" style="width:150px; text-align:center">Final blow</td>
-        <td class="kb-table-header" style="width:147px; text-align:center">Location</td>
-        <td class="kb-table-header" style="width:100px; text-align:right">Value</td>
-        <td class="kb-table-header" style="width:70px; text-align:center">Time</td>
-    </tr>
-
+    <thead>
+        <tr class="kb-table-header">
+            <th class="kb-table-header kb-kl-table__col-ship text-center" colspan="2">Ship type</th>
+            <th class="kb-table-header kb-kl-table__col-victim text-center">Victim</th>
+            <th class="kb-table-header kb-kl-table__col-finalblow text-center">Final blow</th>
+            <th class="kb-table-header kb-kl-table__col-location text-center">Location</th>
+            <th class="kb-table-header kb-kl-table__col-value text-right">Value</th>
+            <th class="kb-table-header kb-kl-table__col-time text-center">Time</th>
+        </tr>
+    </thead>
+    <tbody>
     {{#each killmails}}
-    <tr class="{{#if (mod @index 2)}}kb-table-row-odd{{else}}kb-table-row-even{{/if}}" onclick="window.location.href='/killmail/{{killmail_id}}';" style="cursor: pointer;">
+    <tr onclick="window.location.href='/killmail/{{killmail_id}}';">
         <!-- Ship Image -->
-        <td class="kb-table-imgcell" style="padding: 4px;">
+        <td class="kb-table-imgcell">
             <img src="https://images.evetech.net/types/{{victim.ship.type_id}}/icon?size=128"
-                 style="border: 0px; width: 40px; height: 40px; display: block; margin: 0 auto;"
+                 class="kb-kl-ship-icon"
                  alt="{{victim.ship.name}}" />
         </td>
 
         <!-- Ship Type & Class -->
-        <td class="kb-table-cell" style="vertical-align: middle; padding: 4px 8px;">
-            <div class="no_stretch" style="width: 140px; line-height: 1.3;">
-                <b>{{victim.ship.name}}</b>
-                <br />
-                <span style="color: #999; font-size: 9px;">{{victim.ship.group}}</span>
+        <td class="kb-kl-cell">
+            <div class="kb-kl-info kb-kl-info--ship">
+                <div class="kb-kl-info__primary">{{victim.ship.name}}</div>
+                <div class="kb-kl-info__secondary">{{victim.ship.group}}</div>
             </div>
         </td>
 
         <!-- Victim -->
-        <td class="kb-table-cell" style="vertical-align: middle; padding: 4px 8px;">
-            <div class="no_stretch" style="width: 170px; line-height: 1.3;">
+        <td class="kb-kl-cell">
+            <div class="kb-kl-info kb-kl-info--victim">
                 {{#if victim.character.id}}
-                <b><a href="/character/{{victim.character.id}}" style="color: #fff; text-decoration: none;">{{victim.character.name}}</a></b>
+                <div class="kb-kl-info__primary">
+                    <a href="/character/{{victim.character.id}}" class="kb-kl-info__link">{{victim.character.name}}</a>
+                </div>
                 {{else}}
-                <b>{{victim.character.name}}</b>
+                <div class="kb-kl-info__primary">{{victim.character.name}}</div>
                 {{/if}}
-                <br />
-                <span style="color: #999; font-size: 9px;">
+                <div class="kb-kl-info__secondary">
                     {{#if victim.corporation.id}}
-                    <a href="/corporation/{{victim.corporation.id}}" style="color: #999; text-decoration: none;">{{victim.corporation.name}}</a>
+                    <a href="/corporation/{{victim.corporation.id}}" class="kb-kl-info__link--secondary">{{victim.corporation.name}}</a>
                     {{else}}
                     {{victim.corporation.name}}
                     {{/if}}
-                </span>
+                </div>
                 {{#if victim.alliance.name}}
-                <br />
-                <span style="color: #999; font-size: 9px;">
-                    {{#if victim.alliance.id}}<a href="/alliance/{{victim.alliance.id}}" style="color: #999; text-decoration: none;">{{victim.alliance.name}}</a>{{else}}{{victim.alliance.name}}{{/if}}
-                </span>
+                <div class="kb-kl-info__secondary">
+                    {{#if victim.alliance.id}}
+                    <a href="/alliance/{{victim.alliance.id}}" class="kb-kl-info__link--secondary">{{victim.alliance.name}}</a>
+                    {{else}}
+                    {{victim.alliance.name}}
+                    {{/if}}
+                </div>
                 {{/if}}
             </div>
         </td>
 
         <!-- Final Blow -->
-        <td class="kb-table-cell" style="vertical-align: middle; padding: 4px 8px;">
-            <div class="no_stretch" style="width: 140px; line-height: 1.3;">
+        <td class="kb-kl-cell">
+            <div class="kb-kl-info kb-kl-info--finalblow">
                 {{#if attackers.[0]}}
                 {{#if attackers.[0].character.id}}
-                <b><a href="/character/{{attackers.[0].character.id}}" style="color: #fff; text-decoration: none;">{{attackers.[0].character.name}}</a></b>
+                <div class="kb-kl-info__primary">
+                    <a href="/character/{{attackers.[0].character.id}}" class="kb-kl-info__link">{{attackers.[0].character.name}}</a>
+                </div>
                 {{else}}
-                <b>{{attackers.[0].character.name}}</b>
+                <div class="kb-kl-info__primary">{{attackers.[0].character.name}}</div>
                 {{/if}}
-                <br />
-                <span style="color: #999; font-size: 9px;">
+                <div class="kb-kl-info__secondary">
                     {{#if attackers.[0].corporation.id}}
-                    <a href="/corporation/{{attackers.[0].corporation.id}}" style="color: #999; text-decoration: none;">{{attackers.[0].corporation.name}}</a>
+                    <a href="/corporation/{{attackers.[0].corporation.id}}" class="kb-kl-info__link--secondary">{{attackers.[0].corporation.name}}</a>
                     {{else}}
                     {{attackers.[0].corporation.name}}
                     {{/if}}
-                </span>
+                </div>
                 {{#if attackers.[0].alliance.name}}
-                <br />
-                <span style="color: #999; font-size: 9px;">
-                    {{#if attackers.[0].alliance.id}}<a href="/alliance/{{attackers.[0].alliance.id}}" style="color: #999; text-decoration: none;">{{attackers.[0].alliance.name}}</a>{{else}}{{attackers.[0].alliance.name}}{{/if}}
-                </span>
+                <div class="kb-kl-info__secondary">
+                    {{#if attackers.[0].alliance.id}}
+                    <a href="/alliance/{{attackers.[0].alliance.id}}" class="kb-kl-info__link--secondary">{{attackers.[0].alliance.name}}</a>
+                    {{else}}
+                    {{attackers.[0].alliance.name}}
+                    {{/if}}
+                </div>
                 {{/if}}
                 {{else}}
-                <span style="color: #666;">Unknown</span>
+                <div class="kb-kl-value--unknown">Unknown</div>
                 {{/if}}
             </div>
         </td>
 
         <!-- Location -->
-        <td class="kb-table-cell" style="text-align: center; vertical-align: middle; padding: 4px 8px;">
-            <div style="line-height: 1.3;">
-                <b>{{solar_system.name}}</b>
-                <br />
-                <span style="color: #999; font-size: 9px;">{{solar_system.region}}</span>
+        <td class="kb-kl-cell kb-kl-cell--center">
+            <div class="kb-kl-info">
+                <div class="kb-kl-info__primary">{{solar_system.name}}</div>
+                <div class="kb-kl-info__secondary">{{solar_system.region}}</div>
             </div>
         </td>
 
         <!-- Value -->
-        <td class="kb-table-cell" style="text-align: right; vertical-align: middle; font-weight: bold; padding: 4px 8px;">
+        <td class="kb-kl-cell kb-kl-cell--right">
             {{#if ship_value}}
-                <span style="color: #FFF;">{{abbreviateISK ship_value}}</span>
+                <span class="kb-kl-value">{{abbreviateISK ship_value}}</span>
             {{else}}
-                <span style="color: #999; font-size: 9px;">N/A</span>
+                <span class="kb-kl-value--unknown">N/A</span>
             {{/if}}
         </td>
 
         <!-- Time -->
-        <td class="kb-table-cell" style="text-align: center; vertical-align: middle; padding: 4px 8px;">
-            <span style="font-size: 9px;">{{formatDate killmail_time}}</span>
+        <td class="kb-kl-cell kb-kl-cell--center">
+            <span class="kb-kl-time">{{formatDate killmail_time}}</span>
         </td>
     </tr>
     {{/each}}
+    </tbody>
 </table>
 {{else}}
 <table class="kb-table kb-kl-table" cellspacing="1">
     <tr class="kb-table-header">
-        <td class="kb-table-header" colspan="7" style="text-align:center">No killmails found.</td>
+        <td class="kb-table-header text-center" colspan="7">No killmails found.</td>
     </tr>
 </table>
 {{/if}}

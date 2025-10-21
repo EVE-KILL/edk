@@ -239,21 +239,21 @@ function buildOptimizedFilterConditions(filters?: StatsFilters): any[] {
   if (filters.characterIds && filters.characterIds.length > 0) {
     // Use OR of EXISTS subqueries - avoids joins and allows better index usage
     conditions.push(
-      sql`(EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${victims.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})) 
+      sql`(EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${victims.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)}))
            OR EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${attackers.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})))`
     );
   }
 
   if (filters.corporationIds && filters.corporationIds.length > 0) {
     conditions.push(
-      sql`(EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${victims.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})) 
+      sql`(EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${victims.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)}))
            OR EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${attackers.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})))`
     );
   }
 
   if (filters.allianceIds && filters.allianceIds.length > 0) {
     conditions.push(
-      sql`(EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${victims.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})) 
+      sql`(EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${victims.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)}))
            OR EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${attackers.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})))`
     );
   }
@@ -382,7 +382,7 @@ async function getISKStats(filters?: StatsFilters, filterConditions: any[] = [])
 
   // Use optimized conditions if available, otherwise fall back to original
   const optimizedConditions = buildOptimizedFilterConditions(filters);
-  
+
   if (optimizedConditions.length > 0) {
     // Use optimized EXISTS-based conditions without join
     query = query.where(and(...optimizedConditions));

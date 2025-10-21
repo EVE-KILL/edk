@@ -1,18 +1,18 @@
 <!-- Killmail Detail - EDK Style -->
 
 <!-- Two Column Layout -->
-<div style="display: flex; gap: 12px; margin-bottom: 20px;">
+<div class="killmail-detail-wrapper">
     <!-- Left Column - Items -->
-    <div style="flex: 65; min-width: 0;">
+    <div id="kl-detail-left">
 
         <!-- Fitting Wheel -->
-        <div style="margin-bottom: 20px;">
+        <div class="mb-lg">
             {{> partials/fitting-wheel}}
         </div>
 
         <!-- Items Destroyed/Dropped -->
         <div class="kl-detail-fitting">
-            <div class="block-header2">Items Destroyed & Dropped</div>
+            {{> components/section-header title="Items Destroyed & Dropped" bordered=true}}
 
             <table class="kb-table" cellspacing="1" style="width: 100%;">
                 <tr class="kb-table-header">
@@ -582,7 +582,7 @@
     </div>
 
     <!-- Right Column - People -->
-    <div style="flex: 35; min-width: 0;">
+    <div id="kl-detail-right">
 
         <!-- Victim Info -->
         <div style="margin-bottom: 10px;">

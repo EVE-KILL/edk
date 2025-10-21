@@ -1,0 +1,73 @@
+{{!--
+  Entity Header Component
+  Consolidates character/corporation/alliance header displays
+
+  Usage:
+  {{> components/entity-header
+      imageUrl=imageUrl
+      name=name
+      ticker=ticker
+      type="character"
+      parent=parentEntity
+      stats=stats
+  }}
+
+  Props:
+  - imageUrl: string (entity image URL)
+  - name: string (entity name)
+  - ticker: string (optional, entity ticker/tag)
+  - type: string (character|corporation|alliance)
+  - parent: object (optional, parent entity with id, name, ticker)
+  - grandparent: object (optional, for character -> corp -> alliance)
+  - stats: object (entity statistics)
+--}}
+<div class="entity-hero">
+  <img src="{{imageUrl}}" alt="{{name}}" class="entity-hero__image" />
+
+  <div class="entity-hero__info">
+    <!-- Entity Name Header -->
+    <div class="entity-hero__header">
+      <h1 class="entity-hero__title">
+        {{name}}{{#if ticker}} <span class="entity-hero__ticker">[{{ticker}}]</span>{{/if}}
+      </h1>
+
+      {{#if parent}}
+      <div class="entity-hero__relations">
+        <span class="color-secondary">
+          {{#ifEquals type "character"}}Corporation:{{else}}Alliance:{{/ifEquals}}
+        </span>
+        <a href="/{{#ifEquals type "character"}}corporation{{else}}alliance{{/ifEquals}}/{{parent.id}}" class="entity-hero__link">
+          {{parent.name}}{{#if parent.ticker}} [{{parent.ticker}}]{{/if}}
+        </a>
+
+        {{#if grandparent}}
+        <span class="color-secondary" style="margin-left: 15px;">Alliance:</span>
+        <a href="/alliance/{{grandparent.id}}" class="entity-hero__link">
+          {{grandparent.name}}{{#if grandparent.ticker}} [{{grandparent.ticker}}]{{/if}}
+        </a>
+        {{/if}}
+      </div>
+      {{/if}}
+    </div>
+
+    <!-- Stats Table -->
+    {{#if stats}}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="data-table__header" colspan="2">Statistics</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{> components/stat-row label="Kills:" value=stats.kills classes="color-green"}}
+        {{> components/stat-row label="Losses:" value=stats.losses classes="color-red"}}
+        {{> components/stat-row label="Kill/Loss Ratio:" value=(formatNumber stats.killLossRatio) classes="color-gold"}}
+        {{> components/stat-row label="Efficiency:" value=(concat (formatNumber stats.efficiency) "%") classes="color-gold"}}
+        {{> components/stat-row label="ISK Destroyed:" value=(formatISK stats.iskDestroyed) classes="color-green"}}
+        {{> components/stat-row label="ISK Lost:" value=(formatISK stats.iskLost) classes="color-red"}}
+        {{> components/stat-row label="ISK Efficiency:" value=(concat (formatNumber stats.iskEfficiency) "%") classes="color-gold"}}
+      </tbody>
+    </table>
+    {{/if}}
+  </div>
+</div>

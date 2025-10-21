@@ -95,6 +95,7 @@ async function getTemplate(templatePath: string): Promise<HandlebarsTemplateDele
  */
 export async function registerPartials() {
   try {
+    // Register partials from partials directory
     const partialsDir = join(process.cwd(), "templates/partials");
     const files = await readdir(partialsDir, { recursive: true });
 
@@ -104,6 +105,19 @@ export async function registerPartials() {
         const partialPath = join(partialsDir, file);
         const partialSource = await readFile(partialPath, "utf-8");
         Handlebars.registerPartial(`partials/${partialName}`, partialSource);
+      }
+    }
+
+    // Register components from components directory
+    const componentsDir = join(process.cwd(), "templates/components");
+    const componentFiles = await readdir(componentsDir, { recursive: true });
+
+    for (const file of componentFiles) {
+      if (file.endsWith(".hbs")) {
+        const componentName = file.replace(".hbs", "").replace(/\\/g, "/");
+        const componentPath = join(componentsDir, file);
+        const componentSource = await readFile(componentPath, "utf-8");
+        Handlebars.registerPartial(`components/${componentName}`, componentSource);
       }
     }
   } catch (error) {
@@ -285,6 +299,24 @@ export function registerHelpers() {
   // Length helper to get array length
   Handlebars.registerHelper("length", function(array: any[]) {
     return Array.isArray(array) ? array.length : 0;
+  });
+
+  // Array helper - creates arrays for component props
+  Handlebars.registerHelper("array", function(...args: any[]) {
+    // Remove the Handlebars options object from the end
+    return args.slice(0, -1);
+  });
+
+  // Object helper - creates objects for component props
+  Handlebars.registerHelper("obj", function(this: any, ...args: any[]) {
+    const options = args[args.length - 1];
+    return options.hash;
+  });
+
+  // Concat helper - concatenates strings
+  Handlebars.registerHelper("concat", function(...args: any[]) {
+    // Remove the Handlebars options object from the end
+    return args.slice(0, -1).join("");
   });
 }
 

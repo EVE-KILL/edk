@@ -2,26 +2,29 @@
 
 {{#if summaryTable}}
 <!-- Summary Table -->
-<div style="margin-bottom: 20px;">
+<div class="mb-lg">
     {{{summaryTable}}}
 </div>
 {{/if}}
 
 <!-- Statistics Section -->
 {{#if statistics}}
-<div style="margin-bottom: 30px;">
-    <div class="block-header2">Killboard Statistics</div>
+<section class="section mb-lg">
+    {{> components/section-header title="Killboard Statistics" bordered=true}}
 
-    <table class="kb-table" cellspacing="1" style="width: 100%;">
-        <tr class="kb-table-header">
-            <td class="kb-table-header" colspan="4" style="text-align: center;">Overall Statistics</td>
-        </tr>
-        <tr class="kb-table-row-even">
-            <td class="kb-table-cell" style="width: 25%;"><b>Total Killmails:</b></td>
-            <td class="kb-table-cell" style="width: 25%;">{{statistics.totalKillmails}}</td>
-            <td class="kb-table-cell" style="width: 25%;"><b>Total ISK Destroyed:</b></td>
-            <td class="kb-table-cell" style="width: 25%;"><span class="isk-value">{{formatISK statistics.totalISKDestroyed}}</span></td>
-        </tr>
+    <table class="kb-table" cellspacing="1">
+        <thead>
+            <tr class="kb-table-header">
+                <th class="kb-table-header text-center" colspan="4">Overall Statistics</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="kb-table-row-even">
+                <td class="kb-table-cell"><b>Total Killmails:</b></td>
+                <td class="kb-table-cell">{{statistics.totalKillmails}}</td>
+                <td class="kb-table-cell"><b>Total ISK Destroyed:</b></td>
+                <td class="kb-table-cell"><span class="isk-value">{{formatISK statistics.totalISKDestroyed}}</span></td>
+            </tr>
         <tr class="kb-table-row-odd">
             <td class="kb-table-cell"><b>Solo Kills:</b></td>
             <td class="kb-table-cell">{{statistics.soloKills}}</td>
@@ -33,11 +36,11 @@
             <td class="kb-table-cell">{{statistics.averageAttackersPerKill}}</td>
             <td class="kb-table-cell"><b>Unique Pilots:</b></td>
             <td class="kb-table-cell">{{statistics.totalUniquePilots}}</td>
-        </tr>
+            </tr>
 
-        <tr class="kb-table-header">
-            <td class="kb-table-header" colspan="4" style="text-align: center;">Activity</td>
-        </tr>
+            <tr class="kb-table-header">
+                <th class="kb-table-header text-center" colspan="4">Activity</th>
+            </tr>
         <tr class="kb-table-row-even">
             <td class="kb-table-cell"><b>Active Pilots (24h):</b></td>
             <td class="kb-table-cell">{{statistics.activePilotsLast24Hours}}</td>
@@ -55,12 +58,12 @@
             <td class="kb-table-cell">{{statistics.killsLast30Days}}</td>
             <td class="kb-table-cell"></td>
             <td class="kb-table-cell"></td>
-        </tr>
+            </tr>
 
-        {{#if statistics.topKiller}}
-        <tr class="kb-table-header">
-            <td class="kb-table-header" colspan="4" style="text-align: center;">Top Players & Organizations</td>
-        </tr>
+            {{#if statistics.topKiller}}
+            <tr class="kb-table-header">
+                <th class="kb-table-header text-center" colspan="4">Top Players & Organizations</th>
+            </tr>
         <tr class="kb-table-row-even">
             <td class="kb-table-cell"><b>Top Killer:</b></td>
             <td class="kb-table-cell"><a href="/character/{{statistics.topKiller.id}}">{{statistics.topKiller.name}}</a> ({{statistics.topKiller.kills}} kills)</td>
@@ -72,13 +75,13 @@
             <td class="kb-table-cell"><a href="/alliance/{{statistics.topAlliance.id}}">{{statistics.topAlliance.name}}</a> ({{statistics.topAlliance.kills}} kills)</td>
             <td class="kb-table-cell"></td>
             <td class="kb-table-cell"></td>
-        </tr>
-        {{/if}}
+            </tr>
+            {{/if}}
 
-        {{#if statistics.mostDestroyedShip}}
-        <tr class="kb-table-header">
-            <td class="kb-table-header" colspan="4" style="text-align: center;">Ships & Systems</td>
-        </tr>
+            {{#if statistics.mostDestroyedShip}}
+            <tr class="kb-table-header">
+                <th class="kb-table-header text-center" colspan="4">Ships & Systems</th>
+            </tr>
         <tr class="kb-table-row-even">
             <td class="kb-table-cell"><b>Most Destroyed Ship:</b></td>
             <td class="kb-table-cell"><a href="/type/{{statistics.mostDestroyedShip.id}}">{{statistics.mostDestroyedShip.name}}</a> ({{statistics.mostDestroyedShip.count}}x)</td>
@@ -90,15 +93,16 @@
             <td class="kb-table-cell"><a href="/system/{{statistics.mostDangerousSystem.id}}">{{statistics.mostDangerousSystem.name}}</a> ({{statistics.mostDangerousSystem.count}} kills)</td>
             <td class="kb-table-cell"></td>
             <td class="kb-table-cell"></td>
-        </tr>
-        {{/if}}
+            </tr>
+            {{/if}}
+        </tbody>
     </table>
-</div>
+</section>
 {{/if}}
 
 <!-- Recent Killmails -->
-<div class="killlist">
-    <div class="kb-kills-header">Recent Killmails</div>
+<section class="killlist">
+    {{> components/section-header title="Recent Killmails" icon="kills"}}
 
     <!-- Pagination Top -->
     {{> partials/pagination pagination=pagination}}
@@ -107,18 +111,18 @@
 
     <!-- Pagination Bottom -->
     {{> partials/pagination pagination=pagination}}
-</div>
+</section>
 
 <!-- Top Pilots / Top Corps (if available) -->
 {{#if topPilots}}
-<div style="margin-top: 30px;">
-    <div class="kb-kills-header">Top Killers</div>
+<section class="mt-xl">
+    {{> components/section-header title="Top Killers" icon="kills"}}
 
-    <table class="kb-table" cellspacing="1" style="width: 100%;">
+    <table class="kb-table" cellspacing="1">
         <tr class="kb-table-header">
-            <td class="kb-table-header" style="text-align: left;">Pilot</td>
-            <td class="kb-table-header" style="text-align: center; width: 80px;">Kills</td>
-            <td class="kb-table-header" style="text-align: right; width: 150px;">ISK Destroyed</td>
+            <td class="kb-table-header text-left">Pilot</td>
+            <td class="kb-table-header text-center" style="width: 80px;">Kills</td>
+            <td class="kb-table-header text-right" style="width: 150px;">ISK Destroyed</td>
         </tr>
 
         {{#each topPilots}}
@@ -126,14 +130,14 @@
             <td class="kb-table-cell">
                 <b>{{name}}</b>
                 <br />
-                <span style="color: #999; font-size: 9px;">{{corporation}}</span>
+                <span class="color-secondary" style="font-size: 9px;">{{corporation}}</span>
             </td>
-            <td class="kb-table-cell kl-kill" style="text-align: center;">{{kills}}</td>
-            <td class="kb-table-cell" style="text-align: right;">
+            <td class="kb-table-cell kl-kill text-center">{{kills}}</td>
+            <td class="kb-table-cell text-right">
                 <span class="isk-value">{{formatISK isk}}</span>
             </td>
         </tr>
         {{/each}}
     </table>
-</div>
+</section>
 {{/if}}

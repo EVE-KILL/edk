@@ -1,84 +1,10 @@
 <!-- Entity Stats Header (Character/Corporation/Alliance) -->
-<div style="margin-bottom: 20px;">
-    <div style="display: flex; gap: 15px;">
-        <!-- Large Entity Image (512x512) -->
-        <div style="flex-shrink: 0;">
-            <img src="{{imageUrl}}"
-                 alt="{{entityName}}"
-                 style="width: 256px; height: 256px; border-radius: 4px; display: block; box-shadow: 0 4px 8px rgba(0,0,0,0.3);" />
-        </div>
-
-        <!-- Name and Stats -->
-        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 10px;">
-            <!-- Entity Name Header -->
-            <div style="padding: 15px; background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 4px; border-left: 4px solid #4a9eff;">
-                <h1 style="margin: 0 0 8px 0; font-size: 28px; color: #4a9eff; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-                    {{entityName}}{{#if ticker}} <span style="color: #888;">[{{ticker}}]</span>{{/if}}
-                </h1>
-                {{#if character}}
-                    {{#if character.corporationName}}
-                    <div style="font-size: 14px; color: #ccc; margin-top: 5px;">
-                        <span style="color: #888;">Corporation:</span>
-                        <a href="/corporation/{{character.corporationId}}" style="color: #4a9eff; text-decoration: none;">
-                            {{character.corporationName}}{{#if character.corporationTicker}} [{{character.corporationTicker}}]{{/if}}
-                        </a>
-                        {{#if character.allianceName}}
-                        <span style="margin-left: 15px; color: #888;">Alliance:</span>
-                        <a href="/alliance/{{character.allianceId}}" style="color: #4a9eff; text-decoration: none;">
-                            {{character.allianceName}}{{#if character.allianceTicker}} [{{character.allianceTicker}}]{{/if}}
-                        </a>
-                        {{/if}}
-                    </div>
-                    {{/if}}
-                {{/if}}
-                {{#if corporation}}
-                    {{#if corporation.allianceName}}
-                    <div style="font-size: 14px; color: #ccc; margin-top: 5px;">
-                        <span style="color: #888;">Alliance:</span>
-                        <a href="/alliance/{{corporation.allianceId}}" style="color: #4a9eff; text-decoration: none;">
-                            {{corporation.allianceName}}{{#if corporation.allianceTicker}} [{{corporation.allianceTicker}}]{{/if}}
-                        </a>
-                    </div>
-                    {{/if}}
-                {{/if}}
-            </div>
-
-            <!-- Stats Table -->
-            <table class="kb-table" cellspacing="1" style="width: 100%;">
-                <tr class="kb-table-header">
-                    <td class="kb-table-header" colspan="2">
-                        <b>Statistics</b>
-                    </td>
-                </tr>
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" style="width: 50%;"><b>Kills:</b></td>
-                    <td class="kb-table-cell"><span class="isk-value">{{stats.kills}}</span></td>
-                </tr>
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell"><b>Losses:</b></td>
-                    <td class="kb-table-cell"><span class="isk-value">{{stats.losses}}</span></td>
-                </tr>
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell"><b>Kill/Loss Ratio:</b></td>
-                    <td class="kb-table-cell"><span class="isk-value">{{formatNumber stats.killLossRatio}}</span></td>
-                </tr>
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell"><b>Efficiency:</b></td>
-                    <td class="kb-table-cell"><span class="isk-value">{{formatNumber stats.efficiency}}%</span></td>
-                </tr>
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell"><b>ISK Destroyed:</b></td>
-                    <td class="kb-table-cell"><span class="isk-value">{{formatISK stats.iskDestroyed}}</span></td>
-                </tr>
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell"><b>ISK Lost:</b></td>
-                    <td class="kb-table-cell"><span class="isk-value">{{formatISK stats.iskLost}}</span></td>
-                </tr>
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell"><b>ISK Efficiency:</b></td>
-                    <td class="kb-table-cell"><span class="isk-value">{{formatNumber stats.iskEfficiency}}%</span></td>
-                </tr>
-            </table>
-        </div>
-    </div>
-</div>
+{{> components/entity-header
+    imageUrl=imageUrl
+    name=entityName
+    ticker=ticker
+    type=entityType
+    parent=parent
+    grandparent=grandparent
+    stats=stats
+}}

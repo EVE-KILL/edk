@@ -1,0 +1,36 @@
+{{!--
+  Stat Box Component
+  Display a statistics box with title and multiple stat rows
+
+  Usage:
+  {{> components/stat-box
+      title="Killboard Statistics"
+      icon="kills"
+      stats=statsArray
+  }}
+
+  Props:
+  - title: string (box title)
+  - icon: string (optional, kills|losses|campaign)
+  - stats: array of objects with { label, value, classes }
+
+  Example stats array:
+  [
+    { label: "Total Kills:", value: "1,234", classes: "color-green" },
+    { label: "Total Losses:", value: "567", classes: "color-red" },
+    { label: "ISK Destroyed:", value: "123.45B", classes: "color-gold" }
+  ]
+--}}
+<div class="stat-box">
+    {{#if title}}
+    {{> components/section-header title=title icon=icon bordered=true}}
+    {{/if}}
+
+    <table class="kb-table data-table" cellspacing="1">
+        <tbody>
+        {{#each stats}}
+            {{> components/stat-row label=this.label value=this.value classes=this.classes highlight=this.highlight}}
+        {{/each}}
+        </tbody>
+    </table>
+</div>

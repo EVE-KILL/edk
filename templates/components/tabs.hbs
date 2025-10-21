@@ -1,0 +1,18 @@
+{{!--
+  Reusable Tabs Component
+
+  Usage:
+  {{> components/tabs tabs=tabList active="kills"}}
+
+  Where tabList is an array of objects with:
+  - id: string (unique identifier)
+  - label: string (display text)
+  - url: string (link href)
+--}}
+<nav class="tabs">
+  {{#each tabs}}
+    <a href="{{this.url}}" class="tabs__link {{#ifEquals this.id ../active}}tabs__link--active{{/ifEquals}}">
+      {{this.label}}
+    </a>
+  {{/each}}
+</nav>

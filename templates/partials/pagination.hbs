@@ -1,51 +1,51 @@
 <!-- Pagination Component -->
 {{#if pagination}}
-<div style="text-align: right; margin: 15px 0; padding: 10px;">
-    <div style="display: inline-block;">
+<div class="pagination">
+    <div class="pagination__inner">
         <!-- Previous Button -->
         {{#if pagination.hasPrevPage}}
-        <a href="{{#if pagination.prevPageUrl}}{{pagination.prevPageUrl}}{{else}}{{pagination.prevUrl}}{{/if}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        <a href="{{#if pagination.prevPageUrl}}{{pagination.prevPageUrl}}{{else}}{{pagination.prevUrl}}{{/if}}" class="pagination__btn">
             ← Previous
         </a>
         {{else}}
-        <span style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #0a0a0a; border: 1px solid #222; color: #555; border-radius: 3px; font-size: 12px;">
+        <span class="pagination__btn pagination__btn--disabled">
             ← Previous
         </span>
         {{/if}}
 
         <!-- First Page -->
         {{#if pagination.showFirst}}
-        <a href="{{#if pagination.firstUrl}}{{pagination.firstUrl}}{{else}}/{{/if}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        <a href="{{#if pagination.firstUrl}}{{pagination.firstUrl}}{{else}}/{{/if}}" class="pagination__page">
             1
         </a>
-        <span style="display: inline-block; padding: 8px 12px; margin: 0 2px; color: #666; font-size: 12px;">...</span>
+        <span class="pagination__ellipsis">...</span>
         {{/if}}
 
         <!-- Page Numbers -->
         {{#each pagination.pages}}
-        {{#if (eq this ../pagination.currentPage)}}
-        <span style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #333; border: 1px solid #555; color: #fff; font-weight: bold; border-radius: 3px; font-size: 12px;">
+        {{#ifEquals this ../pagination.currentPage}}
+        <span class="pagination__page pagination__page--active">
             {{this}}
         </span>
         {{else}}
         {{! Generate URL based on context}}
         {{#if ../pagination.basePageUrl}}
-        <a href="{{../pagination.basePageUrl}}{{#unless (eq this 1)}}?page={{this}}{{/unless}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        <a href="{{../pagination.basePageUrl}}{{#ifEquals this 1}}{{else}}?page={{this}}{{/ifEquals}}" class="pagination__page">
             {{this}}
         </a>
         {{else}}
-        <a href="{{#if (eq this 1)}}/{{else}}/?page={{this}}{{/if}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        <a href="{{#ifEquals this 1}}/{{else}}/?page={{this}}{{/ifEquals}}" class="pagination__page">
             {{this}}
         </a>
         {{/if}}
-        {{/if}}
+        {{/ifEquals}}
         {{/each}}
 
         <!-- Last Page -->
         {{#if pagination.showLast}}
-        <span style="display: inline-block; padding: 8px 12px; margin: 0 2px; color: #666; font-size: 12px;">...</span>
+        <span class="pagination__ellipsis">...</span>
         {{#if pagination.totalPages}}
-        <a href="{{#if pagination.lastUrl}}{{pagination.lastUrl}}{{else}}/?page={{pagination.totalPages}}{{/if}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        <a href="{{#if pagination.lastUrl}}{{pagination.lastUrl}}{{else}}/?page={{pagination.totalPages}}{{/if}}" class="pagination__page">
             {{pagination.totalPages}}
         </a>
         {{/if}}
@@ -53,11 +53,11 @@
 
         <!-- Next Button -->
         {{#if pagination.hasNextPage}}
-        <a href="{{#if pagination.nextPageUrl}}{{pagination.nextPageUrl}}{{else}}{{pagination.nextUrl}}{{/if}}" style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #1a1a1a; border: 1px solid #333; color: #fff; text-decoration: none; border-radius: 3px; font-size: 12px;">
+        <a href="{{#if pagination.nextPageUrl}}{{pagination.nextPageUrl}}{{else}}{{pagination.nextUrl}}{{/if}}" class="pagination__btn">
             Next →
         </a>
         {{else}}
-        <span style="display: inline-block; padding: 8px 12px; margin: 0 2px; background: #0a0a0a; border: 1px solid #222; color: #555; border-radius: 3px; font-size: 12px;">
+        <span class="pagination__btn pagination__btn--disabled">
             Next →
         </span>
         {{/if}}
