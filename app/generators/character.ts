@@ -4,6 +4,8 @@ import {
   victims,
   attackers,
   characters,
+  corporations,
+  alliances,
 } from "../../db/schema";
 import { eq, and, desc, count, sql } from "drizzle-orm";
 import { generateKilllist, type KillmailDisplay } from "./killlist";
@@ -12,6 +14,12 @@ export interface CharacterStats {
   character: {
     id: number;
     name: string;
+    corporationId: number;
+    corporationName?: string;
+    corporationTicker?: string;
+    allianceId?: number;
+    allianceName?: string;
+    allianceTicker?: string;
   };
   stats: {
     kills: number;
@@ -31,20 +39,50 @@ export async function generateCharacterDetail(
   characterId: number
 ): Promise<CharacterStats | null> {
   try {
-    // Get character info
-    const character = await db
+    // Get character info with corporation and alliance
+    const characterData = await db
       .select({
         id: characters.characterId,
         name: characters.name,
+        corporationId: characters.corporationId,
+        allianceId: characters.allianceId,
+        corporationName: corporations.name,
+        corporationTicker: corporations.ticker,
       })
       .from(characters)
+      .leftJoin(corporations, eq(characters.corporationId, corporations.corporationId))
       .where(eq(characters.characterId, characterId))
       .limit(1)
       .then((r) => r[0]);
 
-    if (!character) {
+    if (!characterData) {
       return null;
     }
+
+    // Get alliance info if character has one
+    let allianceData = null;
+    if (characterData.allianceId) {
+      allianceData = await db
+        .select({
+          name: alliances.name,
+          ticker: alliances.ticker,
+        })
+        .from(alliances)
+        .where(eq(alliances.allianceId, characterData.allianceId))
+        .limit(1)
+        .then((r) => r[0]);
+    }
+
+    const character = {
+      id: characterData.id,
+      name: characterData.name,
+      corporationId: characterData.corporationId,
+      corporationName: characterData.corporationName || undefined,
+      corporationTicker: characterData.corporationTicker || undefined,
+      allianceId: characterData.allianceId || undefined,
+      allianceName: allianceData?.name || undefined,
+      allianceTicker: allianceData?.ticker || undefined,
+    };
 
     // Get kill count
     const killCount = await db

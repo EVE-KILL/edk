@@ -23,7 +23,7 @@ export class Controller extends WebController {
     const data = {
       ...characterDetail,
       entityName: characterDetail.character.name,
-      imageUrl: `https://images.evetech.net/characters/${characterDetail.character.id}/portrait?size=64`,
+      imageUrl: `https://images.evetech.net/characters/${characterDetail.character.id}/portrait?size=512`,
       currentTab: 'dashboard',
       baseUrl: `/character/${characterId}`,
     };

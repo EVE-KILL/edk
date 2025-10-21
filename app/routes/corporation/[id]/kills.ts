@@ -60,7 +60,7 @@ export class Controller extends WebController {
       {
         entityName: corporation.name,
         ticker: corporation.ticker,
-        imageUrl: `https://images.evetech.net/corporations/${corporation.id}/logo?size=64`,
+        imageUrl: `https://images.evetech.net/corporations/${corporation.id}/logo?size=512`,
         stats,
         killmails,
         currentTab: "kills",

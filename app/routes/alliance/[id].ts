@@ -24,7 +24,7 @@ export class Controller extends WebController {
       ...allianceDetail,
       entityName: allianceDetail.alliance.name,
       ticker: allianceDetail.alliance.ticker,
-      imageUrl: `https://images.evetech.net/alliances/${allianceDetail.alliance.id}/logo?size=64`,
+      imageUrl: `https://images.evetech.net/alliances/${allianceDetail.alliance.id}/logo?size=512`,
       currentTab: "dashboard",
       baseUrl: `/alliance/${allianceId}`,
     };

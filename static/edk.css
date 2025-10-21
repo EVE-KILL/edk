@@ -189,7 +189,7 @@ footer p {
     border: 1px solid #444;
     border-collapse: separate;
     border-spacing: 1px;
-    background-color: #111;
+    background-color: #1a1a1a;
     width: 100%;
 }
 
@@ -209,8 +209,7 @@ footer p {
 }
 
 .kb-table-cell {
-    background-color: #333;
-    padding: 2px 4px;
+    padding: 4px 8px;
 }
 
 .kb-table-row-even {
@@ -219,6 +218,30 @@ footer p {
 
 .kb-table-row-odd {
     background-color: #333;
+}
+
+/* Hover effect for clickable rows */
+.kb-table-row-even:hover,
+.kb-table-row-odd:hover {
+    background-color: #3a3a3a !important;
+    transition: background-color 0.2s ease;
+}
+
+/* Make cells inherit background from row */
+.kb-table-row-even td {
+    background-color: #2a2a2a;
+}
+
+.kb-table-row-odd td {
+    background-color: #333;
+}
+
+.kb-table-row-even:hover td {
+    background-color: #3a3a3a;
+}
+
+.kb-table-row-odd:hover td {
+    background-color: #3a3a3a;
 }
 
 .kb-table-row-kill {
@@ -230,9 +253,9 @@ footer p {
 }
 
 .kb-table-imgcell {
-    padding: 1px;
+    padding: 4px;
     text-align: center;
-    width: 32px;
+    vertical-align: middle;
 }
 
 /* ========================================

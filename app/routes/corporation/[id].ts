@@ -24,7 +24,7 @@ export class Controller extends WebController {
       ...corporationDetail,
       entityName: corporationDetail.corporation.name,
       ticker: corporationDetail.corporation.ticker,
-      imageUrl: `https://images.evetech.net/corporations/${corporationDetail.corporation.id}/logo?size=64`,
+      imageUrl: `https://images.evetech.net/corporations/${corporationDetail.corporation.id}/logo?size=512`,
       currentTab: "dashboard",
       baseUrl: `/corporation/${corporationId}`,
     };
