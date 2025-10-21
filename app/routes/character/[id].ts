@@ -22,6 +22,7 @@ export class Controller extends WebController {
 
     const data = {
       ...characterDetail,
+      currentTab: 'dashboard',
     };
 
     return await this.renderPage(

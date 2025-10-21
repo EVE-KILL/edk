@@ -1,0 +1,20 @@
+<!-- Character Kills Page - EDK Style -->
+
+<!-- Character Stats Header -->
+{{> partials/character-stats character=character stats=stats}}
+
+<!-- Character Navigation Tabs -->
+{{> partials/character-navbar character=character currentTab=currentTab}}
+
+<!-- Kills List -->
+<div class="killlist">
+    <div class="block-header2">All Kills</div>
+
+    <!-- Pagination Top -->
+    {{> partials/pagination pagination=pagination}}
+
+    {{> partials/killmail-list killmails=killmails}}
+
+    <!-- Pagination Bottom -->
+    {{> partials/pagination pagination=pagination}}
+</div>

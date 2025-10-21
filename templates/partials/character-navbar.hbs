@@ -1,0 +1,13 @@
+<!-- Character Navigation Tabs -->
+<div style="margin: 20px 0 10px 0;">
+    <div class="kb-kills-header" style="border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 0;">
+        <a href="/character/{{character.id}}"
+           style="display: inline-block; padding: 8px 20px; margin-right: 5px; background: {{#if (eq currentTab 'dashboard')}}#2a2a2a{{else}}transparent{{/if}}; border: 1px solid {{#if (eq currentTab 'dashboard')}}#555{{else}}#333{{/if}}; color: {{#if (eq currentTab 'dashboard')}}#fff{{else}}#999{{/if}}; text-decoration: none; border-radius: 3px; font-size: 11px; font-weight: {{#if (eq currentTab 'dashboard')}}bold{{else}}normal{{/if}};">
+            DASHBOARD
+        </a>
+        <a href="/character/{{character.id}}/kills"
+           style="display: inline-block; padding: 8px 20px; margin-right: 5px; background: {{#if (eq currentTab 'kills')}}#2a2a2a{{else}}transparent{{/if}}; border: 1px solid {{#if (eq currentTab 'kills')}}#555{{else}}#333{{/if}}; color: {{#if (eq currentTab 'kills')}}#fff{{else}}#999{{/if}}; text-decoration: none; border-radius: 3px; font-size: 11px; font-weight: {{#if (eq currentTab 'kills')}}bold{{else}}normal{{/if}};">
+            KILLS
+        </a>
+    </div>
+</div>
