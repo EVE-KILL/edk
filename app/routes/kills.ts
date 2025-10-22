@@ -129,6 +129,10 @@ export class Controller extends WebController {
           showFirst: startPage > 1,
           showLast: hasNextPage && endPage < totalPages,
         },
+        // Filter config for WebSocket killlist updates (global feed shows all)
+        filterConfig: {
+          type: 'all',
+        },
       };
 
       // Use streaming for better TTFB on large kill lists

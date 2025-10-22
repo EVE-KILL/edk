@@ -114,6 +114,11 @@ export class Controller extends WebController {
           showFirst: startPage > 1,
           showLast: hasNextPage,
         },
+        // Filter config for WebSocket killlist updates (only kills where corporation was attacker)
+        filterConfig: {
+          type: 'kills',
+          corporationIds: [parseInt(corporationId, 10)],
+        },
       }
     );
   }

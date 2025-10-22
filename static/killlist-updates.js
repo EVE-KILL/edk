@@ -18,6 +18,7 @@ class KilllistUpdatesManager {
 
     // Filter configuration
     this.filterConfig = {
+      type: 'all', // 'all', 'kills', or 'losses'
       systemId: null,
       regionId: null,
       characterIds: [],
@@ -82,32 +83,60 @@ class KilllistUpdatesManager {
       }
     }
 
-    // If characterIds is set, only show kills where character was attacker
+    // Check kill vs loss type filtering
+    const filterType = this.filterConfig.type || 'all';
+
+    // If characterIds is set, check if character is involved based on filter type
     if (this.filterConfig.characterIds.length > 0) {
-      const hasCharacter = killmail.attackers.some(a =>
+      const characterInAttackers = killmail.attackers.some(a =>
         this.filterConfig.characterIds.includes(a.character.id)
       );
-      if (!hasCharacter) {
+      const characterIsVictim = this.filterConfig.characterIds.includes(killmail.victim.character.id);
+
+      if (filterType === 'kills' && !characterInAttackers) {
+        return false;
+      }
+      if (filterType === 'losses' && !characterIsVictim) {
+        return false;
+      }
+      if (filterType === 'all' && !characterInAttackers && !characterIsVictim) {
         return false;
       }
     }
 
-    // If corporationIds is set, only show kills where corporation was attacker
+    // If corporationIds is set, check if corporation is involved based on filter type
     if (this.filterConfig.corporationIds.length > 0) {
-      const hasCorporation = killmail.attackers.some(a =>
+      const corporationInAttackers = killmail.attackers.some(a =>
         this.filterConfig.corporationIds.includes(a.corporation.id)
       );
-      if (!hasCorporation) {
+      const corporationIsVictim = this.filterConfig.corporationIds.includes(killmail.victim.corporation.id);
+
+      if (filterType === 'kills' && !corporationInAttackers) {
+        return false;
+      }
+      if (filterType === 'losses' && !corporationIsVictim) {
+        return false;
+      }
+      if (filterType === 'all' && !corporationInAttackers && !corporationIsVictim) {
         return false;
       }
     }
 
-    // If allianceIds is set, only show kills where alliance was attacker
+    // If allianceIds is set, check if alliance is involved based on filter type
     if (this.filterConfig.allianceIds.length > 0) {
-      const hasAlliance = killmail.attackers.some(a =>
+      const allianceInAttackers = killmail.attackers.some(a =>
         a.alliance && this.filterConfig.allianceIds.includes(a.alliance.id)
       );
-      if (!hasAlliance) {
+      const allianceIsVictim = killmail.victim.alliance &&
+        this.filterConfig.allianceIds.includes(killmail.victim.alliance.id);
+
+      if (filterType === 'kills' && !allianceInAttackers) {
+        return false;
+      }
+      if (filterType === 'losses' && !allianceIsVictim) {
+        return false;
+      }
+      if (filterType === 'all' && !allianceInAttackers && !allianceIsVictim) {
         return false;
       }
     }

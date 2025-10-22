@@ -112,6 +112,11 @@ export class Controller extends WebController {
         showFirst: startPage > 1,
         showLast: hasNextPage && endPage < totalPages,
       },
+      // Filter config for WebSocket killlist updates (only kills where character was attacker)
+      filterConfig: {
+        type: 'kills',
+        characterIds: [characterIdInt],
+      },
     };
 
     return await this.renderPage(

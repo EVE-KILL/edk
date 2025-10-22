@@ -61,6 +61,7 @@ export class Controller extends WebController {
       top10Stats,
       // Filter config for WebSocket killlist updates
       filterConfig: {
+        type: 'all',
         allianceIds: [parseInt(allianceId, 10)],
       },
     };
