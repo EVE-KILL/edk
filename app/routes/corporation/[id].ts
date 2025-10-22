@@ -46,13 +46,19 @@ export class Controller extends WebController {
     const data = {
       ...corporationDetail,
       entityName: corporationDetail.corporation.name,
+      entityId: corporationDetail.corporation.id,
+      entityType: 'corporation',
+      type: 'corporation',
       ticker: corporationDetail.corporation.ticker,
       imageUrl: `https://images.evetech.net/corporations/${corporationDetail.corporation.id}/logo?size=512`,
+      parent: undefined,
+      grandparent: corporationDetail.corporation.allianceId ? {
+        id: corporationDetail.corporation.allianceId,
+        name: corporationDetail.corporation.allianceName,
+        ticker: corporationDetail.corporation.allianceTicker,
+      } : undefined,
       currentTab: "dashboard",
       baseUrl: `/corporation/${corporationId}`,
-      // Entity info for loss highlighting
-      entityType: 'corporation',
-      entityId: parseInt(corporationId, 10),
       // Ship group statistics
       shipGroupStats,
       shipGroupColumns,

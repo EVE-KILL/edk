@@ -1,5 +1,8 @@
 <!-- Killmail Detail - EDK Style -->
 
+<!-- Sibling Killmails Navbar -->
+{{> partials/killmail-navbar}}
+
 <!-- Two Column Layout -->
 <div class="killmail-detail-wrapper">
     <!-- Left Column - Items -->
@@ -12,44 +15,50 @@
 
         <!-- Items Destroyed/Dropped -->
         <div class="kl-detail-fitting">
-            {{> components/section-header title="Items Destroyed & Dropped" bordered=true}}
+            <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;">
+                <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+                    <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Items Destroyed & Dropped
+                    </div>
+                </div>
 
-            <table class="kb-table" cellspacing="1" style="width: 100%;">
-                <tr class="kb-table-header">
-                    <td class="kb-table-header" style="text-align: left; padding: 4px 8px;">Item</td>
-                    <td class="kb-table-header" style="text-align: center; width: 50px; padding: 4px 8px;">Qty</td>
-                    <td class="kb-table-header" style="text-align: right; width: 100px; padding: 4px 8px;">Price</td>
-                    <td class="kb-table-header" style="text-align: right; width: 120px; padding: 4px 8px;">Total ISK</td>
-                    <td class="kb-table-header" style="text-align: center; width: 80px; padding: 4px 8px;">Status</td>
-                </tr>
+                <div style="padding: 12px 16px;">
+                    <table class="kb-table" cellspacing="1" style="width: 100%; background: transparent; border: none; border-spacing: 0;">
+                        <tr class="kb-table-header" style="background: transparent;">
+                            <td class="kb-table-header" style="text-align: left; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Item</td>
+                            <td class="kb-table-header" style="text-align: center; width: 50px; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Qty</td>
+                            <td class="kb-table-header" style="text-align: right; width: 100px; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Price</td>
+                            <td class="kb-table-header" style="text-align: right; width: 120px; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Total ISK</td>
+                            <td class="kb-table-header" style="text-align: center; width: 80px; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Status</td>
+                        </tr>
 
-                {{#unless items.destroyed.highSlots.length}}
-                {{#unless items.dropped.highSlots.length}}
-                {{#unless items.destroyed.medSlots.length}}
-                {{#unless items.dropped.medSlots.length}}
-                {{#unless items.destroyed.lowSlots.length}}
-                {{#unless items.dropped.lowSlots.length}}
-                {{#unless items.destroyed.rigSlots.length}}
-                {{#unless items.dropped.rigSlots.length}}
-                {{#unless items.destroyed.droneBay.length}}
-                {{#unless items.dropped.droneBay.length}}
-                {{#unless items.destroyed.cargo.length}}
-                {{#unless items.dropped.cargo.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5" style="text-align: center; font-style: italic; color: #999; padding: 8px;">No items destroyed or dropped</td>
-                </tr>
-                {{/unless}}
-                {{/unless}}
-                {{/unless}}
-                {{/unless}}
-                {{/unless}}
-                {{/unless}}
-                {{/unless}}
-                {{/unless}}
-                {{/unless}}
-                {{/unless}}
-                {{/unless}}
-                {{/unless}}
+                        {{#unless items.destroyed.highSlots.length}}
+                        {{#unless items.dropped.highSlots.length}}
+                        {{#unless items.destroyed.medSlots.length}}
+                        {{#unless items.dropped.medSlots.length}}
+                        {{#unless items.destroyed.lowSlots.length}}
+                        {{#unless items.dropped.lowSlots.length}}
+                        {{#unless items.destroyed.rigSlots.length}}
+                        {{#unless items.dropped.rigSlots.length}}
+                        {{#unless items.destroyed.droneBay.length}}
+                        {{#unless items.dropped.droneBay.length}}
+                        {{#unless items.destroyed.cargo.length}}
+                        {{#unless items.dropped.cargo.length}}
+                        <tr class="kb-table-row-even" style="background: transparent;">
+                            <td class="kb-table-cell" colspan="5" style="text-align: center; font-style: italic; color: var(--color-text-secondary); padding: 8px; background: transparent; border: none;">No items destroyed or dropped</td>
+                        </tr>
+                        {{/unless}}
+                        {{/unless}}
+                        {{/unless}}
+                        {{/unless}}
+                        {{/unless}}
+                        {{/unless}}
+                        {{/unless}}
+                        {{/unless}}
+                        {{/unless}}
+                        {{/unless}}
+                        {{/unless}}
+                        {{/unless}}
 
                 <!-- High Slots -->
                 {{#if items.destroyed.highSlots.length}}
@@ -547,8 +556,9 @@
                         <span class="isk-value">{{formatISK stats.shipValue}}</span>
                     </td>
                 </tr>
-
-            </table>
+                    </table>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -564,53 +574,64 @@
         <!-- Final Blow -->
         {{#if finalBlow}}
         <div style="margin-bottom: 10px;">
-            <div class="block-header2">Final Blow</div>
+            <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;">
+                <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+                    <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Final Blow
+                    </div>
+                </div>
 
-            <table class="kb-table" cellspacing="1" style="width: 100%;">
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" style="width: 40px; padding: 4px; vertical-align: top;">
-                        {{#if finalBlow.character.id}}
-                        {{> partials/eve-image type="character" id=finalBlow.character.id size=32 alt=finalBlow.character.name}}
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="padding: 4px; font-size: 9px; line-height: 1.3; overflow: hidden;">
-                        <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 10px;">{{finalBlow.character.name}}</b></div>
-                        <div style="color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.corporation.name}}</div>
-                        {{#if finalBlow.alliance.name}}
-                        <div style="color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.alliance.name}}</div>
-                        {{/if}}
-                    </td>
-                </tr>
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="width: 40px; padding: 4px; vertical-align: top;">
-                        {{#if finalBlow.ship.typeId}}
-                        {{> partials/eve-image type="ship" id=finalBlow.ship.typeId size=32 alt=finalBlow.ship.name}}
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="padding: 4px; font-size: 9px; line-height: 1.3; overflow: hidden;">
-                        <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 10px;">{{finalBlow.ship.name}}</b>{{#if finalBlow.ship.groupName}} <span style="color: #999;">({{finalBlow.ship.groupName}})</span>{{/if}}</div>
-                        {{#if finalBlow.weapon.name}}
-                        <div style="color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.weapon.name}}</div>
-                        {{/if}}
-                        <div class="kl-kill" style="font-weight: bold; font-size: 10px;">{{finalBlow.damageDone}} damage</div>
-                    </td>
-                </tr>
-            </table>
+                <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;">
+                    <!-- Character Info -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <div style="flex-shrink: 0;">
+                            {{#if finalBlow.character.id}}
+                            {{> partials/eve-image type="character" id=finalBlow.character.id size=32 alt=finalBlow.character.name}}
+                            {{/if}}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 11px; color: var(--color-text-white);">{{finalBlow.character.name}}</b></div>
+                            <div style="color: var(--color-text-secondary); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.corporation.name}}</div>
+                            {{#if finalBlow.alliance.name}}
+                            <div style="color: var(--color-text-secondary); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.alliance.name}}</div>
+                            {{/if}}
+                        </div>
+                    </div>
+
+                    <!-- Ship Info -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start; border-top: 1px solid var(--color-border-dark); padding-top: 12px;">
+                        <div style="flex-shrink: 0;">
+                            {{#if finalBlow.ship.typeId}}
+                            {{> partials/eve-image type="ship" id=finalBlow.ship.typeId size=32 alt=finalBlow.ship.name}}
+                            {{/if}}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 11px; color: var(--color-text-white);">{{finalBlow.ship.name}}</b>{{#if finalBlow.ship.groupName}} <span style="color: var(--color-text-secondary); font-size: 9px;">({{finalBlow.ship.groupName}})</span>{{/if}}</div>
+                            {{#if finalBlow.weapon.name}}
+                            <div style="color: var(--color-text-secondary); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.weapon.name}}</div>
+                            {{/if}}
+                            <div style="color: #4ade80; font-weight: bold; font-size: 10px; margin-top: 4px;">{{finalBlow.damageDone}} damage</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         {{/if}}
 
         <!-- Involved Parties -->
         {{#if attackers}}
         <div style="margin-top: 10px;">
-            <table class="kb-table" cellspacing="1" style="width: 100%;">
-                <tr class="kb-table-header">
-                    <td class="kb-table-header" colspan="2" style="text-align: left; padding: 2px 4px;">Involved Parties ({{attackers.length}})</td>
-                </tr>
+            <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;">
+                <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+                    <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Involved Parties ({{attackers.length}})
+                    </div>
+                </div>
 
-                {{#each attackers}}
-                <tr class="{{#if (mod @index 2)}}kb-table-row-odd{{else}}kb-table-row-even{{/if}}{{#if finalBlow}} finalblow{{/if}}">
-                    <td class="kb-table-cell" style="width: 40px; padding: 4px; vertical-align: top;">
-                        <div style="position: relative; display: inline-block;">
+                <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;">
+                    {{#each attackers}}
+                    <div style="display: flex; gap: 12px; align-items: flex-start;{{#if @index}} border-top: 1px solid var(--color-border-dark); padding-top: 12px;{{/if}}">
+                        <div style="flex-shrink: 0; position: relative; display: inline-block;">
                             {{#if character.id}}
                             {{> partials/eve-image type="character" id=character.id size=32 alt=character.name}}
                             {{/if}}
@@ -618,23 +639,25 @@
                             {{> partials/eve-image type="corporation" id=corporation.id size=16 alt=corporation.name class="kb-corp-overlay"}}
                             {{/if}}
                         </div>
-                    </td>
-                    <td class="kb-table-cell" style="padding: 4px; font-size: 9px; line-height: 1.3; overflow: hidden;">
-                        <div style="margin-bottom: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 10px;">{{character.name}}</b></div>
-                        <div style="color: #999; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{corporation.name}}</div>
-                        {{#if alliance.name}}
-                        <div style="color: #999; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{alliance.name}}</div>
-                        {{/if}}
-                        <div style="margin-top: 2px; overflow: hidden;">
+                        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <div style="margin-bottom: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 11px; color: var(--color-text-white);">{{character.name}}</b></div>
+                                <div style="color: var(--color-text-secondary); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{corporation.name}}</div>
+                                {{#if alliance.name}}
+                                <div style="color: var(--color-text-secondary); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{alliance.name}}</div>
+                                {{/if}}
+                            </div>
                             {{#if ship.name}}
-                            <span style="color: #999; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; max-width: calc(100% - 60px);">{{ship.name}}{{#if ship.groupName}} ({{ship.groupName}}){{/if}}</span>
+                            <div style="color: var(--color-text-secondary); font-size: 9px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ship.name}}{{#if ship.groupName}} ({{ship.groupName}}){{/if}}</div>
                             {{/if}}
-                            <span class="kl-kill" style="font-weight: bold; font-size: 9px; float: right;">{{damageDone}}</span>
                         </div>
-                    </td>
-                </tr>
-                {{/each}}
-            </table>
+                        <div style="flex-shrink: 0; text-align: right;">
+                            <div style="color: #4ade80; font-weight: bold; font-size: 10px;">{{damageDone}}</div>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
         </div>
         {{/if}}
 

@@ -14,22 +14,25 @@
   {{#if top10Stats.characters.length}}
   <div class="top-10-box">
     <div class="top-10-header">Top Characters</div>
-    <table class="top-10-table">
-      <tbody>
-        {{#each top10Stats.characters}}
-        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}" onclick="window.location.href='/character/{{this.id}}';" style="cursor: pointer;">
-          <td class="top-10-rank">{{add @index 1}}</td>
-          {{#if this.imageUrl}}
-          <td class="top-10-image">
-            <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
-          </td>
-          {{/if}}
-          <td class="top-10-name">{{this.name}}</td>
-          <td class="top-10-kills">{{this.kills}}</td>
-        </tr>
-        {{/each}}
-      </tbody>
-    </table>
+    <div class="top-10-content">
+      {{#each top10Stats.characters}}
+      <div class="top-10-row" onclick="window.location.href='/character/{{this.id}}';" style="cursor: pointer;">
+        {{#if this.imageUrl}}
+        <div class="top-10-img-wrapper">
+          <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
+          <div class="top-10-img-rank">{{add @index 1}}</div>
+        </div>
+        {{else}}
+        <div class="top-10-img-wrapper">
+          <div style="width: 24px; height: 24px; background: #333; border-radius: 2px;"></div>
+          <div class="top-10-img-rank">{{add @index 1}}</div>
+        </div>
+        {{/if}}
+        <span class="top-10-name">{{this.name}}</span>
+        <span class="top-10-kills">{{this.kills}}</span>
+      </div>
+      {{/each}}
+    </div>
   </div>
   {{/if}}
 
@@ -37,22 +40,25 @@
   {{#if top10Stats.corporations.length}}
   <div class="top-10-box">
     <div class="top-10-header">Top Corporations</div>
-    <table class="top-10-table">
-      <tbody>
-        {{#each top10Stats.corporations}}
-        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}" onclick="window.location.href='/corporation/{{this.id}}';" style="cursor: pointer;">
-          <td class="top-10-rank">{{add @index 1}}</td>
-          {{#if this.imageUrl}}
-          <td class="top-10-image">
-            <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
-          </td>
-          {{/if}}
-          <td class="top-10-name">{{this.name}}</td>
-          <td class="top-10-kills">{{this.kills}}</td>
-        </tr>
-        {{/each}}
-      </tbody>
-    </table>
+    <div class="top-10-content">
+      {{#each top10Stats.corporations}}
+      <div class="top-10-row" onclick="window.location.href='/corporation/{{this.id}}';" style="cursor: pointer;">
+        {{#if this.imageUrl}}
+        <div class="top-10-img-wrapper">
+          <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
+          <div class="top-10-img-rank">{{add @index 1}}</div>
+        </div>
+        {{else}}
+        <div class="top-10-img-wrapper">
+          <div style="width: 24px; height: 24px; background: #333; border-radius: 2px;"></div>
+          <div class="top-10-img-rank">{{add @index 1}}</div>
+        </div>
+        {{/if}}
+        <span class="top-10-name">{{this.name}}</span>
+        <span class="top-10-kills">{{this.kills}}</span>
+      </div>
+      {{/each}}
+    </div>
   </div>
   {{/if}}
 
@@ -60,22 +66,25 @@
   {{#if top10Stats.alliances.length}}
   <div class="top-10-box">
     <div class="top-10-header">Top Alliances</div>
-    <table class="top-10-table">
-      <tbody>
-        {{#each top10Stats.alliances}}
-        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}" onclick="window.location.href='/alliance/{{this.id}}';" style="cursor: pointer;">
-          <td class="top-10-rank">{{add @index 1}}</td>
-          {{#if this.imageUrl}}
-          <td class="top-10-image">
-            <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
-          </td>
-          {{/if}}
-          <td class="top-10-name">{{this.name}}</td>
-          <td class="top-10-kills">{{this.kills}}</td>
-        </tr>
-        {{/each}}
-      </tbody>
-    </table>
+    <div class="top-10-content">
+      {{#each top10Stats.alliances}}
+      <div class="top-10-row" onclick="window.location.href='/alliance/{{this.id}}';" style="cursor: pointer;">
+        {{#if this.imageUrl}}
+        <div class="top-10-img-wrapper">
+          <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
+          <div class="top-10-img-rank">{{add @index 1}}</div>
+        </div>
+        {{else}}
+        <div class="top-10-img-wrapper">
+          <div style="width: 24px; height: 24px; background: #333; border-radius: 2px;"></div>
+          <div class="top-10-img-rank">{{add @index 1}}</div>
+        </div>
+        {{/if}}
+        <span class="top-10-name">{{this.name}}</span>
+        <span class="top-10-kills">{{this.kills}}</span>
+      </div>
+      {{/each}}
+    </div>
   </div>
   {{/if}}
 
@@ -83,17 +92,18 @@
   {{#if top10Stats.systems.length}}
   <div class="top-10-box">
     <div class="top-10-header">Top Systems</div>
-    <table class="top-10-table">
-      <tbody>
-        {{#each top10Stats.systems}}
-        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}" onclick="window.location.href='/system/{{this.id}}';" style="cursor: pointer;">
-          <td class="top-10-rank">{{add @index 1}}</td>
-          <td class="top-10-name" style="padding-left: 8px;">{{this.name}}</td>
-          <td class="top-10-kills">{{this.kills}}</td>
-        </tr>
-        {{/each}}
-      </tbody>
-    </table>
+    <div class="top-10-content">
+      {{#each top10Stats.systems}}
+      <div class="top-10-row" onclick="window.location.href='/system/{{this.id}}';" style="cursor: pointer;">
+        <div class="top-10-img-wrapper">
+          <img src="https://images.eve-kill.com/systems/{{this.id}}" alt="{{this.name}}" class="top-10-img" />
+          <div class="top-10-img-rank">{{add @index 1}}</div>
+        </div>
+        <span class="top-10-name">{{this.name}}</span>
+        <span class="top-10-kills">{{this.kills}}</span>
+      </div>
+      {{/each}}
+    </div>
   </div>
   {{/if}}
 
@@ -101,17 +111,18 @@
   {{#if top10Stats.regions.length}}
   <div class="top-10-box">
     <div class="top-10-header">Top Regions</div>
-    <table class="top-10-table">
-      <tbody>
-        {{#each top10Stats.regions}}
-        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}" onclick="window.location.href='/region/{{this.id}}';" style="cursor: pointer;">
-          <td class="top-10-rank">{{add @index 1}}</td>
-          <td class="top-10-name" style="padding-left: 8px;">{{this.name}}</td>
-          <td class="top-10-kills">{{this.kills}}</td>
-        </tr>
-        {{/each}}
-      </tbody>
-    </table>
+    <div class="top-10-content">
+      {{#each top10Stats.regions}}
+      <div class="top-10-row" onclick="window.location.href='/region/{{this.id}}';" style="cursor: pointer;">
+        <div class="top-10-img-wrapper">
+          <img src="https://images.eve-kill.com/regions/{{this.id}}" alt="{{this.name}}" class="top-10-img" />
+          <div class="top-10-img-rank">{{add @index 1}}</div>
+        </div>
+        <span class="top-10-name">{{this.name}}</span>
+        <span class="top-10-kills">{{this.kills}}</span>
+      </div>
+      {{/each}}
+    </div>
   </div>
   {{/if}}
 </div>
@@ -125,70 +136,65 @@
 }
 
 .top-10-box {
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .top-10-header {
-  background: #2a2a2a;
-  padding: 10px 12px;
-  font-weight: bold;
+  background: transparent;
+  padding: 12px 16px;
+  font-weight: 600;
   font-size: 12px;
-  color: #fff;
-  border-bottom: 1px solid #333;
+  color: var(--color-text-white);
+  border-bottom: 1px solid var(--color-border-dark);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.top-10-table {
+.top-10-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
 }
 
 .top-10-row {
-  display: table-row;
-  border-bottom: 1px solid #333;
-  font-size: 11px;
-  height: 32px;
-  line-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border-dark);
+  font-size: 10px;
   transition: background-color 0.2s ease;
-}
-
-.top-10-row:hover {
-  background-color: #3a3a3a;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .top-10-row:last-child {
   border-bottom: none;
 }
 
-.top-10-row-first {
-  background: #2a2a2a;
-}
-
-.top-10-row-first:hover {
-  background-color: #3a3a3a;
-}
-
-.top-10-row td {
-  padding: 0 8px;
-  vertical-align: middle;
+.top-10-row:hover {
+  background: rgba(74, 158, 255, 0.15);
 }
 
 .top-10-rank {
-  color: #888;
+  color: var(--color-text-secondary);
   text-align: center;
   width: 20px;
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: none;
 }
 
-.top-10-image {
-  width: 32px;
-  padding: 0 4px;
-  text-align: center;
+.top-10-img-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
 }
 
 .top-10-img {
@@ -196,6 +202,43 @@
   height: 24px;
   border-radius: 2px;
   display: inline-block;
+  flex-shrink: 0;
+}
+
+.top-10-img-rank {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #4a9eff;
+  color: #ffffff;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.top-10-name {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-white);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-10-kills {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
 }
 
 .top-10-name {

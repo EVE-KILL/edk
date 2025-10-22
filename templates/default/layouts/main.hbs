@@ -18,10 +18,25 @@
 
     <!-- Dropdown Menu Styles -->
     <style>
-        /* Equal width navigation items - flexible for dynamic columns */
+        /* Soft Aesthetic Navigation Bar */
+        .navigation {
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid var(--color-border-dark);
+            border-bottom: 1px solid var(--color-border-dark);
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+
         .navigation table {
             width: 100%;
             table-layout: fixed;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            margin: 0;
+            gap: 0;
         }
 
         .navigation td {
@@ -29,17 +44,39 @@
             position: relative;
             padding: 0;
             flex: 1;
+            background: transparent;
+            border: none;
+        }
+
+        .navigation td:not(:last-child) {
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .navigation td > a {
             display: block;
             width: 100%;
             box-sizing: border-box;
+            padding: 10px 12px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: color 0.2s ease, background-color 0.2s ease;
         }
 
+        .navigation td > a:hover {
+            color: #4a9eff;
+            background-color: rgba(74, 158, 255, 0.08);
+        }
+
+        /* Dropdown Styles */
         .nav-dropdown {
             overflow: visible;
-        }        .nav-dropdown-wrapper {
+        }
+
+        .nav-dropdown-wrapper {
             position: relative;
             display: block;
             width: 100%;
@@ -56,33 +93,33 @@
         .nav-dropdown-content {
             display: none;
             position: absolute;
-            background-color: #0a1929;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
             min-width: 200px;
             width: 100%;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
             z-index: 1000;
-            border: 1px solid #374957;
-            margin-top: -1px;
+            border: 1px solid var(--color-border-dark);
+            border-radius: 4px;
+            margin-top: 4px;
             left: 0;
             top: 100%;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
 
         .nav-dropdown-content a {
-            color: #aaa;
+            color: var(--color-text-secondary);
             padding: 10px 15px;
             text-decoration: none;
             display: block;
-            border-bottom: 1px solid #374957;
             text-align: left;
-        }
-
-        .nav-dropdown-content a:last-child {
-            border-bottom: none;
+            font-size: 11px;
+            transition: color 0.2s ease, background-color 0.2s ease;
+            border: none;
         }
 
         .nav-dropdown-content a:hover {
-            background-color: #2a3f54;
-            color: #8ab4f8;
+            background-color: rgba(74, 158, 255, 0.1);
+            color: #4a9eff;
         }
 
         .nav-dropdown:hover .nav-dropdown-content {
@@ -94,18 +131,26 @@
         }
 
         .dropdown-section-header {
-            color: #8ab4f8;
+            color: var(--color-text-tertiary);
             padding: 8px 15px;
-            font-weight: bold;
-            font-size: 11px;
+            font-weight: 700;
+            font-size: 10px;
             text-transform: uppercase;
-            background-color: #1a2939;
+            letter-spacing: 0.5px;
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin: 8px 0 0 0;
         }
 
-        /* Search Box Styles */
+        .dropdown-section-header:first-child {
+            margin: 0;
+        }
+
+        /* Search Box Styles - Soft Aesthetic */
         .nav-search {
             position: relative;
             overflow: visible !important;
+            padding: 10px 12px !important;
         }
 
         .search-container {
@@ -118,44 +163,48 @@
         #globalSearch {
             width: 100%;
             padding: 8px 12px;
-            font-size: 13px;
-            border: 1px solid #374957;
-            background: #0a1929;
-            color: #aaa;
-            border-radius: 0;
+            font-size: 11px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--color-text-secondary);
+            border-radius: 3px;
             box-sizing: border-box;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease;
         }
 
         #globalSearch:focus {
             outline: none;
-            border-color: #8ab4f8;
-            background: #1a2939;
+            border-color: #4a9eff;
+            background: rgba(74, 158, 255, 0.05);
+            color: var(--color-text-primary);
         }
 
         #globalSearch::placeholder {
-            color: #666;
-            font-size: 12px;
+            color: var(--color-text-tertiary);
+            font-size: 11px;
         }
 
         .search-results {
             display: none;
             position: absolute;
-            top: 100%;
+            top: calc(100% + 4px);
             left: 0;
             right: 0;
             min-width: 300px;
-            background: #0a1929;
-            border: 1px solid #374957;
-            border-top: none;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--color-border-dark);
+            border-radius: 4px;
             max-height: 500px;
             overflow-y: auto;
             z-index: 1000;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3);
-            margin-top: -1px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
 
         .search-group {
-            border-bottom: 1px solid #374957;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .search-group:last-child {
@@ -163,55 +212,55 @@
         }
 
         .search-group-header {
-            color: #8ab4f8;
-            padding: 10px 15px;
-            font-weight: bold;
-            font-size: 11px;
+            color: var(--color-text-tertiary);
+            padding: 8px 15px;
+            font-weight: 700;
+            font-size: 10px;
             text-transform: uppercase;
-            background-color: #1a2939;
-            border-bottom: 1px solid #374957;
+            letter-spacing: 0.5px;
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .search-item {
             display: block;
             padding: 10px 15px;
-            color: #aaa;
+            color: var(--color-text-secondary);
             text-decoration: none;
-            border-bottom: 1px solid #2a3f54;
-            transition: background-color 0.2s;
-        }
-
-        .search-item:last-child {
-            border-bottom: none;
+            transition: all 0.2s ease;
+            border: none;
+            font-size: 11px;
         }
 
         .search-item:hover,
         .search-item.active {
-            background-color: #2a3f54;
-            color: #8ab4f8;
+            background-color: rgba(74, 158, 255, 0.1);
+            color: #4a9eff;
         }
 
         .search-item-name {
             display: block;
-            font-weight: bold;
-            margin-bottom: 3px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            font-size: 11px;
         }
 
         .search-item-description {
             display: block;
-            font-size: 11px;
-            color: #666;
+            font-size: 10px;
+            color: var(--color-text-tertiary);
         }
 
         .search-no-results,
         .search-error {
             padding: 20px 15px;
             text-align: center;
-            color: #666;
+            color: var(--color-text-tertiary);
+            font-size: 11px;
         }
 
         .search-error {
-            color: #d9534f;
+            color: #ef4444;
         }
     </style>
 
@@ -275,7 +324,7 @@
                             <input
                                 type="text"
                                 id="globalSearch"
-                                placeholder="Search..."
+                                placeholder="Search killmails..."
                                 autocomplete="off"
                             />
                             <div id="searchResults" class="search-results"></div>

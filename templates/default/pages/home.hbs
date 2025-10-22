@@ -10,93 +10,115 @@
 <!-- Statistics Section -->
 {{#if statistics}}
 <section class="section mb-lg">
-    {{> components/section-header title="Killboard Statistics" bordered=true}}
+    <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;">
+        <!-- Header -->
+        <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+            <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                Killboard Statistics
+            </div>
+        </div>
 
-    <table class="kb-table" cellspacing="1">
-        <thead>
-            <tr class="kb-table-header">
-                <th class="kb-table-header text-center" colspan="4">Overall Statistics</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="kb-table-row-even">
-                <td class="kb-table-cell"><b>Total Killmails:</b></td>
-                <td class="kb-table-cell">{{statistics.totalKillmails}}</td>
-                <td class="kb-table-cell"><b>Total ISK Destroyed:</b></td>
-                <td class="kb-table-cell"><span class="isk-value">{{formatISK statistics.totalISKDestroyed}}</span></td>
-            </tr>
-        <tr class="kb-table-row-odd">
-            <td class="kb-table-cell"><b>Solo Kills:</b></td>
-            <td class="kb-table-cell">{{statistics.soloKills}}</td>
-            <td class="kb-table-cell"><b>NPC Kills:</b></td>
-            <td class="kb-table-cell">{{statistics.npcKills}}</td>
-        </tr>
-        <tr class="kb-table-row-even">
-            <td class="kb-table-cell"><b>Avg Attackers/Kill:</b></td>
-            <td class="kb-table-cell">{{statistics.averageAttackersPerKill}}</td>
-            <td class="kb-table-cell"><b>Unique Pilots:</b></td>
-            <td class="kb-table-cell">{{statistics.totalUniquePilots}}</td>
-            </tr>
+        <!-- Compact Content Grid -->
+        <div style="padding: 12px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <!-- Overall Stats -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Total Killmails</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.totalKillmails}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Total ISK</span>
+                <span style="color: #4ade80; font-size: 13px; font-weight: 600;">{{formatISK statistics.totalISKDestroyed}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Solo Kills</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.soloKills}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">NPC Kills</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.npcKills}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Avg Attackers</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.averageAttackersPerKill}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Unique Pilots</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.totalUniquePilots}}</span>
+            </div>
 
-            <tr class="kb-table-header">
-                <th class="kb-table-header text-center" colspan="4">Activity</th>
-            </tr>
-        <tr class="kb-table-row-even">
-            <td class="kb-table-cell"><b>Active Pilots (24h):</b></td>
-            <td class="kb-table-cell">{{statistics.activePilotsLast24Hours}}</td>
-            <td class="kb-table-cell"><b>Active Pilots (7d):</b></td>
-            <td class="kb-table-cell">{{statistics.activePilotsLast7Days}}</td>
-        </tr>
-        <tr class="kb-table-row-odd">
-            <td class="kb-table-cell"><b>Kills (Last 24h):</b></td>
-            <td class="kb-table-cell">{{statistics.killsLast24Hours}}</td>
-            <td class="kb-table-cell"><b>Kills (Last 7d):</b></td>
-            <td class="kb-table-cell">{{statistics.killsLast7Days}}</td>
-        </tr>
-        <tr class="kb-table-row-even">
-            <td class="kb-table-cell"><b>Kills (Last 30d):</b></td>
-            <td class="kb-table-cell">{{statistics.killsLast30Days}}</td>
-            <td class="kb-table-cell"></td>
-            <td class="kb-table-cell"></td>
-            </tr>
+            <!-- Activity Stats -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Pilots (24h)</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.activePilotsLast24Hours}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Pilots (7d)</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.activePilotsLast7Days}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Kills (24h)</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.killsLast24Hours}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Kills (7d)</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.killsLast7Days}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Kills (30d)</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.killsLast30Days}}</span>
+            </div>
 
+            <!-- Top Entities -->
             {{#if statistics.topKiller}}
-            <tr class="kb-table-header">
-                <th class="kb-table-header text-center" colspan="4">Top Players & Organizations</th>
-            </tr>
-        <tr class="kb-table-row-even">
-            <td class="kb-table-cell"><b>Top Killer:</b></td>
-            <td class="kb-table-cell"><a href="/character/{{statistics.topKiller.id}}">{{statistics.topKiller.name}}</a> ({{statistics.topKiller.kills}} kills)</td>
-            <td class="kb-table-cell"><b>Top Corporation:</b></td>
-            <td class="kb-table-cell"><a href="/corporation/{{statistics.topCorporation.id}}">{{statistics.topCorporation.name}}</a> ({{statistics.topCorporation.kills}} kills)</td>
-        </tr>
-        <tr class="kb-table-row-odd">
-            <td class="kb-table-cell"><b>Top Alliance:</b></td>
-            <td class="kb-table-cell"><a href="/alliance/{{statistics.topAlliance.id}}">{{statistics.topAlliance.name}}</a> ({{statistics.topAlliance.kills}} kills)</td>
-            <td class="kb-table-cell"></td>
-            <td class="kb-table-cell"></td>
-            </tr>
-            {{/if}}
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Top Killer</span>
+                    <a href="/character/{{statistics.topKiller.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.topKiller.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.topKiller.kills}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Top Corp</span>
+                    <a href="/corporation/{{statistics.topCorporation.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.topCorporation.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.topCorporation.kills}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Top Alliance</span>
+                    <a href="/alliance/{{statistics.topAlliance.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.topAlliance.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.topAlliance.kills}}</span>
+            </div>
 
+            <!-- Ships & Systems -->
             {{#if statistics.mostDestroyedShip}}
-            <tr class="kb-table-header">
-                <th class="kb-table-header text-center" colspan="4">Ships & Systems</th>
-            </tr>
-        <tr class="kb-table-row-even">
-            <td class="kb-table-cell"><b>Most Destroyed Ship:</b></td>
-            <td class="kb-table-cell"><a href="/type/{{statistics.mostDestroyedShip.id}}">{{statistics.mostDestroyedShip.name}}</a> ({{statistics.mostDestroyedShip.count}}x)</td>
-            <td class="kb-table-cell"><b>Most Used Ship:</b></td>
-            <td class="kb-table-cell"><a href="/type/{{statistics.mostUsedShip.id}}">{{statistics.mostUsedShip.name}}</a> ({{statistics.mostUsedShip.count}}x)</td>
-        </tr>
-        <tr class="kb-table-row-odd">
-            <td class="kb-table-cell"><b>Most Dangerous System:</b></td>
-            <td class="kb-table-cell"><a href="/system/{{statistics.mostDangerousSystem.id}}">{{statistics.mostDangerousSystem.name}}</a> ({{statistics.mostDangerousSystem.count}} kills)</td>
-            <td class="kb-table-cell"></td>
-            <td class="kb-table-cell"></td>
-            </tr>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Most Destroyed</span>
+                    <a href="/type/{{statistics.mostDestroyedShip.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.mostDestroyedShip.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.mostDestroyedShip.count}}x</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Most Used</span>
+                    <a href="/type/{{statistics.mostUsedShip.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.mostUsedShip.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.mostUsedShip.count}}x</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Most Dangerous</span>
+                    <a href="/system/{{statistics.mostDangerousSystem.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.mostDangerousSystem.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.mostDangerousSystem.count}}</span>
+            </div>
             {{/if}}
-        </tbody>
-    </table>
+            {{/if}}
+        </div>
+    </div>
 </section>
 {{/if}}
 
@@ -109,8 +131,6 @@
 
   <!-- Recent Killmails -->
   <section>
-      {{> components/section-header title="Recent Killmails" icon="kills"}}
-
       <!-- Pagination Top -->
       {{> partials/pagination pagination=pagination}}
 
@@ -123,8 +143,6 @@
 {{else}}
 <!-- Recent Killmails (no top 10) -->
 <section class="killlist">
-    {{> components/section-header title="Recent Killmails" icon="kills"}}
-
     <!-- Pagination Top -->
     {{> partials/pagination pagination=pagination}}
 

@@ -144,29 +144,34 @@ a:hover {
 }
 
 /* ========================================
-   Navigation - Classic EDK Style
+   Navigation - Soft Aesthetic Style
    ======================================== */
 nav.navigation,
 div.navigation {
-    background: var(--color-bg-darker);
-    border-collapse: separate;
-    border-spacing: 1px;
+    background: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--color-border-dark);
+    border-bottom: 1px solid var(--color-border-dark);
     padding: 0;
     margin: 0;
+    width: 100%;
 }
 
 nav.navigation > table,
 div.navigation > table {
     border: 0;
-    height: var(--header-height);
-    table-layout: fixed;
     width: 100%;
+    table-layout: fixed;
     margin: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    gap: 0;
 }
 
 nav.navigation tr,
 div.navigation tr {
-    background: var(--color-bg-secondary);
+    background: transparent;
 }
 
 nav.navigation td,
@@ -174,8 +179,14 @@ div.navigation td {
     text-align: center;
     padding: 0;
     margin: 0;
-    border-right: 1px solid var(--color-bg-darker);
-    background-color: var(--color-bg-secondary);
+    background-color: transparent;
+    border: none;
+    position: relative;
+}
+
+nav.navigation td:not(:last-child),
+div.navigation td:not(:last-child) {
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 nav.navigation td:last-child,
@@ -186,18 +197,20 @@ div.navigation td:last-child {
 nav.navigation a,
 div.navigation a {
     display: block;
-    padding: 6px 8px;
-    color: var(--color-accent-blue);
+    padding: 10px 12px;
+    color: var(--color-text-secondary);
     text-decoration: none;
     font-size: 11px;
-    font-weight: normal;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
     transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
 nav.navigation a:hover,
 div.navigation a:hover {
-    background-color: #3a3a3a;
-    color: var(--color-accent-gold);
+    background-color: rgba(74, 158, 255, 0.08);
+    color: #4a9eff;
     text-decoration: none;
 }
 
@@ -259,6 +272,56 @@ footer p {
     border-spacing: 1px;
     background-color: var(--color-bg-dark);
     width: 100%;
+}
+
+.kb-table.kb-table--soft {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(74, 158, 255, 0.2);
+}
+
+.kb-table--soft .kb-table-header {
+    background: rgba(20, 100, 200, 0.2);
+    border-bottom: 1px solid rgba(74, 158, 255, 0.3);
+}
+
+.kb-table--soft .kb-table-row-even {
+    background-color: rgba(30, 40, 60, 0.4);
+}
+
+.kb-table--soft .kb-table-row-odd {
+    background-color: rgba(20, 30, 50, 0.3);
+}
+
+.kb-table--soft .kb-table-row-even:hover,
+.kb-table--soft .kb-table-row-odd:hover {
+    background-color: rgba(74, 158, 255, 0.1) !important;
+    border-left: 2px solid var(--color-accent-blue-light);
+}
+
+.kb-table--soft .kb-table-row-even td {
+    background-color: rgba(30, 40, 60, 0.4);
+}
+
+.kb-table--soft .kb-table-row-odd td {
+    background-color: rgba(20, 30, 50, 0.3);
+}
+
+.kb-table--soft .kb-table-row-even:hover td {
+    background-color: rgba(74, 158, 255, 0.1);
+}
+
+.kb-table--soft .kb-table-row-odd:hover td {
+    background-color: rgba(74, 158, 255, 0.1);
+}
+
+.kb-table--soft a {
+    color: var(--color-accent-blue-light);
+    text-decoration: none;
+}
+
+.kb-table--soft a:hover {
+    color: var(--color-accent-blue-bright);
+    text-decoration: underline;
 }
 
 .kb-subtable {
@@ -1187,27 +1250,33 @@ textarea.killmail {
 }
 
 .entity-hero__header {
-    padding: 15px;
+    padding: 12px 16px;
     background: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-secondary) 100%);
     border-radius: var(--radius-sm);
     border-left: 4px solid var(--color-accent-blue-bright);
 }
 
 .entity-hero__title {
-    margin: 0 0 8px 0;
-    font-size: 28px;
+    margin: 0 0 4px 0;
+    font-size: 22px;
     color: var(--color-accent-blue-bright);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .entity-hero__ticker {
     color: var(--color-text-secondary);
+    font-size: 18px;
 }
 
 .entity-hero__relations {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--color-text-light);
-    margin-top: 5px;
+    margin-top: 0;
+}
+
+.entity-hero__relations-sep {
+    margin: 0 6px;
+    color: var(--color-text-secondary);
 }
 
 .entity-hero__link {
@@ -1457,70 +1526,9 @@ textarea.killmail {
 
 /* ========================================
    Pagination Styles
+   Pagination now handled in partials/pagination.hbs with soft aesthetic
    ======================================== */
-.pagination {
-    text-align: right;
-    margin: var(--spacing-md) 0;
-    padding: var(--spacing-md);
-}
-
-.pagination__inner {
-    display: inline-block;
-}
-
-.pagination__btn,
-.pagination__page {
-    display: inline-block;
-    padding: var(--spacing-sm) var(--spacing-md);
-    margin: 0 2px;
-    border: 1px solid var(--color-border-light);
-    border-radius: 3px;
-    font-size: 12px;
-    text-decoration: none;
-    transition: all var(--transition-fast);
-}
-
-.pagination__btn {
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-white);
-}
-
-.pagination__btn:hover {
-    background: var(--color-bg-hover);
-    color: var(--color-accent-gold);
-}
-
-.pagination__btn--disabled {
-    background: var(--color-bg-primary);
-    border-color: var(--color-border-dark);
-    color: var(--color-text-secondary);
-    cursor: not-allowed;
-}
-
-.pagination__page {
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-white);
-}
-
-.pagination__page:hover {
-    background: var(--color-bg-hover);
-    color: var(--color-accent-gold);
-}
-
-.pagination__page--active {
-    background: var(--color-bg-secondary);
-    border-color: var(--color-border);
-    color: var(--color-text-white);
-    font-weight: bold;
-}
-
-.pagination__ellipsis {
-    display: inline-block;
-    padding: var(--spacing-sm) var(--spacing-md);
-    margin: 0 2px;
-    color: var(--color-text-secondary);
-    font-size: 12px;
-}
+/* Pagination styles moved to pagination.hbs for component encapsulation */
 
 /* ========================================
    Error Page Styles
@@ -1960,3 +1968,321 @@ textarea.killmail {
     font-size: 9px;
     color: var(--color-text-secondary);
 }
+
+/* ========================================
+   Killmail Navigation Bar
+   ======================================== */
+.killmail-nav {
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border-dark);
+    border-radius: 4px;
+    margin-bottom: 20px;
+    overflow: visible;
+    position: relative;
+}
+
+.killmail-nav__container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.killmail-nav__primary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.killmail-nav__killmail-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.killmail-nav__label {
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.killmail-nav__killmail-id {
+    color: var(--color-accent-blue-light);
+    font-weight: 600;
+    font-size: 13px;
+    font-family: monospace;
+    background: transparent;
+    border: 1px solid var(--color-accent-blue-light);
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.killmail-nav__killmail-id:hover {
+    background: rgba(74, 158, 255, 0.1);
+    border-color: var(--color-accent-blue-bright);
+    color: var(--color-accent-blue-bright);
+}
+
+.killmail-nav__actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.killmail-nav__external {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+}
+
+/* Dropdown Menu */
+.killmail-nav__dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.killmail-nav__btn--dropdown {
+    background: rgba(74, 158, 255, 0.1);
+    border-color: var(--color-accent-blue-light);
+    color: var(--color-accent-blue-light);
+}
+
+.killmail-nav__btn--dropdown:hover {
+    background: rgba(74, 158, 255, 0.2);
+}
+
+.killmail-nav__dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    margin-top: 4px;
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+.killmail-nav__dropdown-menu--active {
+    display: flex;
+    flex-direction: column;
+}
+
+.killmail-nav__dropdown-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 16px;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    font-size: 11px;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--color-border-darker);
+}
+
+.killmail-nav__dropdown-title {
+    display: block;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.killmail-nav__dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.killmail-nav__dropdown-item:hover {
+    background: rgba(74, 158, 255, 0.1);
+    color: var(--color-accent-blue-bright);
+    padding-left: 20px;
+}
+
+
+/* Navigation Buttons */
+.killmail-nav__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-white);
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.killmail-nav__btn:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-accent-gold);
+    border-color: var(--color-accent-gold);
+}
+
+.killmail-nav__btn--secondary {
+    background: transparent;
+    border-color: var(--color-border-dark);
+    color: var(--color-text-light);
+}
+
+.killmail-nav__btn--secondary:hover {
+    background: rgba(74, 158, 255, 0.1);
+    color: var(--color-accent-blue-bright);
+    border-color: var(--color-accent-blue-light);
+}
+
+.killmail-nav__btn--external {
+    background: rgba(74, 158, 255, 0.1);
+    border-color: var(--color-accent-blue-light);
+    color: var(--color-accent-blue-light);
+}
+
+.killmail-nav__btn--external:hover {
+    background: rgba(74, 158, 255, 0.2);
+    border-color: var(--color-accent-blue-bright);
+    color: var(--color-accent-blue-bright);
+}
+
+/* Sibling Killmails Section */
+.killmail-nav__siblings {
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--color-border-dark);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.killmail-nav__siblings-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.killmail-nav__siblings-list {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    padding: 2px 0; /* Account for scrollbar */
+}
+
+.killmail-nav__siblings-list::-webkit-scrollbar {
+    height: 6px;
+}
+
+.killmail-nav__siblings-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.killmail-nav__siblings-list::-webkit-scrollbar-thumb {
+    background: var(--color-border-dark);
+    border-radius: 3px;
+}
+
+.killmail-nav__siblings-list::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border);
+}
+
+.killmail-nav__sibling-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-darker);
+    color: var(--color-text-primary);
+    text-decoration: none;
+    font-size: 10px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.killmail-nav__sibling-btn:hover {
+    background: rgba(74, 158, 255, 0.15);
+    border-color: var(--color-accent-blue-light);
+    color: var(--color-accent-blue-bright);
+}
+
+.killmail-nav__sibling-ship {
+    font-weight: 500;
+}
+
+.killmail-nav__sibling-isk {
+    color: var(--color-accent-gold);
+    font-weight: 600;
+}
+
+/* Dropdown Link Descriptions */
+.killmail-nav__link-desc {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+    line-height: 1.3;
+}
+
+.killmail-nav__dropdown-menu a:hover .killmail-nav__link-desc {
+    color: var(--color-text-secondary-hover, rgba(200, 200, 200, 0.8));
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .killmail-nav__container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .killmail-nav__external {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .killmail-nav__siblings {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .killmail-nav__siblings-list {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .killmail-nav__btn {
+        padding: 6px 10px;
+        font-size: 10px;
+    }
+
+    .killmail-nav__killmail-info {
+        font-size: 11px;
+    }
+
+    .killmail-nav__value {
+        font-size: 12px;
+    }
+
+    .killmail-nav__sibling-btn {
+        padding: 4px 10px;
+        font-size: 9px;
+    }
+}
+

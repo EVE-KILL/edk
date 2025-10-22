@@ -46,12 +46,23 @@ export class Controller extends WebController {
     const data = {
       ...characterDetail,
       entityName: characterDetail.character.name,
+      entityId: characterDetail.character.id,
+      entityType: 'character',
+      type: 'character',
       imageUrl: `https://images.evetech.net/characters/${characterDetail.character.id}/portrait?size=512`,
+      ticker: undefined,
+      parent: characterDetail.character.corporationId ? {
+        id: characterDetail.character.corporationId,
+        name: characterDetail.character.corporationName,
+        ticker: characterDetail.character.corporationTicker,
+      } : undefined,
+      grandparent: characterDetail.character.allianceId ? {
+        id: characterDetail.character.allianceId,
+        name: characterDetail.character.allianceName,
+        ticker: characterDetail.character.allianceTicker,
+      } : undefined,
       currentTab: 'dashboard',
       baseUrl: `/character/${characterId}`,
-      // Entity info for loss highlighting
-      entityType: 'character',
-      entityId: parseInt(characterId, 10),
       // Ship group statistics
       shipGroupStats,
       shipGroupColumns,

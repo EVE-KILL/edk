@@ -63,4 +63,79 @@
         {{/if}}
     </div>
 </div>
+
+<style>
+.pagination {
+  margin: 20px 0;
+  text-align: right;
+}
+
+.pagination__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: 4px;
+}
+
+.pagination__btn,
+.pagination__page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--color-text-white);
+  border: 1px solid var(--color-border-dark);
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  min-width: 36px;
+  height: 36px;
+  cursor: pointer;
+}
+
+.pagination__btn:hover,
+.pagination__page:hover {
+  background: rgba(74, 158, 255, 0.15);
+  border-color: #4a9eff;
+  color: #4a9eff;
+}
+
+.pagination__btn--disabled {
+  background: transparent;
+  border-color: var(--color-border-dark);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pagination__btn--disabled:hover {
+  background: transparent;
+  border-color: var(--color-border-dark);
+  color: var(--color-text-secondary);
+}
+
+.pagination__page--active {
+  background: #4a9eff;
+  border-color: #4a9eff;
+  color: #ffffff;
+}
+
+.pagination__page--active:hover {
+  background: rgba(74, 158, 255, 0.8);
+}
+
+.pagination__ellipsis {
+  display: inline-block;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  padding: 0 4px;
+  user-select: none;
+}
+</style>
 {{/if}}

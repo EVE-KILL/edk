@@ -1,6 +1,6 @@
 {{!--
   Ship Group Statistics Component
-  Displays ship group kill statistics in a 3-column grid
+  Displays ship group kill statistics in a 3-column grid with soft aesthetic
 
   Usage:
   {{> components/ship-group-stats shipGroupStats=shipGroupStats}}
@@ -12,17 +12,15 @@
 <div class="ship-stats-grid">
     <!-- We'll split the array into 3 columns in the route handler -->
     {{#each shipGroupColumns}}
-    <div class="ship-stats-column">
-        <table class="kb-table" cellspacing="1">
-            <tbody>
-                {{#each this}}
-                <tr class="kb-table-row-{{#if (isEven @index)}}even{{else}}odd{{/if}}">
-                    <td class="kb-table-cell" style="width: 70%;">{{this.groupName}}</td>
-                    <td class="kb-table-cell killed" style="width: 30%; text-align: right;">{{this.killed}}</td>
-                </tr>
-                {{/each}}
-            </tbody>
-        </table>
+    <div class="ship-stats-box">
+        <div class="ship-stats-content">
+            {{#each this}}
+            <div class="ship-stats-row">
+                <span class="ship-stats-name">{{this.groupName}}</span>
+                <span class="ship-stats-value">{{this.killed}}</span>
+            </div>
+            {{/each}}
+        </div>
     </div>
     {{/each}}
 </div>
@@ -31,8 +29,8 @@
 .ship-stats-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
 @media (min-width: 768px) {
@@ -47,9 +45,54 @@
     }
 }
 
-.killed {
-    color: #10b981;
+.ship-stats-box {
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border-dark);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.ship-stats-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.ship-stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--color-border-dark);
+    transition: background-color 0.2s ease;
+    font-size: 10px;
+}
+
+.ship-stats-row:last-child {
+    border-bottom: none;
+}
+
+.ship-stats-row:hover {
+    background: rgba(74, 158, 255, 0.15);
+}
+
+.ship-stats-name {
+    color: var(--color-text-white);
+    font-size: 11px;
     font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ship-stats-value {
+    color: #4ade80;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-left: 12px;
 }
 </style>
 {{/if}}

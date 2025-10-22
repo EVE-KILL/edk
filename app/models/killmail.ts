@@ -1,5 +1,7 @@
 import { BaseModel, eq, and, or, desc, asc, sql, type SQL } from "./base-model";
 import { killmails, type Killmail, type NewKillmail } from "../../db/schema/killmails";
+import { victims } from "../../db/schema/victims";
+import { gte, ne } from "drizzle-orm";
 
 /**
  * Killmail Model
@@ -182,6 +184,54 @@ export class KillmailModel extends BaseModel<typeof killmails, Killmail, NewKill
    */
   async deleteOlderThan(date: Date): Promise<number> {
     return this.deleteWhere(sql`${killmails.killmailTime} < ${date}`);
+  }
+
+  /**
+   * Get sibling killmails - kills for the same victim within a time window (last hour by default)
+   * Excludes the current killmail itself
+   * Default time window is 1 hour (3600 seconds)
+   */
+  async getSiblings(
+    killmailId: number,
+    victimCharacterId: number | null,
+    timeWindowSeconds = 3600,
+    limit = 50
+  ): Promise<Killmail[]> {
+    // If no victim character ID, we can't find siblings
+    if (!victimCharacterId) {
+      console.log(`[Killmail Model] No victim character ID, skipping sibling search`);
+      return [];
+    }
+
+    // Get the current killmail's timestamp
+    const currentKillmail = await this.findByKillmailId(killmailId);
+    if (!currentKillmail) {
+      console.log(`[Killmail Model] Current killmail not found: ${killmailId}`);
+      return [];
+    }
+
+    // Calculate time window - only look back to last hour (not forward)
+    const killTime = currentKillmail.killmailTime;
+    const oneHourAgoDate = new Date(killTime.getTime() - timeWindowSeconds * 1000);
+
+    console.log(`[Killmail Model] Looking for siblings for victim ${victimCharacterId}`);
+    console.log(`[Killmail Model] Kill time: ${killTime.toISOString()}, One hour ago: ${oneHourAgoDate.toISOString()}`);
+
+    try {
+      // Use the find method with a proper where clause
+      return await this.find({
+        where: and(
+          sql`EXISTS (SELECT 1 FROM victims WHERE victims.killmail_id = ${killmails.id} AND victims.character_id = ${victimCharacterId})`,
+          gte(killmails.killmailTime, oneHourAgoDate),
+          ne(killmails.killmailId, killmailId)
+        )!,
+        limit,
+        orderBy: desc(killmails.killmailTime),
+      });
+    } catch (error) {
+      console.error(`[Killmail Model] Error finding siblings:`, error);
+      return [];
+    }
   }
 }
 

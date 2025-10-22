@@ -14,6 +14,7 @@ import {
   prices,
 } from "../../db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { Killmails } from "../models/killmail";
 
 export interface KillmailDetail {
   killmail: {
@@ -36,6 +37,10 @@ export interface KillmailDetail {
     security: string;
     securityStatus: number;
     region: string;
+  };
+  region: {
+    id: number;
+    name: string;
   };
   attackers: Array<{
     character: { id: number; name: string; } | null;
@@ -67,6 +72,15 @@ export interface KillmailDetail {
     fitValue: number;
     isSolo: boolean;
   };
+  siblings: Array<{
+    killmailId: number;
+    killmailTime: Date;
+    victimName: string;
+    victimCharacterId: number | null;
+    shipName: string;
+    shipTypeId: number;
+    totalValue: number;
+  }>;
 }
 
 export interface ItemSlot {
@@ -728,6 +742,48 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
     const securityClass = securityStatus >= 0.5 ? "high-sec" : securityStatus > 0 ? "low-sec" : "null-sec";
     const securityFormatted = securityStatus.toFixed(1);
 
+    // Fetch sibling killmails (other losses by the same victim character within 1 hour)
+    const siblingKillmails = await Killmails.getSiblings(
+      km.killmailId,
+      km.victimCharacterId, // Get siblings for the same victim character
+      3600, // 1 hour
+      50    // limit
+    );
+
+    console.log(`[Killmail Generator] Fetched ${siblingKillmails.length} sibling killmails for victim ${km.victimCharacterId}`);
+
+    // Transform sibling killmails for display
+    const siblings = await Promise.all(
+      siblingKillmails.map(async sibling => {
+        // Fetch victim info for each sibling
+        const victim = await db.query.victims.findFirst({
+          where: eq(victims.killmailId, sibling.id),
+        });
+
+        const victimCharacter = victim?.characterId
+          ? await db.query.characters.findFirst({
+              where: eq(characters.characterId, victim.characterId),
+            })
+          : null;
+
+        const shipType = victim?.shipTypeId
+          ? await db.query.types.findFirst({
+              where: eq(types.typeId, victim.shipTypeId),
+            })
+          : null;
+
+        return {
+          killmailId: sibling.killmailId,
+          killmailTime: sibling.killmailTime,
+          victimName: victimCharacter?.name || "Unknown",
+          victimCharacterId: victim?.characterId || null,
+          shipName: shipType?.name || `Ship ${victim?.shipTypeId}`,
+          shipTypeId: victim?.shipTypeId || 0,
+          totalValue: parseInt(sibling.totalValue) || 0,
+        };
+      })
+    );
+
     return {
       killmail: {
         id: km.killmailDbId,
@@ -753,6 +809,10 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         security: securityFormatted,
         securityStatus,
         region: km.region?.name || "Unknown Region",
+      },
+      region: {
+        id: km.region?.id || 0,
+        name: km.region?.name || "Unknown Region",
       },
       attackers: attackersData.map(a => ({
         character: a.character?.id ? a.character : null,
@@ -791,6 +851,7 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         fitValue,
         isSolo: km.killmailIsSolo || false,
       },
+      siblings,
     };
   } catch (error) {
     console.error("[Killmail Generator] Error:", error);
