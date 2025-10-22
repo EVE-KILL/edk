@@ -4,7 +4,6 @@
     "": {
       "name": "ekv4",
       "dependencies": {
-        "better-sqlite3": "^12.4.1",
         "drizzle-orm": "^0.44.6",
         "handlebars": "^4.7.8",
         "lru-cache": "^10.4.3",

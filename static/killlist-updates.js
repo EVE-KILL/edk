@@ -16,6 +16,9 @@ class KilllistUpdatesManager {
     this.updateQueue = [];
     this.isProcessingUpdate = false;
 
+    // Entity update cache - stores entity updates that arrive before the row is added to DOM
+    this.entityUpdateCache = {}; // Map of "type:id" -> { type, id, name }
+
     // Filter configuration
     this.filterConfig = {
       type: 'all', // 'all', 'kills', or 'losses'
@@ -42,6 +45,12 @@ class KilllistUpdatesManager {
 
     // Load filter configuration from data attributes
     this.loadFilterConfig();
+
+    // Check if websocket updates are disabled for this killlist
+    if (this.filterConfig.disableWebsocket) {
+      console.log('[Killlist] WebSocket updates disabled for this killlist');
+      return;
+    }
 
     // Get the current number of killmails displayed
     this.updateKillmailRowCount();
@@ -200,10 +209,134 @@ class KilllistUpdatesManager {
         // Queue the update to process sequentially
         this.updateQueue.push(message.data.killmail);
         this.processNextUpdate();
+      } else if (message.type === 'entity-update') {
+        // Handle entity data updates (characters, corporations, alliances, types, systems, regions)
+        this.handleEntityUpdate(message.data);
       }
     } catch (error) {
       console.error('[Killlist] Failed to parse WebSocket message:', error);
     }
+  }
+
+  /**
+   * Handle entity data updates and replace unknown names in the UI
+   */
+  handleEntityUpdate(entityData) {
+    const { entityType, id, name, ...rest } = entityData;
+
+    if (!entityType || !id || !name) {
+      console.warn('[Killlist] Invalid entity update:', entityData);
+      return;
+    }
+
+    const cacheKey = `${entityType}:${id}`;
+    console.log(`[Killlist] Entity update: ${entityType} ${id} = ${name}`);
+
+    // Store in cache for future rows
+    this.entityUpdateCache[cacheKey] = { entityType, id, name };
+
+    // Try to apply update to existing elements
+    const selector = `[data-${entityType}-id="${id}"]`;
+    const elements = document.querySelectorAll(selector);
+
+    console.log(`[Killlist] Found ${elements.length} elements with selector ${selector}`);
+
+    elements.forEach(el => {
+      this.applyEntityUpdate(el, entityType, id, name);
+    });
+  }
+
+  /**
+   * Apply entity update to an element
+   */
+  applyEntityUpdate(el, entityType, id, name) {
+    // Check if this element contains a link
+    const link = el.querySelector('a');
+
+    if (link) {
+      // Update the link text and href
+      const currentText = link.textContent.trim();
+
+      // Always update if it says "Unknown"
+      if (currentText.includes('Unknown')) {
+        link.textContent = name;
+        link.title = `${name} (ID: ${id})`;
+        link.classList.add('entity-updated');
+
+        console.log(`[Killlist] Updated link: ${link.href} text="${name}"`);
+
+        // Fade in effect
+        el.style.opacity = '0.5';
+        setTimeout(() => {
+          el.style.transition = 'opacity 0.3s ease-in';
+          el.style.opacity = '1';
+        }, 10);
+      }
+    } else {
+      // No link, just update the text content directly
+      if (el.textContent.includes('Unknown')) {
+        el.textContent = name;
+        el.title = `${name} (ID: ${id})`;
+        el.classList.add('entity-updated');
+
+        console.log(`[Killlist] Updated text: ${name}`);
+
+        // Fade in effect
+        el.style.opacity = '0.5';
+        setTimeout(() => {
+          el.style.transition = 'opacity 0.3s ease-in';
+          el.style.opacity = '1';
+        }, 10);
+      }
+    }
+  }
+
+  /**
+   * Apply cached entity updates to a newly added row
+   */
+  applyCachedUpdates(row) {
+    // Find all elements with data-*-id attributes
+    const elements = row.querySelectorAll('[data-character-id], [data-corporation-id], [data-alliance-id], [data-type-id], [data-system-id]');
+
+    elements.forEach(el => {
+      // Check which type of entity this is
+      if (el.hasAttribute('data-character-id')) {
+        const id = el.getAttribute('data-character-id');
+        const cacheKey = `character:${id}`;
+        if (this.entityUpdateCache[cacheKey]) {
+          const { entityType, name } = this.entityUpdateCache[cacheKey];
+          this.applyEntityUpdate(el, entityType, id, name);
+        }
+      } else if (el.hasAttribute('data-corporation-id')) {
+        const id = el.getAttribute('data-corporation-id');
+        const cacheKey = `corporation:${id}`;
+        if (this.entityUpdateCache[cacheKey]) {
+          const { entityType, name } = this.entityUpdateCache[cacheKey];
+          this.applyEntityUpdate(el, entityType, id, name);
+        }
+      } else if (el.hasAttribute('data-alliance-id')) {
+        const id = el.getAttribute('data-alliance-id');
+        const cacheKey = `alliance:${id}`;
+        if (this.entityUpdateCache[cacheKey]) {
+          const { entityType, name } = this.entityUpdateCache[cacheKey];
+          this.applyEntityUpdate(el, entityType, id, name);
+        }
+      } else if (el.hasAttribute('data-type-id')) {
+        const id = el.getAttribute('data-type-id');
+        const cacheKey = `type:${id}`;
+        if (this.entityUpdateCache[cacheKey]) {
+          const { entityType, name } = this.entityUpdateCache[cacheKey];
+          this.applyEntityUpdate(el, entityType, id, name);
+        }
+      } else if (el.hasAttribute('data-system-id')) {
+        const id = el.getAttribute('data-system-id');
+        const cacheKey = `system:${id}`;
+        if (this.entityUpdateCache[cacheKey]) {
+          const { entityType, name } = this.entityUpdateCache[cacheKey];
+          this.applyEntityUpdate(el, entityType, id, name);
+        }
+      }
+    });
   }
 
   /**
@@ -286,6 +419,9 @@ class KilllistUpdatesManager {
       this.killlistContainer.insertBefore(newRow, this.killlistContainer.firstChild);
     }
 
+    // Apply any cached entity updates to this new row
+    this.applyCachedUpdates(newRow);
+
     // Animate the new row
     this.animateNewRow(newRow);
 
@@ -322,7 +458,7 @@ class KilllistUpdatesManager {
 
     // Build HTML
     return `
-      <div class="kb-kl-row" style="cursor: pointer;">
+      <div class="kb-kl-row" data-killmail-id="${killmail_id}" style="cursor: pointer;">
         <!-- Ship -->
         <div class="kb-kl-col kb-kl-col--ship">
           <div class="kb-kl-ship">
@@ -331,7 +467,7 @@ class KilllistUpdatesManager {
                  class="kb-kl-ship-icon"
                  onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2248%22 height=%2248%22%3E%3Crect fill=%22%23666%22 width=%2248%22 height=%2248%22/%3E%3C/svg%3E'">
             <div class="kb-kl-info kb-kl-info--ship">
-              <div class="kb-kl-info__primary">${shipName}</div>
+              <div class="kb-kl-info__primary" ${victim.ship.type_id ? `data-type-id="${victim.ship.type_id}"` : ''}>${shipName}</div>
               <div class="kb-kl-info__secondary">${shipGroup}</div>
             </div>
           </div>
@@ -340,18 +476,18 @@ class KilllistUpdatesManager {
         <!-- Victim -->
         <div class="kb-kl-col kb-kl-col--victim">
           <div class="kb-kl-info kb-kl-info--victim">
-            <div class="kb-kl-info__primary">
+            <div class="kb-kl-info__primary" ${victim.character.id ? `data-character-id="${victim.character.id}"` : ''}>
               ${victim.character.id
                 ? `<a href="/character/${victim.character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${victim.character.name}</a>`
                 : victim.character.name}
             </div>
-            <div class="kb-kl-info__secondary">
+            <div class="kb-kl-info__secondary" ${victim.corporation.id ? `data-corporation-id="${victim.corporation.id}"` : ''}>
               ${victim.corporation.id
                 ? `<a href="/corporation/${victim.corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${victim.corporation.name}</a>`
                 : victim.corporation.name}
             </div>
             ${victim.alliance.name
-              ? `<div class="kb-kl-info__secondary">
+              ? `<div class="kb-kl-info__secondary" ${victim.alliance.id ? `data-alliance-id="${victim.alliance.id}"` : ''}>
                   ${victim.alliance.id
                     ? `<a href="/alliance/${victim.alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${victim.alliance.name}</a>`
                     : victim.alliance.name}
@@ -364,18 +500,18 @@ class KilllistUpdatesManager {
         <div class="kb-kl-col kb-kl-col--finalblow">
           <div class="kb-kl-info kb-kl-info--finalblow">
             ${finalBlow
-              ? `<div class="kb-kl-info__primary">
+              ? `<div class="kb-kl-info__primary" ${finalBlow.character.id ? `data-character-id="${finalBlow.character.id}"` : ''}>
                   ${finalBlow.character.id
                     ? `<a href="/character/${finalBlow.character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${finalBlow.character.name}</a>`
                     : finalBlow.character.name}
                 </div>
-                <div class="kb-kl-info__secondary">
+                <div class="kb-kl-info__secondary" ${finalBlow.corporation.id ? `data-corporation-id="${finalBlow.corporation.id}"` : ''}>
                   ${finalBlow.corporation.id
                     ? `<a href="/corporation/${finalBlow.corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${finalBlow.corporation.name}</a>`
                     : finalBlow.corporation.name}
                 </div>
                 ${finalBlow.alliance && finalBlow.alliance.name
-                  ? `<div class="kb-kl-info__secondary">
+                  ? `<div class="kb-kl-info__secondary" ${finalBlow.alliance.id ? `data-alliance-id="${finalBlow.alliance.id}"` : ''}>
                       ${finalBlow.alliance.id
                         ? `<a href="/alliance/${finalBlow.alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${finalBlow.alliance.name}</a>`
                         : finalBlow.alliance.name}
@@ -388,7 +524,7 @@ class KilllistUpdatesManager {
         <!-- Location -->
         <div class="kb-kl-col kb-kl-col--location">
           <div class="kb-kl-info">
-            <div class="kb-kl-info__primary">${solar_system.name}</div>
+            <div class="kb-kl-info__primary" ${solar_system.id ? `data-system-id="${solar_system.id}"` : ''}>${solar_system.name}</div>
             <div class="kb-kl-info__secondary">${solar_system.region}</div>
           </div>
         </div>

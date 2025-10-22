@@ -61,6 +61,7 @@ export class KillmailFetcher extends BaseWorker<{
    * Enqueue ESI fetch jobs for all entities in the killmail
    */
   private async enqueueESIFetches(data: any) {
+    logger.info(`📤 [KillmailFetcher] Starting to enqueue ESI fetch jobs...`);
     const idsToFetch = new Set<string>();
 
     // Solar system
@@ -111,6 +112,7 @@ export class KillmailFetcher extends BaseWorker<{
     }
 
     // Enqueue all ESI jobs with HIGH priority
+    logger.info(`📤 [KillmailFetcher] Enqueueing ${idsToFetch.size} ESI fetch jobs: ${Array.from(idsToFetch).join(", ")}`);
     for (const id of idsToFetch) {
       const [type, idStr] = id.split(":");
       if (!type || !idStr) continue;
@@ -123,7 +125,7 @@ export class KillmailFetcher extends BaseWorker<{
       });
     }
 
-    logger.debug(`  ↳ Enqueued ${idsToFetch.size} ESI fetch jobs for killmail`);
+    logger.info(`✅ [KillmailFetcher] Enqueued ${idsToFetch.size} ESI fetch jobs`);
   }
 
   /**
@@ -201,17 +203,17 @@ export class KillmailFetcher extends BaseWorker<{
         killmail_time: km.killmailTime,
         ship_value: shipPrice,
         victim: {
-          character: { id: char?.characterId || null, name: char?.name || "Unknown" },
-          corporation: { id: corp?.corporationId || 0, name: corp?.name || "Unknown" },
-          alliance: { id: ally?.allianceId || null, name: ally?.name || null },
-          ship: { type_id: ship?.typeId || 0, name: ship?.name || "Unknown", group: shipGroup?.name || "Unknown" },
+          character: { id: vic.characterId || null, name: char?.name || "Unknown" },
+          corporation: { id: vic.corporationId || null, name: corp?.name || "Unknown" },
+          alliance: { id: vic.allianceId || null, name: ally?.name || null },
+          ship: { type_id: ship?.typeId || null, name: ship?.name || "Unknown", group: shipGroup?.name || "Unknown" },
           damage_taken: vic.damageTaken || 0,
         },
         attackers: attackerRows
           .map((row) => ({
-            character: { id: row.character?.characterId || null, name: row.character?.name || "Unknown" },
-            corporation: { id: row.corporation?.corporationId || null, name: row.corporation?.name || "NPC" },
-            alliance: { id: row.alliance?.allianceId || null, name: row.alliance?.name || null },
+            character: { id: row.attacker.characterId || null, name: row.character?.name || "Unknown" },
+            corporation: { id: row.attacker.corporationId || null, name: row.corporation?.name || "NPC" },
+            alliance: { id: row.attacker.allianceId || null, name: row.alliance?.name || null },
             ship: { type_id: row.attacker.shipTypeId || null, name: row.ship?.name || "Unknown", group: row.shipGroup?.name || "Unknown" },
             weapon: { type_id: row.attacker.weaponTypeId || null, name: "Unknown" },
             damage_done: row.attacker.damageDone || 0,
@@ -219,7 +221,7 @@ export class KillmailFetcher extends BaseWorker<{
           }))
           .filter((a) => a), // Remove nulls
         solar_system: {
-          id: sys?.systemId || 0,
+          id: sys?.systemId || null,
           name: sys?.name || "Unknown",
           region: regionName,
           security_status: parseFloat(sys?.securityStatus || "0") || 0,

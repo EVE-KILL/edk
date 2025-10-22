@@ -17,6 +17,17 @@
 
         <!-- Center Actions -->
         <div class="killmail-nav__actions">
+            <!-- Battle Button (if in battle) -->
+            {{#if battle.isInBattle}}
+            <a
+                href="/battle/{{killmail.killmailId}}"
+                class="killmail-nav__btn killmail-nav__btn--battle"
+                title="{{battle.killCount}} kills in {{battle.systemId}} within {{battle.durationMinutes}} minutes"
+            >
+                ⚔️ Battle ({{battle.killCount}})
+            </a>
+            {{/if}}
+
             <!-- Raw Killmail via ESI -->
             <a
                 href="https://esi.evetech.net/latest/killmails/{{killmail.killmailId}}/{{killmail.hash}}/"
@@ -189,6 +200,9 @@
         </div>
     </div>
     {{/if}}
+
+    <!-- Battle Information Section Removed - Now links to full battle page -->
+
 </nav>
 
 <script>

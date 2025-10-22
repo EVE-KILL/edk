@@ -2,6 +2,8 @@ import { db } from "../../../src/db";
 import { solarSystems } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { BaseESIService } from "../../../src/services/esi/base-service";
+import { sendEvent } from "../../../src/utils/event-client";
+import { logger } from "../../../src/utils/logger";
 
 interface ESISolarSystem {
   constellation_id: number;
@@ -86,6 +88,15 @@ export class SolarSystemService extends BaseESIService {
           updatedAt: new Date(),
         },
       });
+
+    // Emit entity update event to management API (which will broadcast to websocket)
+    logger.info(`[SolarSystemService] Attempting to emit entity-update: ID=${transformedData.systemId}, Name=${transformedData.name}`);
+    logger.info(`[SolarSystemService] ✓ Emitting system ${transformedData.systemId}: ${transformedData.name}`);
+    await sendEvent("entity-update", {
+      entityType: "system",
+      id: transformedData.systemId,
+      name: transformedData.name,
+    });
 
     return transformedData;
   }

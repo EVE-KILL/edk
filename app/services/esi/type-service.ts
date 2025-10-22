@@ -2,6 +2,8 @@ import { db } from "../../../src/db";
 import { types } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { BaseESIService } from "../../../src/services/esi/base-service";
+import { sendEvent } from "../../../src/utils/event-client";
+import { logger } from "../../../src/utils/logger";
 
 interface ESIType {
   capacity?: number;
@@ -92,6 +94,15 @@ export class TypeService extends BaseESIService {
           updatedAt: new Date(),
         },
       });
+
+    // Emit entity update event to management API (which will broadcast to websocket)
+    logger.info(`[TypeService] Attempting to emit entity-update: ID=${transformedData.typeId}, Name=${transformedData.name}`);
+    logger.info(`[TypeService] ✓ Emitting type ${transformedData.typeId}: ${transformedData.name}`);
+    await sendEvent("entity-update", {
+      entityType: "type",
+      id: transformedData.typeId,
+      name: transformedData.name,
+    });
 
     return transformedData;
   }

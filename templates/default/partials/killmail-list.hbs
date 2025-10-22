@@ -13,13 +13,13 @@
 
     <!-- Killmail Rows -->
     {{#each killmails}}
-    <div class="kb-kl-row {{#if (or (isFollowedLoss victim ../followedEntities) (isEntityLoss victim ../entityType ../entityId))}}kb-kl-row--followed-loss{{/if}}" onclick="window.location.href='/killmail/{{killmail_id}}';" style="cursor: pointer;">
+    <div class="kb-kl-row {{#if (or (isFollowedLoss victim ../followedEntities) (isEntityLoss victim ../entityType ../entityId))}}kb-kl-row--followed-loss{{/if}}" data-killmail-id="{{killmail_id}}" onclick="window.location.href='/killmail/{{killmail_id}}';" style="cursor: pointer;">
         <!-- Ship -->
         <div class="kb-kl-col kb-kl-col--ship">
             <div class="kb-kl-ship">
                 {{> partials/eve-image type="ship" id=victim.ship.type_id size=48 alt=victim.ship.name class="kb-kl-ship-icon"}}
                 <div class="kb-kl-info kb-kl-info--ship">
-                    <div class="kb-kl-info__primary">{{victim.ship.name}}</div>
+                    <div class="kb-kl-info__primary" data-type-id="{{victim.ship.type_id}}">{{victim.ship.name}}</div>
                     <div class="kb-kl-info__secondary">{{victim.ship.group}}</div>
                 </div>
             </div>
@@ -29,13 +29,13 @@
         <div class="kb-kl-col kb-kl-col--victim">
             <div class="kb-kl-info kb-kl-info--victim">
                 {{#if victim.character.id}}
-                <div class="kb-kl-info__primary">
+                <div class="kb-kl-info__primary" data-character-id="{{victim.character.id}}">
                     <a href="/character/{{victim.character.id}}" class="kb-kl-info__link" onclick="event.stopPropagation();">{{victim.character.name}}</a>
                 </div>
                 {{else}}
                 <div class="kb-kl-info__primary">{{victim.character.name}}</div>
                 {{/if}}
-                <div class="kb-kl-info__secondary">
+                <div class="kb-kl-info__secondary" data-corporation-id="{{victim.corporation.id}}">
                     {{#if victim.corporation.id}}
                     <a href="/corporation/{{victim.corporation.id}}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">{{victim.corporation.name}}</a>
                     {{else}}
@@ -43,7 +43,7 @@
                     {{/if}}
                 </div>
                 {{#if victim.alliance.name}}
-                <div class="kb-kl-info__secondary">
+                <div class="kb-kl-info__secondary" data-alliance-id="{{victim.alliance.id}}">
                     {{#if victim.alliance.id}}
                     <a href="/alliance/{{victim.alliance.id}}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">{{victim.alliance.name}}</a>
                     {{else}}
@@ -59,13 +59,13 @@
             <div class="kb-kl-info kb-kl-info--finalblow">
                 {{#if attackers.[0]}}
                 {{#if attackers.[0].character.id}}
-                <div class="kb-kl-info__primary">
+                <div class="kb-kl-info__primary" data-character-id="{{attackers.[0].character.id}}">
                     <a href="/character/{{attackers.[0].character.id}}" class="kb-kl-info__link" onclick="event.stopPropagation();">{{attackers.[0].character.name}}</a>
                 </div>
                 {{else}}
                 <div class="kb-kl-info__primary">{{attackers.[0].character.name}}</div>
                 {{/if}}
-                <div class="kb-kl-info__secondary">
+                <div class="kb-kl-info__secondary" data-corporation-id="{{attackers.[0].corporation.id}}">
                     {{#if attackers.[0].corporation.id}}
                     <a href="/corporation/{{attackers.[0].corporation.id}}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">{{attackers.[0].corporation.name}}</a>
                     {{else}}
@@ -73,7 +73,7 @@
                     {{/if}}
                 </div>
                 {{#if attackers.[0].alliance.name}}
-                <div class="kb-kl-info__secondary">
+                <div class="kb-kl-info__secondary" data-alliance-id="{{attackers.[0].alliance.id}}">
                     {{#if attackers.[0].alliance.id}}
                     <a href="/alliance/{{attackers.[0].alliance.id}}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">{{attackers.[0].alliance.name}}</a>
                     {{else}}
@@ -90,8 +90,8 @@
         <!-- Location -->
         <div class="kb-kl-col kb-kl-col--location">
             <div class="kb-kl-info">
-                <div class="kb-kl-info__primary">{{solar_system.name}}</div>
-                <div class="kb-kl-info__secondary">{{solar_system.region}}</div>
+                <div class="kb-kl-info__primary" data-system-id="{{solar_system.id}}">{{solar_system.name}}</div>
+                <div class="kb-kl-info__secondary" data-region-id="{{solar_system.region_id}}">{{solar_system.region}}</div>
             </div>
         </div>
 

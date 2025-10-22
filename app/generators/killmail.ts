@@ -15,6 +15,7 @@ import {
 } from "../../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { Killmails } from "../models/killmail";
+import { BattleService } from "../services/battle-service";
 
 export interface KillmailDetail {
   killmail: {
@@ -71,6 +72,17 @@ export interface KillmailDetail {
     droppedValue: number;
     fitValue: number;
     isSolo: boolean;
+  };
+  battle: {
+    isInBattle: boolean;
+    systemId?: number;
+    startTime?: Date;
+    endTime?: Date;
+    durationMinutes?: number;
+    killCount?: number;
+    uniqueCharacters?: number;
+    uniqueCorporations?: number;
+    uniqueAlliances?: number;
   };
   siblings: Array<{
     killmailId: number;
@@ -784,6 +796,9 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
       })
     );
 
+    // Fetch battle information
+    const battleSummary = await BattleService.getBattleSummary(km.killmailId);
+
     return {
       killmail: {
         id: km.killmailDbId,
@@ -850,6 +865,17 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         droppedValue,
         fitValue,
         isSolo: km.killmailIsSolo || false,
+      },
+      battle: {
+        isInBattle: battleSummary !== null,
+        systemId: battleSummary?.systemId,
+        startTime: battleSummary?.startTime,
+        endTime: battleSummary?.endTime,
+        durationMinutes: battleSummary?.durationMinutes,
+        killCount: battleSummary?.killCount,
+        uniqueCharacters: battleSummary?.uniqueCharacters,
+        uniqueCorporations: battleSummary?.uniqueCorporations,
+        uniqueAlliances: battleSummary?.uniqueAlliances,
       },
       siblings,
     };

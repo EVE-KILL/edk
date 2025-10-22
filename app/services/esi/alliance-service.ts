@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { logger } from "../../../src/utils/logger";
 import { EveKillProxyService } from "../../../src/services/esi/eve-kill-proxy-service";
 import { ESINotFoundError } from "../../../src/services/esi/base-service";
+import { sendEvent } from "../../../src/utils/event-client";
 import type { Alliance, NewAlliance } from "../../../db/schema/alliances";
 
 /**
@@ -93,6 +94,7 @@ export class AllianceService extends EveKillProxyService {
    */
   private async storeInDatabase(alliance: NewAlliance): Promise<void> {
     try {
+      logger.info(`[AllianceService.storeInDatabase] START - Inserting alliance ${alliance.allianceId}: ${alliance.name}`);
       await db
         .insert(alliances)
         .values(alliance)
@@ -111,7 +113,21 @@ export class AllianceService extends EveKillProxyService {
           },
         });
 
-      logger.info(`Stored alliance ${alliance.allianceId} in database`);
+      logger.info(`[AllianceService.storeInDatabase] DB INSERT COMPLETE - Stored alliance ${alliance.allianceId} in database`);
+
+      // Emit entity update event to management API (which will broadcast to websocket)
+      logger.info(`[AllianceService.storeInDatabase] BROADCAST START - About to emit entity-update event for alliance ${alliance.allianceId}: ${alliance.name}`);
+      if (alliance.allianceId && alliance.name) {
+        logger.info(`[AllianceService.storeInDatabase] CALLING sendEvent with type=entity-update, ID=${alliance.allianceId}, Name=${alliance.name}`);
+        await sendEvent("entity-update", {
+          entityType: "alliance",
+          id: alliance.allianceId,
+          name: alliance.name,
+        });
+        logger.info(`[AllianceService.storeInDatabase] BROADCAST COMPLETE - sendEvent returned`);
+      } else {
+        logger.warn(`[AllianceService.storeInDatabase] BROADCAST SKIPPED - missing ID or name: ID=${alliance.allianceId}, Name=${alliance.name}`);
+      }
     } catch (error) {
       logger.error(`Failed to store alliance ${alliance.allianceId}:`, error);
       throw error;

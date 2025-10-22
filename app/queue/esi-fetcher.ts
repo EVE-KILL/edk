@@ -36,38 +36,45 @@ export class ESIFetcher extends BaseWorker<{
   override async handle(payload: { type: string; id: number }, job: Job) {
     const { type, id } = payload;
 
+    logger.info(`🔍 [ESIFetcher] Processing ESI job: type=${type}, id=${id}`);
+
     try {
       let result;
       switch (type) {
         case "character":
+          logger.info(`⬇️  [ESIFetcher] Fetching character ${id}...`);
           result = await this.characterService.getCharacter(id);
-          logger.debug(`  ↳ Fetched character ${id}: ${result?.name || "Unknown"}`);
+          logger.info(`✅ [ESIFetcher] Fetched character ${id}: ${result?.name || "Unknown"}`);
           break;
         case "corporation":
+          logger.info(`⬇️  [ESIFetcher] Fetching corporation ${id}...`);
           result = await this.corporationService.getCorporation(id);
-          logger.debug(`  ↳ Fetched corporation ${id}: ${result?.name || "Unknown"}`);
+          logger.info(`✅ [ESIFetcher] Fetched corporation ${id}: ${result?.name || "Unknown"}`);
           break;
         case "alliance":
+          logger.info(`⬇️  [ESIFetcher] Fetching alliance ${id}...`);
           result = await this.allianceService.getAlliance(id);
-          logger.debug(`  ↳ Fetched alliance ${id}: ${result?.name || "Unknown"}`);
+          logger.info(`✅ [ESIFetcher] Fetched alliance ${id}: ${result?.name || "Unknown"}`);
           break;
         case "type":
+          logger.info(`⬇️  [ESIFetcher] Fetching type ${id}...`);
           result = await this.typeService.getType(id);
-          logger.debug(`  ↳ Fetched type ${id}: ${result?.name || "Unknown"}`);
+          logger.info(`✅ [ESIFetcher] Fetched type ${id}: ${result?.name || "Unknown"}`);
           break;
         case "system":
+          logger.info(`⬇️  [ESIFetcher] Fetching system ${id}...`);
           result = await this.systemService.getSolarSystem(id);
-          logger.debug(`  ↳ Fetched system ${id}: ${result?.name || "Unknown"}`);
+          logger.info(`✅ [ESIFetcher] Fetched system ${id}: ${result?.name || "Unknown"}`);
           break;
         default:
           throw new Error(`Unknown ESI type: ${type}`);
       }
 
       if (!result) {
-        logger.debug(`  ↳ ESI ${type} ${id} not found`);
+        logger.warn(`⚠️  [ESIFetcher] ESI ${type} ${id} not found`);
       }
     } catch (error) {
-      logger.error(`  ↳ Failed to fetch ESI ${type} ${id}:`, error);
+      logger.error(`❌ [ESIFetcher] Failed to fetch ESI ${type} ${id}:`, error);
       throw error;
     }
   }

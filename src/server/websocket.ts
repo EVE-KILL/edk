@@ -117,6 +117,7 @@ export class WebSocketUpdatesManager {
     };
 
     const messageStr = JSON.stringify(message);
+
     let sent = 0;
     let failed = 0;
 
@@ -129,14 +130,8 @@ export class WebSocketUpdatesManager {
       }
     }
 
-    if (globalThis.VERBOSE_MODE || this.connectedClients.size > 0) {
-      logger.debug(
-        `[WebSocket] Broadcast '${type}' to ${sent}/${this.connectedClients.size} clients`
-      );
-    }
-
     if (failed > 0) {
-      logger.warn(`[WebSocket] Failed to send to ${failed} client(s)`);
+      logger.warn(`[WebSocket] ⚠️  Failed to send to ${failed} client(s)`);
     }
   }
 

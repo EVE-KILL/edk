@@ -27,7 +27,11 @@
             <div style="margin-bottom: 3px;">
                 <b style="font-size: 11px;">
                     {{#if victim.character.id}}
+                    {{#if victim.character.name}}
                     <a href="/character/{{victim.character.id}}" style="color: var(--color-accent-blue-light); text-decoration: none;">{{victim.character.name}}</a>
+                    {{else}}
+                    <a href="/character/{{victim.character.id}}" style="color: var(--color-accent-blue-light); text-decoration: none;">Pilot #{{victim.character.id}}</a>
+                    {{/if}}
                     {{else}}
                     {{victim.ship.name}}
                     {{/if}}

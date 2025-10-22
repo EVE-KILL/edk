@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { logger } from "../../../src/utils/logger";
 import { EveKillProxyService } from "../../../src/services/esi/eve-kill-proxy-service";
 import { ESINotFoundError } from "../../../src/services/esi/base-service";
+import { sendEvent } from "../../../src/utils/event-client";
 import type { Corporation, NewCorporation } from "../../../db/schema/corporations";
 
 /**
@@ -102,6 +103,7 @@ export class CorporationService extends EveKillProxyService {
    */
   private async storeInDatabase(corporation: NewCorporation): Promise<void> {
     try {
+      logger.info(`[CorporationService.storeInDatabase] START - Inserting corporation ${corporation.corporationId}: ${corporation.name}`);
       await db
         .insert(corporations)
         .values(corporation)
@@ -126,7 +128,21 @@ export class CorporationService extends EveKillProxyService {
           },
         });
 
-      logger.info(`Stored corporation ${corporation.corporationId} in database`);
+      logger.info(`[CorporationService.storeInDatabase] DB INSERT COMPLETE - Stored corporation ${corporation.corporationId} in database`);
+
+      // Emit entity update event to management API (which will broadcast to websocket)
+      logger.info(`[CorporationService.storeInDatabase] BROADCAST START - About to emit entity-update event for corporation ${corporation.corporationId}: ${corporation.name}`);
+      if (corporation.corporationId && corporation.name) {
+        logger.info(`[CorporationService.storeInDatabase] CALLING sendEvent with type=entity-update, ID=${corporation.corporationId}, Name=${corporation.name}`);
+        await sendEvent("entity-update", {
+          entityType: "corporation",
+          id: corporation.corporationId,
+          name: corporation.name,
+        });
+        logger.info(`[CorporationService.storeInDatabase] BROADCAST COMPLETE - sendEvent returned`);
+      } else {
+        logger.warn(`[CorporationService.storeInDatabase] BROADCAST SKIPPED - missing ID or name: ID=${corporation.corporationId}, Name=${corporation.name}`);
+      }
     } catch (error) {
       logger.error(`Failed to store corporation ${corporation.corporationId}:`, error);
       throw error;
