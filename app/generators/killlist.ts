@@ -34,6 +34,7 @@ export interface KillmailDisplay {
   attackers: Array<{
     character: { id: number | null; name: string };
     corporation: { id: number | null; name: string };
+    alliance: { id: number | null; name: string | null };
     ship: { type_id: number | null; name: string };
     weapon: { type_id: number | null; name: string };
     damage_done: number;
@@ -344,11 +345,13 @@ export async function generateKilllist(
       attacker: attackers,
       character: characters,
       corporation: corporations,
+      alliance: alliances,
       ship: types,
     })
     .from(attackers)
     .leftJoin(characters, eq(attackers.characterId, characters.characterId))
     .leftJoin(corporations, eq(attackers.corporationId, corporations.corporationId))
+    .leftJoin(alliances, eq(attackers.allianceId, alliances.allianceId))
     .leftJoin(types, eq(attackers.shipTypeId, types.typeId))
     .where(
       and(
@@ -416,6 +419,10 @@ export async function generateKilllist(
             corporation: {
               id: finalBlowData.attacker.corporationId,
               name: finalBlowData.corporation?.name || "Unknown",
+            },
+            alliance: {
+              id: finalBlowData.attacker.allianceId,
+              name: finalBlowData.alliance?.name || null,
             },
             ship: {
               type_id: finalBlowData.attacker.shipTypeId,

@@ -190,11 +190,13 @@ export default class RedisQCommand extends BaseCommand {
       return;
     }
 
-    // New killmail - enqueue fetch job
+    // New killmail - enqueue fetch job with HIGH priority (priority: 0 is highest)
     this.stats.new++;
     await this.dispatcher!.dispatch("killmail-fetch", "fetch", {
       killmailId,
       hash,
+    }, {
+      priority: 0, // Highest priority - process new killmails first
     });
 
     this.success(`✓ Killmail ${killmailId} queued for processing`);

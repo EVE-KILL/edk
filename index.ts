@@ -32,6 +32,7 @@ let clearTemplateCache: any;
 let db: any;
 let cache: any;
 let logger: any;
+let webSocketManager: any;
 
 // Initialize imports
 async function loadModules() {
@@ -54,9 +55,21 @@ async function loadModules() {
   const loggerModule = await import("./src/utils/logger");
   logger = loggerModule.logger;
 
+  const webSocketModule = await import("./src/server/websocket");
+  webSocketManager = webSocketModule.webSocketManager;
+
   if (cliArgs.verbose) {
     logger.info("🔍 Verbose mode enabled");
   }
+}
+
+/**
+ * Start the management server (for internal event communication)
+ */
+async function startManagementServer() {
+  const managementModule = await import("./src/server/management");
+  const port = parseInt(process.env.MANAGEMENT_API_PORT || "3001");
+  await managementModule.startManagementServer(port);
 }
 
 /**
@@ -78,11 +91,28 @@ async function startServer() {
 
   const server = serve({
     port,
-    fetch: (req) => handleRequest(routeIndex, req),
+    fetch: (req, server) => {
+      // Check for WebSocket upgrade
+      if (webSocketManager.shouldUpgrade(req, server)) {
+        return undefined; // WebSocket handler takes over
+      }
+      // Normal HTTP request
+      return handleRequest(routeIndex, req);
+    },
+    websocket: {
+      message: (ws: any, message: string | ArrayBuffer | Uint8Array) =>
+        webSocketManager.handleMessage(ws, message),
+      open: (ws: any) => webSocketManager.handleOpen(ws),
+      close: (ws: any, code: number, reason: string) =>
+        webSocketManager.handleClose(ws, code, reason),
+    },
   });
 
   logger.server(`Server running on http://localhost:${port}`);
   logger.info(`Environment: ${isDevelopment ? "development" : "production"}`);
+
+  // Start management API server for internal event communication
+  await startManagementServer();
 
   if (isDevelopment) {
     const watcher = watch("./templates", {
