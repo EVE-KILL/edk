@@ -14,6 +14,7 @@
 
   Props:
   - imageUrl: string (entity image URL)
+  - entityImages: array (optional, for multi-entity collage)
   - name: string (entity name)
   - ticker: string (optional, entity ticker/tag)
   - type: string (character|corporation|alliance)
@@ -22,7 +23,17 @@
   - stats: object (entity statistics)
 --}}
 <div class="entity-hero">
+  {{#if entityImages}}
+  {{!-- Multi-entity collage --}}
+  <div class="entity-hero__collage">
+    {{#each entityImages}}
+    <img src="{{this}}" alt="Entity {{@index}}" class="entity-hero__collage-image" />
+    {{/each}}
+  </div>
+  {{else}}
+  {{!-- Single entity image --}}
   <img src="{{imageUrl}}" alt="{{name}}" class="entity-hero__image" />
+  {{/if}}
 
   <div class="entity-hero__info">
     <!-- Entity Name Header -->

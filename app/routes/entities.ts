@@ -98,6 +98,13 @@ export class Controller extends WebController {
       ...allianceNames.map((a) => ({ type: "alliance", id: a.id, name: a.name })),
     ];
 
+    // Build entity image URLs for collage
+    const entityImages = [
+      ...characterNames.map((c) => `https://images.evetech.net/characters/${c.id}/portrait?size=128`),
+      ...corporationNames.map((c) => `https://images.evetech.net/corporations/${c.id}/logo?size=128`),
+      ...allianceNames.map((a) => `https://images.evetech.net/alliances/${a.id}/logo?size=128`),
+    ];
+
     // Build ship group stats filters
     const shipGroupFilters: ShipGroupStatsFilters = {
       characterIds: FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
@@ -157,7 +164,8 @@ export class Controller extends WebController {
       // Add entity data for the entity-header component
       entityName: "Tracked Entities",
       entityType: "entities",
-      imageUrl: "https://images.evetech.net/alliances/1/logo?size=512", // Default image
+      imageUrl: entityImages.length > 0 ? entityImages[0] : "https://images.evetech.net/alliances/1/logo?size=128",
+      entityImages, // For collage display
       currentTab: "dashboard",
       baseUrl: "/entities",
       // Entity list for display
