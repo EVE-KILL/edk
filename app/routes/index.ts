@@ -60,13 +60,13 @@ export class Controller extends WebController {
       const limit = 20;
       const offset = (currentPage - 1) * limit;
 
-      // Fetch killmails with offset
+      // Fetch killmails WITHOUT filters - show all kills globally
       const killmails = await generateKilllist(limit, { offset });
 
-      // Fetch comprehensive statistics with .env filtering
-      const statistics = await getKillboardStatistics(statsFilters);
+      // Fetch comprehensive statistics WITHOUT filtering - show global stats
+      const statistics = await getKillboardStatistics();
 
-      // Fetch top 10 statistics for the last 7 days
+      // Fetch top 10 statistics for the last 7 days (unfiltered - global top 10)
       const top10Stats = await getTop10Stats(7);
 
       // Calculate pagination

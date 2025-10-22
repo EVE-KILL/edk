@@ -1,45 +1,43 @@
-<!-- Killmail List Table -->
-{{#if killmails.length}}
-<table class="kb-table kb-kl-table" cellspacing="1">
-    <thead>
-        <tr class="kb-table-header">
-            <th class="kb-table-header kb-kl-table__col-ship text-center" colspan="2">Ship type</th>
-            <th class="kb-table-header kb-kl-table__col-victim text-center">Victim</th>
-            <th class="kb-table-header kb-kl-table__col-finalblow text-center">Final blow</th>
-            <th class="kb-table-header kb-kl-table__col-location text-center">Location</th>
-            <th class="kb-table-header kb-kl-table__col-value text-right">Value</th>
-            <th class="kb-table-header kb-kl-table__col-time text-center">Time</th>
-        </tr>
-    </thead>
-    <tbody>
-    {{#each killmails}}
-    <tr onclick="window.location.href='/killmail/{{killmail_id}}';" class="{{#if (or (isFollowedLoss victim ../followedEntities) (isEntityLoss victim ../entityType ../entityId))}}kb-table-row--followed-loss{{/if}}">
-        <!-- Ship Image -->
-        <td class="kb-table-imgcell">
-            {{> partials/eve-image type="ship" id=victim.ship.type_id size=64 alt=victim.ship.name class="kb-kl-ship-icon"}}
-        </td>
+<!-- Killmail List - Responsive Flexbox Layout -->
+<div class="kb-kl-list">
+    {{#if killmails.length}}
+    <!-- Header Row -->
+    <div class="kb-kl-row kb-kl-row--header">
+        <div class="kb-kl-col kb-kl-col--ship">Ship type</div>
+        <div class="kb-kl-col kb-kl-col--victim">Victim</div>
+        <div class="kb-kl-col kb-kl-col--finalblow">Final blow</div>
+        <div class="kb-kl-col kb-kl-col--location">Location</div>
+        <div class="kb-kl-col kb-kl-col--value">Value</div>
+        <div class="kb-kl-col kb-kl-col--time">Time</div>
+    </div>
 
-        <!-- Ship Type & Class -->
-        <td class="kb-kl-cell">
-            <div class="kb-kl-info kb-kl-info--ship">
-                <div class="kb-kl-info__primary">{{victim.ship.name}}</div>
-                <div class="kb-kl-info__secondary">{{victim.ship.group}}</div>
+    <!-- Killmail Rows -->
+    {{#each killmails}}
+    <div class="kb-kl-row {{#if (or (isFollowedLoss victim ../followedEntities) (isEntityLoss victim ../entityType ../entityId))}}kb-kl-row--followed-loss{{/if}}" onclick="window.location.href='/killmail/{{killmail_id}}';" style="cursor: pointer;">
+        <!-- Ship -->
+        <div class="kb-kl-col kb-kl-col--ship">
+            <div class="kb-kl-ship">
+                {{> partials/eve-image type="ship" id=victim.ship.type_id size=48 alt=victim.ship.name class="kb-kl-ship-icon"}}
+                <div class="kb-kl-info kb-kl-info--ship">
+                    <div class="kb-kl-info__primary">{{victim.ship.name}}</div>
+                    <div class="kb-kl-info__secondary">{{victim.ship.group}}</div>
+                </div>
             </div>
-        </td>
+        </div>
 
         <!-- Victim -->
-        <td class="kb-kl-cell">
+        <div class="kb-kl-col kb-kl-col--victim">
             <div class="kb-kl-info kb-kl-info--victim">
                 {{#if victim.character.id}}
                 <div class="kb-kl-info__primary">
-                    <a href="/character/{{victim.character.id}}" class="kb-kl-info__link">{{victim.character.name}}</a>
+                    <a href="/character/{{victim.character.id}}" class="kb-kl-info__link" onclick="event.stopPropagation();">{{victim.character.name}}</a>
                 </div>
                 {{else}}
                 <div class="kb-kl-info__primary">{{victim.character.name}}</div>
                 {{/if}}
                 <div class="kb-kl-info__secondary">
                     {{#if victim.corporation.id}}
-                    <a href="/corporation/{{victim.corporation.id}}" class="kb-kl-info__link--secondary">{{victim.corporation.name}}</a>
+                    <a href="/corporation/{{victim.corporation.id}}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">{{victim.corporation.name}}</a>
                     {{else}}
                     {{victim.corporation.name}}
                     {{/if}}
@@ -47,29 +45,29 @@
                 {{#if victim.alliance.name}}
                 <div class="kb-kl-info__secondary">
                     {{#if victim.alliance.id}}
-                    <a href="/alliance/{{victim.alliance.id}}" class="kb-kl-info__link--secondary">{{victim.alliance.name}}</a>
+                    <a href="/alliance/{{victim.alliance.id}}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">{{victim.alliance.name}}</a>
                     {{else}}
                     {{victim.alliance.name}}
                     {{/if}}
                 </div>
                 {{/if}}
             </div>
-        </td>
+        </div>
 
         <!-- Final Blow -->
-        <td class="kb-kl-cell">
+        <div class="kb-kl-col kb-kl-col--finalblow">
             <div class="kb-kl-info kb-kl-info--finalblow">
                 {{#if attackers.[0]}}
                 {{#if attackers.[0].character.id}}
                 <div class="kb-kl-info__primary">
-                    <a href="/character/{{attackers.[0].character.id}}" class="kb-kl-info__link">{{attackers.[0].character.name}}</a>
+                    <a href="/character/{{attackers.[0].character.id}}" class="kb-kl-info__link" onclick="event.stopPropagation();">{{attackers.[0].character.name}}</a>
                 </div>
                 {{else}}
                 <div class="kb-kl-info__primary">{{attackers.[0].character.name}}</div>
                 {{/if}}
                 <div class="kb-kl-info__secondary">
                     {{#if attackers.[0].corporation.id}}
-                    <a href="/corporation/{{attackers.[0].corporation.id}}" class="kb-kl-info__link--secondary">{{attackers.[0].corporation.name}}</a>
+                    <a href="/corporation/{{attackers.[0].corporation.id}}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">{{attackers.[0].corporation.name}}</a>
                     {{else}}
                     {{attackers.[0].corporation.name}}
                     {{/if}}
@@ -77,7 +75,7 @@
                 {{#if attackers.[0].alliance.name}}
                 <div class="kb-kl-info__secondary">
                     {{#if attackers.[0].alliance.id}}
-                    <a href="/alliance/{{attackers.[0].alliance.id}}" class="kb-kl-info__link--secondary">{{attackers.[0].alliance.name}}</a>
+                    <a href="/alliance/{{attackers.[0].alliance.id}}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">{{attackers.[0].alliance.name}}</a>
                     {{else}}
                     {{attackers.[0].alliance.name}}
                     {{/if}}
@@ -87,37 +85,34 @@
                 <div class="kb-kl-value--unknown">Unknown</div>
                 {{/if}}
             </div>
-        </td>
+        </div>
 
         <!-- Location -->
-        <td class="kb-kl-cell kb-kl-cell--center">
+        <div class="kb-kl-col kb-kl-col--location">
             <div class="kb-kl-info">
                 <div class="kb-kl-info__primary">{{solar_system.name}}</div>
                 <div class="kb-kl-info__secondary">{{solar_system.region}}</div>
             </div>
-        </td>
+        </div>
 
         <!-- Value -->
-        <td class="kb-kl-cell kb-kl-cell--right">
+        <div class="kb-kl-col kb-kl-col--value">
             {{#if ship_value}}
                 <span class="kb-kl-value">{{abbreviateISK ship_value}}</span>
             {{else}}
                 <span class="kb-kl-value--unknown">N/A</span>
             {{/if}}
-        </td>
+        </div>
 
         <!-- Time -->
-        <td class="kb-kl-cell kb-kl-cell--center">
+        <div class="kb-kl-col kb-kl-col--time">
             <span class="kb-kl-time">{{formatDate killmail_time}}</span>
-        </td>
-    </tr>
+        </div>
+    </div>
     {{/each}}
-    </tbody>
-</table>
-{{else}}
-<table class="kb-table kb-kl-table" cellspacing="1">
-    <tr class="kb-table-header">
-        <td class="kb-table-header text-center" colspan="7">No killmails found.</td>
-    </tr>
-</table>
-{{/if}}
+    {{else}}
+    <div class="kb-kl-row kb-kl-row--empty">
+        <div style="text-align: center; padding: 20px;">No killmails found.</div>
+    </div>
+    {{/if}}
+</div>

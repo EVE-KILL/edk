@@ -4,6 +4,7 @@ import {
   getShipGroupCombinedStatistics,
   type ShipGroupStatsFilters,
 } from "../../generators/ship-group-stats";
+import { getTop10StatsByCorporation } from "../../generators/top-10-stats";
 
 export class Controller extends WebController {
   static cacheConfig = {
@@ -31,6 +32,9 @@ export class Controller extends WebController {
     };
     const shipGroupStats = await getShipGroupCombinedStatistics(30, shipGroupFilters);
 
+    // Fetch top 10 stats for this corporation
+    const top10Stats = await getTop10StatsByCorporation(parseInt(corporationId, 10), 7);
+
     // Split ship group stats into 3 columns
     const itemsPerColumn = Math.ceil(shipGroupStats.length / 3);
     const shipGroupColumns = [
@@ -52,6 +56,8 @@ export class Controller extends WebController {
       // Ship group statistics
       shipGroupStats,
       shipGroupColumns,
+      // Top 10 stats for sidebar
+      top10Stats,
     };
 
     // Use streaming for better TTFB on corporation pages

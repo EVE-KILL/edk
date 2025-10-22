@@ -1,20 +1,28 @@
 {{#if killmails}}
 <!-- Kills for Followed Entities or Global Feed -->
 
-<!-- Ship Group Statistics (for global feed) -->
-{{#if shipGroupStats}}
-<section class="section mb-lg">
-    {{> components/section-header title="Ship Groups (Last 30 Days)" bordered=true}}
-    {{> components/ship-group-stats shipGroupStats=shipGroupStats shipGroupColumns=shipGroupColumns}}
-</section>
-{{/if}}
+<div class="killlist-wrapper">
+  <!-- Top 10 Stats (Left Sidebar) -->
+  {{#if top10Stats}}
+  {{> components/top-10-stats top10Stats=top10Stats}}
+  {{/if}}
 
-<!-- Statistics Section -->
-{{#if statistics}}
-<section class="section mb-lg">
-    {{> components/section-header title="Kills Statistics" icon="kills" bordered=true}}
+  <!-- Main Content Area (Right 80%) -->
+  <div class="killlist-main">
+  <!-- Ship Group Statistics (for global feed) -->
+  {{#if shipGroupStats}}
+  <section class="section mb-lg">
+      {{> components/section-header title="Ship Groups (Last 30 Days)" bordered=true}}
+      {{> components/ship-group-stats shipGroupStats=shipGroupStats shipGroupColumns=shipGroupColumns}}
+  </section>
+  {{/if}}
 
-    <table class="kb-table" cellspacing="1">
+  <!-- Statistics Section -->
+  {{#if statistics}}
+  <section class="section mb-lg">
+      {{> components/section-header title="Kills Statistics" icon="kills" bordered=true}}
+
+      <table class="kb-table" cellspacing="1">
         <thead>
             <tr class="kb-table-header">
                 <th class="kb-table-header text-center" colspan="4">Overall Statistics</th>
@@ -99,23 +107,80 @@
             {{/if}}
         </tbody>
     </table>
-</section>
-{{/if}}
+  </section>
+  {{/if}}
 
-<!-- Pagination (Top) -->
-{{#if pagination}}
-    {{> partials/pagination}}
-{{/if}}
+  <!-- Pagination (Top) -->
+  {{#if pagination}}
+      {{> partials/pagination}}
+  {{/if}}
 
-<!-- Killmails List -->
-<section class="killlist">
-    {{> partials/killmail-list}}
-</section>
+  <!-- Killmails List -->
+  <section class="killlist-content">
+      {{> partials/killmail-list}}
+  </section>
 
-<!-- Pagination (Bottom) -->
-{{#if pagination}}
-    {{> partials/pagination}}
-{{/if}}
+  <!-- Pagination (Bottom) -->
+  {{#if pagination}}
+      {{> partials/pagination}}
+  {{/if}}
+</div>
+</div>
+
+<style>
+/* Outer flexbox container - handles layout of top boxes and main content */
+.killlist-wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+/* Top boxes section - fixed 25% width on the left */
+.killlist-wrapper .top-10-container {
+  flex: 0 0 25%;
+  box-sizing: border-box;
+  min-width: 200px;
+  padding: 0;
+  margin: 0;
+}
+
+/* Main content section - takes remaining 75% space */
+.killlist-main {
+  flex: 1 1 75%;
+  box-sizing: border-box;
+  min-width: 300px;
+  padding: 0;
+  margin: 0;
+}
+
+.killlist-content {
+  clear: both;
+}
+
+/* Responsive: stack on smaller screens */
+@media (max-width: 1200px) {
+  .killlist-wrapper {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .killlist-wrapper .top-10-container {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: auto;
+  }
+
+  .killlist-main {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: auto;
+  }
+}
+</style>
 
 {{else}}
 <!-- Placeholder when no followed entities are configured -->

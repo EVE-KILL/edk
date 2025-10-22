@@ -4,6 +4,7 @@ import {
   getShipGroupCombinedStatistics,
   type ShipGroupStatsFilters,
 } from "../../generators/ship-group-stats";
+import { getTop10StatsByCharacter } from "../../generators/top-10-stats";
 
 export class Controller extends WebController {
   static cacheConfig = {
@@ -39,6 +40,9 @@ export class Controller extends WebController {
       shipGroupStats.slice(itemsPerColumn * 2),
     ].filter((col) => col.length > 0);
 
+    // Fetch top 10 stats specific to this character
+    const top10Stats = await getTop10StatsByCharacter(parseInt(characterId, 10), 7);
+
     const data = {
       ...characterDetail,
       entityName: characterDetail.character.name,
@@ -51,6 +55,8 @@ export class Controller extends WebController {
       // Ship group statistics
       shipGroupStats,
       shipGroupColumns,
+      // Top 10 statistics
+      top10Stats,
     };
 
     // Use streaming for better TTFB on character pages with lots of data

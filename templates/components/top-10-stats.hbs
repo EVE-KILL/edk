@@ -17,7 +17,7 @@
     <table class="top-10-table">
       <tbody>
         {{#each top10Stats.characters}}
-        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}">
+        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}" onclick="window.location.href='/character/{{this.id}}';" style="cursor: pointer;">
           <td class="top-10-rank">{{add @index 1}}</td>
           {{#if this.imageUrl}}
           <td class="top-10-image">
@@ -40,7 +40,7 @@
     <table class="top-10-table">
       <tbody>
         {{#each top10Stats.corporations}}
-        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}">
+        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}" onclick="window.location.href='/corporation/{{this.id}}';" style="cursor: pointer;">
           <td class="top-10-rank">{{add @index 1}}</td>
           {{#if this.imageUrl}}
           <td class="top-10-image">
@@ -63,7 +63,7 @@
     <table class="top-10-table">
       <tbody>
         {{#each top10Stats.alliances}}
-        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}">
+        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}" onclick="window.location.href='/alliance/{{this.id}}';" style="cursor: pointer;">
           <td class="top-10-rank">{{add @index 1}}</td>
           {{#if this.imageUrl}}
           <td class="top-10-image">
@@ -86,7 +86,7 @@
     <table class="top-10-table">
       <tbody>
         {{#each top10Stats.systems}}
-        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}">
+        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}" onclick="window.location.href='/system/{{this.id}}';" style="cursor: pointer;">
           <td class="top-10-rank">{{add @index 1}}</td>
           <td class="top-10-name" style="padding-left: 8px;">{{this.name}}</td>
           <td class="top-10-kills">{{this.kills}}</td>
@@ -104,7 +104,7 @@
     <table class="top-10-table">
       <tbody>
         {{#each top10Stats.regions}}
-        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}">
+        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}" onclick="window.location.href='/region/{{this.id}}';" style="cursor: pointer;">
           <td class="top-10-rank">{{add @index 1}}</td>
           <td class="top-10-name" style="padding-left: 8px;">{{this.name}}</td>
           <td class="top-10-kills">{{this.kills}}</td>
@@ -154,6 +154,11 @@
   font-size: 11px;
   height: 32px;
   line-height: 32px;
+  transition: background-color 0.2s ease;
+}
+
+.top-10-row:hover {
+  background-color: #3a3a3a;
 }
 
 .top-10-row:last-child {
@@ -162,6 +167,10 @@
 
 .top-10-row-first {
   background: #2a2a2a;
+}
+
+.top-10-row-first:hover {
+  background-color: #3a3a3a;
 }
 
 .top-10-row td {
@@ -195,11 +204,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #ccc;
-  cursor: pointer;
 }
 
-.top-10-name:hover {
+.top-10-row:hover .top-10-name {
   color: #fff;
+  text-decoration: underline;
 }
 
 .top-10-kills {

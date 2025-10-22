@@ -100,7 +100,28 @@
 </section>
 {{/if}}
 
-<!-- Recent Killmails -->
+<!-- Top 10 Stats (Last 7 Days) -->
+{{#if top10Stats}}
+<div style="display: grid; grid-template-columns: 20% 80%; gap: 5px; width: 100%; box-sizing: border-box;">
+  <aside>
+    {{> components/top-10-stats top10Stats=top10Stats}}
+  </aside>
+
+  <!-- Recent Killmails -->
+  <section>
+      {{> components/section-header title="Recent Killmails" icon="kills"}}
+
+      <!-- Pagination Top -->
+      {{> partials/pagination pagination=pagination}}
+
+      {{> partials/killmail-list killmails=killmails}}
+
+      <!-- Pagination Bottom -->
+      {{> partials/pagination pagination=pagination}}
+  </section>
+</div>
+{{else}}
+<!-- Recent Killmails (no top 10) -->
 <section class="killlist">
     {{> components/section-header title="Recent Killmails" icon="kills"}}
 
@@ -112,6 +133,7 @@
     <!-- Pagination Bottom -->
     {{> partials/pagination pagination=pagination}}
 </section>
+{{/if}}
 
 <!-- Top Pilots / Top Corps (if available) -->
 {{#if topPilots}}
@@ -141,3 +163,5 @@
     </table>
 </section>
 {{/if}}
+
+

@@ -12,6 +12,7 @@ import {
   getShipGroupCombinedStatistics,
   type ShipGroupStatsFilters,
 } from "../generators/ship-group-stats";
+import { getTop10StatsByEntities } from "../generators/top-10-stats";
 
 // Parse .env followed entities configuration
 const FOLLOWED_CHARACTER_IDS =
@@ -139,6 +140,14 @@ export class Controller extends WebController {
         FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
     });
 
+    // Fetch top 10 stats for the tracked entities
+    const top10Stats = await getTop10StatsByEntities(
+      FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
+      FOLLOWED_CORPORATION_IDS.length > 0 ? FOLLOWED_CORPORATION_IDS : undefined,
+      FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
+      7
+    );
+
     // Fetch comprehensive statistics
     const killStats = await getKillsStatistics(statsFilters);
     const lossStats = await getLossesStatistics(statsFilters);
@@ -177,6 +186,8 @@ export class Controller extends WebController {
       // Ship group statistics
       shipGroupStats,
       shipGroupColumns,
+      // Top 10 stats for sidebar
+      top10Stats,
       // Statistics for the entity-header component (using the stats object format)
       stats: {
         kills: killStats?.totalKills || 0,
