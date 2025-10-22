@@ -14,6 +14,7 @@ import {
   type CachedResponseEntry,
 } from "../cache/cache-key";
 import { cache } from "../cache";
+import { applyOptimalHeaders, getDefaultStaticHeaders } from "../utils/headers";
 
 // Cache environment variables
 const API_RATE_LIMIT = parseInt(process.env.API_RATE_LIMIT || "100");
@@ -236,7 +237,9 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
       const file = Bun.file(filePath);
 
       if (await file.exists()) {
-        return new Response(file);
+        const response = new Response(file);
+        // Apply optimal caching headers for static assets
+        return applyOptimalHeaders(response, getDefaultStaticHeaders());
       }
     } catch (error) {
       // File doesn't exist or error reading, continue to 404
@@ -251,7 +254,9 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
       const file = Bun.file(filePath);
 
       if (await file.exists()) {
-        return new Response(file);
+        const response = new Response(file);
+        // Apply optimal caching headers for static assets
+        return applyOptimalHeaders(response, getDefaultStaticHeaders());
       }
     } catch (error) {
       // File doesn't exist, continue to 404

@@ -1,5 +1,6 @@
 import { BaseController } from "./base-controller";
 import type { TemplateData } from "../server/templates";
+import { getDefaultHtmlHeaders } from "../utils/headers";
 
 /**
  * Web Controller for HTML pages that render templates
@@ -10,6 +11,14 @@ import type { TemplateData } from "../server/templates";
  * 2. Implement method-specific functions like get(), post(), etc.
  */
 export abstract class WebController extends BaseController {
+  constructor(request: Request) {
+    super(request);
+
+    // Set default optimal headers for HTML pages
+    // Controllers can override these by calling setHeaderOptions()
+    this.setHeaderOptions(getDefaultHtmlHeaders());
+  }
+
   /**
    * Optional method-specific handlers
    */

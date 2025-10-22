@@ -7,6 +7,7 @@ import { KillmailModel, Killmails } from "../../app/models/killmail";
 import { PerformanceTracker, formatStats } from "../utils/performance";
 import { characters, corporations, alliances } from "../../db/schema";
 import { inArray } from "drizzle-orm";
+import { applyOptimalHeaders, type HeaderOptions } from "../utils/headers";
 
 /**
  * Base Controller class that all route controllers should extend
@@ -20,6 +21,7 @@ export abstract class BaseController {
   protected url: URL;
   protected params: Record<string, string> = {};
   protected headers: Record<string, string> = {};
+  protected headerOptions: HeaderOptions = {}; // Optimal header configuration
   protected statusCode: number = 200;
   protected performanceTracker: PerformanceTracker;
 
@@ -175,6 +177,40 @@ export abstract class BaseController {
   }
 
   /**
+   * Set optimal header options (cache, preconnect, security, etc.)
+   */
+  protected setHeaderOptions(options: HeaderOptions): void {
+    this.headerOptions = { ...this.headerOptions, ...options };
+  }
+
+  /**
+   * Merge additional header options with existing ones
+   */
+  protected mergeHeaderOptions(options: Partial<HeaderOptions>): void {
+    if (options.cacheControl) {
+      this.headerOptions.cacheControl = { ...this.headerOptions.cacheControl, ...options.cacheControl };
+    }
+    if (options.preconnect) {
+      this.headerOptions.preconnect = [...(this.headerOptions.preconnect || []), ...options.preconnect];
+    }
+    if (options.dnsPrefetch) {
+      this.headerOptions.dnsPrefetch = [...(this.headerOptions.dnsPrefetch || []), ...options.dnsPrefetch];
+    }
+    if (options.preload) {
+      this.headerOptions.preload = [...(this.headerOptions.preload || []), ...options.preload];
+    }
+    if (options.security) {
+      this.headerOptions.security = { ...this.headerOptions.security, ...options.security };
+    }
+    if (options.performance) {
+      this.headerOptions.performance = { ...this.headerOptions.performance, ...options.performance };
+    }
+    if (options.custom) {
+      this.headerOptions.custom = { ...this.headerOptions.custom, ...options.custom };
+    }
+  }
+
+  /**
    * Check if the request accepts HTML (browser request)
    */
   protected acceptsHtml(): boolean {
@@ -314,10 +350,17 @@ export abstract class BaseController {
     this.setStatus(status);
     this.setHeader("Content-Type", "application/json");
 
-    return new Response(JSON.stringify(data), {
+    const response = new Response(JSON.stringify(data), {
       status: this.statusCode,
       headers: this.headers,
     });
+
+    // Apply optimal headers if configured
+    if (Object.keys(this.headerOptions).length > 0) {
+      return applyOptimalHeaders(response, this.headerOptions);
+    }
+
+    return response;
   }
 
   /**
@@ -345,16 +388,22 @@ export abstract class BaseController {
 
       this.setHeader("Content-Type", "text/html");
 
-      return new Response(html, {
+      const response = new Response(html, {
         status: this.statusCode,
         headers: this.headers,
       });
+
+      // Apply optimal headers if configured
+      if (Object.keys(this.headerOptions).length > 0) {
+        return applyOptimalHeaders(response, this.headerOptions);
+      }
+
+      return response;
     } catch (error) {
       console.error("Template rendering error:", error);
       return this.errorResponse("Template rendering failed", 500);
     }
   }
-
   /**
    * Create a redirect response
    */

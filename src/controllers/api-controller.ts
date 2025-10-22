@@ -1,4 +1,5 @@
 import { BaseController } from "./base-controller";
+import { getDefaultApiHeaders } from "../utils/headers";
 
 /**
  * API Controller for JSON endpoints
@@ -9,6 +10,10 @@ export abstract class ApiController extends BaseController {
   constructor(request: Request) {
     super(request);
     this.setupApiHeaders();
+
+    // Set default optimal headers for API responses
+    // Controllers can override these by calling setHeaderOptions()
+    this.setHeaderOptions(getDefaultApiHeaders());
   }
 
   /**
