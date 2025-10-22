@@ -57,6 +57,10 @@ export class Controller extends WebController {
       shipGroupColumns,
       // Top 10 statistics
       top10Stats,
+      // Filter config for WebSocket killlist updates
+      filterConfig: {
+        characterIds: [parseInt(characterId, 10)],
+      },
     };
 
     // Use streaming for better TTFB on character pages with lots of data

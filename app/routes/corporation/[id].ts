@@ -58,6 +58,10 @@ export class Controller extends WebController {
       shipGroupColumns,
       // Top 10 stats for sidebar
       top10Stats,
+      // Filter config for WebSocket killlist updates
+      filterConfig: {
+        corporationIds: [parseInt(corporationId, 10)],
+      },
     };
 
     // Use streaming for better TTFB on corporation pages

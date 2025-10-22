@@ -188,6 +188,12 @@ export class Controller extends WebController {
       shipGroupColumns,
       // Top 10 stats for sidebar
       top10Stats,
+      // Filter config for WebSocket killlist updates (multi-entity)
+      filterConfig: {
+        characterIds: FOLLOWED_CHARACTER_IDS,
+        corporationIds: FOLLOWED_CORPORATION_IDS,
+        allianceIds: FOLLOWED_ALLIANCE_IDS,
+      },
       // Statistics for the entity-header component (using the stats object format)
       stats: {
         kills: killStats?.totalKills || 0,

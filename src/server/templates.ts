@@ -348,6 +348,11 @@ export function registerHelpers() {
     return options.hash;
   });
 
+  // JSON helper - converts value to JSON string
+  Handlebars.registerHelper("json", function(value: any) {
+    return JSON.stringify(value);
+  });
+
   // Concat helper - concatenates strings
   Handlebars.registerHelper("concat", function(...args: any[]) {
     // Remove the Handlebars options object from the end

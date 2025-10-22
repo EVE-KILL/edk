@@ -5,7 +5,7 @@ import { KillmailService } from "../services/esi/killmail-service";
 import { queue } from "../../src/queue/job-dispatcher";
 import { sendEvent } from "../../src/utils/event-client";
 import { db } from "../../src/db";
-import { killmails, victims, attackers, characters, corporations, alliances, types, solarSystems, regions } from "../../db/schema";
+import { killmails, victims, attackers, characters, corporations, alliances, types, groups, solarSystems, regions } from "../../db/schema";
 import { eq } from "drizzle-orm";
 
 /**
@@ -146,6 +146,7 @@ export class KillmailFetcher extends BaseWorker<{
         .leftJoin(corporations, eq(victims.corporationId, corporations.corporationId))
         .leftJoin(alliances, eq(victims.allianceId, alliances.allianceId))
         .leftJoin(types, eq(victims.shipTypeId, types.typeId))
+        .leftJoin(groups, eq(types.groupId, groups.groupId))
         .where(eq(victims.killmailId, km.id))
         .get();
 
@@ -156,6 +157,7 @@ export class KillmailFetcher extends BaseWorker<{
       const corp = result.corporations;
       const ally = result.alliances;
       const ship = result.types;
+      const shipGroup = result.groups;
 
       // Get solar system info (separate query since relations may not be defined)
       const sys = await db.query.solarSystems.findFirst({
@@ -171,13 +173,22 @@ export class KillmailFetcher extends BaseWorker<{
         regionName = region?.name || "Unknown";
       }
 
-      // Get all attackers
+            // Get all attackers
       const attackerRows = await db
-        .select()
+        .select({
+          attacker: attackers,
+          character: characters,
+          corporation: corporations,
+          alliance: alliances,
+          ship: types,
+          shipGroup: groups,
+        })
         .from(attackers)
         .leftJoin(characters, eq(attackers.characterId, characters.characterId))
         .leftJoin(corporations, eq(attackers.corporationId, corporations.corporationId))
         .leftJoin(alliances, eq(attackers.allianceId, alliances.allianceId))
+        .leftJoin(types, eq(attackers.shipTypeId, types.typeId))
+        .leftJoin(groups, eq(types.groupId, groups.groupId))
         .where(eq(attackers.killmailId, km.id))
         .all();
 
@@ -192,18 +203,18 @@ export class KillmailFetcher extends BaseWorker<{
           character: { id: char?.characterId || null, name: char?.name || "Unknown" },
           corporation: { id: corp?.corporationId || 0, name: corp?.name || "Unknown" },
           alliance: { id: ally?.allianceId || null, name: ally?.name || null },
-          ship: { type_id: ship?.typeId || 0, name: ship?.name || "Unknown", group: ship?.groupId?.toString() || "" },
+          ship: { type_id: ship?.typeId || 0, name: ship?.name || "Unknown", group: shipGroup?.name || "Unknown" },
           damage_taken: vic.damageTaken || 0,
         },
         attackers: attackerRows
           .map((row) => ({
-            character: { id: row.characters?.characterId || null, name: row.characters?.name || "Unknown" },
-            corporation: { id: row.corporations?.corporationId || null, name: row.corporations?.name || "NPC" },
-            alliance: { id: row.alliances?.allianceId || null, name: row.alliances?.name || null },
-            ship: { type_id: row.attackers.shipTypeId || null, name: "Unknown" },
-            weapon: { type_id: row.attackers.weaponTypeId || null, name: "Unknown" },
-            damage_done: row.attackers.damageDone || 0,
-            final_blow: row.attackers.finalBlow || false,
+            character: { id: row.character?.characterId || null, name: row.character?.name || "Unknown" },
+            corporation: { id: row.corporation?.corporationId || null, name: row.corporation?.name || "NPC" },
+            alliance: { id: row.alliance?.allianceId || null, name: row.alliance?.name || null },
+            ship: { type_id: row.attacker.shipTypeId || null, name: row.ship?.name || "Unknown", group: row.shipGroup?.name || "Unknown" },
+            weapon: { type_id: row.attacker.weaponTypeId || null, name: "Unknown" },
+            damage_done: row.attacker.damageDone || 0,
+            final_blow: row.attacker.finalBlow || false,
           }))
           .filter((a) => a), // Remove nulls
         solar_system: {

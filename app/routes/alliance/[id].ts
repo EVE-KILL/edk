@@ -57,6 +57,10 @@ export class Controller extends WebController {
       shipGroupColumns,
       // Top 10 stats for sidebar
       top10Stats,
+      // Filter config for WebSocket killlist updates
+      filterConfig: {
+        allianceIds: [parseInt(allianceId, 10)],
+      },
     };
 
     // Use streaming for better TTFB on alliance pages

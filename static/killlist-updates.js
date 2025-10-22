@@ -16,6 +16,15 @@ class KilllistUpdatesManager {
     this.updateQueue = [];
     this.isProcessingUpdate = false;
 
+    // Filter configuration
+    this.filterConfig = {
+      systemId: null,
+      regionId: null,
+      characterIds: [],
+      corporationIds: [],
+      allianceIds: [],
+    };
+
     this.init();
   }
 
@@ -30,11 +39,80 @@ class KilllistUpdatesManager {
       return;
     }
 
+    // Load filter configuration from data attributes
+    this.loadFilterConfig();
+
     // Get the current number of killmails displayed
     this.updateKillmailRowCount();
 
     // Connect to WebSocket
     this.connect();
+  }
+
+  /**
+   * Load filter configuration from data attributes on the killlist container
+   */
+  loadFilterConfig() {
+    const config = this.killlistContainer.dataset.filterConfig;
+    if (config) {
+      try {
+        const parsed = JSON.parse(config);
+        this.filterConfig = { ...this.filterConfig, ...parsed };
+      } catch (error) {
+        console.warn('[Killlist] Failed to parse filter config:', error);
+      }
+    }
+  }
+
+  /**
+   * Check if a killmail matches the current filters
+   */
+  matchesFilters(killmail) {
+    // If systemId is set, only show kills from that system
+    if (this.filterConfig.systemId) {
+      if (killmail.solar_system.id !== this.filterConfig.systemId) {
+        return false;
+      }
+    }
+
+    // If regionId is set, only show kills from that region
+    if (this.filterConfig.regionId) {
+      if (killmail.solar_system.region_id !== this.filterConfig.regionId) {
+        return false;
+      }
+    }
+
+    // If characterIds is set, only show kills where character was attacker
+    if (this.filterConfig.characterIds.length > 0) {
+      const hasCharacter = killmail.attackers.some(a =>
+        this.filterConfig.characterIds.includes(a.character.id)
+      );
+      if (!hasCharacter) {
+        return false;
+      }
+    }
+
+    // If corporationIds is set, only show kills where corporation was attacker
+    if (this.filterConfig.corporationIds.length > 0) {
+      const hasCorporation = killmail.attackers.some(a =>
+        this.filterConfig.corporationIds.includes(a.corporation.id)
+      );
+      if (!hasCorporation) {
+        return false;
+      }
+    }
+
+    // If allianceIds is set, only show kills where alliance was attacker
+    if (this.filterConfig.allianceIds.length > 0) {
+      const hasAlliance = killmail.attackers.some(a =>
+        a.alliance && this.filterConfig.allianceIds.includes(a.alliance.id)
+      );
+      if (!hasAlliance) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**
@@ -81,7 +159,6 @@ class KilllistUpdatesManager {
    */
   onOpen() {
     this.connected = true;
-    console.log('✅ [Killlist] Connected to real-time updates');
   }
 
   /**
@@ -130,8 +207,14 @@ class KilllistUpdatesManager {
   /**
    * Add a new killmail row to the top of the list
    * Only adds if the killmail ID is higher than the first row (newer kill)
+   * and if it matches the configured filters
    */
   async addKillmailRow(killmail) {
+    // First, check if the killmail matches configured filters
+    if (!this.matchesFilters(killmail)) {
+      return;
+    }
+
     // Get the first non-header row to check its killmail ID
     const allRows = this.killlistContainer.querySelectorAll('.kb-kl-row:not(.kb-kl-row--header):not(.kb-kl-row--empty)');
 
@@ -142,7 +225,6 @@ class KilllistUpdatesManager {
 
       // Don't add if the new killmail ID is lower (older kill)
       if (newKillmailId < firstRowId) {
-        console.log(`[Killlist] Skipping older killmail ${newKillmailId} (newer one already at top)`);
         return;
       }
     }
@@ -185,8 +267,6 @@ class KilllistUpdatesManager {
       const oldestRow = updatedRows[updatedRows.length - 1];
       await this.removeRow(oldestRow);
     }
-
-    console.log(`[Killlist] Added new killmail: ${killmail.killmail_id}`);
   }
 
   /**
@@ -367,11 +447,9 @@ class KilllistUpdatesManager {
    */
   onClose() {
     this.connected = false;
-    console.log('❌ [Killlist] Disconnected from real-time updates');
 
     // Attempt to reconnect after 5 seconds
     setTimeout(() => {
-      console.log('[Killlist] Attempting to reconnect...');
       this.connect();
     }, 5000);
   }

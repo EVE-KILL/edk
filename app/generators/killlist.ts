@@ -6,6 +6,7 @@ import { characters } from "../../db/schema/characters";
 import { corporations } from "../../db/schema/corporations";
 import { alliances } from "../../db/schema/alliances";
 import { types } from "../../db/schema/types";
+import { groups } from "../../db/schema/groups";
 import { solarSystems } from "../../db/schema/solar-systems";
 import { regions } from "../../db/schema/regions";
 import { items as itemsTable, prices } from "../../db/schema";
@@ -16,6 +17,7 @@ const fbAttackers = attackers;
 const fbCharacters = characters;
 const fbCorporations = corporations;
 const fbShips = types;
+const fbShipGroups = groups;
 
 /**
  * Killmail data structure for display
@@ -35,7 +37,7 @@ export interface KillmailDisplay {
     character: { id: number | null; name: string };
     corporation: { id: number | null; name: string };
     alliance: { id: number | null; name: string | null };
-    ship: { type_id: number | null; name: string };
+    ship: { type_id: number | null; name: string; group: string | null };
     weapon: { type_id: number | null; name: string };
     damage_done: number;
     final_blow: boolean;
@@ -118,6 +120,10 @@ export interface KilllistFilters {
   corporationIds?: number[];
   /** Alliance IDs to filter by (involved as victim OR attacker) */
   allianceIds?: number[];
+  /** System ID to filter by */
+  systemId?: number;
+  /** Region ID to filter by */
+  regionId?: number;
   /** Filter for kills only (character/corp/alliance as attacker) */
   killsOnly?: boolean;
   /** Filter for losses only (character/corp/alliance as victim) */
@@ -145,6 +151,16 @@ export async function generateKilllist(
   // Add timestamp filter
   if (filters?.before) {
     whereConditions.push(lt(killmails.killmailTime, filters.before));
+  }
+
+  // Add system filter
+  if (filters?.systemId) {
+    whereConditions.push(eq(killmails.solarSystemId, filters.systemId));
+  }
+
+  // Add region filter (via solarSystems join)
+  if (filters?.regionId) {
+    whereConditions.push(eq(solarSystems.regionId, filters.regionId));
   }
 
   // For entity filters, we need to handle two scenarios:
@@ -308,6 +324,7 @@ export async function generateKilllist(
       victimCorporation: corporations,
       victimAlliance: alliances,
       victimShip: types,
+      victimShipGroup: groups,
       solarSystem: solarSystems,
       region: regions,
     })
@@ -317,6 +334,7 @@ export async function generateKilllist(
     .leftJoin(corporations, eq(victims.corporationId, corporations.corporationId))
     .leftJoin(alliances, eq(victims.allianceId, alliances.allianceId))
     .leftJoin(types, eq(victims.shipTypeId, types.typeId))
+    .leftJoin(groups, eq(types.groupId, groups.groupId))
     .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId))
     .leftJoin(regions, eq(solarSystems.regionId, regions.regionId));
 
@@ -347,12 +365,14 @@ export async function generateKilllist(
       corporation: corporations,
       alliance: alliances,
       ship: types,
+      shipGroup: groups,
     })
     .from(attackers)
     .leftJoin(characters, eq(attackers.characterId, characters.characterId))
     .leftJoin(corporations, eq(attackers.corporationId, corporations.corporationId))
     .leftJoin(alliances, eq(attackers.allianceId, alliances.allianceId))
     .leftJoin(types, eq(attackers.shipTypeId, types.typeId))
+    .leftJoin(groups, eq(types.groupId, groups.groupId))
     .where(
       and(
         sql`${attackers.killmailId} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`,
@@ -406,7 +426,7 @@ export async function generateKilllist(
         ship: {
           type_id: km.victim.shipTypeId,
           name: km.victimShip?.name || "Unknown Ship",
-          group: "Ship", // TODO: Add group lookup
+          group: km.victimShipGroup?.name || "Unknown Group",
         },
         damage_taken: km.victim.damageTaken,
       },
@@ -427,6 +447,7 @@ export async function generateKilllist(
             ship: {
               type_id: finalBlowData.attacker.shipTypeId,
               name: finalBlowData.ship?.name || "Unknown",
+              group: finalBlowData.shipGroup?.name || null,
             },
             weapon: {
               type_id: finalBlowData.attacker.weaponTypeId,
