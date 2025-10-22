@@ -54,7 +54,7 @@ export class Controller extends WebController {
     };
 
     // Use streaming for better TTFB on character pages with lots of data
-    return await this.renderPageStreaming(
+    return await this.renderPage(
       "pages/character-detail",
       `${characterDetail.character.name}`,
       `Character profile for ${characterDetail.character.name}`,

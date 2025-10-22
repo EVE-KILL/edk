@@ -55,7 +55,7 @@ export class Controller extends WebController {
     };
 
     // Use streaming for better TTFB on corporation pages
-    return await this.renderPageStreaming(
+    return await this.renderPage(
       "pages/corporation-detail",
       `${corporationDetail.corporation.name}`,
       `Corporation profile for ${corporationDetail.corporation.name}`,

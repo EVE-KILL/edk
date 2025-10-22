@@ -54,7 +54,7 @@ export class Controller extends WebController {
     };
 
     // Use streaming for better TTFB on alliance pages
-    return await this.renderPageStreaming(
+    return await this.renderPage(
       "pages/alliance-detail",
       `${allianceDetail.alliance.name}`,
       `Alliance profile for ${allianceDetail.alliance.name}`,

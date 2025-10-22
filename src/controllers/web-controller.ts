@@ -80,44 +80,6 @@ export abstract class WebController extends BaseController {
   }
 
   /**
-   * Render a template with streaming for better performance
-   * Use this for large pages with lots of content
-   *
-   * @param template - Template name (e.g., "pages/home")
-   * @param data - Data to pass to the template
-   * @param layout - Layout template (defaults to "main")
-   */
-  protected async renderStreaming(
-    template: string,
-    data: TemplateData = {},
-    layout: string = "main"
-  ): Promise<Response> {
-    return await this.streamingHtmlResponse(template, data, layout);
-  }
-
-  /**
-   * Render with streaming and custom page title/meta
-   */
-  protected async renderPageStreaming(
-    template: string,
-    title: string,
-    description: string,
-    data: TemplateData = {},
-    layout: string = "main"
-  ): Promise<Response> {
-    const pageData = {
-      ...data,
-      title,
-      meta: {
-        ...data.meta,
-        description
-      }
-    };
-
-    return await this.renderStreaming(template, pageData, layout);
-  }
-
-  /**
    * Redirect to another URL
    */
   protected redirectTo(url: string, status: number = 302): Response {

@@ -45,6 +45,7 @@ class DatabaseConnection {
   private static instance: BunSQLiteDatabase<typeof schema> | null = null;
   private static queueInstance: BunSQLiteDatabase<typeof schema> | null = null;
   private static sqlite: Database | null = null;
+  private static rawSqlite: Database | null = null; // Keep raw unwrapped instance
 
   /**
    * Get the database connection instance (with query logging in dev)
@@ -81,17 +82,50 @@ class DatabaseConnection {
       // Create SQLite connection
       const rawSqlite = new Database(DATABASE_PATH, { create: true });
 
-      // Enable WAL mode for better concurrency
+      // ==== WAL Mode Configuration ====
+      // Enable WAL mode for better concurrency (multiple readers + 1 writer)
       rawSqlite.run("PRAGMA journal_mode = WAL;");
 
-      // Enable foreign keys
+      // WAL auto-checkpoint: Checkpoint after 1000 pages (~4MB with 4KB pages)
+      // This prevents WAL file from growing too large
+      rawSqlite.run("PRAGMA wal_autocheckpoint = 1000;");
+
+      // ==== Safety & Integrity ====
+      // Enable foreign keys (important for data integrity)
       rawSqlite.run("PRAGMA foreign_keys = ON;");
 
-      // Optimize for concurrent writes
-      rawSqlite.run("PRAGMA busy_timeout = 5000;"); // Wait up to 5s for locks
-      rawSqlite.run("PRAGMA synchronous = NORMAL;"); // Faster writes, still safe with WAL
-      rawSqlite.run("PRAGMA cache_size = -64000;"); // 64MB cache
-      rawSqlite.run("PRAGMA temp_store = MEMORY;"); // Store temp tables in memory
+      // NORMAL synchronous mode: Faster than FULL, still safe with WAL
+      // WAL mode ensures durability even with NORMAL
+      rawSqlite.run("PRAGMA synchronous = NORMAL;");
+
+      // ==== Performance Optimizations ====
+      // Busy timeout: Wait up to 5 seconds for locks before failing
+      // Critical for concurrent access from web server + queue workers
+      rawSqlite.exec("PRAGMA busy_timeout = 5000;");
+
+      // Cache size: 64MB cache for frequently accessed pages
+      // Negative value = kibibytes, positive = pages
+      rawSqlite.exec("PRAGMA cache_size = -64000;");
+
+      // Temp store: Use memory for temporary tables/indexes (faster)
+      rawSqlite.exec("PRAGMA temp_store = MEMORY;");
+
+      // Memory-mapped I/O: 256MB for faster reads of frequently accessed data
+      // For a 666MB database, this covers ~40% in fast memory access
+      rawSqlite.exec("PRAGMA mmap_size = 268435456;");
+
+      // Page size is 4096 bytes (default, already optimal for most workloads)
+      // Larger page sizes (8192, 16384) can help with large BLOBs but hurt small queries
+
+      // ==== Query Optimization ====
+      // Analysis limit: Scan more rows when running ANALYZE (better statistics)
+      rawSqlite.exec("PRAGMA analysis_limit = 1000;");
+
+      logger.database(`Connected: ${DATABASE_PATH}`);
+      logger.database("Performance optimizations enabled: WAL, 64MB cache, 256MB mmap");
+
+      // Store raw SQLite for maintenance operations
+      this.rawSqlite = rawSqlite;
 
       // Wrap SQLite connection with performance tracking
       const wrappedSqlite = wrapDatabaseForPerformance(rawSqlite, getCurrentPerformanceTracker);
@@ -120,8 +154,23 @@ class DatabaseConnection {
    * Close the database connection
    */
   static close(): void {
-    if (this.sqlite) {
-      this.sqlite.close();
+    if (this.rawSqlite) {
+      try {
+        // Run PRAGMA optimize before closing
+        // This updates query planner statistics for better performance on next startup
+        logger.database("Running PRAGMA optimize...");
+        this.rawSqlite.run("PRAGMA optimize;");
+
+        // Checkpoint WAL file before closing
+        // This merges WAL changes back into main database
+        logger.database("Checkpointing WAL...");
+        this.rawSqlite.run("PRAGMA wal_checkpoint(TRUNCATE);");
+      } catch (error) {
+        logger.error("Error during database shutdown:", error);
+      }
+
+      this.rawSqlite.close();
+      this.rawSqlite = null;
       this.sqlite = null;
       this.instance = null;
       this.queueInstance = null;
@@ -130,10 +179,13 @@ class DatabaseConnection {
   }
 
   /**
-   * Get the raw SQLite database instance
+   * Get the raw SQLite database instance (for maintenance operations)
    */
-  static getSqlite(): Database | null {
-    return this.sqlite;
+  static getRawSqlite(): Database | null {
+    if (!this.rawSqlite) {
+      this.connect();
+    }
+    return this.rawSqlite;
   }
 }
 
