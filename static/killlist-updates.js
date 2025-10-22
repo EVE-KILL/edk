@@ -122,7 +122,6 @@ class KilllistUpdatesManager {
     // Count all row divs, excluding the header
     const rows = this.killlistContainer.querySelectorAll('.kb-kl-row:not(.kb-kl-row--header):not(.kb-kl-row--empty)');
     this.maxKillmails = rows.length || 20;
-    console.log(`[Killlist] Detected ${this.maxKillmails} killmails on page`);
 
     // Store killmail IDs on existing rows for chronological ordering
     rows.forEach((row) => {

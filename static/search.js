@@ -74,7 +74,8 @@
             corporation: [],
             alliance: [],
             item: [],
-            system: []
+            system: [],
+            region: []
         };
 
         results.forEach(result => {
@@ -91,7 +92,8 @@
             corporation: 'Corporations',
             alliance: 'Alliances',
             item: 'Items',
-            system: 'Systems'
+            system: 'Systems',
+            region: 'Regions'
         };
 
         // Type URLs
@@ -100,7 +102,8 @@
             corporation: '/corporation/',
             alliance: '/alliance/',
             item: '/item/',
-            system: '/system/'
+            system: '/system/',
+            region: '/region/'
         };
 
         // Build HTML for each type

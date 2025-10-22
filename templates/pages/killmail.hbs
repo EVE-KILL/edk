@@ -588,7 +588,7 @@
                         {{/if}}
                     </td>
                     <td class="kb-table-cell" style="padding: 4px; font-size: 9px; line-height: 1.3; overflow: hidden;">
-                        <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 10px;">{{finalBlow.ship.name}}</b></div>
+                        <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 10px;">{{finalBlow.ship.name}}</b>{{#if finalBlow.ship.groupName}} <span style="color: #999;">({{finalBlow.ship.groupName}})</span>{{/if}}</div>
                         {{#if finalBlow.weapon.name}}
                         <div style="color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.weapon.name}}</div>
                         {{/if}}
@@ -627,7 +627,7 @@
                         {{/if}}
                         <div style="margin-top: 2px; overflow: hidden;">
                             {{#if ship.name}}
-                            <span style="color: #999; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; max-width: calc(100% - 60px);">{{ship.name}}</span>
+                            <span style="color: #999; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; max-width: calc(100% - 60px);">{{ship.name}}{{#if ship.groupName}} ({{ship.groupName}}){{/if}}</span>
                             {{/if}}
                             <span class="kl-kill" style="font-weight: bold; font-size: 9px; float: right;">{{damageDone}}</span>
                         </div>

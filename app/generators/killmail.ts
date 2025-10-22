@@ -9,6 +9,7 @@ import {
   solarSystems,
   regions,
   types,
+  groups,
   items as itemsTable,
   prices,
 } from "../../db/schema";
@@ -471,6 +472,7 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
           typeId: types.typeId,
           name: types.name,
           groupId: types.groupId,
+          groupName: groups.name,
         },
 
         // Solar System
@@ -492,6 +494,7 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
       .leftJoin(corporations, eq(corporations.corporationId, victims.corporationId))
       .leftJoin(alliances, eq(alliances.allianceId, victims.allianceId))
       .leftJoin(types, eq(types.typeId, victims.shipTypeId))
+      .leftJoin(groups, eq(groups.groupId, types.groupId))
       .leftJoin(solarSystems, eq(solarSystems.systemId, killmails.solarSystemId))
       .leftJoin(regions, eq(regions.regionId, solarSystems.regionId))
       .where(eq(killmails.killmailId, killmailId))
@@ -536,6 +539,7 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
           typeId: types.typeId,
           name: types.name,
           groupId: types.groupId,
+          groupName: groups.name,
         },
       })
       .from(attackers)
@@ -543,6 +547,7 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
       .leftJoin(corporations, eq(corporations.corporationId, attackers.corporationId))
       .leftJoin(alliances, eq(alliances.allianceId, attackers.allianceId))
       .leftJoin(types, eq(types.typeId, attackers.shipTypeId))
+      .leftJoin(groups, eq(groups.groupId, types.groupId))
       .where(eq(attackers.killmailId, km.killmailDbId))
       .orderBy(desc(attackers.damageDone));
 
@@ -738,7 +743,7 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         ship: {
           typeId: km.victimShipTypeId || 0,
           name: km.victimShipType?.name || `Ship ${km.victimShipTypeId}`,
-          groupName: "Ship", // TODO: Get group name from groupId
+          groupName: km.victimShipType?.groupName || "Ship",
         },
         damageTaken: km.victimDamageTaken || 0,
       },
@@ -755,8 +760,8 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
         alliance: a.alliance?.id ? a.alliance : null,
         ship: a.shipType?.typeId ? {
           typeId: a.shipType.typeId,
-          name: a.shipType.name,
-          groupName: "Ship", // TODO: Get group name from groupId
+          name: a.shipType.name || `Ship ${a.shipType.typeId}`,
+          groupName: a.shipType.groupName || "Ship",
         } : null,
         weapon: a.weaponTypeId ? {
           typeId: a.weaponTypeId,

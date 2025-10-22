@@ -197,6 +197,7 @@ export class KillmailFetcher extends BaseWorker<{
 
       return {
         killmail_id: km.killmailId,
+        killmail_hash: km.hash,
         killmail_time: km.killmailTime,
         ship_value: shipPrice,
         victim: {

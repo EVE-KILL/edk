@@ -5,9 +5,10 @@ import { corporations } from "../../../db/schema/corporations";
 import { alliances } from "../../../db/schema/alliances";
 import { types } from "../../../db/schema/types";
 import { solarSystems } from "../../../db/schema/solar-systems";
+import { regions } from "../../../db/schema/regions";
 
 interface SearchResult {
-  type: "character" | "corporation" | "alliance" | "item" | "system";
+  type: "character" | "corporation" | "alliance" | "item" | "system" | "region";
   id: number;
   name: string;
   ticker?: string;
@@ -144,6 +145,24 @@ export class Controller extends ApiController {
           id: system.systemId,
           name: system.name,
           description: `Security: ${system.securityStatus}`,
+        }))
+      );
+
+      // Search regions
+      const regionResults = await this.db
+        .select({
+          regionId: regions.regionId,
+          name: regions.name,
+        })
+        .from(regions)
+        .where(like(regions.name, searchTerm))
+        .limit(limit);
+
+      results.push(
+        ...regionResults.map((region) => ({
+          type: "region" as const,
+          id: region.regionId,
+          name: region.name,
         }))
       );
 
