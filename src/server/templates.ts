@@ -234,6 +234,33 @@ export function registerHelpers() {
     return a * b;
   });
 
+  // Divide helper
+  Handlebars.registerHelper("div", function(a: number, b: number) {
+    return b !== 0 ? a / b : 0;
+  });
+
+  // Ceiling helper
+  Handlebars.registerHelper("ceil", function(a: number) {
+    return Math.ceil(a);
+  });
+
+  // Alias for multiply
+  Handlebars.registerHelper("mult", function(a: number, b: number) {
+    return a * b;
+  });
+
+  // Logical AND helper
+  Handlebars.registerHelper("and", function(...args: any[]) {
+    // Remove the Handlebars options object from the end
+    const values = args.slice(0, -1);
+    return values.every(v => v);
+  });
+
+  // Check if number is even
+  Handlebars.registerHelper("isEven", function(num: number) {
+    return num % 2 === 0;
+  });
+
   // Modulo helper for alternating rows
   Handlebars.registerHelper("mod", function(a: number, b: number) {
     return a % b;

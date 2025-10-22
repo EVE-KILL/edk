@@ -6,6 +6,14 @@
 <!-- Character Navigation Tabs -->
 {{> partials/entity-navbar}}
 
+<!-- Ship Group Statistics (Kills) -->
+{{#if shipGroupStats}}
+<div style="margin-bottom: 20px;">
+    <div class="block-header2">Ship Groups (Last 30 Days - Kills)</div>
+    {{> components/ship-group-stats columns=shipGroupColumns}}
+</div>
+{{/if}}
+
 <!-- Pagination (Top) -->
 {{#if pagination}}
     {{> partials/pagination pagination=pagination}}

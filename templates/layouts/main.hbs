@@ -239,13 +239,11 @@
                 <tr>
                     <td><a href="/">Home</a></td>
                     {{#if followedEntities.hasEntities}}
-                    <td><a href="/kills">Kills</a></td>
-                    <td><a href="/losses">Losses</a></td>
-                    {{/if}}
-                    <td {{#if followedEntities.hasEntities}}class="nav-dropdown"{{/if}}>
-                        {{#if followedEntities.hasEntities}}
+                    <td><a href="/entities/kills">Kills</a></td>
+                    <td><a href="/entities/losses">Losses</a></td>
+                    <td class="nav-dropdown">
                         <div class="nav-dropdown-wrapper">
-                            <a href="/statistics">Statistics</a>
+                            <a href="/entities">Entities</a>
                             <div class="nav-dropdown-content">
                                 {{#if followedEntities.characters.length}}
                                 <div class="dropdown-section-header">Characters</div>
@@ -267,10 +265,10 @@
                                 {{/if}}
                             </div>
                         </div>
-                        {{else}}
-                        <a href="/statistics">Statistics</a>
-                        {{/if}}
                     </td>
+                    {{else}}
+                    <td><a href="/kills">Kills</a></td>
+                    {{/if}}
                     <td><a href="/post">Post</a></td>
                     <td class="nav-search">
                         <div class="search-container">

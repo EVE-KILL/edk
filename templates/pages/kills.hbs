@@ -1,5 +1,13 @@
 {{#if killmails}}
-<!-- Kills for Followed Entities -->
+<!-- Kills for Followed Entities or Global Feed -->
+
+<!-- Ship Group Statistics (for global feed) -->
+{{#if shipGroupStats}}
+<section class="section mb-lg">
+    {{> components/section-header title="Ship Groups (Last 30 Days)" bordered=true}}
+    {{> components/ship-group-stats shipGroupStats=shipGroupStats shipGroupColumns=shipGroupColumns}}
+</section>
+{{/if}}
 
 <!-- Statistics Section -->
 {{#if statistics}}

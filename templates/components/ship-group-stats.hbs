@@ -1,0 +1,55 @@
+{{!--
+  Ship Group Statistics Component
+  Displays ship group kill statistics in a 3-column grid
+
+  Usage:
+  {{> components/ship-group-stats shipGroupStats=shipGroupStats}}
+
+  Props:
+  - shipGroupStats: array of {groupId, groupName, killed}
+--}}
+{{#if shipGroupStats.length}}
+<div class="ship-stats-grid">
+    <!-- We'll split the array into 3 columns in the route handler -->
+    {{#each shipGroupColumns}}
+    <div class="ship-stats-column">
+        <table class="kb-table" cellspacing="1">
+            <tbody>
+                {{#each this}}
+                <tr class="kb-table-row-{{#if (isEven @index)}}even{{else}}odd{{/if}}">
+                    <td class="kb-table-cell" style="width: 70%;">{{this.groupName}}</td>
+                    <td class="kb-table-cell killed" style="width: 30%; text-align: right;">{{this.killed}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+    {{/each}}
+</div>
+
+<style>
+.ship-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+    .ship-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .ship-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.killed {
+    color: #10b981;
+    font-weight: 500;
+}
+</style>
+{{/if}}

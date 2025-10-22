@@ -27,6 +27,10 @@ export * from "./regions";
 export * from "./types";
 export * from "./esi-cache";
 
+// SDE data
+export * from "./categories";
+export * from "./groups";
+
 // Future schemas:
 // export * from "./users";
 // export * from "./ships";

@@ -1,9 +1,7 @@
-<!-- Alliance Kills Page -->
-
-<!-- Entity Stats Header -->
+<!-- Entities Stats Header -->
 {{> partials/entity-stats}}
 
-<!-- Entity Navigation -->
+<!-- Entities Navigation Tabs -->
 {{> partials/entity-navbar}}
 
 <!-- Ship Group Statistics (Kills) -->
@@ -14,17 +12,13 @@
 </div>
 {{/if}}
 
-<!-- Pagination (Top) -->
-{{#if pagination}}
-    {{> partials/pagination}}
-{{/if}}
-
 <!-- Kills List -->
 <div style="margin-bottom: 20px;">
-    {{> partials/killmail-list}}
+    <div class="block-header2">Kills</div>
+    {{> partials/killmail-list killmails=killmails}}
 </div>
 
-<!-- Pagination (Bottom) -->
+<!-- Pagination -->
 {{#if pagination}}
-    {{> partials/pagination}}
+{{> partials/pagination pagination=pagination}}
 {{/if}}

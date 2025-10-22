@@ -6,6 +6,10 @@ import {
   characters,
 } from "../../../../db/schema";
 import { eq } from "drizzle-orm";
+import {
+  getShipGroupLossStatistics,
+  type ShipGroupStatsFilters,
+} from "../../../generators/ship-group-stats";
 
 export class Controller extends WebController {
   static cacheConfig = {
@@ -74,6 +78,20 @@ export class Controller extends WebController {
       pages.push(i);
     }
 
+    // Fetch ship group loss statistics for last 30 days
+    const shipGroupFilters: ShipGroupStatsFilters = {
+      characterIds: [characterIdInt],
+    };
+    const shipGroupStats = await getShipGroupLossStatistics(30, shipGroupFilters);
+
+    // Split ship group stats into 3 columns
+    const itemsPerColumn = Math.ceil(shipGroupStats.length / 3);
+    const shipGroupColumns = [
+      shipGroupStats.slice(0, itemsPerColumn),
+      shipGroupStats.slice(itemsPerColumn, itemsPerColumn * 2),
+      shipGroupStats.slice(itemsPerColumn * 2),
+    ].filter((col) => col.length > 0);
+
     const data = {
       character,
       stats,
@@ -82,6 +100,9 @@ export class Controller extends WebController {
       imageUrl: `https://images.evetech.net/characters/${character.id}/portrait?size=512`,
       currentTab: 'losses',
       baseUrl: `/character/${characterId}`,
+      // Ship group statistics
+      shipGroupStats,
+      shipGroupColumns,
       pagination: {
         currentPage,
         totalPages: null, // We don't know total yet

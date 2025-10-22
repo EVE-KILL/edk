@@ -147,49 +147,82 @@ export async function generateKilllist(
   }
 
   // For entity filters, we need to handle two scenarios:
-  // 1. If killsOnly/lossesOnly is specified, filter on the appropriate table
+  // 1. If killsOnly/lossesOnly is specified, collect killmail IDs first
   // 2. Otherwise, we need to query both kills and losses separately and combine
 
-  let needsEntityJoin: 'attackers' | 'victims' | false = false;
-  const entityConditions: any[] = [];
-
   if (filters?.killsOnly && (filters?.characterIds || filters?.corporationIds || filters?.allianceIds)) {
-    // Filter on attackers table - we'll join this later
-    needsEntityJoin = 'attackers';
-
+    // Get killmail IDs where entity is an attacker (kills)
+    const attackerConditions: any[] = [];
+    
     if (filters.characterIds && filters.characterIds.length > 0) {
-      entityConditions.push(
+      attackerConditions.push(
         sql`${attackers.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
       );
     }
     if (filters.corporationIds && filters.corporationIds.length > 0) {
-      entityConditions.push(
+      attackerConditions.push(
         sql`${attackers.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})`
       );
     }
     if (filters.allianceIds && filters.allianceIds.length > 0) {
-      entityConditions.push(
+      attackerConditions.push(
         sql`${attackers.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})`
       );
     }
-  } else if (filters?.lossesOnly && (filters?.characterIds || filters?.corporationIds || filters?.allianceIds)) {
-    // Filter on victims table - we'll use the existing join
-    needsEntityJoin = 'victims';
 
+    if (attackerConditions.length > 0) {
+      const attackerKills = await db
+        .selectDistinct({ killmailId: attackers.killmailId })
+        .from(attackers)
+        .where(attackerConditions.length === 1 ? attackerConditions[0] : or(...attackerConditions));
+      
+      const killmailIds = attackerKills.map(k => k.killmailId);
+      
+      if (killmailIds.length > 0) {
+        whereConditions.push(
+          sql`${killmails.id} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`
+        );
+      } else {
+        // No results found, return early
+        return [];
+      }
+    }
+  } else if (filters?.lossesOnly && (filters?.characterIds || filters?.corporationIds || filters?.allianceIds)) {
+    // Get killmail IDs where entity is a victim (losses)
+    const victimConditions: any[] = [];
+    
     if (filters.characterIds && filters.characterIds.length > 0) {
-      entityConditions.push(
+      victimConditions.push(
         sql`${victims.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
       );
     }
     if (filters.corporationIds && filters.corporationIds.length > 0) {
-      entityConditions.push(
+      victimConditions.push(
         sql`${victims.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})`
       );
     }
     if (filters.allianceIds && filters.allianceIds.length > 0) {
-      entityConditions.push(
+      victimConditions.push(
         sql`${victims.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})`
       );
+    }
+
+    if (victimConditions.length > 0) {
+      const victimLosses = await db
+        .selectDistinct({ killmailId: victims.killmailId })
+        .from(victims)
+        .where(victimConditions.length === 1 ? victimConditions[0] : or(...victimConditions));
+      
+      const killmailIds = victimLosses.map(v => v.killmailId);
+      
+      if (killmailIds.length > 0) {
+        whereConditions.push(
+          sql`${killmails.id} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`
+        );
+      } else {
+        // No results found, return early
+        return [];
+      }
     }
   } else if (!filters?.killsOnly && !filters?.lossesOnly && (filters?.characterIds || filters?.corporationIds || filters?.allianceIds)) {
     // Both kills and losses - need to use a subquery to get killmail IDs first
@@ -261,17 +294,12 @@ export async function generateKilllist(
     }
   }
 
-  // Combine entity conditions with OR if multiple
-  if (entityConditions.length > 0) {
-    whereConditions.push(entityConditions.length === 1 ? entityConditions[0] : or(...entityConditions));
-  }
-
   const whereCondition = whereConditions.length > 0
     ? (whereConditions.length === 1 ? whereConditions[0] : and(...whereConditions))
     : undefined;
 
   // Build the base query
-  let query = db
+  const query = db
     .select({
       killmail: killmails,
       victim: victims,
@@ -290,11 +318,6 @@ export async function generateKilllist(
     .leftJoin(types, eq(victims.shipTypeId, types.typeId))
     .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId))
     .leftJoin(regions, eq(solarSystems.regionId, regions.regionId));
-
-  // Add attackers join if we need to filter on kills
-  if (needsEntityJoin === 'attackers') {
-    query = query.innerJoin(attackers, eq(killmails.id, attackers.killmailId)) as any;
-  }
 
   // Apply where condition, ordering, offset, and limit
   let finalQuery = query

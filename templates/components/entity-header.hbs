@@ -31,6 +31,14 @@
         {{name}}{{#if ticker}} <span class="entity-hero__ticker">[{{ticker}}]</span>{{/if}}
       </h1>
 
+      {{#if entityList}}
+      <div class="entity-hero__relations">
+        <span class="color-secondary">Tracking:</span>
+        {{#each entityList}}
+          <a href="/{{this.type}}/{{this.id}}" class="entity-hero__link">{{this.name}}</a>{{#unless @last}},{{/unless}}
+        {{/each}}
+      </div>
+      {{else}}
       {{#if parent}}
       <div class="entity-hero__relations">
         <span class="color-secondary">
@@ -47,6 +55,7 @@
         </a>
         {{/if}}
       </div>
+      {{/if}}
       {{/if}}
     </div>
 

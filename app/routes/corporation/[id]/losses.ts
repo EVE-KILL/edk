@@ -1,6 +1,10 @@
 import { WebController } from "../../../../src/controllers/web-controller";
 import { generateKilllist } from "../../../generators/killlist";
 import { generateCorporationDetail } from "../../../generators/corporation";
+import {
+  getShipGroupLossStatistics,
+  type ShipGroupStatsFilters,
+} from "../../../generators/ship-group-stats";
 
 export class Controller extends WebController {
   static methods = ["GET"];
@@ -53,6 +57,20 @@ export class Controller extends WebController {
       pages.push(i);
     }
 
+    // Fetch ship group loss statistics for last 30 days
+    const shipGroupFilters: ShipGroupStatsFilters = {
+      corporationIds: [parseInt(corporationId, 10)],
+    };
+    const shipGroupStats = await getShipGroupLossStatistics(30, shipGroupFilters);
+
+    // Split ship group stats into 3 columns
+    const itemsPerColumn = Math.ceil(shipGroupStats.length / 3);
+    const shipGroupColumns = [
+      shipGroupStats.slice(0, itemsPerColumn),
+      shipGroupStats.slice(itemsPerColumn, itemsPerColumn * 2),
+      shipGroupStats.slice(itemsPerColumn * 2),
+    ].filter((col) => col.length > 0);
+
     return await this.renderPage(
       "pages/corporation-losses",
       `${corporation.name} - Losses`,
@@ -65,6 +83,9 @@ export class Controller extends WebController {
         killmails,
         currentTab: "losses",
         baseUrl: `/corporation/${corporationId}`,
+        // Ship group statistics
+        shipGroupStats,
+        shipGroupColumns,
         pagination: {
           currentPage,
           hasPrevPage,

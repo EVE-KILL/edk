@@ -6,6 +6,14 @@
 <!-- Entity Navigation -->
 {{> partials/entity-navbar}}
 
+<!-- Ship Group Statistics (Combined Kills & Losses) -->
+{{#if shipGroupStats}}
+<div style="margin-bottom: 20px;">
+    <div class="block-header2">Ship Groups (Last 30 Days)</div>
+    {{> components/ship-group-combined-stats columns=shipGroupColumns}}
+</div>
+{{/if}}
+
 <!-- Recent Kills -->
 <div style="margin-bottom: 20px;">
     <div class="block-header2">Recent Kills (Last 10)</div>

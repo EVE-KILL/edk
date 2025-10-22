@@ -1,5 +1,9 @@
 import { WebController } from "../../../src/controllers/web-controller";
 import { generateCharacterDetail } from "../../generators/character";
+import {
+  getShipGroupCombinedStatistics,
+  type ShipGroupStatsFilters,
+} from "../../generators/ship-group-stats";
 
 export class Controller extends WebController {
   static cacheConfig = {
@@ -20,12 +24,29 @@ export class Controller extends WebController {
       return this.notFound(`Character #${characterId} not found`);
     }
 
+    // Fetch ship group combined statistics for last 30 days
+    const shipGroupFilters: ShipGroupStatsFilters = {
+      characterIds: [parseInt(characterId, 10)],
+    };
+    const shipGroupStats = await getShipGroupCombinedStatistics(30, shipGroupFilters);
+
+    // Split ship group stats into 3 columns
+    const itemsPerColumn = Math.ceil(shipGroupStats.length / 3);
+    const shipGroupColumns = [
+      shipGroupStats.slice(0, itemsPerColumn),
+      shipGroupStats.slice(itemsPerColumn, itemsPerColumn * 2),
+      shipGroupStats.slice(itemsPerColumn * 2),
+    ].filter((col) => col.length > 0);
+
     const data = {
       ...characterDetail,
       entityName: characterDetail.character.name,
       imageUrl: `https://images.evetech.net/characters/${characterDetail.character.id}/portrait?size=512`,
       currentTab: 'dashboard',
       baseUrl: `/character/${characterId}`,
+      // Ship group statistics
+      shipGroupStats,
+      shipGroupColumns,
     };
 
     return await this.renderPage(
