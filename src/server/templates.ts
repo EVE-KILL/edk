@@ -5,6 +5,7 @@ import { join } from "path";
 // Cache environment variables
 const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
 const TEMPLATE_CACHE_ENABLED = process.env.TEMPLATE_CACHE_ENABLED === "true";
+const THEME = process.env.THEME || "default";
 
 // Cache for compiled templates
 const templateCache = new Map<string, HandlebarsTemplateDelegate>();
@@ -64,7 +65,7 @@ export async function renderTemplate(
  * @returns Compiled Handlebars template
  */
 async function getTemplate(templatePath: string): Promise<HandlebarsTemplateDelegate> {
-  const fullPath = `templates/${templatePath}.hbs`;
+  const fullPath = `templates/${THEME}/${templatePath}.hbs`;
 
   // In development, clear cache to pick up template changes
   if (IS_DEVELOPMENT && !TEMPLATE_CACHE_ENABLED) {
@@ -96,7 +97,7 @@ async function getTemplate(templatePath: string): Promise<HandlebarsTemplateDele
 export async function registerPartials() {
   try {
     // Register partials from partials directory
-    const partialsDir = join(process.cwd(), "templates/partials");
+    const partialsDir = join(process.cwd(), `templates/${THEME}/partials`);
     const files = await readdir(partialsDir, { recursive: true });
 
     for (const file of files) {
@@ -109,7 +110,7 @@ export async function registerPartials() {
     }
 
     // Register components from components directory
-    const componentsDir = join(process.cwd(), "templates/components");
+    const componentsDir = join(process.cwd(), `templates/${THEME}/components`);
     const componentFiles = await readdir(componentsDir, { recursive: true });
 
     for (const file of componentFiles) {
