@@ -134,12 +134,12 @@ class KilllistUpdatesManager {
   async addKillmailRow(killmail) {
     // Get the first non-header row to check its killmail ID
     const allRows = this.killlistContainer.querySelectorAll('.kb-kl-row:not(.kb-kl-row--header):not(.kb-kl-row--empty)');
-    
+
     if (allRows.length > 0) {
       const firstRow = allRows[0];
       const firstRowId = parseInt(firstRow.getAttribute('data-killmail-id') || '0', 10);
       const newKillmailId = killmail.killmail_id;
-      
+
       // Don't add if the new killmail ID is lower (older kill)
       if (newKillmailId < firstRowId) {
         console.log(`[Killlist] Skipping older killmail ${newKillmailId} (newer one already at top)`);

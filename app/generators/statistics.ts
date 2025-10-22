@@ -405,10 +405,6 @@ async function getISKStats(filters?: StatsFilters, filterConditions: any[] = [])
  * Optimized: Uses COUNT(DISTINCT) and single query with CASE for all time periods
  */
 async function getActivePilotsStats(filters?: StatsFilters) {
-  const now = Date.now();
-  const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
-  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-
   // Build optimized filter conditions
   const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
 
@@ -416,8 +412,8 @@ async function getActivePilotsStats(filters?: StatsFilters) {
   let query = db
     .select({
       period: sql<string>`CASE
-        WHEN ${killmails.killmailTime} >= ${oneDayAgo} THEN '24h'
-        WHEN ${killmails.killmailTime} >= ${sevenDaysAgo} THEN '7d'
+        WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-24 hours') THEN '24h'
+        WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-7 days') THEN '7d'
         ELSE 'all'
       END`,
       count: sql<number>`COUNT(DISTINCT ${attackers.characterId})`.mapWith(Number),
@@ -433,8 +429,8 @@ async function getActivePilotsStats(filters?: StatsFilters) {
       )
     )
     .groupBy(sql`CASE
-      WHEN ${killmails.killmailTime} >= ${oneDayAgo} THEN '24h'
-      WHEN ${killmails.killmailTime} >= ${sevenDaysAgo} THEN '7d'
+      WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-24 hours') THEN '24h'
+      WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-7 days') THEN '7d'
       ELSE 'all'
     END`)
     .execute();
@@ -454,11 +450,6 @@ async function getActivePilotsStats(filters?: StatsFilters) {
  * Optimized: Uses single query with CASE statement instead of 3 separate queries
  */
 async function getTimeBasedStats(filters?: StatsFilters) {
-  const now = Date.now();
-  const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
-  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
-
   // Build optimized filter conditions
   const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
 
@@ -466,9 +457,9 @@ async function getTimeBasedStats(filters?: StatsFilters) {
   let query = db
     .select({
       period: sql<string>`CASE
-        WHEN ${killmails.killmailTime} >= ${oneDayAgo} THEN '24h'
-        WHEN ${killmails.killmailTime} >= ${sevenDaysAgo} THEN '7d'
-        WHEN ${killmails.killmailTime} >= ${thirtyDaysAgo} THEN '30d'
+        WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-24 hours') THEN '24h'
+        WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-7 days') THEN '7d'
+        WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-30 days') THEN '30d'
         ELSE 'other'
       END`,
       count: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
@@ -482,9 +473,9 @@ async function getTimeBasedStats(filters?: StatsFilters) {
         : undefined
     )
     .groupBy(sql`CASE
-      WHEN ${killmails.killmailTime} >= ${oneDayAgo} THEN '24h'
-      WHEN ${killmails.killmailTime} >= ${sevenDaysAgo} THEN '7d'
-      WHEN ${killmails.killmailTime} >= ${thirtyDaysAgo} THEN '30d'
+      WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-24 hours') THEN '24h'
+      WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-7 days') THEN '7d'
+      WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-30 days') THEN '30d'
       ELSE 'other'
     END`)
     .execute();
@@ -531,7 +522,7 @@ async function getShipStats(filters?: StatsFilters) {
     .select({
       shipTypeId: attackers.shipTypeId,
       shipName: types.name,
-      count: count(),
+      count: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
     })
     .from(attackers)
     .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
@@ -602,7 +593,7 @@ async function getTopEntities(filters?: StatsFilters) {
     .select({
       characterId: attackers.characterId,
       characterName: characters.name,
-      kills: count(),
+      kills: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
     })
     .from(attackers)
     .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
@@ -615,7 +606,7 @@ async function getTopEntities(filters?: StatsFilters) {
       )
     )
     .groupBy(attackers.characterId)
-    .orderBy(desc(count()))
+    .orderBy(desc(sql<number>`COUNT(DISTINCT ${killmails.id})`))
     .limit(1);
 
   // Top corporation
@@ -623,7 +614,7 @@ async function getTopEntities(filters?: StatsFilters) {
     .select({
       corporationId: attackers.corporationId,
       corporationName: corporations.name,
-      kills: count(),
+      kills: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
     })
     .from(attackers)
     .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
@@ -635,7 +626,7 @@ async function getTopEntities(filters?: StatsFilters) {
       )
     )
     .groupBy(attackers.corporationId)
-    .orderBy(desc(count()))
+    .orderBy(desc(sql<number>`COUNT(DISTINCT ${killmails.id})`))
     .limit(1);
 
   // Top alliance
@@ -643,7 +634,7 @@ async function getTopEntities(filters?: StatsFilters) {
     .select({
       allianceId: attackers.allianceId,
       allianceName: alliances.name,
-      kills: count(),
+      kills: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
     })
     .from(attackers)
     .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
@@ -655,7 +646,7 @@ async function getTopEntities(filters?: StatsFilters) {
       )
     )
     .groupBy(attackers.allianceId)
-    .orderBy(desc(count()))
+    .orderBy(desc(sql<number>`COUNT(DISTINCT ${killmails.id})`))
     .limit(1);
 
   const [topKiller, topCorp, topAlliance] = await Promise.all([
