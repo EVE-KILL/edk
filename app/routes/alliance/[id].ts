@@ -53,7 +53,8 @@ export class Controller extends WebController {
       shipGroupColumns,
     };
 
-    return await this.renderPage(
+    // Use streaming for better TTFB on alliance pages
+    return await this.renderPageStreaming(
       "pages/alliance-detail",
       `${allianceDetail.alliance.name}`,
       `Alliance profile for ${allianceDetail.alliance.name}`,

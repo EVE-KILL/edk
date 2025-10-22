@@ -16,9 +16,7 @@
     <tr onclick="window.location.href='/killmail/{{killmail_id}}';" class="{{#if (or (isFollowedLoss victim ../followedEntities) (isEntityLoss victim ../entityType ../entityId))}}kb-table-row--followed-loss{{/if}}">
         <!-- Ship Image -->
         <td class="kb-table-imgcell">
-            <img src="https://images.evetech.net/types/{{victim.ship.type_id}}/icon?size=128"
-                 class="kb-kl-ship-icon"
-                 alt="{{victim.ship.name}}" />
+            {{> partials/eve-image type="ship" id=victim.ship.type_id size=64 alt=victim.ship.name class="kb-kl-ship-icon"}}
         </td>
 
         <!-- Ship Type & Class -->

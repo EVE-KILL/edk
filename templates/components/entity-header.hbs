@@ -4,16 +4,18 @@
 
   Usage:
   {{> components/entity-header
-      imageUrl=imageUrl
+      entityId=entityId
+      entityType=entityType
       name=name
       ticker=ticker
-      type="character"
       parent=parentEntity
       stats=stats
   }}
 
   Props:
-  - imageUrl: string (entity image URL)
+  - entityId: number (entity ID - preferred)
+  - entityType: string (character|corporation|alliance - preferred)
+  - imageUrl: string (entity image URL - legacy, use entityId + entityType instead)
   - entityImages: array (optional, for multi-entity collage)
   - name: string (entity name)
   - ticker: string (optional, entity ticker/tag)
@@ -24,15 +26,23 @@
 --}}
 <div class="entity-hero">
   {{#if entityImages}}
-  {{!-- Multi-entity collage --}}
+  {{!-- Multi-entity collage (for entities page with multiple tracked entities) --}}
   <div class="entity-hero__collage">
     {{#each entityImages}}
     <img src="{{this}}" alt="Entity {{@index}}" class="entity-hero__collage-image" />
     {{/each}}
   </div>
   {{else}}
-  {{!-- Single entity image --}}
-  <img src="{{imageUrl}}" alt="{{name}}" class="entity-hero__image" />
+  {{!-- Single entity image with lazy loading --}}
+  {{#if entityId}}
+    {{!-- Use eve-image partial for proper lazy loading and sizing (512px for retina displays) --}}
+    <div class="entity-hero__image-wrapper">
+      {{> partials/eve-image type=entityType id=entityId size=512 alt=name lazy=false class="entity-hero__image"}}
+    </div>
+  {{else}}
+    {{!-- Fallback for legacy imageUrl prop --}}
+    <img src="{{imageUrl}}" alt="{{name}}" class="entity-hero__image" />
+  {{/if}}
   {{/if}}
 
   <div class="entity-hero__info">

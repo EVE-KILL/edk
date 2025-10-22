@@ -302,12 +302,8 @@ export function getDefaultHtmlHeaders(cacheTime?: number): HeaderOptions {
         },
     preconnect: DEFAULT_PRECONNECT,
     dnsPrefetch: DEFAULT_DNS_PREFETCH,
-    preload: [
-      {
-        href: "/static/edk.css",
-        as: "style",
-      },
-    ],
+    // No preload for edk.css - it's inlined as critical CSS in the template
+    preload: [],
     security: {
       strictTransportSecurity: IS_PRODUCTION,
     },

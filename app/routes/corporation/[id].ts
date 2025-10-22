@@ -54,7 +54,8 @@ export class Controller extends WebController {
       shipGroupColumns,
     };
 
-    return await this.renderPage(
+    // Use streaming for better TTFB on corporation pages
+    return await this.renderPageStreaming(
       "pages/corporation-detail",
       `${corporationDetail.corporation.name}`,
       `Corporation profile for ${corporationDetail.corporation.name}`,

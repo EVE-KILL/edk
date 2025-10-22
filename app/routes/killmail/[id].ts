@@ -35,7 +35,8 @@ export class Controller extends WebController {
     const shipName = killmailDetail.victim.ship.name;
     const valueMB = Math.floor(killmailDetail.stats.totalValue / 1000000);
 
-    return await this.renderPage(
+    // Use streaming for better TTFB on large killmails
+    return await this.renderPageStreaming(
       "pages/killmail",
       `Killmail #${killmailDetail.killmail.killmailId} - ${victimName} (${shipName})`,
       `${victimName} lost a ${shipName} worth ${valueMB}M ISK`,

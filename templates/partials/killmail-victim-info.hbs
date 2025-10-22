@@ -17,14 +17,10 @@
         <td class="kb-table-cell" style="width: 64px; padding: 4px; vertical-align: top;">
             {{#if victim.character.id}}
             <a href="/character/{{victim.character.id}}">
-                <img src="https://images.evetech.net/characters/{{victim.character.id}}/portrait?size=64"
-                     style="width: 64px; height: 64px; display: block; border-radius: 2px;"
-                     alt="{{victim.character.name}}" />
+                {{> partials/eve-image type="character" id=victim.character.id size=64 alt=victim.character.name lazy=false}}
             </a>
             {{else}}
-            <img src="https://images.evetech.net/types/{{victim.ship.typeId}}/icon?size=64"
-                 style="width: 64px; height: 64px; display: block;"
-                 alt="{{victim.ship.name}}" />
+                {{> partials/eve-image type="ship" id=victim.ship.typeId size=64 alt=victim.ship.name lazy=false}}
             {{/if}}
         </td>
         <td class="kb-table-cell" style="padding: 4px; font-size: 10px; line-height: 1.4;">

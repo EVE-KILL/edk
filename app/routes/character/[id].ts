@@ -53,7 +53,8 @@ export class Controller extends WebController {
       shipGroupColumns,
     };
 
-    return await this.renderPage(
+    // Use streaming for better TTFB on character pages with lots of data
+    return await this.renderPageStreaming(
       "pages/character-detail",
       `${characterDetail.character.name}`,
       `Character profile for ${characterDetail.character.name}`,

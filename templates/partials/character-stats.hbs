@@ -3,9 +3,7 @@
     <table class="kb-table" cellspacing="1" style="width: 100%;">
         <tr class="kb-table-header">
             <td class="kb-table-header" colspan="2">
-                <img src="https://images.evetech.net/characters/{{character.id}}/portrait?size=64"
-                     alt="{{character.name}}"
-                     style="width: 64px; height: 64px; vertical-align: middle; margin-right: 10px; border-radius: 4px;" />
+                {{> partials/eve-image type="character" id=character.id size=64 alt=character.name lazy=false class="character-portrait"}}
                 <b>{{character.name}}</b>
             </td>
         </tr>
