@@ -29,8 +29,6 @@ let handleRequest: any;
 let registerHelpers: any;
 let registerPartials: any;
 let clearTemplateCache: any;
-let queueManager: any;
-let CronjobScheduler: any;
 let db: any;
 let cache: any;
 let logger: any;
@@ -47,12 +45,6 @@ async function loadModules() {
   registerPartials = templatesModule.registerPartials;
   clearTemplateCache = templatesModule.clearTemplateCache;
 
-  const queueModule = await import("./app/queue/queue-manager");
-  queueManager = queueModule.queueManager;
-
-  const cronjobModule = await import("./src/scheduler/cronjob-scheduler");
-  CronjobScheduler = cronjobModule.CronjobScheduler;
-
   const dbModule = await import("./src/db");
   db = dbModule.db;
 
@@ -66,9 +58,6 @@ async function loadModules() {
     logger.info("🔍 Verbose mode enabled");
   }
 }
-
-// Module-level variables for shutdown
-let cronjobScheduler: any = null;
 
 /**
  * EVE Kill v4 - Bun server with automatic route injection
@@ -93,22 +82,6 @@ async function startServer() {
   logger.info("⚡ Building route index...");
   const routeIndex = buildRouteIndex(routes);
 
-  // Start queue manager (if enabled)
-  const queueEnabled = process.env.QUEUE_ENABLED !== "false"; // Default: enabled
-  if (queueEnabled) {
-    logger.loading("🔄 Starting queue manager...");
-    await queueManager.start();
-  }
-
-  // Start cronjob scheduler (if enabled)
-  const cronjobsEnabled = process.env.CRONJOBS_ENABLED !== "false"; // Default: enabled
-  if (cronjobsEnabled) {
-    logger.loading("🕐 Starting cronjob scheduler...");
-    cronjobScheduler = new CronjobScheduler();
-    await cronjobScheduler.discover();
-    cronjobScheduler.start();
-  }
-
   const port = parseInt(process.env.PORT || "3000");
   const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -119,12 +92,8 @@ async function startServer() {
 
   logger.server(`Server running on http://localhost:${port}`);
   logger.info(`📦 Environment: ${isDevelopment ? "development" : "production"}`);
-  if (queueEnabled) {
-    logger.success("✅ Queue manager: running");
-  }
-  if (cronjobsEnabled && cronjobScheduler) {
-    logger.success("✅ Cronjob scheduler: running");
-  }
+  logger.info("💡 Run background workers: bun cli queue:work");
+  logger.info("💡 Run scheduled tasks: bun cli cronjobs:run");
 
   // Hot reload for templates in development
   if (isDevelopment) {
@@ -156,19 +125,11 @@ async function startServer() {
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   logger.warn("\n🛑 SIGTERM received, shutting down gracefully...");
-  await queueManager.stop();
-  if (cronjobScheduler) {
-    await cronjobScheduler.stop();
-  }
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
   logger.warn("\n🛑 SIGINT received, shutting down gracefully...");
-  await queueManager.stop();
-  if (cronjobScheduler) {
-    await cronjobScheduler.stop();
-  }
   process.exit(0);
 });
 

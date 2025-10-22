@@ -2,6 +2,13 @@ import { ApiController } from "../../../../src/controllers/api-controller";
 import { TypeService } from "../../../services/esi/type-service";
 
 export class Controller extends ApiController {
+  // ESI type data rarely changes - cache for 24 hours
+  static cacheConfig = {
+    ttl: 86400,
+    staleWhileRevalidate: 86400,
+    vary: ["id"],
+  };
+
   override async get() {
     const { id } = this.params;
     const typeId = Number.parseInt(id);

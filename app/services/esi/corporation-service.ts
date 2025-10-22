@@ -2,8 +2,9 @@ import { db } from "../../../src/db";
 import { corporations } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../../../src/utils/logger";
-import { BaseESIService, ESINotFoundError } from "../../../src/services/esi/base-service";
-import type { Corporation, NewCorporation } from "../../db/schema/corporations";
+import { EveKillProxyService } from "../../../src/services/esi/eve-kill-proxy-service";
+import { ESINotFoundError } from "../../../src/services/esi/base-service";
+import type { Corporation, NewCorporation } from "../../../db/schema/corporations";
 
 /**
  * ESI Corporation Response
@@ -27,9 +28,9 @@ interface ESICorporationResponse {
 
 /**
  * Corporation Service
- * Fetches and caches corporation data from ESI
+ * Fetches corporation data from EVE-KILL (with ESI fallback) and caches in database
  */
-export class CorporationService extends BaseESIService {
+export class CorporationService extends EveKillProxyService {
   /**
    * Get corporation by ID (from database or ESI)
    */
@@ -40,19 +41,20 @@ export class CorporationService extends BaseESIService {
       return cached;
     }
 
-    // Fetch from ESI
-    logger.info(`Fetching corporation ${corporationId} from ESI`);
+    // Fetch from EVE-KILL/ESI
+    logger.info(`Fetching corporation ${corporationId}`);
     return await this.fetchAndStore(corporationId);
   }
 
   /**
-   * Fetch corporation from ESI and store in database
+   * Fetch corporation from EVE-KILL (with ESI fallback) and store in database
    */
   private async fetchAndStore(corporationId: number): Promise<Corporation> {
     try {
-      const esiData = await this.fetchFromESI<ESICorporationResponse>(
-        `/corporations/${corporationId}/`,
-        `corporation:${corporationId}`
+      const esiData = await this.fetchWithFallback<ESICorporationResponse>(
+        `/corporations/${corporationId}`,    // EVE-KILL endpoint
+        `/corporations/${corporationId}/`,   // ESI endpoint
+        `corporation:${corporationId}`       // Cache key
       );
 
       // Transform and store
@@ -68,7 +70,7 @@ export class CorporationService extends BaseESIService {
       return stored;
     } catch (error) {
       if (error instanceof ESINotFoundError) {
-        logger.error(`Corporation ${corporationId} not found in ESI`);
+        logger.error(`Corporation ${corporationId} not found`);
         throw new Error(`Corporation ${corporationId} does not exist`);
       }
       throw error;

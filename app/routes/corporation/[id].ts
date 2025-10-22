@@ -7,7 +7,8 @@ import {
 
 export class Controller extends WebController {
   static cacheConfig = {
-    ttl: 300,
+    ttl: 120,
+    staleWhileRevalidate: 300,
     vary: ["id"],
   };
 

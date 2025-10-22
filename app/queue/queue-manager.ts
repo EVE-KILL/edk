@@ -20,6 +20,10 @@ export class QueueManager {
   private running = false;
   private pollingIntervals: NodeJS.Timeout[] = [];
   private activeJobs = 0;
+  private activeJobsByQueue = new Map<string, Set<number>>(); // Track active jobs per queue
+  private statsInterval?: NodeJS.Timeout;
+  private jobsProcessed = 0;
+  private lastStatsTime = Date.now();
 
   constructor(private db: BunSQLiteDatabase<any>) {}
 
@@ -68,6 +72,9 @@ export class QueueManager {
       this.pollingIntervals.push(interval);
     }
 
+    // Start periodic stats logging (every 30 seconds)
+    this.statsInterval = setInterval(() => this.logStats(), 30000);
+
     logger.success(`Queue manager started with ${this.workers.size} workers`);
   }
 
@@ -87,6 +94,12 @@ export class QueueManager {
     // Stop polling for new jobs
     this.pollingIntervals.forEach(clearInterval);
     this.pollingIntervals = [];
+
+    // Stop stats logging
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = undefined;
+    }
 
     // Wait for in-flight jobs to finish
     await this.waitForActiveJobs(timeout);
@@ -119,15 +132,52 @@ export class QueueManager {
   private async processQueue(queueName: string, worker: BaseWorker) {
     if (!this.running) return;
 
-    // Process multiple jobs in parallel (up to worker.concurrency)
+    // Count how many jobs are currently processing for this queue
+    const activeCount = this.getActiveJobCount(queueName);
     const concurrency = worker.concurrency || 1;
-    const promises: Promise<void>[] = [];
+    const slotsAvailable = concurrency - activeCount;
 
-    for (let i = 0; i < concurrency; i++) {
-      promises.push(this.processNextJob(queueName, worker));
+    // Only start new jobs if we have slots available
+    if (slotsAvailable <= 0) {
+      return; // All slots full, wait for next poll
     }
 
-    await Promise.allSettled(promises);
+    // Start jobs to fill available slots (fire and forget - don't await!)
+    for (let i = 0; i < slotsAvailable; i++) {
+      this.processNextJob(queueName, worker).catch((error) => {
+        logger.error(`[${queueName}] Unhandled error in job processing:`, error);
+      });
+    }
+  }
+
+  /**
+   * Get count of active jobs for a specific queue
+   */
+  private getActiveJobCount(queueName: string): number {
+    const activeSet = this.activeJobsByQueue.get(queueName);
+    return activeSet ? activeSet.size : 0;
+  }
+
+  /**
+   * Track a job as active for a queue
+   */
+  private trackActiveJob(queueName: string, jobId: number): void {
+    if (!this.activeJobsByQueue.has(queueName)) {
+      this.activeJobsByQueue.set(queueName, new Set());
+    }
+    this.activeJobsByQueue.get(queueName)!.add(jobId);
+    this.activeJobs++;
+  }
+
+  /**
+   * Remove a job from active tracking
+   */
+  private untrackActiveJob(queueName: string, jobId: number): void {
+    const activeSet = this.activeJobsByQueue.get(queueName);
+    if (activeSet) {
+      activeSet.delete(jobId);
+    }
+    this.activeJobs--;
   }
 
   /**
@@ -135,6 +185,8 @@ export class QueueManager {
    * This is where the atomic job claiming happens
    */
   private async processNextJob(queueName: string, worker: BaseWorker) {
+    let jobId: number | null = null;
+
     try {
       // Atomically claim a job
       const job = await this.claimJob(queueName);
@@ -144,7 +196,8 @@ export class QueueManager {
         return;
       }
 
-      this.activeJobs++;
+      jobId = job.id;
+      this.trackActiveJob(queueName, jobId);
       logger.debug(`[${queueName}] Processing job #${job.id} (attempt ${job.attempts}/${job.maxAttempts})`);
 
       try {
@@ -158,6 +211,7 @@ export class QueueManager {
 
         // Mark as completed
         await this.completeJob(job.id);
+        this.jobsProcessed++;
 
         logger.debug(`[${queueName}] ✅ Job #${job.id} completed`);
       } catch (error) {
@@ -169,10 +223,15 @@ export class QueueManager {
           `[${queueName}] Job #${job.id} failed (${job.attempts}/${job.maxAttempts}): ${errorMessage}`
         );
       } finally {
-        this.activeJobs--;
+        if (jobId !== null) {
+          this.untrackActiveJob(queueName, jobId);
+        }
       }
     } catch (error) {
       logger.error(`[${queueName}] Error processing job:`, error);
+      if (jobId !== null) {
+        this.untrackActiveJob(queueName, jobId);
+      }
     }
   }  /**
    * Atomically claim the next available job
@@ -285,6 +344,44 @@ export class QueueManager {
     }
 
     logger.warn(`Timeout waiting for ${this.activeJobs} active jobs to finish`);
+  }
+
+  /**
+   * Log current processing statistics
+   * Called periodically to show activity
+   */
+  private async logStats() {
+    const now = Date.now();
+    const elapsed = (now - this.lastStatsTime) / 1000; // seconds
+    const rate = this.jobsProcessed / elapsed;
+
+    // Get queue stats
+    const queueStats: Record<string, { pending: number; processing: number }> = {};
+
+    for (const queueName of this.workers.keys()) {
+      const [stats] = await this.db
+        .select({
+          pending: sql<number>`count(*) filter (where ${jobs.status} = 'pending')`,
+          processing: sql<number>`count(*) filter (where ${jobs.status} = 'processing')`,
+        })
+        .from(jobs)
+        .where(eq(jobs.queue, queueName));
+
+      queueStats[queueName] = stats || { pending: 0, processing: 0 };
+    }
+
+    logger.info("📊 Queue Statistics:");
+    for (const [queueName, stats] of Object.entries(queueStats)) {
+      logger.info(
+        `   ${queueName}: ${stats.pending.toLocaleString()} pending, ${stats.processing} processing`
+      );
+    }
+    logger.info(`   Rate: ${rate.toFixed(2)} jobs/sec (${this.jobsProcessed} total in ${elapsed.toFixed(0)}s)`);
+    logger.info(`   Active: ${this.activeJobs} jobs currently processing`);
+
+    // Reset counters
+    this.jobsProcessed = 0;
+    this.lastStatsTime = now;
   }
 }
 

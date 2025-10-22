@@ -55,7 +55,8 @@ const statsFilters: StatsFilters | undefined = HAS_FOLLOWED_ENTITIES
 
 export class Controller extends WebController {
   static cacheConfig = {
-    ttl: 300,
+    ttl: 30,
+    staleWhileRevalidate: 60,
     vary: ["page"],
   };
 

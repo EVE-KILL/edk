@@ -7,7 +7,13 @@ import {
 } from "../../../generators/ship-group-stats";
 
 export class Controller extends WebController {
-  static methods = ["GET"];
+  static override methods = ["GET"];
+
+  static cacheConfig = {
+    ttl: 60,
+    staleWhileRevalidate: 120,
+    vary: ["id", "page"],
+  };
 
   override async handle(): Promise<Response> {
     const corporationId = this.getParam("id");

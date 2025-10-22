@@ -13,9 +13,10 @@ import { queueManager } from "../../../queue/queue-manager";
  * - Queue manager status
  */
 export class Controller extends ApiController {
-  // Cache stats for 5 seconds (they change frequently)
+  // Cache stats for 5 seconds (they change frequently) with SWR
   static cacheConfig = {
-    ttl: 5,
+    ttl: 5,                      // Fresh for 5 seconds
+    staleWhileRevalidate: 10,    // Serve stale for 10 more seconds while refreshing
   };
 
   override async handle(): Promise<Response> {

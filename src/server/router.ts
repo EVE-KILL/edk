@@ -9,6 +9,9 @@ import {
   shouldCacheResponse,
   serializeResponse,
   deserializeResponse,
+  wrapCacheEntry,
+  getCacheEntryState,
+  type CachedResponseEntry,
 } from "../cache/cache-key";
 import { cache } from "../cache";
 
@@ -302,13 +305,31 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
 
     if (!shouldSkip && !hasNoCacheHeader) {
       cacheKey = buildResponseCacheKey(req, cacheConfig, params);
-      const cachedResponse = await cache.get<any>(cacheKey);
+      const cachedEntry = await cache.get<CachedResponseEntry>(cacheKey);
 
-      if (cachedResponse) {
-        const response = deserializeResponse(cachedResponse);
-        isCacheHit = true;
-        logCompletion(response.status, isCacheHit);
-        return addPerformanceHeaders(response);
+      if (cachedEntry) {
+        const { state, age } = getCacheEntryState(cachedEntry);
+
+        if (state === "fresh") {
+          // Fresh cache: serve immediately
+          const response = deserializeResponse(cachedEntry.data, "fresh");
+          isCacheHit = true;
+          logCompletion(response.status, isCacheHit);
+          return addPerformanceHeaders(response);
+        } else if (state === "stale") {
+          // Stale cache: serve immediately + revalidate in background
+          const response = deserializeResponse(cachedEntry.data, "stale");
+          isCacheHit = true;
+
+          // Trigger background revalidation (don't await)
+          revalidateInBackground(cacheKey, route, req, cacheConfig).catch((error) => {
+            console.error("Background revalidation failed:", error);
+          });
+
+          logCompletion(response.status, isCacheHit);
+          return addPerformanceHeaders(response);
+        }
+        // If expired, fall through to fetch fresh (blocking)
       }
     }
   }
@@ -324,10 +345,14 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
       if (response.status >= 200 && response.status < 300 && shouldCacheResponse(response)) {
         const ttl =
           cacheConfig.ttl || parseInt(process.env.RESPONSE_CACHE_DEFAULT_TTL || "60", 10);
+        const swr = cacheConfig.staleWhileRevalidate;
 
         // Clone response before reading body
         const responseClone = response.clone();
         const serialized = await serializeResponse(responseClone);
+
+        // Wrap with cache metadata for SWR
+        const cacheEntry = wrapCacheEntry(serialized, cacheConfig);
 
         // Add cache control headers
         const headers = new Headers(response.headers);
@@ -335,11 +360,15 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
         if (cacheConfig.private) {
           headers.set("Cache-Control", `private, max-age=${ttl}`);
         } else {
-          headers.set("Cache-Control", `public, max-age=${ttl}`);
+          const cacheControl = swr
+            ? `public, max-age=${ttl}, stale-while-revalidate=${swr}`
+            : `public, max-age=${ttl}`;
+          headers.set("Cache-Control", cacheControl);
         }
 
-        // Store in cache
-        await cache.set(cacheKey, serialized, ttl);
+        // Store in cache with extended TTL (ttl + swr) so stale entries remain available
+        const cacheTTL = swr ? ttl + swr : ttl;
+        await cache.set(cacheKey, cacheEntry, cacheTTL);
 
         // Return response with updated headers
         const finalResponse = new Response(response.body, {
@@ -377,5 +406,60 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
 
     logCompletion(500);
     return addPerformanceHeaders(errorResponse);
+  }
+}
+
+/**
+ * Revalidate cache entry in the background
+ * Uses a lock to prevent multiple simultaneous revalidations of the same key
+ */
+async function revalidateInBackground(
+  cacheKey: string,
+  route: Route,
+  req: Request,
+  cacheConfig: CacheConfig
+): Promise<void> {
+  // Lock key to prevent multiple concurrent revalidations
+  const lockKey = `${cacheKey}:revalidating`;
+
+  // Check if already revalidating
+  const isLocked = await cache.get(lockKey);
+  if (isLocked) {
+    // Already revalidating, skip
+    return;
+  }
+
+  try {
+    // Set lock (10 second timeout)
+    await cache.set(lockKey, true, 10);
+
+    // Create new controller instance and fetch fresh data
+    const controller = new route.ControllerClass(req);
+    const freshResponse = await controller.handle();
+
+    // Only update cache if successful
+    if (freshResponse.status >= 200 && freshResponse.status < 300 && shouldCacheResponse(freshResponse)) {
+      const ttl = cacheConfig.ttl || 60;
+      const swr = cacheConfig.staleWhileRevalidate;
+
+      // Serialize response
+      const serialized = await serializeResponse(freshResponse);
+
+      // Wrap with cache metadata
+      const cacheEntry = wrapCacheEntry(serialized, cacheConfig);
+
+      // Store with extended TTL
+      const cacheTTL = swr ? ttl + swr : ttl;
+      await cache.set(cacheKey, cacheEntry, cacheTTL);
+
+      console.log(`[SWR] Revalidated cache key: ${cacheKey}`);
+    }
+  } catch (error) {
+    console.error(`[SWR] Revalidation failed for ${cacheKey}:`, error);
+    // Failed to revalidate, but user already got stale response
+    // Could implement stale-if-error here
+  } finally {
+    // Release lock
+    await cache.delete(lockKey);
   }
 }

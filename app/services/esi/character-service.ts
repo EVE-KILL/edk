@@ -2,8 +2,9 @@ import { db } from "../../../src/db";
 import { characters } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../../../src/utils/logger";
-import { BaseESIService, ESINotFoundError } from "../../../src/services/esi/base-service";
-import type { Character, NewCharacter } from "../../db/schema/characters";
+import { EveKillProxyService } from "../../../src/services/esi/eve-kill-proxy-service";
+import { ESINotFoundError } from "../../../src/services/esi/base-service";
+import type { Character, NewCharacter } from "../../../db/schema/characters";
 
 /**
  * ESI Character Response
@@ -24,9 +25,9 @@ interface ESICharacterResponse {
 
 /**
  * Character Service
- * Fetches and caches character data from ESI
+ * Fetches character data from EVE-KILL (with ESI fallback) and caches in database
  */
-export class CharacterService extends BaseESIService {
+export class CharacterService extends EveKillProxyService {
   /**
    * Get character by ID (from database or ESI)
    */
@@ -43,13 +44,14 @@ export class CharacterService extends BaseESIService {
   }
 
   /**
-   * Fetch character from ESI and store in database
+   * Fetch character from EVE-KILL (with ESI fallback) and store in database
    */
   private async fetchAndStore(characterId: number): Promise<Character> {
     try {
-      const esiData = await this.fetchFromESI<ESICharacterResponse>(
-        `/characters/${characterId}/`,
-        `character:${characterId}`
+      const esiData = await this.fetchWithFallback<ESICharacterResponse>(
+        `/characters/${characterId}`,      // EVE-KILL endpoint
+        `/characters/${characterId}/`,     // ESI endpoint
+        `character:${characterId}`         // Cache key
       );
 
       // Transform and store
@@ -65,7 +67,7 @@ export class CharacterService extends BaseESIService {
       return stored;
     } catch (error) {
       if (error instanceof ESINotFoundError) {
-        logger.error(`Character ${characterId} not found in ESI`);
+        logger.error(`Character ${characterId} not found`);
         throw new Error(`Character ${characterId} does not exist`);
       }
       throw error;

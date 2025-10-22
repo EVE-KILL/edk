@@ -46,6 +46,12 @@ const statsFilters: StatsFilters | undefined = HAS_FOLLOWED_ENTITIES
   : undefined;
 
 export class Controller extends WebController {
+  static cacheConfig = {
+    ttl: 30,
+    staleWhileRevalidate: 60,
+    vary: ["page"],
+  };
+
   override async handle(): Promise<Response> {
     // If no followed entities are configured, redirect to kills
     if (!HAS_FOLLOWED_ENTITIES) {

@@ -2,8 +2,9 @@ import { db } from "../../../src/db";
 import { alliances } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../../../src/utils/logger";
-import { BaseESIService, ESINotFoundError } from "../../../src/services/esi/base-service";
-import type { Alliance, NewAlliance } from "../../db/schema/alliances";
+import { EveKillProxyService } from "../../../src/services/esi/eve-kill-proxy-service";
+import { ESINotFoundError } from "../../../src/services/esi/base-service";
+import type { Alliance, NewAlliance } from "../../../db/schema/alliances";
 
 /**
  * ESI Alliance Response
@@ -20,9 +21,9 @@ interface ESIAllianceResponse {
 
 /**
  * Alliance Service
- * Fetches and caches alliance data from ESI
+ * Fetches alliance data from EVE-KILL (with ESI fallback) and caches in database
  */
-export class AllianceService extends BaseESIService {
+export class AllianceService extends EveKillProxyService {
   /**
    * Get alliance by ID (from database or ESI)
    */
@@ -33,19 +34,20 @@ export class AllianceService extends BaseESIService {
       return cached;
     }
 
-    // Fetch from ESI
-    logger.info(`Fetching alliance ${allianceId} from ESI`);
+    // Fetch from EVE-KILL/ESI
+    logger.info(`Fetching alliance ${allianceId}`);
     return await this.fetchAndStore(allianceId);
   }
 
   /**
-   * Fetch alliance from ESI and store in database
+   * Fetch alliance from EVE-KILL (with ESI fallback) and store in database
    */
   private async fetchAndStore(allianceId: number): Promise<Alliance> {
     try {
-      const esiData = await this.fetchFromESI<ESIAllianceResponse>(
-        `/alliances/${allianceId}/`,
-        `alliance:${allianceId}`
+      const esiData = await this.fetchWithFallback<ESIAllianceResponse>(
+        `/alliances/${allianceId}`,      // EVE-KILL endpoint
+        `/alliances/${allianceId}/`,     // ESI endpoint
+        `alliance:${allianceId}`         // Cache key
       );
 
       // Transform and store
@@ -61,7 +63,7 @@ export class AllianceService extends BaseESIService {
       return stored;
     } catch (error) {
       if (error instanceof ESINotFoundError) {
-        logger.error(`Alliance ${allianceId} not found in ESI`);
+        logger.error(`Alliance ${allianceId} not found`);
         throw new Error(`Alliance ${allianceId} does not exist`);
       }
       throw error;

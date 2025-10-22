@@ -13,7 +13,8 @@ import { generateCorporationDetail } from "../../../../generators/corporation";
  */
 export class Controller extends ApiController {
   static cacheConfig = {
-    ttl: 60,
+    ttl: 30,
+    staleWhileRevalidate: 60,
     vary: ["id", "limit", "page"],
   };
 

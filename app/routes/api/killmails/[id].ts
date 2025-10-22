@@ -9,9 +9,10 @@ import { eq } from "drizzle-orm";
  * GET /api/killmails/:id - Get killmail detail by ID with prices
  */
 export class Controller extends ApiController {
-  // Cache killmail API responses for 1 hour
+  // Cache killmail API responses - killmails rarely change once created
   static cacheConfig = {
-    ttl: 3600,
+    ttl: 600,                    // Fresh for 10 minutes
+    staleWhileRevalidate: 3600,  // Serve stale for 1 hour while refreshing
   };
 
   override async get(): Promise<Response> {

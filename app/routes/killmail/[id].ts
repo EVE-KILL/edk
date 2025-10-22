@@ -2,9 +2,10 @@ import { WebController } from "../../../src/controllers/web-controller";
 import { generateKillmailDetail } from "../../generators/killmail";
 
 export class Controller extends WebController {
-  // Cache killmail pages for 5 minutes
+  // Cache killmail pages for 10 minutes (fresh) + 1 hour (stale)
   static cacheConfig = {
-    ttl: 300,
+    ttl: 600,
+    staleWhileRevalidate: 3600,
     vary: ["id"],
   };
 

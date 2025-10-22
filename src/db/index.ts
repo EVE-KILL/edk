@@ -87,6 +87,12 @@ class DatabaseConnection {
       // Enable foreign keys
       rawSqlite.run("PRAGMA foreign_keys = ON;");
 
+      // Optimize for concurrent writes
+      rawSqlite.run("PRAGMA busy_timeout = 5000;"); // Wait up to 5s for locks
+      rawSqlite.run("PRAGMA synchronous = NORMAL;"); // Faster writes, still safe with WAL
+      rawSqlite.run("PRAGMA cache_size = -64000;"); // 64MB cache
+      rawSqlite.run("PRAGMA temp_store = MEMORY;"); // Store temp tables in memory
+
       // Wrap SQLite connection with performance tracking
       const wrappedSqlite = wrapDatabaseForPerformance(rawSqlite, getCurrentPerformanceTracker);
       this.sqlite = wrappedSqlite;

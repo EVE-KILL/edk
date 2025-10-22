@@ -6,12 +6,13 @@ import { cache } from "../../../../src/cache";
  * GET /api/cache/stats
  */
 export class Controller extends ApiController {
-  // Cache health endpoint responses for 30 seconds
+  // Cache statistics endpoint with SWR
   static cacheConfig = {
-    ttl: 30,
+    ttl: 10,                     // Fresh for 10 seconds
+    staleWhileRevalidate: 20,    // Serve stale for 20 more seconds while refreshing
   };
 
-  async get(): Promise<Response> {
+  override async get(): Promise<Response> {
     const stats = await cache.getStats();
     const driver = process.env.CACHE_DRIVER || "lru";
     const cacheEnabled = process.env.CACHE_ENABLED !== "false";

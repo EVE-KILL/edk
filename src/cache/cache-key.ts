@@ -1,5 +1,5 @@
-import type { CacheConfig } from "../../types/cache.d";
-import type {} from "../../types/request.d";
+import type { CacheConfig } from "../../app/types/cache.d";
+import type {} from "../../app/types/request.d";
 
 /**
  * Build a cache key for response caching
@@ -34,8 +34,14 @@ export function buildResponseCacheKey(
           key += `:${queryString}`;
         }
       } else if (params && params[varKey]) {
-        // Include specific route parameter
+        // Include specific route parameter (like :id)
         key += `:${varKey}=${params[varKey]}`;
+      } else {
+        // Check if it's a query string parameter
+        const queryValue = url.searchParams.get(varKey);
+        if (queryValue) {
+          key += `:${varKey}=${queryValue}`;
+        }
       }
     }
   }
@@ -110,6 +116,63 @@ export async function serializeResponse(response: Response): Promise<{
 }
 
 /**
+ * Wrapped cache entry with metadata for stale-while-revalidate
+ */
+export interface CachedResponseEntry {
+  data: {
+    status: number;
+    statusText: string;
+    headers: Record<string, string>;
+    body: string;
+  };
+  cachedAt: number;       // Timestamp when cached
+  ttl: number;            // Fresh period in seconds
+  swr?: number;           // Stale-while-revalidate period in seconds
+  staleIfError?: number;  // Stale-if-error period in seconds
+}
+
+/**
+ * Wrap response with cache metadata
+ */
+export function wrapCacheEntry(
+  serializedResponse: {
+    status: number;
+    statusText: string;
+    headers: Record<string, string>;
+    body: string;
+  },
+  config: CacheConfig
+): CachedResponseEntry {
+  return {
+    data: serializedResponse,
+    cachedAt: Date.now(),
+    ttl: config.ttl || 60,
+    swr: config.staleWhileRevalidate,
+    staleIfError: config.staleIfError,
+  };
+}
+
+/**
+ * Check if cached entry is fresh, stale, or expired
+ */
+export function getCacheEntryState(entry: CachedResponseEntry): {
+  state: "fresh" | "stale" | "expired";
+  age: number;
+} {
+  const age = (Date.now() - entry.cachedAt) / 1000; // Age in seconds
+
+  if (age < entry.ttl) {
+    return { state: "fresh", age };
+  }
+
+  if (entry.swr && age < entry.ttl + entry.swr) {
+    return { state: "stale", age };
+  }
+
+  return { state: "expired", age };
+}
+
+/**
  * Deserialize cached response data
  */
 export function deserializeResponse(data: {
@@ -117,10 +180,17 @@ export function deserializeResponse(data: {
   statusText: string;
   headers: Record<string, string>;
   body: string;
-}): Response {
+}, cacheState?: "fresh" | "stale"): Response {
   const headers = new Headers(data.headers);
-  // Add cache hit header
-  headers.set("X-Cache", "HIT");
+
+  // Add cache headers
+  if (cacheState === "fresh") {
+    headers.set("X-Cache", "HIT");
+  } else if (cacheState === "stale") {
+    headers.set("X-Cache", "STALE");
+  } else {
+    headers.set("X-Cache", "HIT");
+  }
 
   return new Response(data.body, {
     status: data.status,

@@ -18,7 +18,8 @@ import { generateKilllist } from "../../generators/killlist";
  */
 export class Controller extends ApiController {
   static cacheConfig = {
-    ttl: 60, // Cache for 1 minute
+    ttl: 30,                     // Fresh for 30 seconds
+    staleWhileRevalidate: 60,    // Serve stale for 60 more seconds while refreshing
     vary: ["limit", "page", "before", "characterId", "corporationId", "allianceId", "killsOnly", "lossesOnly"],
   };
 

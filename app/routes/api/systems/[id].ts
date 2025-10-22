@@ -2,6 +2,13 @@ import { ApiController } from "../../../../src/controllers/api-controller";
 import { SolarSystemService } from "../../../services/esi/solar-system-service";
 
 export class Controller extends ApiController {
+  // ESI solar system data rarely changes - cache for 24 hours
+  static cacheConfig = {
+    ttl: 86400,
+    staleWhileRevalidate: 86400,
+    vary: ["id"],
+  };
+
   override async get() {
     const { id } = this.params;
     const systemId = Number.parseInt(id);

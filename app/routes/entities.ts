@@ -54,6 +54,10 @@ const statsFilters: StatsFilters | undefined = HAS_FOLLOWED_ENTITIES
   : undefined;
 
 export class Controller extends WebController {
+  static cacheConfig = {
+    ttl: 30,                     // Fresh for 30 seconds
+    staleWhileRevalidate: 60,    // Serve stale for 60 more seconds while refreshing
+  };
   override async handle(): Promise<Response> {
     // If no followed entities are configured, show a placeholder page
     if (!HAS_FOLLOWED_ENTITIES) {

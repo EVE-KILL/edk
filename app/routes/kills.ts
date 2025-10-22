@@ -47,6 +47,12 @@ const statsFilters: StatsFilters | undefined = HAS_FOLLOWED_ENTITIES
   : undefined;
 
 export class Controller extends WebController {
+  static cacheConfig = {
+    ttl: 30,
+    staleWhileRevalidate: 60,
+    vary: ["page"],
+  };
+
   override async handle(): Promise<Response> {
     // Get pagination parameters
     const url = new URL(this.request.url);

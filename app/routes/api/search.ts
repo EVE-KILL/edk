@@ -15,9 +15,15 @@ interface SearchResult {
 }
 
 export class Controller extends ApiController {
-  static methods = ["GET"];
+  static override methods = ["GET"];
 
-  async get(): Promise<Response> {
+  static cacheConfig = {
+    ttl: 300,
+    staleWhileRevalidate: 600,
+    vary: ["q", "limit"],
+  };
+
+  override async get(): Promise<Response> {
     const query = this.url.searchParams.get("q");
     const limit = parseInt(this.url.searchParams.get("limit") || "10");
 

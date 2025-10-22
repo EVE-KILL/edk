@@ -44,6 +44,11 @@ const statsFilters: StatsFilters | undefined =
     : undefined;
 
 export class Controller extends WebController {
+  static cacheConfig = {
+    ttl: 30,                     // Fresh for 30 seconds
+    staleWhileRevalidate: 60,    // Serve stale for 60 more seconds while refreshing
+    vary: ["page"],
+  };
   override async handle(): Promise<Response> {
     try {
       // Get pagination parameters

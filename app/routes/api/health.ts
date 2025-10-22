@@ -1,7 +1,12 @@
 import { ApiController } from "../../../src/controllers/api-controller";
 
 export class Controller extends ApiController {
-  async get(): Promise<Response> {
+  static cacheConfig = {
+    ttl: 5,
+    staleWhileRevalidate: 10,
+  };
+
+  override async get(): Promise<Response> {
     const healthData = {
       status: "ok",
       timestamp: new Date().toISOString(),

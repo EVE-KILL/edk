@@ -6,9 +6,10 @@ import { allianceService } from "../../../services/esi/alliance-service";
  * GET /api/alliances/:id - Get alliance by ID
  */
 export class Controller extends ApiController {
-  // Cache health endpoint responses for 30 seconds
+  // Cache alliance API responses
   static cacheConfig = {
-    ttl: 300,
+    ttl: 120,                    // Fresh for 2 minutes
+    staleWhileRevalidate: 300,   // Serve stale for 5 more minutes while refreshing
   };
 
   override async get(): Promise<Response> {

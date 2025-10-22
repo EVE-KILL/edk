@@ -12,8 +12,8 @@ export function createCache(driver?: string): CacheAdapter {
   switch (cacheDriver.toLowerCase()) {
     case "lru":
       return new LRUCacheAdapter({
-        maxSize: parseInt(process.env.CACHE_MAX_SIZE || "1000", 10),
-        maxMemory: parseInt(process.env.CACHE_MAX_MEMORY || "512", 10),
+        maxSize: parseInt(process.env.CACHE_MAX_SIZE || "1000000", 10),
+        maxMemory: parseInt(process.env.CACHE_MAX_MEMORY || "2048", 10), // Increased from 512MB to 2GB
         ttl: parseInt(process.env.CACHE_DEFAULT_TTL || "300", 10),
       });
 

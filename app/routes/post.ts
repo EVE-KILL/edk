@@ -4,9 +4,16 @@ import { killmails } from "../../db/schema";
 import { eq } from "drizzle-orm";
 
 export class Controller extends WebController {
-  static methods = ["GET", "POST"];
+  static override methods = ["GET", "POST"];
 
-  async handle(): Promise<Response> {
+  // Cache GET requests (form display) for 5 minutes
+  static cacheConfig = {
+    ttl: 300,
+    staleWhileRevalidate: 600,
+    skipIf: (req: Request) => req.method !== "GET",
+  };
+
+  override async handle(): Promise<Response> {
     const method = this.request.method;
 
     if (method === "GET") {
@@ -18,7 +25,7 @@ export class Controller extends WebController {
     return this.jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  async get(): Promise<Response> {
+  override async get(): Promise<Response> {
     const data = {};
 
     return await this.renderPage(
@@ -29,7 +36,7 @@ export class Controller extends WebController {
     );
   }
 
-  async post(): Promise<Response> {
+  override async post(): Promise<Response> {
     try {
       // Parse JSON body
       const body = await this.request.json() as { data: string };

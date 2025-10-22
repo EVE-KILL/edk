@@ -31,7 +31,7 @@ export class LRUCacheAdapter implements CacheAdapter {
         return str.length * 2; // Approximate bytes (UTF-16)
       },
       ttl: defaultTTL * 1000, // Convert to milliseconds
-      allowStale: false,
+      allowStale: true, // Allow fetching stale entries (for stale-while-revalidate)
       updateAgeOnGet: true,
       updateAgeOnHas: false,
     });

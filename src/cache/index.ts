@@ -15,6 +15,9 @@ export {
   shouldCacheResponse,
   serializeResponse,
   deserializeResponse,
+  wrapCacheEntry,
+  getCacheEntryState,
+  type CachedResponseEntry,
 } from "./cache-key";
 
 // Check if cache is enabled

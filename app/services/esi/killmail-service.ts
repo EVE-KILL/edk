@@ -2,7 +2,8 @@ import { db } from "../../../src/db";
 import { killmails, victims, attackers, items, prices, types } from "../../../db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { logger } from "../../../src/utils/logger";
-import { BaseESIService, ESINotFoundError } from "../../../src/services/esi/base-service";
+import { EveKillProxyService } from "../../../src/services/esi/eve-kill-proxy-service";
+import { ESINotFoundError } from "../../../src/services/esi/base-service";
 import { priceService } from "../price-service";
 import { queue } from "../../../src/queue/job-dispatcher";
 
@@ -59,9 +60,9 @@ export interface FullKillmail {
 
 /**
  * Killmail Service
- * Fetches and caches killmail data from ESI with normalized storage
+ * Fetches killmail data from EVE-KILL (with ESI fallback) and stores with normalized structure
  */
-export class KillmailService extends BaseESIService {
+export class KillmailService extends EveKillProxyService {
   /**
    * Fetch killmail from database by killmailId and hash
    * Uses JOINs for efficient data retrieval
@@ -293,7 +294,7 @@ export class KillmailService extends BaseESIService {
   }
 
   /**
-   * Get killmail by ID and hash (from database or ESI)
+   * Get killmail by ID and hash (from database or EVE-KILL/ESI)
    */
   async getKillmail(killmailId: number, hash: string): Promise<FullKillmail | null> {
     // Check database first
@@ -302,22 +303,23 @@ export class KillmailService extends BaseESIService {
       return cached;
     }
 
-    // Fetch from ESI
-    logger.info(`Fetching killmail ${killmailId} from ESI`);
+    // Fetch from EVE-KILL/ESI
+    logger.info(`Fetching killmail ${killmailId}`);
     return await this.fetchAndStore(killmailId, hash);
   }
 
   /**
-   * Fetch killmail from ESI and store in database
+   * Fetch killmail from EVE-KILL (with ESI fallback) and store in database
    */
   private async fetchAndStore(
     killmailId: number,
     hash: string
   ): Promise<FullKillmail | null> {
     try {
-      const esiData = await this.fetchFromESI<ESIKillmailResponse>(
-        `/killmails/${killmailId}/${hash}/`,
-        `killmail:${killmailId}:${hash}`
+      const esiData = await this.fetchWithFallback<ESIKillmailResponse>(
+        `/killmail/${killmailId}/esi`,              // EVE-KILL endpoint
+        `/killmails/${killmailId}/${hash}/`,        // ESI endpoint
+        `killmail:${killmailId}:${hash}`            // Cache key
       );
 
       if (!esiData) {

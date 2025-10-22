@@ -30,8 +30,13 @@ export default class RedisQCommand extends BaseCommand {
     received: 0,
     new: 0,
     duplicate: 0,
+    filtered: 0,
     errors: 0,
   };
+  private followedCharacterIds: number[] = [];
+  private followedCorporationIds: number[] = [];
+  private followedAllianceIds: number[] = [];
+  private filteringEnabled: boolean = false;
 
   override async execute(args: string[]): Promise<void> {
     const parsedArgs = this.parseArgs(args);
@@ -42,10 +47,52 @@ export default class RedisQCommand extends BaseCommand {
     // Get queue ID from args or env
     this.queueId = (parsedArgs.options["queue-id"] as string) || process.env.REDISQ_ID || "ekv4-default";
 
+    // Parse followed entities from environment
+    this.followedCharacterIds = process.env.FOLLOWED_CHARACTER_IDS?.trim()
+      ? process.env.FOLLOWED_CHARACTER_IDS.split(",").map((id) =>
+          Number.parseInt(id.trim())
+        )
+      : [];
+
+    this.followedCorporationIds = process.env.FOLLOWED_CORPORATION_IDS?.trim()
+      ? process.env.FOLLOWED_CORPORATION_IDS.split(",").map((id) =>
+          Number.parseInt(id.trim())
+        )
+      : [];
+
+    this.followedAllianceIds = process.env.FOLLOWED_ALLIANCE_IDS?.trim()
+      ? process.env.FOLLOWED_ALLIANCE_IDS.split(",").map((id) =>
+          Number.parseInt(id.trim())
+        )
+      : [];
+
+    this.filteringEnabled =
+      this.followedCharacterIds.length > 0 ||
+      this.followedCorporationIds.length > 0 ||
+      this.followedAllianceIds.length > 0;
+
     this.info(`🚀 Starting RedisQ listener`);
     this.info(`📡 Queue ID: ${this.queueId}`);
     this.info(`🔗 Endpoint: ${this.REDISQ_URL}`);
     this.info("");
+
+    if (this.filteringEnabled) {
+      this.info("🔍 Filtering enabled for followed entities:");
+      if (this.followedCharacterIds.length > 0) {
+        this.info(`   Characters: ${this.followedCharacterIds.join(", ")}`);
+      }
+      if (this.followedCorporationIds.length > 0) {
+        this.info(`   Corporations: ${this.followedCorporationIds.join(", ")}`);
+      }
+      if (this.followedAllianceIds.length > 0) {
+        this.info(`   Alliances: ${this.followedAllianceIds.join(", ")}`);
+      }
+      this.info("");
+    } else {
+      this.info("📡 No filtering - importing all killmails");
+      this.info("");
+    }
+
     this.info("Press Ctrl+C to stop");
     this.info("");
 
@@ -125,6 +172,12 @@ export default class RedisQCommand extends BaseCommand {
       return;
     }
 
+    // Filter killmail if filtering is enabled
+    if (this.filteringEnabled && !this.isRelevantKillmail(pkg)) {
+      this.stats.filtered++;
+      return;
+    }
+
     // Check if killmail already exists
     const existing = await db
       .select({ killmailId: killmails.killmailId })
@@ -148,6 +201,39 @@ export default class RedisQCommand extends BaseCommand {
   }
 
   /**
+   * Check if a killmail involves any followed entities
+   */
+  private isRelevantKillmail(pkg: any): boolean {
+    // Check victim
+    const victim = pkg.killmail?.victim;
+    if (victim) {
+      if (
+        this.followedCharacterIds.includes(victim.character_id) ||
+        this.followedCorporationIds.includes(victim.corporation_id) ||
+        (victim.alliance_id &&
+          this.followedAllianceIds.includes(victim.alliance_id))
+      ) {
+        return true;
+      }
+    }
+
+    // Check attackers
+    const attackers = pkg.killmail?.attackers || [];
+    for (const attacker of attackers) {
+      if (
+        this.followedCharacterIds.includes(attacker.character_id) ||
+        this.followedCorporationIds.includes(attacker.corporation_id) ||
+        (attacker.alliance_id &&
+          this.followedAllianceIds.includes(attacker.alliance_id))
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Print statistics
    */
   private printStats(): void {
@@ -157,6 +243,9 @@ export default class RedisQCommand extends BaseCommand {
       this.info(`   Received: ${this.stats.received}`);
       this.info(`   New: ${this.stats.new}`);
       this.info(`   Duplicate: ${this.stats.duplicate}`);
+      if (this.filteringEnabled) {
+        this.info(`   Filtered: ${this.stats.filtered}`);
+      }
       this.info(`   Errors: ${this.stats.errors}`);
       this.info("");
     }
@@ -176,6 +265,9 @@ export default class RedisQCommand extends BaseCommand {
     this.info(`   Received: ${this.stats.received}`);
     this.info(`   New: ${this.stats.new}`);
     this.info(`   Duplicate: ${this.stats.duplicate}`);
+    if (this.filteringEnabled) {
+      this.info(`   Filtered: ${this.stats.filtered}`);
+    }
     this.info(`   Errors: ${this.stats.errors}`);
 
     process.exit(0);
