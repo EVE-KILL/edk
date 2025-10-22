@@ -245,22 +245,22 @@
                         <div class="nav-dropdown-wrapper">
                             <a href="/entities">Entities</a>
                             <div class="nav-dropdown-content">
-                                {{#if followedEntities.characters.length}}
+                                {{#if followedEntities.characterDetails.length}}
                                 <div class="dropdown-section-header">Characters</div>
-                                {{#each followedEntities.characters}}
-                                <a href="/character/{{this}}">Character ID: {{this}}</a>
+                                {{#each followedEntities.characterDetails}}
+                                <a href="/character/{{this.id}}">{{this.name}}</a>
                                 {{/each}}
                                 {{/if}}
-                                {{#if followedEntities.corporations.length}}
+                                {{#if followedEntities.corporationDetails.length}}
                                 <div class="dropdown-section-header">Corporations</div>
-                                {{#each followedEntities.corporations}}
-                                <a href="/corporation/{{this}}">Corporation ID: {{this}}</a>
+                                {{#each followedEntities.corporationDetails}}
+                                <a href="/corporation/{{this.id}}">{{this.name}} [{{this.ticker}}]</a>
                                 {{/each}}
                                 {{/if}}
-                                {{#if followedEntities.alliances.length}}
+                                {{#if followedEntities.allianceDetails.length}}
                                 <div class="dropdown-section-header">Alliances</div>
-                                {{#each followedEntities.alliances}}
-                                <a href="/alliance/{{this}}">Alliance ID: {{this}}</a>
+                                {{#each followedEntities.allianceDetails}}
+                                <a href="/alliance/{{this.id}}">{{this.name}} &lt;{{this.ticker}}&gt;</a>
                                 {{/each}}
                                 {{/if}}
                             </div>

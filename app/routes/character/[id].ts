@@ -44,6 +44,9 @@ export class Controller extends WebController {
       imageUrl: `https://images.evetech.net/characters/${characterDetail.character.id}/portrait?size=512`,
       currentTab: 'dashboard',
       baseUrl: `/character/${characterId}`,
+      // Entity info for loss highlighting
+      entityType: 'character',
+      entityId: parseInt(characterId, 10),
       // Ship group statistics
       shipGroupStats,
       shipGroupColumns,

@@ -14,15 +14,9 @@
 </div>
 {{/if}}
 
-<!-- Recent Kills -->
+<!-- Recent Activity -->
 <div style="margin-bottom: 20px;">
-    <div class="block-header2">Recent Kills (Last 10)</div>
-    {{> partials/killmail-list killmails=recentKills}}
-</div>
-
-<!-- Recent Losses -->
-<div style="margin-bottom: 20px;">
-    <div class="block-header2">Recent Losses (Last 10)</div>
-    {{> partials/killmail-list killmails=recentLosses}}
+    <div class="block-header2">Recent Activity (Last 20)</div>
+    {{> partials/killmail-list killmails=recentKillmails}}
 </div>
 

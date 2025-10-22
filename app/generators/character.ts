@@ -31,8 +31,7 @@ export interface CharacterStats {
     iskLost: string;
     iskEfficiency: number;
   };
-  recentKills: KillmailDisplay[];
-  recentLosses: KillmailDisplay[];
+  recentKillmails: KillmailDisplay[];
 }
 
 export async function generateCharacterDetail(
@@ -133,11 +132,8 @@ export async function generateCharacterDetail(
       ? (iskDestroyedNum / (iskDestroyedNum + iskLostNum)) * 100
       : 0;
 
-    // Use the generalized killlist generator for recent kills and losses
-    const [recentKills, recentLosses] = await Promise.all([
-      generateKilllist(10, { characterIds: [characterId], killsOnly: true }),
-      generateKilllist(10, { characterIds: [characterId], lossesOnly: true }),
-    ]);
+    // Use the generalized killlist generator for recent activity (both kills and losses)
+    const recentKillmails = await generateKilllist(20, { characterIds: [characterId] });
 
     return {
       character,
@@ -151,8 +147,7 @@ export async function generateCharacterDetail(
         iskLost,
         iskEfficiency,
       },
-      recentKills,
-      recentLosses,
+      recentKillmails,
     };
   } catch (error) {
     console.error("[Character Generator] Error:", error);

@@ -28,8 +28,7 @@ export interface CorporationStats {
     iskLost: string;
     iskEfficiency: number;
   };
-  recentKills: KillmailDisplay[];
-  recentLosses: KillmailDisplay[];
+  recentKillmails: KillmailDisplay[];
 }
 
 export async function generateCorporationDetail(
@@ -125,11 +124,8 @@ export async function generateCorporationDetail(
       ? (iskDestroyedNum / (iskDestroyedNum + iskLostNum)) * 100
       : 0;
 
-    // Use the generalized killlist generator for recent kills and losses
-    const [recentKills, recentLosses] = await Promise.all([
-      generateKilllist(10, { corporationIds: [corporationId], killsOnly: true }),
-      generateKilllist(10, { corporationIds: [corporationId], lossesOnly: true }),
-    ]);
+    // Use the generalized killlist generator for recent activity (both kills and losses)
+    const recentKillmails = await generateKilllist(20, { corporationIds: [corporationId] });
 
     return {
       corporation,
@@ -143,8 +139,7 @@ export async function generateCorporationDetail(
         iskLost,
         iskEfficiency,
       },
-      recentKills,
-      recentLosses,
+      recentKillmails,
     };
   } catch (error) {
     console.error("[Corporation Generator] Error:", error);

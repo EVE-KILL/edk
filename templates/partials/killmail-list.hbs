@@ -13,7 +13,7 @@
     </thead>
     <tbody>
     {{#each killmails}}
-    <tr onclick="window.location.href='/killmail/{{killmail_id}}';">
+    <tr onclick="window.location.href='/killmail/{{killmail_id}}';" class="{{#if (or (isFollowedLoss victim ../followedEntities) (isEntityLoss victim ../entityType ../entityId))}}kb-table-row--followed-loss{{/if}}">
         <!-- Ship Image -->
         <td class="kb-table-imgcell">
             <img src="https://images.evetech.net/types/{{victim.ship.type_id}}/icon?size=128"

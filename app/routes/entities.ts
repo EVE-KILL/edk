@@ -116,22 +116,8 @@ export class Controller extends WebController {
       shipGroupStats.slice(itemsPerColumn * 2),
     ].filter((col) => col.length > 0);
 
-    // Fetch recent kills (last 10)
-    const recentKills = await generateKilllist(10, {
-      killsOnly: true,
-      characterIds:
-        FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
-      corporationIds:
-        FOLLOWED_CORPORATION_IDS.length > 0
-          ? FOLLOWED_CORPORATION_IDS
-          : undefined,
-      allianceIds:
-        FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
-    });
-
-    // Fetch recent losses (last 10)
-    const recentLosses = await generateKilllist(10, {
-      lossesOnly: true,
+    // Fetch recent activity (last 20, both kills and losses)
+    const recentKillmails = await generateKilllist(20, {
       characterIds:
         FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
       corporationIds:
@@ -164,8 +150,7 @@ export class Controller extends WebController {
 
     const data = {
       hasEntities: true,
-      recentKills,
-      recentLosses,
+      recentKillmails,
       characterIds: FOLLOWED_CHARACTER_IDS,
       corporationIds: FOLLOWED_CORPORATION_IDS,
       allianceIds: FOLLOWED_ALLIANCE_IDS,

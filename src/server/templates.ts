@@ -256,6 +256,13 @@ export function registerHelpers() {
     return values.every(v => v);
   });
 
+  // Logical OR helper
+  Handlebars.registerHelper("or", function(...args: any[]) {
+    // Remove the Handlebars options object from the end
+    const values = args.slice(0, -1);
+    return values.some(v => v);
+  });
+
   // Check if number is even
   Handlebars.registerHelper("isEven", function(num: number) {
     return num % 2 === 0;
@@ -344,6 +351,44 @@ export function registerHelpers() {
   Handlebars.registerHelper("concat", function(...args: any[]) {
     // Remove the Handlebars options object from the end
     return args.slice(0, -1).join("");
+  });
+
+  // Check if killmail is a loss for followed entities
+  Handlebars.registerHelper("isFollowedLoss", function(victim: any, followedEntities: any) {
+    if (!followedEntities || !victim) return false;
+
+    const { characterIds = [], corporationIds = [], allianceIds = [] } = followedEntities;
+
+    // Check if victim matches any followed entity
+    if (characterIds.length > 0 && victim.character?.id && characterIds.includes(victim.character.id)) {
+      return true;
+    }
+    if (corporationIds.length > 0 && victim.corporation?.id && corporationIds.includes(victim.corporation.id)) {
+      return true;
+    }
+    if (allianceIds.length > 0 && victim.alliance?.id && allianceIds.includes(victim.alliance.id)) {
+      return true;
+    }
+
+    return false;
+  });
+
+  // Check if killmail is a loss for a specific entity (single ID check)
+  Handlebars.registerHelper("isEntityLoss", function(victim: any, entityType: string, entityId: number) {
+    if (!victim || !entityType || !entityId) return false;
+
+    // Check based on entity type
+    if (entityType === 'character' && victim.character?.id === entityId) {
+      return true;
+    }
+    if (entityType === 'corporation' && victim.corporation?.id === entityId) {
+      return true;
+    }
+    if (entityType === 'alliance' && victim.alliance?.id === entityId) {
+      return true;
+    }
+
+    return false;
   });
 }
 

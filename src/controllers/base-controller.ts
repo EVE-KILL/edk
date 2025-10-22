@@ -5,6 +5,8 @@ import { db, setCurrentPerformanceTracker } from "../db";
 import { BaseModel } from "../../app/models/base-model";
 import { KillmailModel, Killmails } from "../../app/models/killmail";
 import { PerformanceTracker, formatStats } from "../utils/performance";
+import { characters, corporations, alliances } from "../../db/schema";
+import { inArray } from "drizzle-orm";
 
 /**
  * Base Controller class that all route controllers should extend
@@ -212,17 +214,49 @@ export abstract class BaseController {
    */
   protected async getCommonTemplateData(): Promise<TemplateData> {
     // Parse followed entities from environment variables
-    const followedCharacters = process.env.FOLLOWED_CHARACTER_IDS
+    // Handle both undefined and empty string cases
+    const followedCharacters = process.env.FOLLOWED_CHARACTER_IDS?.trim()
       ? process.env.FOLLOWED_CHARACTER_IDS.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
       : [];
 
-    const followedCorporations = process.env.FOLLOWED_CORPORATION_IDS
+    const followedCorporations = process.env.FOLLOWED_CORPORATION_IDS?.trim()
       ? process.env.FOLLOWED_CORPORATION_IDS.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
       : [];
 
-    const followedAlliances = process.env.FOLLOWED_ALLIANCE_IDS
+    const followedAlliances = process.env.FOLLOWED_ALLIANCE_IDS?.trim()
       ? process.env.FOLLOWED_ALLIANCE_IDS.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
       : [];
+
+    const hasEntities = followedCharacters.length > 0 || followedCorporations.length > 0 || followedAlliances.length > 0;
+
+    // Fetch entity details (names and tickers) for navigation
+    let characterDetails: Array<{ id: number; name: string }> = [];
+    let corporationDetails: Array<{ id: number; name: string; ticker: string }> = [];
+    let allianceDetails: Array<{ id: number; name: string; ticker: string }> = [];
+
+    if (hasEntities) {
+      const [chars, corps, allys] = await Promise.all([
+        followedCharacters.length > 0
+          ? db.select({ id: characters.characterId, name: characters.name })
+              .from(characters)
+              .where(inArray(characters.characterId, followedCharacters))
+          : [],
+        followedCorporations.length > 0
+          ? db.select({ id: corporations.corporationId, name: corporations.name, ticker: corporations.ticker })
+              .from(corporations)
+              .where(inArray(corporations.corporationId, followedCorporations))
+          : [],
+        followedAlliances.length > 0
+          ? db.select({ id: alliances.allianceId, name: alliances.name, ticker: alliances.ticker })
+              .from(alliances)
+              .where(inArray(alliances.allianceId, followedAlliances))
+          : [],
+      ]);
+
+      characterDetails = chars;
+      corporationDetails = corps;
+      allianceDetails = allys;
+    }
 
     return {
       // Current URL for navigation highlighting
@@ -247,10 +281,19 @@ export abstract class BaseController {
 
       // Followed entities for Statistics dropdown
       followedEntities: {
+        // Arrays of IDs (for isFollowedLoss helper)
+        characterIds: followedCharacters,
+        corporationIds: followedCorporations,
+        allianceIds: followedAlliances,
+        // Legacy aliases (same as above)
         characters: followedCharacters,
         corporations: followedCorporations,
         alliances: followedAlliances,
-        hasEntities: followedCharacters.length > 0 || followedCorporations.length > 0 || followedAlliances.length > 0
+        // Entity details with names and tickers (for navigation dropdown)
+        characterDetails,
+        corporationDetails,
+        allianceDetails,
+        hasEntities
       },
 
       // User session (would come from auth system)

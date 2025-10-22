@@ -45,6 +45,9 @@ export class Controller extends WebController {
       imageUrl: `https://images.evetech.net/corporations/${corporationDetail.corporation.id}/logo?size=512`,
       currentTab: "dashboard",
       baseUrl: `/corporation/${corporationId}`,
+      // Entity info for loss highlighting
+      entityType: 'corporation',
+      entityId: parseInt(corporationId, 10),
       // Ship group statistics
       shipGroupStats,
       shipGroupColumns,

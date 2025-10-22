@@ -46,6 +46,8 @@ export class Controller extends WebController {
       imageUrl: `https://images.evetech.net/alliances/${allianceDetail.alliance.id}/logo?size=512`,
       currentTab: "dashboard",
       baseUrl: `/alliance/${allianceId}`,
+      // Entity info for loss highlighting
+      entityId: parseInt(allianceId, 10),
       // Ship group statistics
       shipGroupStats,
       shipGroupColumns,

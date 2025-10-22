@@ -153,7 +153,7 @@ export async function generateKilllist(
   if (filters?.killsOnly && (filters?.characterIds || filters?.corporationIds || filters?.allianceIds)) {
     // Get killmail IDs where entity is an attacker (kills)
     const attackerConditions: any[] = [];
-    
+
     if (filters.characterIds && filters.characterIds.length > 0) {
       attackerConditions.push(
         sql`${attackers.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
@@ -175,9 +175,9 @@ export async function generateKilllist(
         .selectDistinct({ killmailId: attackers.killmailId })
         .from(attackers)
         .where(attackerConditions.length === 1 ? attackerConditions[0] : or(...attackerConditions));
-      
+
       const killmailIds = attackerKills.map(k => k.killmailId);
-      
+
       if (killmailIds.length > 0) {
         whereConditions.push(
           sql`${killmails.id} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`
@@ -190,7 +190,7 @@ export async function generateKilllist(
   } else if (filters?.lossesOnly && (filters?.characterIds || filters?.corporationIds || filters?.allianceIds)) {
     // Get killmail IDs where entity is a victim (losses)
     const victimConditions: any[] = [];
-    
+
     if (filters.characterIds && filters.characterIds.length > 0) {
       victimConditions.push(
         sql`${victims.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
@@ -212,9 +212,9 @@ export async function generateKilllist(
         .selectDistinct({ killmailId: victims.killmailId })
         .from(victims)
         .where(victimConditions.length === 1 ? victimConditions[0] : or(...victimConditions));
-      
+
       const killmailIds = victimLosses.map(v => v.killmailId);
-      
+
       if (killmailIds.length > 0) {
         whereConditions.push(
           sql`${killmails.id} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`

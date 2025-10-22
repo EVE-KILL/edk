@@ -83,6 +83,9 @@ export class Controller extends WebController {
         killmails,
         currentTab: "losses",
         baseUrl: `/alliance/${allianceId}`,
+        // Entity info for loss highlighting
+        entityType: 'alliance',
+        entityId: parseInt(allianceId, 10),
         // Ship group statistics
         shipGroupStats,
         shipGroupColumns,

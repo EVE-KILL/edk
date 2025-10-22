@@ -320,6 +320,14 @@ footer p {
     background-color: var(--color-loss-bg);
 }
 
+.kb-table-row--followed-loss {
+    background-color: var(--color-loss-bg) !important;
+}
+
+.kb-table-row--followed-loss:hover {
+    background-color: #4a2a2a !important;
+}
+
 .kb-table-imgcell {
     padding: 4px;
     text-align: center;

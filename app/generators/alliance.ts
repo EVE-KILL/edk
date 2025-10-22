@@ -24,8 +24,7 @@ export interface AllianceStats {
     iskLost: string;
     iskEfficiency: number;
   };
-  recentKills: KillmailDisplay[];
-  recentLosses: KillmailDisplay[];
+  recentKillmails: KillmailDisplay[];
 }
 
 export async function generateAllianceDetail(
@@ -97,11 +96,8 @@ export async function generateAllianceDetail(
       ? (iskDestroyedNum / (iskDestroyedNum + iskLostNum)) * 100
       : 0;
 
-    // Use the generalized killlist generator for recent kills and losses
-    const [recentKills, recentLosses] = await Promise.all([
-      generateKilllist(10, { allianceIds: [allianceId], killsOnly: true }),
-      generateKilllist(10, { allianceIds: [allianceId], lossesOnly: true }),
-    ]);
+    // Use the generalized killlist generator for recent activity (both kills and losses)
+    const recentKillmails = await generateKilllist(20, { allianceIds: [allianceId] });
 
     return {
       alliance,
@@ -115,8 +111,7 @@ export async function generateAllianceDetail(
         iskLost,
         iskEfficiency,
       },
-      recentKills,
-      recentLosses,
+      recentKillmails,
     };
   } catch (error) {
     console.error("[Alliance Generator] Error:", error);
