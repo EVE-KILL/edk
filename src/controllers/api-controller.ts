@@ -3,64 +3,41 @@ import { getDefaultApiHeaders } from "../utils/headers";
 
 /**
  * API Controller for JSON endpoints
- * All API controllers should extend this class and implement method-specific handlers
- * like get(), post(), put(), delete(), patch()
  */
 export abstract class ApiController extends BaseController {
   constructor(request: Request) {
     super(request);
     this.setupApiHeaders();
-
-    // Set default optimal headers for API responses
-    // Controllers can override these by calling setHeaderOptions()
     this.setHeaderOptions(getDefaultApiHeaders());
   }
 
-  /**
-   * Set up CORS and API-specific headers
-   */
   protected setupApiHeaders(): void {
-    // CORS headers
     this.setHeader("Access-Control-Allow-Origin", "*");
     this.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
     this.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    this.setHeader("Access-Control-Max-Age", "86400"); // 24 hours
+    this.setHeader("Access-Control-Max-Age", "86400");
   }
 
-  /**
-   * Method-specific handlers - implement these in your controller
-   */
   async get?(): Promise<Response>;
   async post?(): Promise<Response>;
   async put?(): Promise<Response>;
   async delete?(): Promise<Response>;
   async patch?(): Promise<Response>;
 
-  /**
-   * Main handler that routes to method-specific functions
-   */
   async handle(): Promise<Response> {
     const method = this.getMethod().toLowerCase() as "get" | "post" | "put" | "delete" | "patch";
-
-    // Try to call the method-specific handler with proper typing
     const handler = this[method];
     if (typeof handler === 'function') {
       return await handler.call(this);
     }
-
     return this.error("Method not allowed", 405);
   }
-  /**
-   * Return JSON data with optional status code
-   */
+
   protected json(data: any, status: number = 200): Response {
     this.setStatus(status);
     return this.jsonResponse(data, status);
   }
 
-  /**
-   * Return success response with data
-   */
   protected success(data: any = null, message: string = "Success"): Response {
     return this.json({
       success: true,
@@ -69,9 +46,6 @@ export abstract class ApiController extends BaseController {
     });
   }
 
-  /**
-   * Return error response
-   */
   protected error(message: string, status: number = 400, errors: any = null): Response {
     const errorData: any = {
       success: false,

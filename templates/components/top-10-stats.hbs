@@ -1,0 +1,230 @@
+{{!--
+  Top 10 Statistics Component
+  Displays top 10 characters, corporations, alliances, systems, and regions
+
+  Usage:
+  {{> components/top-10-stats top10Stats=top10Stats}}
+
+  Props:
+  - top10Stats: object with arrays of characters, corporations, alliances, systems, regions
+--}}
+{{#if top10Stats}}
+<div class="top-10-container">
+  <!-- Characters Top 10 -->
+  {{#if top10Stats.characters.length}}
+  <div class="top-10-box">
+    <div class="top-10-header">Top Characters</div>
+    <table class="top-10-table">
+      <tbody>
+        {{#each top10Stats.characters}}
+        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}">
+          <td class="top-10-rank">{{add @index 1}}</td>
+          {{#if this.imageUrl}}
+          <td class="top-10-image">
+            <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
+          </td>
+          {{/if}}
+          <td class="top-10-name">{{this.name}}</td>
+          <td class="top-10-kills">{{this.kills}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
+
+  <!-- Corporations Top 10 -->
+  {{#if top10Stats.corporations.length}}
+  <div class="top-10-box">
+    <div class="top-10-header">Top Corporations</div>
+    <table class="top-10-table">
+      <tbody>
+        {{#each top10Stats.corporations}}
+        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}">
+          <td class="top-10-rank">{{add @index 1}}</td>
+          {{#if this.imageUrl}}
+          <td class="top-10-image">
+            <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
+          </td>
+          {{/if}}
+          <td class="top-10-name">{{this.name}}</td>
+          <td class="top-10-kills">{{this.kills}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
+
+  <!-- Alliances Top 10 -->
+  {{#if top10Stats.alliances.length}}
+  <div class="top-10-box">
+    <div class="top-10-header">Top Alliances</div>
+    <table class="top-10-table">
+      <tbody>
+        {{#each top10Stats.alliances}}
+        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}">
+          <td class="top-10-rank">{{add @index 1}}</td>
+          {{#if this.imageUrl}}
+          <td class="top-10-image">
+            <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
+          </td>
+          {{/if}}
+          <td class="top-10-name">{{this.name}}</td>
+          <td class="top-10-kills">{{this.kills}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
+
+  <!-- Systems Top 10 -->
+  {{#if top10Stats.systems.length}}
+  <div class="top-10-box">
+    <div class="top-10-header">Top Systems</div>
+    <table class="top-10-table">
+      <tbody>
+        {{#each top10Stats.systems}}
+        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}">
+          <td class="top-10-rank">{{add @index 1}}</td>
+          <td class="top-10-name" style="padding-left: 8px;">{{this.name}}</td>
+          <td class="top-10-kills">{{this.kills}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
+
+  <!-- Regions Top 10 -->
+  {{#if top10Stats.regions.length}}
+  <div class="top-10-box">
+    <div class="top-10-header">Top Regions</div>
+    <table class="top-10-table">
+      <tbody>
+        {{#each top10Stats.regions}}
+        <tr class="top-10-row {{#if (eq @index 0)}}top-10-row-first{{/if}}">
+          <td class="top-10-rank">{{add @index 1}}</td>
+          <td class="top-10-name" style="padding-left: 8px;">{{this.name}}</td>
+          <td class="top-10-kills">{{this.kills}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
+</div>
+
+<style>
+.top-10-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+}
+
+.top-10-box {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.top-10-header {
+  background: #2a2a2a;
+  padding: 10px 12px;
+  font-weight: bold;
+  font-size: 12px;
+  color: #fff;
+  border-bottom: 1px solid #333;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.top-10-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.top-10-row {
+  display: table-row;
+  border-bottom: 1px solid #333;
+  font-size: 11px;
+  height: 32px;
+  line-height: 32px;
+}
+
+.top-10-row:last-child {
+  border-bottom: none;
+}
+
+.top-10-row-first {
+  background: #2a2a2a;
+}
+
+.top-10-row td {
+  padding: 0 8px;
+  vertical-align: middle;
+}
+
+.top-10-rank {
+  color: #888;
+  text-align: center;
+  width: 20px;
+  font-weight: bold;
+}
+
+.top-10-image {
+  width: 32px;
+  padding: 0 4px;
+  text-align: center;
+}
+
+.top-10-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.top-10-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.top-10-name:hover {
+  color: #fff;
+}
+
+.top-10-kills {
+  text-align: right;
+  color: #10b981;
+  font-weight: bold;
+  width: 50px;
+  padding-right: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive: stack on smaller screens */
+@media (max-width: 1400px) {
+  .top-10-container {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-10-container {
+    width: 100%;
+  }
+}
+</style>
+{{/if}}

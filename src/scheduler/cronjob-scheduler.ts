@@ -10,12 +10,6 @@ interface LoadedCronjob {
   schedule: string;
 }
 
-/**
- * Cronjob Scheduler - Manages scheduled task execution
- *
- * Discovers cronjob implementations from /app/cronjobs directory
- * and executes them on their specified schedules
- */
 export class CronjobScheduler {
   private cronjobs: LoadedCronjob[] = [];
   private running = false;
@@ -31,47 +25,27 @@ export class CronjobScheduler {
 
     try {
       const files = await fs.readdir(cronjobsDir);
-      const tsFiles = files.filter(
-        (f) => extname(f) === ".ts" || extname(f) === ".js"
-      );
-
-      logger.info(`📂 Discovering cronjobs in ${cronjobsDir}...`);
+      const tsFiles = files.filter((f) => extname(f) === ".ts" || extname(f) === ".js");
 
       for (const file of tsFiles) {
         try {
           const filePath = resolve(cronjobsDir, file);
-          // Dynamic import with cache busting
           const imported = await import(`file://${filePath}?t=${Date.now()}`);
-
-          // Look for default export or named export
           const CronjobClass = imported.default || Object.values(imported)[0];
 
-          if (!CronjobClass) {
-            logger.warn(`  ⚠️  ${file}: No default export found`);
-            continue;
-          }
+          if (!CronjobClass) continue;
 
-          // Instantiate the cronjob
           const instance = new CronjobClass();
 
-          if (!(instance instanceof BaseCronjob)) {
-            logger.warn(
-              `  ⚠️  ${file}: Does not extend BaseCronjob, skipping`
-            );
-            continue;
-          }
+          if (!(instance instanceof BaseCronjob)) continue;
 
           this.cronjobs.push({
             cronjob: instance,
             name: instance.metadata.name,
             schedule: instance.metadata.schedule,
           });
-
-          logger.success(`  ✓ ${file}: ${instance.metadata.description}`);
         } catch (error) {
-          logger.error(
-            `  ✗ ${file}: ${error instanceof Error ? error.message : "Unknown error"}`
-          );
+          logger.error(`Failed to load cronjob ${file}:`, error);
         }
       }
 
@@ -80,19 +54,16 @@ export class CronjobScheduler {
         return;
       }
 
-      logger.success(`✅ Discovered ${this.cronjobs.length} cronjob(s)`);
+      logger.success(`Discovered ${this.cronjobs.length} cronjob(s)`);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        logger.warn(`Cronjobs directory does not exist: ${cronjobsDir}`);
+        logger.warn(`Cronjobs directory not found: ${cronjobsDir}`);
       } else {
         throw error;
       }
     }
   }
 
-  /**
-   * Start the scheduler
-   */
   start() {
     if (this.running) {
       logger.warn("Cronjob scheduler already running");
@@ -105,25 +76,14 @@ export class CronjobScheduler {
     }
 
     this.running = true;
-
-    // Initial check
     this.checkAndExecute();
 
-    // Poll every 60 seconds to check for tasks at minute boundaries
     this.pollingInterval = setInterval(
       () => this.checkAndExecute(),
       this.pollIntervalMs
     );
 
-    logger.success(
-      `🕐 Cronjob scheduler started with ${this.cronjobs.length} cronjob(s)`
-    );
-
-    // Log schedule
-    for (const job of this.cronjobs) {
-      logger.info(`  ├─ ${job.name}: ${job.schedule}`);
-    }
-    logger.info(`  └─ (running ${this.cronjobs.length} cronjob(s))`);
+    logger.success(`Cronjob scheduler started (${this.cronjobs.length} cronjob(s))`);
   }
 
   /**
@@ -134,15 +94,12 @@ export class CronjobScheduler {
       return;
     }
 
-    logger.info("🛑 Stopping cronjob scheduler...");
     this.running = false;
 
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
     }
-
-    logger.success("✅ Cronjob scheduler stopped");
   }
 
   /**
@@ -166,22 +123,15 @@ export class CronjobScheduler {
         const parser = new CronParser(job.schedule);
 
         if (parser.matches(now)) {
-          logger.info(`🚀 Running cronjob: ${job.name}`);
-
           const startTime = performance.now();
-          const timeout = job.cronjob.metadata.timeout || 300000; // Default 5 minutes
+          const timeout = job.cronjob.metadata.timeout || 300000;
 
           try {
             const result = await Promise.race([
               job.cronjob.execute(),
               new Promise<never>((_, reject) =>
                 setTimeout(
-                  () =>
-                    reject(
-                      new Error(
-                        `Cronjob timeout after ${timeout}ms`
-                      )
-                    ),
+                  () => reject(new Error(`Cronjob timeout after ${timeout}ms`)),
                   timeout
                 )
               ),
@@ -190,25 +140,17 @@ export class CronjobScheduler {
             const duration = Math.round(performance.now() - startTime);
 
             if (result.success) {
-              logger.success(
-                `✅ ${job.name} completed in ${duration}ms: ${result.message || ""}`
-              );
+              logger.success(`${job.name} completed in ${duration}ms`);
             } else {
-              logger.error(
-                `❌ ${job.name} failed: ${result.error || result.message || "Unknown error"}`
-              );
+              logger.error(`${job.name} failed: ${result.error || ""}`);
             }
           } catch (error) {
             const duration = Math.round(performance.now() - startTime);
-            logger.error(
-              `❌ ${job.name} error after ${duration}ms: ${error instanceof Error ? error.message : "Unknown error"}`
-            );
+            logger.error(`${job.name} error: ${error instanceof Error ? error.message : "Unknown"}`);
           }
         }
       } catch (error) {
-        logger.error(
-          `❌ Error scheduling ${job.name}: ${error instanceof Error ? error.message : "Unknown error"}`
-        );
+        logger.error(`Error scheduling ${job.name}: ${error instanceof Error ? error.message : "Unknown"}`);
       }
     }
   }

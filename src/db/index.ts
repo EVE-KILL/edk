@@ -73,58 +73,27 @@ class DatabaseConnection {
    */
   private static connect(): void {
     try {
-      // Create data directory if it doesn't exist
       const dataDir = DATABASE_PATH.substring(0, DATABASE_PATH.lastIndexOf("/"));
       if (dataDir && !Bun.file(dataDir).exists()) {
         require("fs").mkdirSync(dataDir, { recursive: true });
       }
 
-      // Create SQLite connection
       const rawSqlite = new Database(DATABASE_PATH, { create: true });
 
-      // ==== WAL Mode Configuration ====
-      // Enable WAL mode for better concurrency (multiple readers + 1 writer)
+      // Performance configuration
       rawSqlite.run("PRAGMA journal_mode = WAL;");
-
-      // WAL auto-checkpoint: Checkpoint after 1000 pages (~4MB with 4KB pages)
-      // This prevents WAL file from growing too large
       rawSqlite.run("PRAGMA wal_autocheckpoint = 1000;");
-
-      // ==== Safety & Integrity ====
-      // Enable foreign keys (important for data integrity)
       rawSqlite.run("PRAGMA foreign_keys = ON;");
-
-      // NORMAL synchronous mode: Faster than FULL, still safe with WAL
-      // WAL mode ensures durability even with NORMAL
       rawSqlite.run("PRAGMA synchronous = NORMAL;");
-
-      // ==== Performance Optimizations ====
-      // Busy timeout: Wait up to 5 seconds for locks before failing
-      // Critical for concurrent access from web server + queue workers
       rawSqlite.exec("PRAGMA busy_timeout = 5000;");
-
-      // Cache size: 64MB cache for frequently accessed pages
-      // Negative value = kibibytes, positive = pages
       rawSqlite.exec("PRAGMA cache_size = -64000;");
-
-      // Temp store: Use memory for temporary tables/indexes (faster)
       rawSqlite.exec("PRAGMA temp_store = MEMORY;");
-
-      // Memory-mapped I/O: 256MB for faster reads of frequently accessed data
-      // For a 666MB database, this covers ~40% in fast memory access
       rawSqlite.exec("PRAGMA mmap_size = 268435456;");
-
-      // Page size is 4096 bytes (default, already optimal for most workloads)
-      // Larger page sizes (8192, 16384) can help with large BLOBs but hurt small queries
-
-      // ==== Query Optimization ====
-      // Analysis limit: Scan more rows when running ANALYZE (better statistics)
       rawSqlite.exec("PRAGMA analysis_limit = 1000;");
 
       logger.database(`Connected: ${DATABASE_PATH}`);
       logger.database("Performance optimizations enabled: WAL, 64MB cache, 256MB mmap");
 
-      // Store raw SQLite for maintenance operations
       this.rawSqlite = rawSqlite;
 
       // Wrap SQLite connection with performance tracking

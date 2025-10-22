@@ -63,22 +63,13 @@ async function loadModules() {
  * EVE Kill v4 - Bun server with automatic route injection
  */
 async function startServer() {
-  // Load all modules now that VERBOSE_MODE is set
   await loadModules();
 
-  // Register Handlebars helpers and partials
   registerHelpers();
   await registerPartials();
 
-  logger.info("🔍 Discovering routes...");
   const routes = await discoverRoutes();
 
-  logger.info("📋 Discovered routes:");
-  routes.forEach((route: any) => {
-    logger.info(`  ${route.methods.join(", ").padEnd(12)} ${route.path}`);
-  });
-
-  // Build optimized route index
   logger.info("⚡ Building route index...");
   const routeIndex = buildRouteIndex(routes);
 
@@ -91,27 +82,17 @@ async function startServer() {
   });
 
   logger.server(`Server running on http://localhost:${port}`);
-  logger.info(`📦 Environment: ${isDevelopment ? "development" : "production"}`);
-  logger.info("💡 Run background workers: bun cli queue:work");
-  logger.info("💡 Run scheduled tasks: bun cli cronjobs:run");
+  logger.info(`Environment: ${isDevelopment ? "development" : "production"}`);
 
-  // Hot reload for templates in development
   if (isDevelopment) {
     const watcher = watch("./templates", {
       recursive: true,
       persistent: true,
     });
 
-    logger.info("🔥 Hot reload enabled for templates");
-
     (async () => {
       for await (const event of watcher) {
-        logger.info(`🔄 Template changed: ${event.filename}, reloading...`);
-
-        // Clear the template cache
         clearTemplateCache();
-
-        // Re-register partials to pick up changes
         await registerPartials();
 
         logger.success("✅ Templates reloaded");

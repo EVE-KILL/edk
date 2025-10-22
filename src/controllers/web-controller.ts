@@ -3,52 +3,29 @@ import type { TemplateData } from "../server/templates";
 import { getDefaultHtmlHeaders } from "../utils/headers";
 
 /**
- * Web Controller for HTML pages that render templates
- * All web controllers should extend this class
- *
- * You can either:
- * 1. Implement a single handle() method for simple controllers
- * 2. Implement method-specific functions like get(), post(), etc.
+ * Web Controller for rendering HTML pages
  */
 export abstract class WebController extends BaseController {
   constructor(request: Request) {
     super(request);
-
-    // Set default optimal headers for HTML pages
-    // Controllers can override these by calling setHeaderOptions()
     this.setHeaderOptions(getDefaultHtmlHeaders());
   }
 
-  /**
-   * Optional method-specific handlers
-   */
   async get?(): Promise<Response>;
   async post?(): Promise<Response>;
   async put?(): Promise<Response>;
   async delete?(): Promise<Response>;
   async patch?(): Promise<Response>;
 
-  /**
-   * Default handle method - can be overridden or will route to method-specific handlers
-   */
   async handle(): Promise<Response> {
     const method = this.getMethod().toLowerCase() as "get" | "post" | "put" | "delete" | "patch";
-
-    // Try to call the method-specific handler first with proper typing
     const handler = this[method];
     if (typeof handler === 'function') {
       return await handler.call(this);
     }
-
-    // If no method-specific handler, show 404
     return this.notFound("Page not found");
   }
-  /**
-   * Render a template with data
-   * @param template - Template name (e.g., "pages/home")
-   * @param data - Data to pass to the template
-   * @param layout - Layout template (defaults to "main")
-   */
+
   protected async render(
     template: string,
     data: TemplateData = {},
@@ -57,9 +34,6 @@ export abstract class WebController extends BaseController {
     return await this.htmlResponse(template, data, layout);
   }
 
-  /**
-   * Render with a custom page title and meta description
-   */
   protected async renderPage(
     template: string,
     title: string,

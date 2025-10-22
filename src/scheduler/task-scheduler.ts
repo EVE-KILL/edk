@@ -6,18 +6,6 @@ import { TaskDiscovery } from "./task-discovery";
 import { CronParser } from "./cron-parser";
 import { logger } from "../utils/logger";
 
-/**
- * Task Scheduler - Manages scheduled task execution
- *
- * Responsibilities:
- * - Load task definitions from database
- * - Discover task implementations from /app/tasks
- * - Evaluate cron schedules
- * - Execute tasks at scheduled times
- * - Track task execution history
- * - Handle manual task execution
- * - Graceful shutdown
- */
 export class TaskScheduler {
   private taskInstances = new Map<string, BaseTask>();
   private taskClasses = new Map<string, typeof BaseTask>();
@@ -33,11 +21,8 @@ export class TaskScheduler {
 
   /**
    * Initialize the scheduler
-   * Loads task implementations from /app/tasks
    */
   async initialize() {
-    logger.loading("Initializing task scheduler...");
-
     // Discover task implementations
     this.taskClasses = await TaskDiscovery.discoverTasks();
 
@@ -45,8 +30,6 @@ export class TaskScheduler {
       logger.warn("No tasks discovered");
       return;
     }
-
-    logger.success(`Loaded ${this.taskClasses.size} task implementation(s)`);
   }
 
   /**
@@ -54,7 +37,6 @@ export class TaskScheduler {
    */
   async start() {
     if (this.running) {
-      logger.warn("Task scheduler already running");
       return;
     }
 
@@ -73,8 +55,6 @@ export class TaskScheduler {
       () => this.pollAndExecute(),
       this.pollIntervalMs
     );
-
-    logger.success(`Task scheduler started with ${this.taskInstances.size} task(s)`);
   }
 
   /**
@@ -85,7 +65,6 @@ export class TaskScheduler {
       return;
     }
 
-    logger.info("🛑 Stopping task scheduler...");
     this.running = false;
 
     // Stop polling
@@ -96,8 +75,6 @@ export class TaskScheduler {
 
     // Wait for active executions to finish
     await this.waitForActiveExecutions(timeout);
-
-    logger.success("✅ Task scheduler stopped");
   }
 
   /**
@@ -113,8 +90,6 @@ export class TaskScheduler {
       for (const taskRow of taskRows) {
         await this.instantiateTask(taskRow);
       }
-
-      logger.success(`Initialized ${this.taskInstances.size} enabled task(s)`);
     } catch (error) {
       logger.error(
         `Failed to load tasks from database: ${error instanceof Error ? error.message : String(error)}`
@@ -146,7 +121,6 @@ export class TaskScheduler {
       }
 
       this.taskInstances.set(taskRow.name, instance);
-      logger.info(`Initialized task: ${taskRow.name}`);
     } catch (error) {
       logger.error(
         `Failed to instantiate task ${taskRow.name}: ${error instanceof Error ? error.message : String(error)}`
@@ -220,8 +194,6 @@ export class TaskScheduler {
     let result;
 
     try {
-      logger.info(`Executing task: ${taskRow.name}`);
-
       // Call before hook
       await taskInstance.beforeExecute();
 

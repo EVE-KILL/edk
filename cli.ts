@@ -92,33 +92,25 @@ function showHelp(commands: Map<string, any>): void {
  * Main CLI execution
  */
 async function main() {
-  // Extract verbose flag from the beginning of args
   let verboseEnabled = false;
   const allArgs = process.argv.slice(2);
   let argsToProcess = allArgs;
 
-  // Check if -v or --verbose is in the arguments
   if (allArgs.includes("-v") || allArgs.includes("--verbose")) {
     verboseEnabled = true;
-    // Filter out the verbose flag from args to process
     argsToProcess = allArgs.filter((arg) => arg !== "-v" && arg !== "--verbose");
   }
 
-  // Set global verbose mode
   globalThis.VERBOSE_MODE = verboseEnabled;
 
   const [commandName, ...args] = argsToProcess;
-
-  // Discover all commands
   const commands = await discoverCommands();
 
-  // Show help if no command or --help flag
   if (!commandName || commandName === "--help" || commandName === "-h") {
     showHelp(commands);
     process.exit(0);
   }
 
-  // Get the command class
   const CommandClass = commands.get(commandName);
 
   if (!CommandClass) {
@@ -127,7 +119,6 @@ async function main() {
     process.exit(1);
   }
 
-  // Instantiate and execute command
   try {
     const command: CliCommand = new CommandClass();
 

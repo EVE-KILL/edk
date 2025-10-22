@@ -4,6 +4,7 @@ import {
   getKillboardStatistics,
   type StatsFilters,
 } from "../generators/statistics";
+import { getTop10Stats } from "../generators/top-10-stats";
 
 // Parse .env followed entities configuration
 // Empty strings should result in empty arrays, not arrays with NaN
@@ -65,6 +66,9 @@ export class Controller extends WebController {
       // Fetch comprehensive statistics with .env filtering
       const statistics = await getKillboardStatistics(statsFilters);
 
+      // Fetch top 10 statistics for the last 7 days
+      const top10Stats = await getTop10Stats(7);
+
       // Calculate pagination
       const totalPages = statistics ? Math.ceil(statistics.totalKillmails / limit) : 999;
       const hasNextPage = currentPage < totalPages;
@@ -93,6 +97,7 @@ export class Controller extends WebController {
         },
         killmails,
         statistics,
+        top10Stats,
         pagination: {
           currentPage,
           totalPages: statistics ? totalPages : null,
@@ -127,6 +132,13 @@ export class Controller extends WebController {
           totalISK: 0,
           activePilots: 0,
           recentKills: 0,
+        },
+        top10Stats: {
+          characters: [],
+          corporations: [],
+          alliances: [],
+          systems: [],
+          regions: [],
         },
         pagination: {
           currentPage: 1,

@@ -5,6 +5,7 @@ import {
   type StatsFilters,
 } from "../generators/statistics";
 import { getShipGroupStatistics } from "../generators/ship-group-stats";
+import { getTop10Stats } from "../generators/top-10-stats";
 
 // Parse .env followed entities configuration
 const FOLLOWED_CHARACTER_IDS =
@@ -67,6 +68,9 @@ export class Controller extends WebController {
       // Fetch ship group statistics for the last 30 days
       const shipGroupStats = await getShipGroupStatistics(30);
 
+      // Fetch top 10 statistics for the last 7 days
+      const top10Stats = await getTop10Stats(7);
+
       // Split ship group stats into 3 columns
       const itemsPerColumn = Math.ceil(shipGroupStats.length / 3);
       const shipGroupColumns = [
@@ -109,6 +113,7 @@ export class Controller extends WebController {
         killmails,
         shipGroupStats,
         shipGroupColumns,
+        top10Stats,
         pagination: {
           currentPage,
           totalPages: null,

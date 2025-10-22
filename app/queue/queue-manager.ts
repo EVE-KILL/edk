@@ -88,7 +88,6 @@ export class QueueManager {
       return;
     }
 
-    logger.info("🛑 Stopping queue manager...");
     this.running = false;
 
     // Stop polling for new jobs
@@ -110,8 +109,6 @@ export class QueueManager {
         await worker.onStop();
       }
     }
-
-    logger.success("Queue manager stopped");
   }
 
   /**
@@ -198,7 +195,6 @@ export class QueueManager {
 
       jobId = job.id;
       this.trackActiveJob(queueName, jobId);
-      logger.debug(`[${queueName}] Processing job #${job.id} (attempt ${job.attempts}/${job.maxAttempts})`);
 
       try {
         // Parse payload from JSON
@@ -212,8 +208,6 @@ export class QueueManager {
         // Mark as completed
         await this.completeJob(job.id);
         this.jobsProcessed++;
-
-        logger.debug(`[${queueName}] ✅ Job #${job.id} completed`);
       } catch (error) {
         // Mark as failed (will retry if attempts < maxAttempts)
         await this.failJob(job.id, error);
@@ -339,7 +333,6 @@ export class QueueManager {
         return;
       }
 
-      logger.debug(`⏳ Waiting for ${this.activeJobs} active jobs to finish...`);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
@@ -370,14 +363,7 @@ export class QueueManager {
       queueStats[queueName] = stats || { pending: 0, processing: 0 };
     }
 
-    logger.info("📊 Queue Statistics:");
-    for (const [queueName, stats] of Object.entries(queueStats)) {
-      logger.info(
-        `   ${queueName}: ${stats.pending.toLocaleString()} pending, ${stats.processing} processing`
-      );
-    }
-    logger.info(`   Rate: ${rate.toFixed(2)} jobs/sec (${this.jobsProcessed} total in ${elapsed.toFixed(0)}s)`);
-    logger.info(`   Active: ${this.activeJobs} jobs currently processing`);
+    logger.info(`Queue: ${rate.toFixed(2)} jobs/sec, ${this.activeJobs} active`);
 
     // Reset counters
     this.jobsProcessed = 0;
