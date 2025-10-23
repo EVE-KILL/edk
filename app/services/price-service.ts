@@ -1,4 +1,5 @@
 import { logger } from "../../src/utils/logger";
+import { LRUCache } from "lru-cache";
 
 /**
  * EVE-KILL Price Service
@@ -8,8 +9,16 @@ import { logger } from "../../src/utils/logger";
  */
 export class PriceService {
   private baseUrl = "https://eve-kill.com/api/prices";
-  private requestDelay = 100; // ms between requests to respect rate limits
-  private lastRequestTime = 0;
+
+  // LRU cache for price lookups (both successful and failed)
+  // Cache failed lookups for 1 hour, successful for 5 minutes
+  // Use special CACHE_MISS sentinel for failed lookups
+  private readonly CACHE_MISS: IPrice[] = [];
+  private priceCache = new LRUCache<string, IPrice[]>({
+    max: 10000, // Cache up to 10k type lookups
+    ttl: 1000 * 60 * 60, // 1 hour TTL default
+    ttlAutopurge: true,
+  });
 
   /**
    * Get price data for a specific item type
@@ -19,8 +28,6 @@ export class PriceService {
     typeId: number,
     daysBack: number = 14
   ): Promise<IPrice[]> {
-    await this.throttle();
-
     try {
       const url = `${this.baseUrl}/type_id/${typeId}?days=${daysBack}`;
       const response = await fetch(url, {
@@ -53,8 +60,6 @@ export class PriceService {
     regionId: number,
     daysBack: number = 1
   ): Promise<IPrice[]> {
-    await this.throttle();
-
     try {
       const url = `${this.baseUrl}/region/${regionId}?days=${daysBack}`;
       const response = await fetch(url, {
@@ -90,7 +95,19 @@ export class PriceService {
     typeId: number,
     dateUnix: number
   ): Promise<IPrice[]> {
-    await this.throttle();
+    // Check cache first
+    const cacheKey = `${typeId}:${dateUnix}`;
+    const cached = this.priceCache.get(cacheKey);
+
+    if (cached !== undefined) {
+      // Cache hit - check if it's a cached failure (CACHE_MISS sentinel)
+      if (cached === this.CACHE_MISS) {
+        logger.debug(`[PriceService] Cache hit: No price data for type ${typeId} (cached failure)`);
+        return [];
+      }
+      logger.debug(`[PriceService] Cache hit: ${cached.length} prices for type ${typeId}`);
+      return cached;
+    }
 
     try {
       // Strategy 1: Request from 3 days before the target date to account for missing data
@@ -107,6 +124,8 @@ export class PriceService {
 
       if (!response.ok) {
         logger.warn(`[PriceService] HTTP ${response.status} for type ${typeId}`);
+        // Cache HTTP errors as failed lookup
+        this.priceCache.set(cacheKey, this.CACHE_MISS, { ttl: 1000 * 60 * 60 });
         return [];
       }
 
@@ -115,12 +134,13 @@ export class PriceService {
 
       if (prices.length > 0) {
         logger.debug(`[PriceService] Fetched ${prices.length} price entries for type ${typeId} from date strategy`);
+        // Cache successful result with shorter TTL (5 minutes)
+        this.priceCache.set(cacheKey, prices, { ttl: 1000 * 60 * 5 });
         return prices;
       }
 
       // Strategy 2: If no results, try last 30 days without date filter
       logger.debug(`[PriceService] No prices from date strategy, trying last 30 days for type ${typeId}`);
-      await this.throttle();
 
       const fallbackUrl = `${this.baseUrl}/type_id/${typeId}?days=30`;
       const fallbackResponse = await fetch(fallbackUrl, {
@@ -132,6 +152,8 @@ export class PriceService {
 
       if (!fallbackResponse.ok) {
         logger.warn(`[PriceService] Fallback HTTP ${fallbackResponse.status} for type ${typeId}`);
+        // Cache HTTP errors as failed lookup
+        this.priceCache.set(cacheKey, this.CACHE_MISS, { ttl: 1000 * 60 * 60 });
         return [];
       }
 
@@ -140,8 +162,12 @@ export class PriceService {
 
       if (fallbackPrices.length > 0) {
         logger.debug(`[PriceService] Fetched ${fallbackPrices.length} price entries for type ${typeId} from 30-day fallback`);
+        // Cache successful result with shorter TTL (5 minutes)
+        this.priceCache.set(cacheKey, fallbackPrices, { ttl: 1000 * 60 * 5 });
       } else {
         logger.warn(`[PriceService] No price data available for type ${typeId} in last 30 days`);
+        // Cache failed lookup with longer TTL (1 hour) to avoid repeated failed queries
+        this.priceCache.set(cacheKey, this.CACHE_MISS, { ttl: 1000 * 60 * 60 });
       }
 
       return fallbackPrices;
@@ -149,6 +175,8 @@ export class PriceService {
       logger.error(
         `[PriceService] Failed to fetch prices for type ${typeId} on date ${dateUnix}: ${error instanceof Error ? error.message : "Unknown error"}`
       );
+      // Cache error as failed lookup
+      this.priceCache.set(cacheKey, this.CACHE_MISS, { ttl: 1000 * 60 * 60 });
       return [];
     }
   }
@@ -157,8 +185,6 @@ export class PriceService {
    * Get price count to check data availability
    */
   async getPriceCount(): Promise<number> {
-    await this.throttle();
-
     try {
       const url = `${this.baseUrl}/count`;
       const response = await fetch(url, {
@@ -180,22 +206,6 @@ export class PriceService {
       );
       return 0;
     }
-  }
-
-  /**
-   * Throttle requests to respect rate limits
-   */
-  private async throttle(): Promise<void> {
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-
-    if (timeSinceLastRequest < this.requestDelay) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, this.requestDelay - timeSinceLastRequest)
-      );
-    }
-
-    this.lastRequestTime = Date.now();
   }
 }
 

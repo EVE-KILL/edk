@@ -75,7 +75,7 @@ export class QueueManager {
     // Start periodic stats logging (every 30 seconds)
     this.statsInterval = setInterval(() => this.logStats(), 30000);
 
-    logger.success(`Queue manager started with ${this.workers.size} workers`);
+    logger.success(`Queue manager started with ${this.workers.size} queues`);
   }
 
   /**
@@ -137,6 +137,13 @@ export class QueueManager {
     // Only start new jobs if we have slots available
     if (slotsAvailable <= 0) {
       return; // All slots full, wait for next poll
+    }
+
+    // Add jitter to reduce contention when many workers try to claim jobs simultaneously
+    // With 25 workers, this spreads claims over 0-50ms instead of all hitting at once
+    if (slotsAvailable > 5) {
+      const jitter = Math.random() * 50;
+      await new Promise(resolve => setTimeout(resolve, jitter));
     }
 
     // Start jobs to fill available slots (fire and forget - don't await!)
@@ -235,31 +242,49 @@ export class QueueManager {
    * - RETURNING gives us the claimed job
    * - SQLite's SERIALIZABLE isolation ensures only one worker succeeds
    *
+   * With high concurrency, adds small random jitter to reduce contention.
+   *
    * @returns The claimed job, or null if no jobs available
    */
   private async claimJob(queueName: string): Promise<Job | null> {
     const now = new Date();
 
-    const [job] = await this.db
-      .update(jobs)
-      .set({
-        status: "processing",
-        reservedAt: now,
-        attempts: sql`${jobs.attempts} + 1`,
-      })
-      .where(
-        and(
-          eq(jobs.queue, queueName),
-          eq(jobs.status, "pending"),
-          lte(jobs.availableAt, now), // Job is available now
-          lt(jobs.attempts, jobs.maxAttempts) // Not exhausted retries
-        )
-      )
-      .orderBy(asc(jobs.priority), asc(jobs.id)) // Lower priority first, then FIFO
-      .limit(1)
-      .returning();
+    // Add random jitter (0-50ms) to reduce write contention with many workers
+    // This spreads out database locks instead of all workers hitting at once
+    if (this.workers.size > 10) {
+      const jitter = Math.random() * 50;
+      await new Promise(resolve => setTimeout(resolve, jitter));
+    }
 
-    return job || null;
+    try {
+      const [job] = await this.db
+        .update(jobs)
+        .set({
+          status: "processing",
+          reservedAt: now,
+          attempts: sql`${jobs.attempts} + 1`,
+        })
+        .where(
+          and(
+            eq(jobs.queue, queueName),
+            eq(jobs.status, "pending"),
+            lte(jobs.availableAt, now), // Job is available now
+            lt(jobs.attempts, jobs.maxAttempts) // Not exhausted retries
+          )
+        )
+        .orderBy(asc(jobs.priority), asc(jobs.id)) // Lower priority first, then FIFO
+        .limit(1)
+        .returning();
+
+      return job || null;
+    } catch (error) {
+      // SQLITE_BUSY errors are expected under high concurrency
+      // Just return null and let the next poll cycle try again
+      if (error instanceof Error && error.message.includes("BUSY")) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -374,14 +399,16 @@ export class QueueManager {
 // Create singleton instance and register workers
 import { DatabaseConnection } from "../../src/db";
 import { KillmailFetcher } from "./killmail-fetcher";
+import { KillmailValueUpdater } from "./killmail-value-updater";
+import { WebSocketEmitter } from "./websocket-emitter";
 import { ESIFetcher } from "./esi-fetcher";
-import { PriceFetcher } from "./price-fetcher";
 import { TypeFetcher } from "./type-fetcher";
 
 export const queueManager = new QueueManager(DatabaseConnection.getQueueInstance());
 
 // Register all workers
 queueManager.registerWorker(new KillmailFetcher());
+queueManager.registerWorker(new KillmailValueUpdater());
+queueManager.registerWorker(new WebSocketEmitter());
 queueManager.registerWorker(new ESIFetcher());
-queueManager.registerWorker(new PriceFetcher());
 queueManager.registerWorker(new TypeFetcher());

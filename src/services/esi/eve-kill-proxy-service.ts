@@ -29,15 +29,17 @@ export abstract class EveKillProxyService extends BaseESIService {
   ): Promise<T> {
     // Try EVE-KILL first
     try {
+      logger.info(`🌐 [EVE-KILL] Trying eve-kill.com: ${eveKillEndpoint}`);
       const data = await this.fetchFromEveKill<T>(eveKillEndpoint);
-      logger.info(`Fetched from EVE-KILL: ${eveKillEndpoint}`);
+      logger.info(`✅ [EVE-KILL] Successfully fetched from eve-kill.com: ${eveKillEndpoint}`);
       return data;
     } catch (error: any) {
       logger.warn(
-        `EVE-KILL fetch failed for ${eveKillEndpoint}: ${error.message}. Falling back to ESI.`
+        `⚠️  [EVE-KILL] eve-kill.com fetch failed for ${eveKillEndpoint}: ${error.message}. Falling back to ESI...`
       );
 
       // Fall back to ESI
+      logger.info(`🔄 [ESI] Fetching from ESI instead: ${esiEndpoint}`);
       return await this.fetchFromESI<T>(esiEndpoint, cacheKey);
     }
   }

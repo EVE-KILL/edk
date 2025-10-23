@@ -35,8 +35,8 @@ export class AllianceService extends EveKillProxyService {
       return cached;
     }
 
-    // Fetch from EVE-KILL/ESI
-    logger.info(`Fetching alliance ${allianceId}`);
+    // Fetch from eve-kill.com (with ESI fallback)
+    logger.info(`Fetching alliance ${allianceId} from eve-kill.com`);
     return await this.fetchAndStore(allianceId);
   }
 

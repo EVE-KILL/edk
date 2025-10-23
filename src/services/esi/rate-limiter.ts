@@ -3,6 +3,8 @@
  * Manages ESI error limits with progressive backoff
  */
 
+import { logger } from "../../utils/logger";
+
 interface RateLimitState {
   remainingErrors: number;
   resetTime: Date;
@@ -106,7 +108,9 @@ export class ESIRateLimiter {
     const delay = this.shouldWait();
 
     if (delay > 0) {
+      logger.warn(`⏸️  [ESI Rate Limit] Pausing for ${(delay / 1000).toFixed(1)}s (${this.state.remainingErrors} errors remaining)`);
       await new Promise((resolve) => setTimeout(resolve, delay));
+      logger.info(`▶️  [ESI Rate Limit] Resuming (pause complete)`);
     }
   }
 

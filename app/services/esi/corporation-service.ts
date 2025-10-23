@@ -42,8 +42,8 @@ export class CorporationService extends EveKillProxyService {
       return cached;
     }
 
-    // Fetch from EVE-KILL/ESI
-    logger.info(`Fetching corporation ${corporationId}`);
+    // Fetch from eve-kill.com (with ESI fallback)
+    logger.info(`Fetching corporation ${corporationId} from eve-kill.com`);
     return await this.fetchAndStore(corporationId);
   }
 

@@ -408,14 +408,14 @@ async function getActivePilotsStats(filters?: StatsFilters) {
   // Build optimized filter conditions
   const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
 
-  // Single query with CASE to get all time periods at once
+  // Single query with CASE to get active pilots in different time periods
   // Count unique characters from the attackers table (where characterId is not NULL)
   let query = db
     .select({
       period: sql<string>`CASE
         WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-24 hours') THEN '24h'
         WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-7 days') THEN '7d'
-        ELSE 'all'
+        ELSE 'other'
       END`,
       count: sql<number>`COUNT(DISTINCT ${attackers.characterId})`.mapWith(Number),
     })
@@ -432,37 +432,27 @@ async function getActivePilotsStats(filters?: StatsFilters) {
     .groupBy(sql`CASE
       WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-24 hours') THEN '24h'
       WHEN ${killmails.killmailTime} >= strftime('%s', 'now', '-7 days') THEN '7d'
-      ELSE 'all'
+      ELSE 'other'
     END`)
     .execute();
 
   // Extract counts from result
   const resultMap = new Map(results.map((r: any) => [r.period, r.count]));
 
-  // Fallback: if no results from attackers, count from characters table
-  const totalPilots = (resultMap.get('all') as number) || 0;
   let activePilots24h = (resultMap.get('24h') as number) || 0;
   let activePilots7d = (resultMap.get('7d') as number) || 0;
 
-  // If we got no results from attackers but have data, try counting from characters table
-  if (totalPilots === 0) {
-    const totalCount = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(characters)
-      .get();
-
-    // Return character count for total unique pilots
-    return {
-      activePilotsLast24Hours: activePilots24h,
-      activePilotsLast7Days: activePilots7d,
-      totalUniquePilots: totalCount?.count || 0,
-    };
-  }
+  // Total unique pilots is ALWAYS the total count from characters table
+  // This represents all known characters in the database, not filtered by activity
+  const [totalCount] = await db
+    .select({ count: sql<number>`count(*)`.mapWith(Number) })
+    .from(characters)
+    .execute();
 
   return {
     activePilotsLast24Hours: activePilots24h,
     activePilotsLast7Days: activePilots7d,
-    totalUniquePilots: totalPilots,
+    totalUniquePilots: totalCount?.count || 0,
   };
 }
 

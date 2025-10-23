@@ -33,25 +33,17 @@ export class ESIFetcher extends BaseWorker<{
   override async handle(payload: { type: string; id: number }, job: Job) {
     const { type, id } = payload;
 
-    logger.info(`🔍 [ESIFetcher] Processing ESI job: type=${type}, id=${id}`);
-
     try {
       let result;
       switch (type) {
         case "character":
-          logger.info(`⬇️  [ESIFetcher] Fetching character ${id}...`);
           result = await this.characterService.getCharacter(id);
-          logger.info(`✅ [ESIFetcher] Fetched character ${id}: ${result?.name || "Unknown"}`);
           break;
         case "corporation":
-          logger.info(`⬇️  [ESIFetcher] Fetching corporation ${id}...`);
           result = await this.corporationService.getCorporation(id);
-          logger.info(`✅ [ESIFetcher] Fetched corporation ${id}: ${result?.name || "Unknown"}`);
           break;
         case "alliance":
-          logger.info(`⬇️  [ESIFetcher] Fetching alliance ${id}...`);
           result = await this.allianceService.getAlliance(id);
-          logger.info(`✅ [ESIFetcher] Fetched alliance ${id}: ${result?.name || "Unknown"}`);
           break;
         default:
           throw new Error(`Unknown ESI type: ${type}`);

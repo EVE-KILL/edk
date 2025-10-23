@@ -10,28 +10,26 @@ import { logger } from "../../../src/utils/logger";
  *
  * The queue workers will:
  * - Process killmail fetching jobs
+ * - Process killmail value calculation jobs (prices + ISK values)
  * - Process ESI data fetching jobs
  * - Process price calculation jobs
- * - Process value calculation jobs
  * - Handle retries and failures
+ *
+ * Each worker has its own concurrency settings:
+ * - KillmailFetcher: 5 concurrent jobs
+ * - KillmailValueUpdater: 10 concurrent jobs
+ * - ESIFetcher: 10 concurrent jobs
+ * - TypeFetcher: 5 concurrent jobs
  *
  * Usage:
  *   bun cli queue:work
- *   bun cli queue:work --concurrency=5
  */
 export default class QueueWorkCommand extends BaseCommand {
   override name = "queue:work";
   override description = "Start queue workers to process background jobs";
-  override usage = "queue:work [--concurrency=<number>]";
+  override usage = "queue:work";
 
   override async execute(args: string[]): Promise<void> {
-    const parsedArgs = this.parseArgs(args);
-
-    // Optional: Allow overriding concurrency via CLI
-    const concurrency = parsedArgs.options["concurrency"]
-      ? Number.parseInt(parsedArgs.options["concurrency"] as string)
-      : undefined;
-
     this.info("🔄 Starting Queue Workers");
     this.info("━".repeat(50));
     this.info("");
@@ -44,12 +42,6 @@ export default class QueueWorkCommand extends BaseCommand {
       this.info(`   💡 For detailed logs: LOG_LEVEL=debug bun cli queue:work`);
     } else if (logLevel === "debug") {
       this.info(`   Output: Detailed logs for every job`);
-    }
-
-    if (concurrency) {
-      this.info(`   Concurrency: ${concurrency}`);
-      // Note: You'd need to add concurrency support to queueManager.start()
-      // For now, this is just informational
     }
     this.info("");
 
@@ -105,7 +97,6 @@ Usage:
   bun cli ${this.name} [options]
 
 Options:
-  --concurrency=<number>   Number of concurrent workers per queue (future feature)
   --help                   Show this help message
 
 Description:
@@ -114,17 +105,22 @@ Description:
   performance interference.
 
   The queue workers process:
-  - Killmail fetching from ESI
+  - Killmail fetching from eve-kill.com/ESI
+  - Killmail value calculations (fetches prices and calculates ISK values)
   - Character/Corporation/Alliance data fetching
   - Price data updates
-  - ISK value calculations
 
   Workers poll the database for pending jobs and process them with
   automatic retry logic on failures.
 
+  Each worker has its own concurrency settings defined in the worker class:
+  - KillmailFetcher: 5 concurrent jobs
+  - KillmailValueUpdater: 10 concurrent jobs (fast - uses LRU cache)
+  - ESIFetcher: 10 concurrent jobs
+  - TypeFetcher: 5 concurrent jobs
+
 Examples:
   bun cli ${this.name}                    # Start with default settings
-  bun cli ${this.name} --concurrency=10   # Start with 10 workers per queue (future)
 
 Notes:
   - Run this in a separate terminal or process from the web server

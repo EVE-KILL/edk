@@ -39,8 +39,8 @@ export class CharacterService extends EveKillProxyService {
       return cached;
     }
 
-    // Fetch from ESI
-    logger.info(`Fetching character ${characterId} from ESI`);
+    // Fetch from eve-kill.com (with ESI fallback)
+    logger.info(`Fetching character ${characterId} from eve-kill.com`);
     return await this.fetchAndStore(characterId);
   }
 
@@ -50,6 +50,7 @@ export class CharacterService extends EveKillProxyService {
   private async fetchAndStore(characterId: number): Promise<Character> {
     try {
       logger.info(`[CharacterService] 🔍 fetchAndStore() called for character ${characterId}`);
+      logger.info(`[CharacterService] 🌐 Attempting eve-kill.com first, ESI fallback if needed`);
       const esiData = await this.fetchWithFallback<ESICharacterResponse>(
         `/characters/${characterId}`,      // EVE-KILL endpoint
         `/characters/${characterId}/`,     // ESI endpoint

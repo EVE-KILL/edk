@@ -46,7 +46,7 @@ async function fetchEveRefType(typeId: number): Promise<EveRefType | null> {
 export class TypeFetcher extends BaseWorker {
   override queueName = "type-fetch";
   override concurrency = 5; // High concurrency - everef is on Cloudflare
-  override pollInterval = 250; // Poll frequently for new jobs
+  override pollInterval = 500; // Poll frequently for new jobs
 
   async handle(payload: TypeFetcherPayload, job: any): Promise<void> {
     const { typeId } = payload;
