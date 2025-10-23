@@ -331,6 +331,60 @@ export function registerHelpers() {
     return result;
   });
 
+  // Prepare Top 10 Stats sections for looping
+  Handlebars.registerHelper("prepareTop10Sections", function(top10Stats: any) {
+    const sections = [
+      {
+        key: "characters",
+        title: "Top Characters",
+        linkPrefix: "/character/"
+      },
+      {
+        key: "corporations",
+        title: "Top Corporations",
+        linkPrefix: "/corporation/"
+      },
+      {
+        key: "alliances",
+        title: "Top Alliances",
+        linkPrefix: "/alliance/"
+      },
+      {
+        key: "systems",
+        title: "Top Systems",
+        linkPrefix: "/system/",
+        imagePrefix: "https://images.eve-kill.com/systems/"
+      },
+      {
+        key: "regions",
+        title: "Top Regions",
+        linkPrefix: "/region/",
+        imagePrefix: "https://images.eve-kill.com/regions/"
+      }
+    ];
+
+    const result: any[] = [];
+
+    sections.forEach(section => {
+      const items = top10Stats[section.key] || [];
+
+      if (items.length > 0) {
+        result.push({
+          title: section.title,
+          items: items.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            kills: item.kills,
+            imageUrl: item.imageUrl || (section.imagePrefix ? `${section.imagePrefix}${item.id}` : null),
+            link: `${section.linkPrefix}${item.id}`
+          }))
+        });
+      }
+    });
+
+    return result;
+  });
+
   // Round up to nearest valid EVE image size
   // Valid sizes: 32 (types only), 64, 128, 256, 512 (render only)
   Handlebars.registerHelper("roundImageSize", function(requestedSize: number, type: string) {

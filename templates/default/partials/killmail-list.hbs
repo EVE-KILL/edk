@@ -97,11 +97,16 @@
 
         <!-- Value -->
         <div class="kb-kl-col kb-kl-col--value">
-            {{#if ship_value}}
-                <span class="kb-kl-value">{{abbreviateISK ship_value}}</span>
-            {{else}}
-                <span class="kb-kl-value--unknown">N/A</span>
-            {{/if}}
+            <div class="kb-kl-info kb-kl-info--value">
+                {{#if ship_value}}
+                    <div class="kb-kl-value">{{abbreviateISK ship_value}}</div>
+                {{else}}
+                    <div class="kb-kl-value--unknown">N/A</div>
+                {{/if}}
+                {{#if attacker_count}}
+                    <div class="kb-kl-info__secondary kb-kl-attackers-count">({{attacker_count}})</div>
+                {{/if}}
+            </div>
         </div>
 
         <!-- Time -->
@@ -257,6 +262,13 @@
   min-width: 0;
 }
 
+.kb-kl-info--value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+}
+
 .kb-kl-info__primary {
   font-weight: 600;
   overflow: hidden;
@@ -313,6 +325,10 @@
 .kb-kl-time {
   font-size: 9px;
   color: var(--color-text-secondary);
+}
+
+.kb-kl-attackers-count {
+  text-align: right;
 }
 
 /* Responsive: collapse to single column on mobile */

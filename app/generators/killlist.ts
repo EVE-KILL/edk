@@ -26,6 +26,7 @@ export interface KillmailDisplay {
   killmail_id: number;
   killmail_time: Date;
   ship_value: number;
+  attacker_count: number;
   victim: {
     character: { id: number | null; name: string };
     corporation: { id: number; name: string };
@@ -357,6 +358,24 @@ export async function generateKilllist(
   // Fetch ALL final blow attackers in a single batch query
   const killmailIds = killmailsData.map(km => km.killmail?.id).filter(Boolean) as number[];
 
+  // Fetch attacker counts for all killmails in a single query
+  const attackerCountsData = await db
+    .select({
+      killmailId: attackers.killmailId,
+      count: count(),
+    })
+    .from(attackers)
+    .where(
+      sql`${attackers.killmailId} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`
+    )
+    .groupBy(attackers.killmailId);
+
+  // Create a map for quick lookup: killmailId -> attacker count
+  const attackerCountMap = new Map<number, number>();
+  for (const ac of attackerCountsData) {
+    attackerCountMap.set(ac.killmailId, ac.count);
+  }
+
   const finalBlowAttackersData = await db
     .select({
       killmailId: attackers.killmailId,
@@ -403,6 +422,9 @@ export async function generateKilllist(
     // Get final blow attacker from the map
     const finalBlowData = finalBlowMap.get(km.killmail.id);
 
+    // Get attacker count from the map
+    const attackerCount = attackerCountMap.get(km.killmail.id) || 0;
+
     // Get ship price from batch results
     const shipPrice = shipPricesMap.get(km.victim.shipTypeId) || 0;
 
@@ -410,6 +432,7 @@ export async function generateKilllist(
       killmail_id: km.killmail.killmailId,
       killmail_time: km.killmail.killmailTime,
       ship_value: shipPrice,
+      attacker_count: attackerCount,
       victim: {
         character: {
           id: km.victim.characterId,

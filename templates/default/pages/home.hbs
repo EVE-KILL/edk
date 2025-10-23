@@ -13,8 +13,13 @@
     <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;">
         <!-- Header -->
         <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
-            <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                Killboard Statistics
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Killboard Statistics
+                </div>
+                <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                    All Time
+                </div>
             </div>
         </div>
 
@@ -123,13 +128,13 @@
 {{/if}}
 
 <!-- Most Valuable Kills -->
-{{> partials/mostvaluable mostValuableKills=mostValuableKills timeRange="All Time"}}
+{{> partials/mostvaluable mostValuableKills=mostValuableKills timeRange=mostValuableTimeRange}}
 
 <!-- Top 10 Stats (Last 7 Days) -->
 {{#if top10Stats}}
 <div style="display: grid; grid-template-columns: minmax(200px, 225px) 1fr; gap: 12px; width: 100%; box-sizing: border-box;">
   <aside style="min-width: 0;">
-    {{> components/top-10-stats top10Stats=top10Stats}}
+    {{> components/top-10-stats top10Stats=top10Stats timeRange="Last 7 Days"}}
   </aside>
 
   <!-- Recent Killmails -->

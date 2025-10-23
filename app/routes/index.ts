@@ -58,7 +58,7 @@ export class Controller extends WebController {
       const pageParam = url.searchParams.get("page");
       const currentPage = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
 
-      const limit = 20;
+      const limit = 33;
       const offset = (currentPage - 1) * limit;
 
       // Fetch killmails WITHOUT filters - show all kills globally
@@ -71,8 +71,10 @@ export class Controller extends WebController {
       const top10Stats = await getTop10Stats(7);
 
       // Fetch most valuable kills (all time, top 6)
+      const mostValuableKillsDays = 7;
       const mostValuableKills = await getMostValuableKills({
         limit: 6,
+        days: mostValuableKillsDays
       });
 
       // Calculate pagination
@@ -105,6 +107,7 @@ export class Controller extends WebController {
         statistics,
         top10Stats,
         mostValuableKills,
+        mostValuableTimeRange: `Last ${mostValuableKillsDays} Days`,
         pagination: {
           currentPage,
           totalPages: statistics ? totalPages : null,
@@ -148,6 +151,7 @@ export class Controller extends WebController {
           regions: [],
         },
         mostValuableKills: [],
+        mostValuableTimeRange: "Last 7 Days",
         pagination: {
           currentPage: 1,
           totalPages: 1,

@@ -2581,27 +2581,27 @@ textarea.killmail {
     .attacker-portraits {
         gap: 4px;
     }
-    
+
     .ship-portrait {
         margin-left: 4px;
     }
-    
+
     .character-name {
         font-size: 11px;
     }
-    
+
     .corp-name {
         font-size: 9px;
     }
-    
+
     .alliance-name {
         font-size: 9px;
     }
-    
+
     .meta-item {
         font-size: 9px;
     }
-    
+
     .damage-value {
         font-size: 10px;
     }
@@ -2612,18 +2612,18 @@ textarea.killmail {
         flex-direction: column;
         gap: 8px;
     }
-    
+
     .attacker-portraits {
         flex-direction: row;
         align-self: flex-start;
     }
-    
+
     .attacker-meta {
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
     }
-    
+
     .damage-display {
         align-self: flex-end;
     }

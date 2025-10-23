@@ -3,128 +3,42 @@
   Displays top 10 characters, corporations, alliances, systems, and regions
 
   Usage:
-  {{> components/top-10-stats top10Stats=top10Stats}}
+  {{> components/top-10-stats top10Stats=top10Stats timeRange="Last 7 Days"}}
 
   Props:
   - top10Stats: object with arrays of characters, corporations, alliances, systems, regions
+  - timeRange: optional time range label (default: "Last 7 Days")
 --}}
 {{#if top10Stats}}
 <div class="top-10-container">
-  <!-- Characters Top 10 -->
-  {{#if top10Stats.characters.length}}
+  {{#with (prepareTop10Sections top10Stats)}}
+  {{#each this}}
+  {{#if items.length}}
   <div class="top-10-box">
-    <div class="top-10-header">Top Characters</div>
+    <div class="top-10-header">{{title}}</div>
     <div class="top-10-content">
-      {{#each top10Stats.characters}}
-      <div class="top-10-row" onclick="window.location.href='/character/{{this.id}}';" style="cursor: pointer;">
-        {{#if this.imageUrl}}
+      {{#each items}}
+      <div class="top-10-row" onclick="window.location.href='{{link}}';" style="cursor: pointer;">
         <div class="top-10-img-wrapper">
-          <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
-          <div class="top-10-img-rank">{{add @index 1}}</div>
-        </div>
-        {{else}}
-        <div class="top-10-img-wrapper">
+          {{#if imageUrl}}
+          <img src="{{imageUrl}}" alt="{{name}}" class="top-10-img" />
+          {{else}}
           <div style="width: 24px; height: 24px; background: #333; border-radius: 2px;"></div>
+          {{/if}}
           <div class="top-10-img-rank">{{add @index 1}}</div>
         </div>
-        {{/if}}
-        <span class="top-10-name">{{this.name}}</span>
-        <span class="top-10-kills">{{this.kills}}</span>
+        <span class="top-10-name">{{name}}</span>
+        <span class="top-10-kills">{{kills}}</span>
       </div>
       {{/each}}
     </div>
-  </div>
-  {{/if}}
-
-  <!-- Corporations Top 10 -->
-  {{#if top10Stats.corporations.length}}
-  <div class="top-10-box">
-    <div class="top-10-header">Top Corporations</div>
-    <div class="top-10-content">
-      {{#each top10Stats.corporations}}
-      <div class="top-10-row" onclick="window.location.href='/corporation/{{this.id}}';" style="cursor: pointer;">
-        {{#if this.imageUrl}}
-        <div class="top-10-img-wrapper">
-          <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
-          <div class="top-10-img-rank">{{add @index 1}}</div>
-        </div>
-        {{else}}
-        <div class="top-10-img-wrapper">
-          <div style="width: 24px; height: 24px; background: #333; border-radius: 2px;"></div>
-          <div class="top-10-img-rank">{{add @index 1}}</div>
-        </div>
-        {{/if}}
-        <span class="top-10-name">{{this.name}}</span>
-        <span class="top-10-kills">{{this.kills}}</span>
-      </div>
-      {{/each}}
+    <div style="padding: 8px 0 8px 0; border-top: 1px solid var(--color-border-dark); color: var(--color-text-secondary); font-size: 9px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">
+      {{../../timeRange}}
     </div>
   </div>
   {{/if}}
-
-  <!-- Alliances Top 10 -->
-  {{#if top10Stats.alliances.length}}
-  <div class="top-10-box">
-    <div class="top-10-header">Top Alliances</div>
-    <div class="top-10-content">
-      {{#each top10Stats.alliances}}
-      <div class="top-10-row" onclick="window.location.href='/alliance/{{this.id}}';" style="cursor: pointer;">
-        {{#if this.imageUrl}}
-        <div class="top-10-img-wrapper">
-          <img src="{{this.imageUrl}}" alt="{{this.name}}" class="top-10-img" />
-          <div class="top-10-img-rank">{{add @index 1}}</div>
-        </div>
-        {{else}}
-        <div class="top-10-img-wrapper">
-          <div style="width: 24px; height: 24px; background: #333; border-radius: 2px;"></div>
-          <div class="top-10-img-rank">{{add @index 1}}</div>
-        </div>
-        {{/if}}
-        <span class="top-10-name">{{this.name}}</span>
-        <span class="top-10-kills">{{this.kills}}</span>
-      </div>
-      {{/each}}
-    </div>
-  </div>
-  {{/if}}
-
-  <!-- Systems Top 10 -->
-  {{#if top10Stats.systems.length}}
-  <div class="top-10-box">
-    <div class="top-10-header">Top Systems</div>
-    <div class="top-10-content">
-      {{#each top10Stats.systems}}
-      <div class="top-10-row" onclick="window.location.href='/system/{{this.id}}';" style="cursor: pointer;">
-        <div class="top-10-img-wrapper">
-          <img src="https://images.eve-kill.com/systems/{{this.id}}" alt="{{this.name}}" class="top-10-img" />
-          <div class="top-10-img-rank">{{add @index 1}}</div>
-        </div>
-        <span class="top-10-name">{{this.name}}</span>
-        <span class="top-10-kills">{{this.kills}}</span>
-      </div>
-      {{/each}}
-    </div>
-  </div>
-  {{/if}}
-
-  <!-- Regions Top 10 -->
-  {{#if top10Stats.regions.length}}
-  <div class="top-10-box">
-    <div class="top-10-header">Top Regions</div>
-    <div class="top-10-content">
-      {{#each top10Stats.regions}}
-      <div class="top-10-row" onclick="window.location.href='/region/{{this.id}}';" style="cursor: pointer;">
-        <div class="top-10-img-wrapper">
-          <img src="https://images.eve-kill.com/regions/{{this.id}}" alt="{{this.name}}" class="top-10-img" />
-          <div class="top-10-img-rank">{{add @index 1}}</div>
-        </div>
-        <span class="top-10-name">{{this.name}}</span>
-        <span class="top-10-kills">{{this.kills}}</span>
-      </div>
-      {{/each}}
-    </div>
-  </div>
-  {{/if}}
+  {{/each}}
+  {{/with}}
 </div>
 
 <style>
