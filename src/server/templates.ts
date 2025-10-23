@@ -283,7 +283,7 @@ export function registerHelpers() {
   // Round up to nearest valid EVE image size
   // Valid sizes: 32 (types only), 64, 128, 256, 512 (render only)
   Handlebars.registerHelper("roundImageSize", function(requestedSize: number, type: string) {
-    const validSizes = type === 'type' || type === 'item' || type === 'ship' 
+    const validSizes = type === 'type' || type === 'item' || type === 'ship'
       ? [32, 64, 128, 256]  // types can use 32
       : [64, 128, 256, 512]; // others start at 64
 
