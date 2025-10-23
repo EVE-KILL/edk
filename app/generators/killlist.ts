@@ -133,6 +133,22 @@ export interface KilllistFilters {
   before?: Date;
   /** Offset for pagination (alternative to 'before') */
   offset?: number;
+  /** Ship group IDs to filter by (victim ship) */
+  shipGroupIds?: number[];
+  /** Filter for solo kills */
+  isSolo?: boolean;
+  /** Filter for NPC kills */
+  isNpc?: boolean;
+  /** Minimum total value */
+  minValue?: number;
+  /** Security status filter (min) */
+  minSecurityStatus?: number;
+  /** Security status filter (max) */
+  maxSecurityStatus?: number;
+  /** Region ID minimum (for range filtering like abyssal/wspace) */
+  regionIdMin?: number;
+  /** Region ID maximum (for range filtering like abyssal/wspace) */
+  regionIdMax?: number;
 }
 
 /**
@@ -162,6 +178,68 @@ export async function generateKilllist(
   // Add region filter (via solarSystems join)
   if (filters?.regionId) {
     whereConditions.push(eq(solarSystems.regionId, filters.regionId));
+  }
+
+  // Add region range filter (for abyssal/wspace)
+  if (filters?.regionIdMin !== undefined && filters?.regionIdMax !== undefined) {
+    whereConditions.push(
+      and(
+        gte(solarSystems.regionId, filters.regionIdMin),
+        sql`${solarSystems.regionId} <= ${filters.regionIdMax}`
+      )
+    );
+  }
+
+  // Add security status filters
+  if (filters?.minSecurityStatus !== undefined) {
+    whereConditions.push(
+      sql`CAST(${solarSystems.securityStatus} AS REAL) >= ${filters.minSecurityStatus}`
+    );
+  }
+  if (filters?.maxSecurityStatus !== undefined) {
+    whereConditions.push(
+      sql`CAST(${solarSystems.securityStatus} AS REAL) <= ${filters.maxSecurityStatus}`
+    );
+  }
+
+  // Add solo filter
+  if (filters?.isSolo) {
+    whereConditions.push(eq(killmails.isSolo, true));
+  }
+
+  // Add NPC filter
+  if (filters?.isNpc) {
+    whereConditions.push(eq(killmails.isNpc, true));
+  }
+
+  // Add minimum value filter
+  if (filters?.minValue !== undefined) {
+    whereConditions.push(
+      sql`CAST(${killmails.totalValue} AS REAL) >= ${filters.minValue}`
+    );
+  }
+
+  // Add ship group filter (need to get ship group IDs first, then filter killmails)
+  if (filters?.shipGroupIds && filters.shipGroupIds.length > 0) {
+    // We need to get killmail IDs where the victim's ship is in the specified groups
+    const victimShipsInGroup = await db
+      .selectDistinct({ killmailId: victims.killmailId })
+      .from(victims)
+      .leftJoin(types, eq(victims.shipTypeId, types.typeId))
+      .where(
+        sql`${types.groupId} IN (${sql.join(filters.shipGroupIds.map(id => sql`${id}`), sql`, `)})`
+      );
+
+    const killmailIds = victimShipsInGroup.map(v => v.killmailId);
+
+    if (killmailIds.length > 0) {
+      whereConditions.push(
+        sql`${killmails.id} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`
+      );
+    } else {
+      // No results found, return early
+      return [];
+    }
   }
 
   // For entity filters, we need to handle two scenarios:

@@ -8,8 +8,11 @@ import {
   regions,
   solarSystems,
   victims,
+  types,
+  groups,
 } from "../../db/schema";
 import { sql, eq, and, gte, inArray } from "drizzle-orm";
+import type { KilllistFilters } from "./killlist";
 
 /**
  * Top 10 Statistics Interface
@@ -908,3 +911,272 @@ export async function getTop10StatsByRegion(
 }
 
 
+
+/**
+ * Build where conditions from KilllistFilters
+ */
+function buildWhereConditions(days: number, filters?: KilllistFilters): any[] {
+  const daysAgo = new Date();
+  daysAgo.setDate(daysAgo.getDate() - days);
+
+  const whereConditions: any[] = [
+    gte(killmails.killmailTime, daysAgo),
+  ];
+
+  if (!filters) {
+    return whereConditions;
+  }
+
+  // Add security status filters
+  if (filters.minSecurityStatus !== undefined) {
+    whereConditions.push(
+      sql`CAST(${solarSystems.securityStatus} AS REAL) >= ${filters.minSecurityStatus}`
+    );
+  }
+  if (filters.maxSecurityStatus !== undefined) {
+    whereConditions.push(
+      sql`CAST(${solarSystems.securityStatus} AS REAL) <= ${filters.maxSecurityStatus}`
+    );
+  }
+
+  // Add region filters
+  if (filters.regionId) {
+    whereConditions.push(eq(solarSystems.regionId, filters.regionId));
+  }
+
+  // Add region range filter (for abyssal/wspace)
+  if (filters.regionIdMin !== undefined && filters.regionIdMax !== undefined) {
+    whereConditions.push(
+      and(
+        gte(solarSystems.regionId, filters.regionIdMin),
+        sql`${solarSystems.regionId} <= ${filters.regionIdMax}`
+      )
+    );
+  }
+
+  // Add solo filter
+  if (filters.isSolo) {
+    whereConditions.push(eq(killmails.isSolo, true));
+  }
+
+  // Add NPC filter
+  if (filters.isNpc) {
+    whereConditions.push(eq(killmails.isNpc, true));
+  }
+
+  // Add minimum value filter
+  if (filters.minValue !== undefined) {
+    whereConditions.push(
+      sql`CAST(${killmails.totalValue} AS REAL) >= ${filters.minValue}`
+    );
+  }
+
+  // Add ship group filter
+  if (filters.shipGroupIds && filters.shipGroupIds.length > 0) {
+    whereConditions.push(
+      sql`${groups.groupId} IN (${sql.join(filters.shipGroupIds.map(id => sql`${id}`), sql`, `)})`
+    );
+  }
+
+  return whereConditions;
+}
+
+/**
+ * Get all top 10 statistics with full killlist filters support
+ * This applies the same filters as the killlist (security, regions, ship groups, value, etc.)
+ */
+export async function getTop10StatsWithFilters(
+  days: number = 7,
+  filters?: KilllistFilters
+): Promise<Top10Stats> {
+  const baseConditions = buildWhereConditions(days, filters);
+  const needsShipJoin = !!(filters?.shipGroupIds && filters.shipGroupIds.length > 0);
+
+  // Top characters
+  let topCharQuery = db
+    .select({
+      characterId: attackers.characterId,
+      kills: sql<number>`COUNT(DISTINCT ${killmails.id})`,
+    })
+    .from(attackers)
+    .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
+    .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId));
+
+  if (needsShipJoin) {
+    topCharQuery = topCharQuery
+      .innerJoin(victims, eq(killmails.id, victims.killmailId))
+      .innerJoin(types, eq(victims.shipTypeId, types.typeId))
+      .innerJoin(groups, eq(types.groupId, groups.groupId)) as any;
+  }
+
+  const topCharResults = await topCharQuery
+    .where(and(...baseConditions, sql`${attackers.characterId} IS NOT NULL`))
+    .groupBy(attackers.characterId)
+    .orderBy(sql`COUNT(DISTINCT ${killmails.id}) DESC`)
+    .limit(10);
+
+  // Top corporations
+  let topCorpQuery = db
+    .select({
+      corporationId: attackers.corporationId,
+      kills: sql<number>`COUNT(DISTINCT ${killmails.id})`,
+    })
+    .from(attackers)
+    .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
+    .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId));
+
+  if (needsShipJoin) {
+    topCorpQuery = topCorpQuery
+      .innerJoin(victims, eq(killmails.id, victims.killmailId))
+      .innerJoin(types, eq(victims.shipTypeId, types.typeId))
+      .innerJoin(groups, eq(types.groupId, groups.groupId)) as any;
+  }
+
+  const topCorpResults = await topCorpQuery
+    .where(and(...baseConditions, sql`${attackers.corporationId} IS NOT NULL`))
+    .groupBy(attackers.corporationId)
+    .orderBy(sql`COUNT(DISTINCT ${killmails.id}) DESC`)
+    .limit(10);
+
+  // Top alliances
+  let topAllyQuery = db
+    .select({
+      allianceId: attackers.allianceId,
+      kills: sql<number>`COUNT(DISTINCT ${killmails.id})`,
+    })
+    .from(attackers)
+    .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
+    .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId));
+
+  if (needsShipJoin) {
+    topAllyQuery = topAllyQuery
+      .innerJoin(victims, eq(killmails.id, victims.killmailId))
+      .innerJoin(types, eq(victims.shipTypeId, types.typeId))
+      .innerJoin(groups, eq(types.groupId, groups.groupId)) as any;
+  }
+
+  const topAllyResults = await topAllyQuery
+    .where(and(...baseConditions, sql`${attackers.allianceId} IS NOT NULL`))
+    .groupBy(attackers.allianceId)
+    .orderBy(sql`COUNT(DISTINCT ${killmails.id}) DESC`)
+    .limit(10);
+
+  // Top systems
+  let topSysQuery = db
+    .select({
+      systemId: killmails.solarSystemId,
+      name: sql<string>`COALESCE(${solarSystems.name}, 'Unknown System')`,
+      kills: sql<number>`COUNT(${killmails.id})`,
+    })
+    .from(killmails)
+    .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId));
+
+  if (needsShipJoin) {
+    topSysQuery = topSysQuery
+      .innerJoin(victims, eq(killmails.id, victims.killmailId))
+      .innerJoin(types, eq(victims.shipTypeId, types.typeId))
+      .innerJoin(groups, eq(types.groupId, groups.groupId)) as any;
+  }
+
+  const topSysResults = await topSysQuery
+    .where(and(...baseConditions))
+    .groupBy(killmails.solarSystemId, solarSystems.name)
+    .orderBy(sql`COUNT(${killmails.id}) DESC`)
+    .limit(10);
+
+  // Top regions
+  let topRegQuery = db
+    .select({
+      regionId: sql<number>`${solarSystems.regionId}`,
+      name: sql<string>`COALESCE(${regions.name}, 'Unknown Region')`,
+      kills: sql<number>`COUNT(${killmails.id})`,
+    })
+    .from(killmails)
+    .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId))
+    .leftJoin(regions, eq(solarSystems.regionId, regions.regionId));
+
+  if (needsShipJoin) {
+    topRegQuery = topRegQuery
+      .innerJoin(victims, eq(killmails.id, victims.killmailId))
+      .innerJoin(types, eq(victims.shipTypeId, types.typeId))
+      .innerJoin(groups, eq(types.groupId, groups.groupId)) as any;
+  }
+
+  const topRegResults = await topRegQuery
+    .where(and(...baseConditions))
+    .groupBy(solarSystems.regionId, regions.name)
+    .orderBy(sql`COUNT(${killmails.id}) DESC`)
+    .limit(10);
+
+  // Fetch names for characters, corporations, and alliances
+  const charIds = topCharResults.map((r) => r.characterId).filter(Boolean);
+  const corpIds = topCorpResults.map((r) => r.corporationId).filter(Boolean);
+  const allyIds = topAllyResults.map((r) => r.allianceId).filter(Boolean);
+
+  const [charNames, corpNames, allyNames] = await Promise.all([
+    charIds.length > 0
+      ? db
+          .select({ id: characters.characterId, name: characters.name })
+          .from(characters)
+          .where(inArray(characters.characterId as any, charIds))
+      : [],
+    corpIds.length > 0
+      ? db
+          .select({ id: corporations.corporationId, name: corporations.name })
+          .from(corporations)
+          .where(inArray(corporations.corporationId as any, corpIds))
+      : [],
+    allyIds.length > 0
+      ? db
+          .select({ id: alliances.allianceId, name: alliances.name })
+          .from(alliances)
+          .where(inArray(alliances.allianceId as any, allyIds))
+      : [],
+  ]);
+
+  // Create name maps
+  const charNameMap: Record<number, string> = {};
+  const corpNameMap: Record<number, string> = {};
+  const allyNameMap: Record<number, string> = {};
+
+  for (const c of charNames) charNameMap[c.id] = c.name;
+  for (const c of corpNames) corpNameMap[c.id] = c.name;
+  for (const a of allyNames) allyNameMap[a.id] = a.name;
+
+  return {
+    characters: topCharResults.map((row) => ({
+      id: row.characterId || 0,
+      name: charNameMap[row.characterId || 0] || "Unknown",
+      kills: row.kills || 0,
+      imageUrl: row.characterId
+        ? `https://images.eve-kill.com/characters/${row.characterId}/portrait?size=64`
+        : undefined,
+    })),
+    corporations: topCorpResults.map((row) => ({
+      id: row.corporationId || 0,
+      name: corpNameMap[row.corporationId || 0] || "Unknown",
+      kills: row.kills || 0,
+      imageUrl: row.corporationId
+        ? `https://images.eve-kill.com/corporations/${row.corporationId}/logo?size=64`
+        : undefined,
+    })),
+    alliances: topAllyResults.map((row) => ({
+      id: row.allianceId || 0,
+      name: allyNameMap[row.allianceId || 0] || "Unknown",
+      kills: row.kills || 0,
+      imageUrl: row.allianceId
+        ? `https://images.eve-kill.com/alliances/${row.allianceId}/logo?size=64`
+        : undefined,
+    })),
+    systems: topSysResults.map((row) => ({
+      id: row.systemId || 0,
+      name: row.name || "Unknown",
+      kills: row.kills || 0,
+    })),
+    regions: topRegResults.map((row) => ({
+      id: row.regionId || 0,
+      name: row.name || "Unknown",
+      kills: row.kills || 0,
+    })),
+  };
+}

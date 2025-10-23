@@ -105,6 +105,22 @@
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
 
+        /* Multi-column layout for dropdowns with many items */
+        .nav-dropdown-content.multi-column {
+            display: none;
+            column-count: 3;
+            column-gap: 0;
+            width: auto;
+            min-width: 600px;
+            max-width: 800px;
+            padding: 8px 0;
+        }
+
+        .nav-dropdown-content.multi-column > * {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
         .nav-dropdown-content a {
             color: var(--color-text-secondary);
             padding: 10px 15px;
@@ -125,8 +141,18 @@
             display: block;
         }
 
+        .nav-dropdown:hover .nav-dropdown-content.multi-column {
+            display: block;
+            column-count: 3;
+        }
+
         .nav-dropdown-wrapper:hover .nav-dropdown-content {
             display: block;
+        }
+
+        .nav-dropdown-wrapper:hover .nav-dropdown-content.multi-column {
+            display: block;
+            column-count: 3;
         }
 
         .dropdown-section-header {
@@ -286,9 +312,46 @@
             <table cellspacing="0" cellpadding="0">
                 <tr>
                     <td><a href="/">Home</a></td>
+                    <td class="nav-dropdown">
+                        <div class="nav-dropdown-wrapper">
+                            <a href="/kills">Kills</a>
+                            <div class="nav-dropdown-content multi-column">
+                                <div class="dropdown-section-header">Main</div>
+                                <a href="/kills/latest">Latest</a>
+                                <a href="/kills/big">Big Kills</a>
+                                <a href="/kills/solo">Solo</a>
+                                <a href="/kills/npc">NPC</a>
+                                <div class="dropdown-section-header">Security Status</div>
+                                <a href="/kills/highsec">High-Sec</a>
+                                <a href="/kills/lowsec">Low-Sec</a>
+                                <a href="/kills/nullsec">Null-Sec</a>
+                                <a href="/kills/w-space">W-Space</a>
+                                <a href="/kills/abyssal">Abyssal</a>
+                                <a href="/kills/pochven">Pochven</a>
+                                <div class="dropdown-section-header">Ship Classes</div>
+                                <a href="/kills/frigates">Frigates</a>
+                                <a href="/kills/destroyers">Destroyers</a>
+                                <a href="/kills/cruisers">Cruisers</a>
+                                <a href="/kills/battlecruisers">Battlecruisers</a>
+                                <a href="/kills/battleships">Battleships</a>
+                                <a href="/kills/capitals">Capitals</a>
+                                <a href="/kills/supercarriers">Supercarriers</a>
+                                <a href="/kills/titans">Titans</a>
+                                <a href="/kills/freighters">Freighters</a>
+                                <div class="dropdown-section-header">Structures</div>
+                                <a href="/kills/citadels">Citadels</a>
+                                <a href="/kills/structures">All Structures</a>
+                                <div class="dropdown-section-header">Tech Level</div>
+                                <a href="/kills/t1">T1</a>
+                                <a href="/kills/t2">T2</a>
+                                <a href="/kills/t3">T3</a>
+                                <div class="dropdown-section-header">Value</div>
+                                <a href="/kills/5b">5B+</a>
+                                <a href="/kills/10b">10B+</a>
+                            </div>
+                        </div>
+                    </td>
                     {{#if followedEntities.hasEntities}}
-                    <td><a href="/entities/kills">Kills</a></td>
-                    <td><a href="/entities/losses">Losses</a></td>
                     <td class="nav-dropdown">
                         <div class="nav-dropdown-wrapper">
                             <a href="/entities">Entities</a>
@@ -314,8 +377,6 @@
                             </div>
                         </div>
                     </td>
-                    {{else}}
-                    <td><a href="/kills">Kills</a></td>
                     {{/if}}
                     <td><a href="/post">Post</a></td>
                     <td class="nav-search">

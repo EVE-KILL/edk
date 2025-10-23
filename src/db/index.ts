@@ -86,13 +86,13 @@ class DatabaseConnection {
       rawSqlite.run("PRAGMA foreign_keys = ON;");
       rawSqlite.run("PRAGMA synchronous = NORMAL;");
       rawSqlite.exec("PRAGMA busy_timeout = 5000;");
-      rawSqlite.exec("PRAGMA cache_size = -64000;");
+      rawSqlite.exec("PRAGMA cache_size = 268435456;;");
       rawSqlite.exec("PRAGMA temp_store = MEMORY;");
       rawSqlite.exec("PRAGMA mmap_size = 268435456;");
       rawSqlite.exec("PRAGMA analysis_limit = 1000;");
 
       logger.database(`Connected: ${DATABASE_PATH}`);
-      logger.database("Performance optimizations enabled: WAL, 64MB cache, 256MB mmap");
+      logger.database("Performance optimizations enabled: WAL, 256MB cache, 256MB mmap");
 
       this.rawSqlite = rawSqlite;
 
