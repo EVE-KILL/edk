@@ -1,6 +1,6 @@
 # HTTP Headers Optimization
 
-EVE Kill v4 implements comprehensive HTTP header optimization for performance, caching, and security.
+EDK implements comprehensive HTTP header optimization for performance, caching, and security.
 
 ## Overview
 

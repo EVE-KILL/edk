@@ -1,6 +1,6 @@
 # Streaming Responses
 
-EVE Kill v4 implements HTTP streaming for improved performance and user experience on large pages.
+EDK implements HTTP streaming for improved performance and user experience on large pages.
 
 ## Overview
 

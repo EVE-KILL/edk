@@ -138,8 +138,8 @@ export class Controller extends WebController {
       // Use streaming for better TTFB on large kill lists
       return await this.renderPage(
         "pages/kills",
-        "Kills - EVE Kill v4",
-        "Browse recent killmails on EVE Kill v4",
+        "Kills - EDK",
+        "Browse recent killmails on EDK",
         data
       );
     }

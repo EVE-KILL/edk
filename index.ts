@@ -73,7 +73,7 @@ async function startManagementServer() {
 }
 
 /**
- * EVE Kill v4 - Bun server with automatic route injection
+ * EDK - Bun server with automatic route injection
  */
 async function startServer() {
   await loadModules();

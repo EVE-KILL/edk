@@ -105,7 +105,7 @@ export abstract class BaseController {
    * Set up common security and CORS headers
    */
   protected setupCommonHeaders(): void {
-    this.setHeader("X-Powered-By", "EVE Kill v4");
+    this.setHeader("X-Powered-By", "EDK");
     this.setHeader("X-Content-Type-Options", "nosniff");
     this.setHeader("X-Frame-Options", "DENY");
     this.setHeader("X-XSS-Protection", "1; mode=block");

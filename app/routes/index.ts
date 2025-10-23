@@ -98,7 +98,7 @@ export class Controller extends WebController {
 
       const data = {
         config: {
-          title: "EVE Kill v4",
+          title: "EDK",
           subtitle: "The Ultimate EVE Online Killboard"
         },
         killmails,
@@ -120,7 +120,7 @@ export class Controller extends WebController {
 
       return await this.renderPage(
         "pages/home",
-        "EVE Kill v4",
+        "EDK",
         "Track EVE Online killmails with classic EVEDEV-KB layout. Real-time killmail tracking and comprehensive statistics.",
         data
       );
@@ -130,7 +130,7 @@ export class Controller extends WebController {
       // Fallback to empty data if there's an error
       const data = {
         config: {
-          title: "EVE Kill v4",
+          title: "EDK",
           subtitle: "The Ultimate EVE Online Killboard"
         },
         killmails: [],
@@ -163,7 +163,7 @@ export class Controller extends WebController {
 
       return await this.renderPage(
         "pages/home",
-        "EVE Kill v4",
+        "EDK",
         "Track EVE Online killmails with classic EVEDEV-KB layout. Real-time killmail tracking and comprehensive statistics.",
         data
       );

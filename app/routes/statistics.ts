@@ -12,7 +12,7 @@ export class Controller extends WebController {
 
     return await this.renderPage(
       "pages/statistics",
-      "Statistics - EVE Kill v4",
+      "Statistics - EDK",
       "View statistics for followed characters, corporations, and alliances",
       data
     );

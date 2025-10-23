@@ -1,6 +1,6 @@
 # Theme System
 
-The EVE Kill v4 killboard supports a flexible theme system that allows you to create custom themes without modifying the core application code.
+The EDK killboard supports a flexible theme system that allows you to create custom themes without modifying the core application code.
 
 ## Directory Structure
 

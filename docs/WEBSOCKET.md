@@ -2,7 +2,7 @@
 
 ## Overview
 
-The EVE Kill v4 system includes a real-time WebSocket endpoint for broadcasting events to connected clients. The endpoint is **server-emits-only**, meaning:
+The EDK system includes a real-time WebSocket endpoint for broadcasting events to connected clients. The endpoint is **server-emits-only**, meaning:
 
 - ✅ Server broadcasts updates to all connected clients
 - ❌ Client messages are silently ignored (not processed)

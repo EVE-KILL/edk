@@ -1,6 +1,6 @@
 # Response Caching
 
-EVE Kill v4 implements automatic HTTP response caching to improve performance and reduce database load.
+EDK implements automatic HTTP response caching to improve performance and reduce database load.
 
 ## How It Works
 

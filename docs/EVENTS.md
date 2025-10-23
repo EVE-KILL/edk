@@ -6,7 +6,7 @@
 
 
 
-EVE Kill v4 uses an internal event system to communicate between separate processes:EVE Kill v4 uses an internal event system to communicate between separate processes:
+EDK uses an internal event system to communicate between separate processes:EDK uses an internal event system to communicate between separate processes:
 
 
 

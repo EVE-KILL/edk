@@ -2,7 +2,7 @@
 
 ## Overview
 
-The EVE Kill v4 homepage displays comprehensive killboard statistics that can be filtered to specific entities (characters, corporations, or alliances) via `.env` configuration. This allows both global killboards (all killmails) and focused killboards (specific entities only).
+The EDK homepage displays comprehensive killboard statistics that can be filtered to specific entities (characters, corporations, or alliances) via `.env` configuration. This allows both global killboards (all killmails) and focused killboards (specific entities only).
 
 ## Features
 

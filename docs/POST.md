@@ -1,7 +1,7 @@
 # Post Killmail Feature
 
 ## Overview
-A user-friendly interface for posting killmails from ESI to EVE Kill v4. Users can paste ESI URLs or JSON data, and the system will automatically fetch and process the killmail.
+A user-friendly interface for posting killmails from ESI to EDK. Users can paste ESI URLs or JSON data, and the system will automatically fetch and process the killmail.
 
 ## Features
 

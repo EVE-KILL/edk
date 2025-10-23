@@ -69,7 +69,7 @@ export class Controller extends WebController {
 
       return await this.renderPage(
         "pages/entities",
-        "Entities - EVE Kill v4",
+        "Entities - EDK",
         "View statistics for followed entities",
         data
       );
@@ -223,7 +223,7 @@ export class Controller extends WebController {
 
     return await this.renderPage(
       "pages/entities",
-      "Entities - EVE Kill v4",
+      "Entities - EDK",
       "View statistics for followed entities",
       data
     );

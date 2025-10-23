@@ -2,7 +2,7 @@
 
 ## Overview
 
-The EVE Kill v4 system now includes a real-time entity update system that broadcasts entity data (characters, corporations, alliances, ship types, systems, regions) to connected WebSocket clients. This solves the issue where entity names may not be available immediately when a killmail is first processed, but become available later after ESI/EVE-KILL data is fetched.
+The EDK system now includes a real-time entity update system that broadcasts entity data (characters, corporations, alliances, ship types, systems, regions) to connected WebSocket clients. This solves the issue where entity names may not be available immediately when a killmail is first processed, but become available later after ESI/EVE-KILL data is fetched.
 
 ## Problem Solved
 

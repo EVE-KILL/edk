@@ -2,7 +2,7 @@
 
 ## Overview
 
-Successfully implemented stale-while-revalidate (SWR) caching strategy for EVE Kill v4. This provides better performance and user experience by serving cached content immediately while refreshing it in the background.
+Successfully implemented stale-while-revalidate (SWR) caching strategy for EDK. This provides better performance and user experience by serving cached content immediately while refreshing it in the background.
 
 ## What Changed
 

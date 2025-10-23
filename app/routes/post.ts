@@ -30,8 +30,8 @@ export class Controller extends WebController {
 
     return await this.renderPage(
       "pages/post",
-      "Post Killmail - EVE Kill v4",
-      "Post a killmail from ESI to EVE Kill v4",
+      "Post Killmail - EDK",
+      "Post a killmail from ESI to EDK",
       data
     );
   }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-EVE Kill v4 uses **Drizzle ORM** with **SQLite** (via Bun's native driver) for data persistence. The architecture is designed to be:
+EDK uses **Drizzle ORM** with **SQLite** (via Bun's native driver) for data persistence. The architecture is designed to be:
 
 - **Type-safe** - Full TypeScript inference on all queries
 - **Performant** - Uses Bun's native SQLite driver (faster than better-sqlite3)

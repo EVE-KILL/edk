@@ -49,7 +49,7 @@ export async function renderTemplate(
     const layoutData = {
       ...data,
       body: pageContent,
-      title: data.title || "EVE Kill v4"
+      title: data.title || "EDK"
     };
 
     return layoutTemplate(layoutData);
