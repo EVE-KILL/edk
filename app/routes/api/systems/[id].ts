@@ -1,26 +1,34 @@
 import { ApiController } from "../../../../src/controllers/api-controller";
-import { SolarSystemService } from "../../../services/esi/solar-system-service";
+import { solarSystems } from "../../../../db/schema";
+import { eq } from "drizzle-orm";
 
 export class Controller extends ApiController {
-  // ESI solar system data rarely changes - cache for 24 hours
+  // Solar system data is static - cache for 7 days
   static cacheConfig = {
-    ttl: 86400,
-    staleWhileRevalidate: 86400,
+    ttl: 604800,
+    staleWhileRevalidate: 604800,
     vary: ["id"],
   };
 
   override async get() {
     const { id } = this.params;
+
+    if (!id) {
+      return this.error("System ID required", 400);
+    }
+
     const systemId = Number.parseInt(id);
 
     if (Number.isNaN(systemId)) {
       return this.error("Invalid system ID", 400);
     }
 
-    const systemService = new SolarSystemService();
-
     try {
-      const system = await systemService.getSolarSystem(systemId);
+      const system = await this.db
+        .select()
+        .from(solarSystems)
+        .where(eq(solarSystems.systemId, systemId))
+        .get();
 
       if (!system) {
         return this.error("Solar system not found", 404);

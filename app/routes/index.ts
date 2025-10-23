@@ -100,8 +100,7 @@ export class Controller extends WebController {
 
       const data = {
         config: {
-          title: "EDK",
-          subtitle: "The Ultimate EVE Online Killboard"
+          title: "EDK"
         },
         killmails,
         statistics,
@@ -133,8 +132,7 @@ export class Controller extends WebController {
       // Fallback to empty data if there's an error
       const data = {
         config: {
-          title: "EDK",
-          subtitle: "The Ultimate EVE Online Killboard"
+          title: "EDK"
         },
         killmails: [],
         statistics: {

@@ -80,6 +80,10 @@ export class Controller extends WebController {
       await dispatcher.dispatch("killmail-fetch", "fetch", {
         killmailId,
         hash,
+      }, {
+        priority: 1,
+        maxAttempts: 3,
+        skipIfExists: true,
       });
 
       // Wait for the killmail to be processed (with timeout)

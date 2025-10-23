@@ -4,23 +4,22 @@ import { logger } from "../../src/utils/logger";
 import { CharacterService } from "../services/esi/character-service";
 import { CorporationService } from "../services/esi/corporation-service";
 import { AllianceService } from "../services/esi/alliance-service";
-import { TypeService } from "../services/esi/type-service";
-import { SolarSystemService } from "../services/esi/solar-system-service";
 
 /**
  * ESI Fetcher Worker
  *
- * Fetches data from EVE Swagger Interface (ESI):
+ * Fetches dynamic data from EVE Swagger Interface (ESI):
  * - Character names and info
  * - Corporation info
  * - Alliance info
- * - Ship types
- * - Solar systems
+ *
+ * Note: Type and System data is static and imported at startup,
+ * so no need to fetch them on-demand.
  *
  * Uses proper ESI services with rate limiting and database caching
  */
 export class ESIFetcher extends BaseWorker<{
-  type: "character" | "corporation" | "alliance" | "type" | "system";
+  type: "character" | "corporation" | "alliance";
   id: number;
 }> {
   override queueName = "esi";
@@ -30,8 +29,6 @@ export class ESIFetcher extends BaseWorker<{
   private characterService = new CharacterService();
   private corporationService = new CorporationService();
   private allianceService = new AllianceService();
-  private typeService = new TypeService();
-  private systemService = new SolarSystemService();
 
   override async handle(payload: { type: string; id: number }, job: Job) {
     const { type, id } = payload;
@@ -55,16 +52,6 @@ export class ESIFetcher extends BaseWorker<{
           logger.info(`⬇️  [ESIFetcher] Fetching alliance ${id}...`);
           result = await this.allianceService.getAlliance(id);
           logger.info(`✅ [ESIFetcher] Fetched alliance ${id}: ${result?.name || "Unknown"}`);
-          break;
-        case "type":
-          logger.info(`⬇️  [ESIFetcher] Fetching type ${id}...`);
-          result = await this.typeService.getType(id);
-          logger.info(`✅ [ESIFetcher] Fetched type ${id}: ${result?.name || "Unknown"}`);
-          break;
-        case "system":
-          logger.info(`⬇️  [ESIFetcher] Fetching system ${id}...`);
-          result = await this.systemService.getSolarSystem(id);
-          logger.info(`✅ [ESIFetcher] Fetched system ${id}: ${result?.name || "Unknown"}`);
           break;
         default:
           throw new Error(`Unknown ESI type: ${type}`);

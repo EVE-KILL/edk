@@ -1,21 +1,21 @@
 import { BaseCronjob, type CronjobResult } from "../../src/scheduler/base-cronjob";
 import { db } from "../../src/db";
-import { characters, corporations, alliances, types, solarSystems } from "../../db/schema";
+import { characters, corporations, alliances } from "../../db/schema";
 import { queue } from "../../src/queue/job-dispatcher";
-import { lt, sql } from "drizzle-orm";
+import { lt } from "drizzle-orm";
 
 /**
  * Entity Refresh Cronjob
  *
- * Schedules ESI updates for entities older than 7 days
+ * Schedules ESI updates for dynamic entities older than 7 days
  * Runs every hour and spreads updates across 24 hours to avoid overwhelming ESI
  *
  * Entities refreshed:
  * - Characters
  * - Corporations
  * - Alliances
- * - Types (ships, items, etc.)
- * - Solar Systems
+ *
+ * Note: Types and Solar Systems are static data imported at startup, so no need to refresh them.
  *
  * Strategy:
  * - Check entities with updatedAt older than 7 days
@@ -36,8 +36,6 @@ export default class EntityRefreshCronjob extends BaseCronjob {
     characters: 100,    // 2,400 characters/day
     corporations: 50,   // 1,200 corporations/day
     alliances: 25,      // 600 alliances/day
-    types: 50,          // 1,200 types/day
-    systems: 50,        // 1,200 systems/day
   };
 
   async execute(): Promise<CronjobResult> {
@@ -62,19 +60,11 @@ export default class EntityRefreshCronjob extends BaseCronjob {
       const alliancesScheduled = await this.refreshAlliances(sevenDaysAgo);
       totalScheduled += alliancesScheduled;
 
-      // Refresh types
-      const typesScheduled = await this.refreshTypes(sevenDaysAgo);
-      totalScheduled += typesScheduled;
-
-      // Refresh solar systems
-      const systemsScheduled = await this.refreshSystems(sevenDaysAgo);
-      totalScheduled += systemsScheduled;
-
       this.info(`Scheduled ${totalScheduled} entity updates`);
 
       return {
         success: true,
-        message: `Scheduled ${totalScheduled} entity updates (chars: ${charactersScheduled}, corps: ${corporationsScheduled}, alliances: ${alliancesScheduled}, types: ${typesScheduled}, systems: ${systemsScheduled})`,
+        message: `Scheduled ${totalScheduled} entity updates (chars: ${charactersScheduled}, corps: ${corporationsScheduled}, alliances: ${alliancesScheduled})`,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -156,53 +146,5 @@ export default class EntityRefreshCronjob extends BaseCronjob {
     }
 
     return staleAlliances.length;
-  }
-
-  /**
-   * Refresh stale types
-   */
-  private async refreshTypes(threshold: Date): Promise<number> {
-    const staleTypes = await db
-      .select({ typeId: types.typeId })
-      .from(types)
-      .where(lt(types.updatedAt, threshold))
-      .limit(this.BATCH_SIZE.types);
-
-    for (const type of staleTypes) {
-      await queue.dispatch("esi", "type", {
-        type: "type",
-        id: type.typeId,
-      });
-    }
-
-    if (staleTypes.length > 0) {
-      this.info(`  ↳ Scheduled ${staleTypes.length} types for refresh`);
-    }
-
-    return staleTypes.length;
-  }
-
-  /**
-   * Refresh stale solar systems
-   */
-  private async refreshSystems(threshold: Date): Promise<number> {
-    const staleSystems = await db
-      .select({ systemId: solarSystems.systemId })
-      .from(solarSystems)
-      .where(lt(solarSystems.updatedAt, threshold))
-      .limit(this.BATCH_SIZE.systems);
-
-    for (const system of staleSystems) {
-      await queue.dispatch("esi", "system", {
-        type: "system",
-        id: system.systemId,
-      });
-    }
-
-    if (staleSystems.length > 0) {
-      this.info(`  ↳ Scheduled ${staleSystems.length} systems for refresh`);
-    }
-
-    return staleSystems.length;
   }
 }

@@ -14,6 +14,43 @@ export class JobDispatcher {
   constructor(private db: BunSQLiteDatabase<any>) {}
 
   /**
+   * Check if a job with the same queue, type, and payload is already enqueued
+   *
+   * @example
+   * ```typescript
+   * const exists = await queue.exists("esi", "character", { type: "character", id: 123 });
+   * if (!exists) {
+   *   await queue.dispatch("esi", "character", { type: "character", id: 123 });
+   * }
+   * ```
+   */
+  async exists<TPayload = any>(
+    queue: string,
+    type: string,
+    payload: TPayload
+  ): Promise<boolean> {
+    const payloadJson = JSON.stringify(payload);
+
+    const existing = await this.db
+      .select()
+      .from(jobs)
+      .where(
+        and(
+          eq(jobs.queue, queue),
+          eq(jobs.type, type),
+          sql`json(${jobs.payload}) = json(${sql.raw(`'${payloadJson}'`)})`,
+          or(
+            eq(jobs.status, "pending"),
+            eq(jobs.status, "processing")
+          )
+        )
+      )
+      .get();
+
+    return !!existing;
+  }
+
+  /**
    * Enqueue a single job
    *
    * @example
@@ -32,14 +69,20 @@ export class JobDispatcher {
       priority?: number; // Lower = higher priority (default: 0)
       delay?: number; // Delay in seconds (default: 0)
       maxAttempts?: number; // Max retry attempts (default: 3)
+      skipIfExists?: boolean; // Skip if job already exists (default: false)
     } = {}
-  ): Promise<Job> {
+  ): Promise<Job | null> {
     const now = new Date();
     const availableAt = options.delay
       ? new Date(now.getTime() + options.delay * 1000)
       : now;
 
-    const [job] = await this.db
+    // Check if job already exists if skipIfExists is true
+    if (options.skipIfExists && await this.exists(queue, type, payload)) {
+      return null;
+    }
+
+    const jobs_result = await this.db
       .insert(jobs)
       .values({
         queue,
@@ -54,7 +97,7 @@ export class JobDispatcher {
       })
       .returning();
 
-    return job;
+    return jobs_result[0] ?? null;
   }
 
   /**
@@ -290,11 +333,12 @@ export class JobDispatcher {
   async count(queue?: string): Promise<number> {
     const where = queue ? eq(jobs.queue, queue) : undefined;
 
-    const [result] = await this.db
+    const result = await this.db
       .select({ count: sql<number>`count(*)` })
       .from(jobs)
-      .where(where);
+      .where(where)
+      .get();
 
-    return result.count;
+    return result?.count ?? 0;
   }
 }

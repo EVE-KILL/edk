@@ -409,6 +409,7 @@ async function getActivePilotsStats(filters?: StatsFilters) {
   const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
 
   // Single query with CASE to get all time periods at once
+  // Count unique characters from the attackers table (where characterId is not NULL)
   let query = db
     .select({
       period: sql<string>`CASE
@@ -438,10 +439,30 @@ async function getActivePilotsStats(filters?: StatsFilters) {
   // Extract counts from result
   const resultMap = new Map(results.map((r: any) => [r.period, r.count]));
 
+  // Fallback: if no results from attackers, count from characters table
+  const totalPilots = (resultMap.get('all') as number) || 0;
+  let activePilots24h = (resultMap.get('24h') as number) || 0;
+  let activePilots7d = (resultMap.get('7d') as number) || 0;
+
+  // If we got no results from attackers but have data, try counting from characters table
+  if (totalPilots === 0) {
+    const totalCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(characters)
+      .get();
+    
+    // Return character count for total unique pilots
+    return {
+      activePilotsLast24Hours: activePilots24h,
+      activePilotsLast7Days: activePilots7d,
+      totalUniquePilots: totalCount?.count || 0,
+    };
+  }
+
   return {
-    activePilotsLast24Hours: (resultMap.get('24h') as number) || 0,
-    activePilotsLast7Days: (resultMap.get('7d') as number) || 0,
-    totalUniquePilots: (resultMap.get('all') as number) || 0,
+    activePilotsLast24Hours: activePilots24h,
+    activePilotsLast7Days: activePilots7d,
+    totalUniquePilots: totalPilots,
   };
 }
 

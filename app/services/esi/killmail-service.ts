@@ -267,22 +267,6 @@ export class KillmailService extends EveKillProxyService {
         existingTypes.map((t) => [t.typeId, t.categoryId])
       );
 
-      // Queue type-fetch jobs for missing or incomplete types
-      const typesToFetch = typeIdArray.filter(
-        (typeId) => !existingTypeMap.has(typeId) || existingTypeMap.get(typeId) === null
-      );
-
-      if (typesToFetch.length > 0) {
-        logger.info(
-          `Queueing ${typesToFetch.length} type-fetch jobs for killmail ${esiData.killmail_id}`
-        );
-
-        await Promise.all(
-          typesToFetch.map((typeId) =>
-            queue.dispatch("type-fetch", "fetch", { typeId }, { priority: 5 })
-          )
-        );
-      }
 
       logger.info(
         `Saved killmail ${esiData.killmail_id} with ${attackerCount} attackers and ${esiData.victim.items?.length || 0} items`

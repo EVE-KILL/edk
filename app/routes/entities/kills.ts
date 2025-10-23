@@ -126,10 +126,20 @@ export class Controller extends WebController {
 
     const totalISKDestroyed = parseFloat(killStats?.totalISKDestroyed || "0");
     const totalISKLost = parseFloat(lossStats?.totalISKLost || "0");
+    
+    // Calculate efficiency based on kill/loss counts
+    const totalKills = killStats?.totalKills || 0;
+    const totalLosses = lossStats?.totalLosses || 0;
     const efficiency =
+      totalKills + totalLosses > 0
+        ? (totalKills / (totalKills + totalLosses)) * 100
+        : 0;
+    
+    // Calculate ISK efficiency based on ISK values
+    const iskEfficiency =
       totalISKDestroyed + totalISKLost > 0
-        ? ((totalISKDestroyed / (totalISKDestroyed + totalISKLost)) * 100).toFixed(2)
-        : "0.00";
+        ? (totalISKDestroyed / (totalISKDestroyed + totalISKLost)) * 100
+        : 0;
 
     // Get pagination parameters
     const url = new URL(this.request.url);
@@ -197,12 +207,12 @@ export class Controller extends WebController {
         losses: lossStats?.totalLosses || 0,
         killLossRatio:
           (lossStats?.totalLosses || 0) > 0
-            ? ((killStats?.totalKills || 0) / (lossStats?.totalLosses || 0)).toFixed(2)
-            : (killStats?.totalKills || 0).toString(),
+            ? (killStats?.totalKills || 0) / (lossStats?.totalLosses || 0)
+            : (killStats?.totalKills || 0),
         efficiency,
         iskDestroyed: killStats?.totalISKDestroyed || "0",
         iskLost: lossStats?.totalISKLost || "0",
-        iskEfficiency: efficiency,
+        iskEfficiency,
       },
       pagination: {
         currentPage,

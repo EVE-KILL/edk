@@ -277,7 +277,10 @@ export default class BackfillCommand extends BaseCommand {
           retries = 0;
           while (retries < maxRetries) {
             try {
-              await this.dispatcher!.dispatchMany("killmail-fetch", "fetch", chunk);
+              await this.dispatcher!.dispatchMany("killmail-fetch", "fetch", chunk, {
+                priority: 50,
+                maxAttempts: 3
+              });
               this.stats.new += chunk.length;
               break; // Success
             } catch (err: any) {

@@ -217,10 +217,23 @@ export function registerHelpers() {
     return values.some(val => !!val);
   });
 
-  // Format number with commas
+  // Format number with commas (handles decimals correctly)
   Handlebars.registerHelper("formatNumber", function(num: number) {
     if (!num && num !== 0) return "0";
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    
+    // Round to 2 decimal places for display
+    const rounded = Math.round(num * 100) / 100;
+    
+    // Split into integer and decimal parts
+    const parts = rounded.toString().split('.');
+    const intPart = parts[0] || "0";
+    const decPart = parts[1];
+    
+    // Add thousand separators to integer part only
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    
+    // Return with decimal part if it exists
+    return decPart ? `${formattedInt}.${decPart}` : formattedInt;
   });
 
   // Calculate damage percentage

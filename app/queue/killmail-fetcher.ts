@@ -59,15 +59,14 @@ export class KillmailFetcher extends BaseWorker<{
 
   /**
    * Enqueue ESI fetch jobs for all entities in the killmail
+   *
+   * Only enqueues dynamic data (characters, corporations, alliances).
+   * Static data (types, systems, regions, etc.) is already imported at startup
+   * and stored in the database, so no need to fetch on-demand.
    */
   private async enqueueESIFetches(data: any) {
     logger.info(`📤 [KillmailFetcher] Starting to enqueue ESI fetch jobs...`);
     const idsToFetch = new Set<string>();
-
-    // Solar system
-    if (data.killmail.solarSystemId) {
-      idsToFetch.add(`system:${data.killmail.solarSystemId}`);
-    }
 
     // Victim
     if (data.victim) {
@@ -79,9 +78,6 @@ export class KillmailFetcher extends BaseWorker<{
       }
       if (data.victim.allianceId) {
         idsToFetch.add(`alliance:${data.victim.allianceId}`);
-      }
-      if (data.victim.shipTypeId) {
-        idsToFetch.add(`type:${data.victim.shipTypeId}`);
       }
     }
 
@@ -96,19 +92,6 @@ export class KillmailFetcher extends BaseWorker<{
       if (attacker.allianceId) {
         idsToFetch.add(`alliance:${attacker.allianceId}`);
       }
-      if (attacker.shipTypeId) {
-        idsToFetch.add(`type:${attacker.shipTypeId}`);
-      }
-      if (attacker.weaponTypeId) {
-        idsToFetch.add(`type:${attacker.weaponTypeId}`);
-      }
-    }
-
-    // Items
-    for (const item of data.items || []) {
-      if (item.itemTypeId) {
-        idsToFetch.add(`type:${item.itemTypeId}`);
-      }
     }
 
     // Enqueue all ESI jobs with HIGH priority
@@ -118,10 +101,11 @@ export class KillmailFetcher extends BaseWorker<{
       if (!type || !idStr) continue;
 
       await queue.dispatch("esi", type, {
-        type: type as "character" | "corporation" | "alliance" | "type" | "system",
+        type: type as "character" | "corporation" | "alliance",
         id: Number.parseInt(idStr),
       }, {
         priority: 0, // Highest priority - process data for new killmails first
+        skipIfExists: true, // Skip if already enqueued to avoid duplicates
       });
     }
 
