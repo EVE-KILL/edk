@@ -32,501 +32,22 @@
                             <td class="kb-table-header" style="text-align: center; width: 80px; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Status</td>
                         </tr>
 
-                        {{#unless items.destroyed.highSlots.length}}
-                        {{#unless items.dropped.highSlots.length}}
-                        {{#unless items.destroyed.medSlots.length}}
-                        {{#unless items.dropped.medSlots.length}}
-                        {{#unless items.destroyed.lowSlots.length}}
-                        {{#unless items.dropped.lowSlots.length}}
-                        {{#unless items.destroyed.rigSlots.length}}
-                        {{#unless items.dropped.rigSlots.length}}
-                        {{#unless items.destroyed.droneBay.length}}
-                        {{#unless items.dropped.droneBay.length}}
-                        {{#unless items.destroyed.cargo.length}}
-                        {{#unless items.dropped.cargo.length}}
-                        <tr class="kb-table-row-even" style="background: transparent;">
-                            <td class="kb-table-cell" colspan="5" style="text-align: center; font-style: italic; color: var(--color-text-secondary); padding: 8px; background: transparent; border: none;">No items destroyed or dropped</td>
-                        </tr>
-                        {{/unless}}
-                        {{/unless}}
-                        {{/unless}}
-                        {{/unless}}
-                        {{/unless}}
-                        {{/unless}}
-                        {{/unless}}
-                        {{/unless}}
-                        {{/unless}}
-                        {{/unless}}
-                        {{/unless}}
-                        {{/unless}}
-
-                <!-- High Slots -->
-                {{#if items.destroyed.highSlots.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5" style="padding: 4px 8px;"><b>High Slots</b></td>
-                </tr>
-                {{#each items.destroyed.highSlots}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
+                        {{#with (prepareItemSections items)}}
+                        {{#if this.length}}
+                            {{#each this}}
+                            <tr class="kb-table-row-even">
+                                <td class="kb-table-cell" colspan="5" style="padding: 4px 8px;"><b>{{title}}</b></td>
+                            </tr>
+                            {{#each items}}
+                            {{> partials/item-row}}
+                            {{/each}}
+                            {{/each}}
                         {{else}}
-                            <span style="color: #999;">N/A</span>
+                            <tr class="kb-table-row-even" style="background: transparent;">
+                                <td class="kb-table-cell" colspan="5" style="text-align: center; font-style: italic; color: var(--color-text-secondary); padding: 8px; background: transparent; border: none;">No items destroyed or dropped</td>
+                            </tr>
                         {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-loss">Destroyed</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{/if}}
-                {{#if items.dropped.highSlots.length}}
-                {{#unless items.destroyed.highSlots.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5" style="padding: 4px 8px;"><b>High Slots</b></td>
-                </tr>
-                {{/unless}}
-                {{#each items.dropped.highSlots}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-kill">Dropped</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{/if}}
-
-                <!-- Med Slots -->
-                {{#if items.destroyed.medSlots.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Med Slots</b></td>
-                </tr>
-                {{#each items.destroyed.medSlots}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-loss">Destroyed</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{else}}
-                {{#if items.dropped.medSlots.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Med Slots</b></td>
-                </tr>
-                {{/if}}
-                {{/if}}
-                {{#if items.dropped.medSlots.length}}
-                {{#each items.dropped.medSlots}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-kill">Dropped</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{/if}}
-
-                <!-- Low Slots -->
-                {{#if items.destroyed.lowSlots.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Low Slots</b></td>
-                </tr>
-                {{#each items.destroyed.lowSlots}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-loss">Destroyed</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{else}}
-                {{#if items.dropped.lowSlots.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Low Slots</b></td>
-                </tr>
-                {{/if}}
-                {{/if}}
-                {{#if items.dropped.lowSlots.length}}
-                {{#each items.dropped.lowSlots}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-kill">Dropped</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{/if}}
-
-                <!-- Rig Slots -->
-                {{#if items.destroyed.rigSlots.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Rig Slots</b></td>
-                </tr>
-                {{#each items.destroyed.rigSlots}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-loss">Destroyed</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{else}}
-                {{#if items.dropped.rigSlots.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Rig Slots</b></td>
-                </tr>
-                {{/if}}
-                {{/if}}
-                {{#if items.dropped.rigSlots.length}}
-                {{#each items.dropped.rigSlots}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-kill">Dropped</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{/if}}
-
-                                <!-- Subsystem Slots -->
-                {{#if items.destroyed.subSlots.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Subsystem Slots</b></td>
-                </tr>
-                {{#each items.destroyed.subSlots}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-loss">Destroyed</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{else}}
-                {{#if items.dropped.subSlots.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Subsystem Slots</b></td>
-                </tr>
-                {{/if}}
-                {{/if}}
-                {{#if items.dropped.subSlots.length}}
-                {{#each items.dropped.subSlots}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-kill">Dropped</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{/if}}
-
-                <!-- Drone Bay -->
-                {{#if items.destroyed.droneBay.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Drones</b></td>
-                </tr>
-                {{#each items.destroyed.droneBay}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-loss">Destroyed</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{else}}
-                {{#if items.dropped.droneBay.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Drones</b></td>
-                </tr>
-                {{/if}}
-                {{/if}}
-                {{#if items.dropped.droneBay.length}}
-                {{#each items.dropped.droneBay}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-kill">Dropped</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{/if}}
-
-                <!-- Cargo -->
-                {{#if items.destroyed.cargo.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Cargo</b></td>
-                </tr>
-                {{#each items.destroyed.cargo}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-loss">Destroyed</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{else}}
-                {{#if items.dropped.cargo.length}}
-                <tr class="kb-table-row-even">
-                    <td class="kb-table-cell" colspan="5"><b>Cargo</b></td>
-                </tr>
-                {{/if}}
-                {{/if}}
-                {{#if items.dropped.cargo.length}}
-                {{#each items.dropped.cargo}}
-                <tr class="kb-table-row-odd">
-                    <td class="kb-table-cell" style="padding: 4px 8px;">
-                        {{> partials/eve-image type="item" id=typeId size=32 alt=name}}
-                        {{name}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{quantity}}</td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if price}}
-                            <span title="Average: {{formatISK price.average}}">{{formatISK price.average}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
-                        {{#if totalValue}}
-                            <span class="isk-value">{{formatISK totalValue}}</span>
-                        {{else}}
-                            <span style="color: #999;">N/A</span>
-                        {{/if}}
-                    </td>
-                    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
-                        <span class="kl-kill">Dropped</span>
-                    </td>
-                </tr>
-                {{/each}}
-                {{/if}}
+                        {{/with}}
 
                 <!-- Totals Row -->
                 <tr class="kb-table-header">
@@ -556,6 +77,12 @@
                         <span class="isk-value">{{formatISK stats.shipValue}}</span>
                     </td>
                 </tr>
+                <tr class="kb-table-row-odd">
+                    <td class="kb-table-cell"><b>Total:</b></td>
+                    <td class="kb-table-cell" style="text-align: right;" colspan="4">
+                        <span class="isk-value">{{formatISK stats.totalValue}}</span>
+                    </td>
+                </tr>
                     </table>
                 </div>
             </div>
@@ -571,93 +98,73 @@
             {{> partials/killmail-victim-info}}
         </div>
 
-        <!-- Final Blow -->
+        <!-- Final Blow (only show if more than 1 attacker) -->
         {{#if finalBlow}}
-        <div style="margin-bottom: 10px;">
-            <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;">
-                <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
-                    <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        Final Blow
-                    </div>
-                </div>
-
-                <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;">
-                    <!-- Character Info -->
-                    <div style="display: flex; gap: 12px; align-items: flex-start;">
-                        <div style="flex-shrink: 0;">
-                            {{#if finalBlow.character.id}}
-                            {{> partials/eve-image type="character" id=finalBlow.character.id size=32 alt=finalBlow.character.name}}
-                            {{/if}}
-                        </div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 11px; color: var(--color-text-white);">{{finalBlow.character.name}}</b></div>
-                            <div style="color: var(--color-text-secondary); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.corporation.name}}</div>
-                            {{#if finalBlow.alliance.name}}
-                            <div style="color: var(--color-text-secondary); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.alliance.name}}</div>
-                            {{/if}}
-                        </div>
-                    </div>
-
-                    <!-- Ship Info -->
-                    <div style="display: flex; gap: 12px; align-items: flex-start; border-top: 1px solid var(--color-border-dark); padding-top: 12px;">
-                        <div style="flex-shrink: 0;">
-                            {{#if finalBlow.ship.typeId}}
-                            {{> partials/eve-image type="ship" id=finalBlow.ship.typeId size=32 alt=finalBlow.ship.name}}
-                            {{/if}}
-                        </div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 11px; color: var(--color-text-white);">{{finalBlow.ship.name}}</b>{{#if finalBlow.ship.groupName}} <span style="color: var(--color-text-secondary); font-size: 9px;">({{finalBlow.ship.groupName}})</span>{{/if}}</div>
-                            {{#if finalBlow.weapon.name}}
-                            <div style="color: var(--color-text-secondary); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{finalBlow.weapon.name}}</div>
-                            {{/if}}
-                            <div style="color: #4ade80; font-weight: bold; font-size: 10px; margin-top: 4px;">{{finalBlow.damageDone}} damage</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        {{#if (gt attackers.length 1)}}
+        <div class="attacker-section">
+            <div class="section-title-attackers">Final Blow</div>
+            {{#with finalBlow}}
+            {{> partials/attacker-card
+                character=character
+                corporation=corporation
+                alliance=alliance
+                faction=faction
+                ship=ship
+                weapon=weapon
+                damageDone=damageDone
+                damagePercent=(damagePercent damageDone ../totalDamage)
+                isFinalBlow=true
+            }}
+            {{/with}}
         </div>
+        {{/if}}
+        {{/if}}
+
+        <!-- Top Damage (only show if different from final blow and more than 1 attacker) -->
+        {{#if topDamage}}
+        {{#if (gt attackers.length 1)}}
+        {{#unless (eq topDamage finalBlow)}}
+        <div class="attacker-section">
+            <div class="section-title-attackers">Top Damage</div>
+            {{#with topDamage}}
+            {{> partials/attacker-card
+                character=character
+                corporation=corporation
+                alliance=alliance
+                faction=faction
+                ship=ship
+                weapon=weapon
+                damageDone=damageDone
+                damagePercent=(damagePercent damageDone ../totalDamage)
+                isTopDamage=true
+            }}
+            {{/with}}
+        </div>
+        {{/unless}}
+        {{/if}}
         {{/if}}
 
         <!-- Involved Parties -->
         {{#if attackers}}
-        <div style="margin-top: 10px;">
-            <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;">
-                <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
-                    <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        Involved Parties ({{attackers.length}})
-                    </div>
-                </div>
-
-                <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;">
-                    {{#each attackers}}
-                    <div style="display: flex; gap: 12px; align-items: flex-start;{{#if @index}} border-top: 1px solid var(--color-border-dark); padding-top: 12px;{{/if}}">
-                        <div style="flex-shrink: 0; position: relative; display: inline-block;">
-                            {{#if character.id}}
-                            {{> partials/eve-image type="character" id=character.id size=32 alt=character.name}}
-                            {{/if}}
-                            {{#if corporation.id}}
-                            {{> partials/eve-image type="corporation" id=corporation.id size=16 alt=corporation.name class="kb-corp-overlay"}}
-                            {{/if}}
-                        </div>
-                        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between;">
-                            <div>
-                                <div style="margin-bottom: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><b style="font-size: 11px; color: var(--color-text-white);">{{character.name}}</b></div>
-                                <div style="color: var(--color-text-secondary); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{corporation.name}}</div>
-                                {{#if alliance.name}}
-                                <div style="color: var(--color-text-secondary); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{alliance.name}}</div>
-                                {{/if}}
-                            </div>
-                            {{#if ship.name}}
-                            <div style="color: var(--color-text-secondary); font-size: 9px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ship.name}}{{#if ship.groupName}} ({{ship.groupName}}){{/if}}</div>
-                            {{/if}}
-                        </div>
-                        <div style="flex-shrink: 0; text-align: right;">
-                            <div style="color: #4ade80; font-weight: bold; font-size: 10px;">{{damageDone}}</div>
-                        </div>
-                    </div>
-                    {{/each}}
-                </div>
-            </div>
+        <div class="attacker-section">
+            <div class="section-title-attackers">Involved Parties ({{attackers.length}})</div>
+            {{#each attackers}}
+            {{> partials/attacker-card
+                character=character
+                corporation=corporation
+                alliance=alliance
+                faction=faction
+                ship=ship
+                weapon=weapon
+                damageDone=damageDone
+                damagePercent=(damagePercent damageDone ../totalDamage)
+                isFinalBlow=finalBlow
+                isTopDamage=(eq this ../topDamage)
+            }}
+            {{#unless @last}}
+            <div class="attacker-separator"></div>
+            {{/unless}}
+            {{/each}}
         </div>
         {{/if}}
 

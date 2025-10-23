@@ -1,0 +1,125 @@
+{{!-- Attacker Card Partial - Displays attacker with portraits, info, ship, weapon, and damage --}}
+<div class="attacker-card">
+    <!-- Portraits Block -->
+    <div class="attacker-portraits">
+        <!-- Character Image -->
+        {{#if character.id}}
+        <a href="/character/{{character.id}}" class="portrait-link">
+            {{> partials/eve-image type="character" id=character.id size=32 alt=character.name class="portrait-char"}}
+        </a>
+        {{else}}
+        {{> partials/eve-image type="character" id=1 size=32 alt="Unknown" class="portrait-char"}}
+        {{/if}}
+
+        <!-- Stacked Corp/Alliance Icons -->
+        {{#if (or corporation.id alliance.id)}}
+        <div class="stacked-icons">
+            {{#if corporation.id}}
+            <a href="/corporation/{{corporation.id}}" class="stacked-icon-link">
+                {{> partials/eve-image type="corporation" id=corporation.id size=16 alt=corporation.name class="portrait-org"}}
+            </a>
+            {{else}}
+            <div class="portrait-placeholder" style="width: 16px; height: 16px;"></div>
+            {{/if}}
+
+            {{#if alliance.id}}
+            <a href="/alliance/{{alliance.id}}" class="stacked-icon-link">
+                {{> partials/eve-image type="alliance" id=alliance.id size=16 alt=alliance.name class="portrait-org"}}
+            </a>
+            {{else}}
+            <div class="portrait-placeholder" style="width: 16px; height: 16px;"></div>
+            {{/if}}
+        </div>
+        {{/if}}
+
+        <!-- Ship Image -->
+        {{#if ship.typeId}}
+        <a href="/item/{{ship.typeId}}" class="portrait-link ship-portrait">
+            {{> partials/eve-image type="ship" id=ship.typeId size=32 alt=ship.name class="portrait-ship"}}
+        </a>
+        {{else}}
+        <div class="portrait-placeholder ship-portrait" style="width: 32px; height: 32px;"></div>
+        {{/if}}
+    </div>
+
+    <!-- Info Block -->
+    <div class="attacker-info">
+        <!-- Character/Corp/Alliance Names -->
+        <div class="entity-names">
+            <div class="entity-name character-name">
+                {{#if character.id}}
+                <a href="/character/{{character.id}}" class="entity-link">
+                    {{#if character.name}}{{character.name}}{{else}}Unknown{{/if}}
+                </a>
+                {{else}}
+                <span>{{#if character.name}}{{character.name}}{{else}}Unknown{{/if}}</span>
+                {{/if}}
+                {{#if isFinalBlow}}
+                <span class="badge badge-fb">FB</span>
+                {{/if}}
+                {{#if isTopDamage}}
+                <span class="badge badge-td">TD</span>
+                {{/if}}
+            </div>
+
+            {{#if corporation.name}}
+            <div class="entity-name corp-name">
+                {{#if corporation.id}}
+                <a href="/corporation/{{corporation.id}}" class="entity-link">{{corporation.name}}</a>
+                {{else}}
+                <span>{{corporation.name}}</span>
+                {{/if}}
+            </div>
+            {{/if}}
+
+            {{#if alliance.name}}
+            <div class="entity-name alliance-name">
+                {{#if alliance.id}}
+                <a href="/alliance/{{alliance.id}}" class="entity-link">{{alliance.name}}</a>
+                {{else}}
+                <span>{{alliance.name}}</span>
+                {{/if}}
+            </div>
+            {{else if faction.name}}
+            <div class="entity-name alliance-name">
+                {{#if faction.id}}
+                <a href="/faction/{{faction.id}}" class="entity-link">{{faction.name}}</a>
+                {{else}}
+                <span>{{faction.name}}</span>
+                {{/if}}
+            </div>
+            {{/if}}
+        </div>
+    </div>
+</div>
+
+<!-- Ship/Weapon/Damage Meta Info -->
+<div class="attacker-meta">
+    <div class="ship-weapon-info">
+        <!-- Ship -->
+        <div class="meta-item ship-meta">
+            {{#if ship.typeId}}
+            {{> partials/eve-image type="item" id=ship.typeId size=16 alt=ship.name}}
+            <a href="/item/{{ship.typeId}}" class="meta-link ship-link">{{ship.name}}</a>
+            {{else}}
+            <span class="meta-text">{{#if ship.name}}{{ship.name}}{{else}}Unknown{{/if}}</span>
+            {{/if}}
+        </div>
+
+        <!-- Weapon -->
+        <div class="meta-item weapon-meta">
+            {{#if weapon.typeId}}
+            {{> partials/eve-image type="item" id=weapon.typeId size=16 alt=weapon.name}}
+            <a href="/item/{{weapon.typeId}}" class="meta-link weapon-link">{{weapon.name}}</a>
+            {{else}}
+            <span class="meta-text">{{#if weapon.name}}{{weapon.name}}{{else}}Unknown{{/if}}</span>
+            {{/if}}
+        </div>
+    </div>
+
+    <!-- Damage -->
+    <div class="damage-display">
+        <span class="damage-value">{{formatNumber damageDone}}</span>
+        <span class="damage-percent">({{damagePercent}}%)</span>
+    </div>
+</div>

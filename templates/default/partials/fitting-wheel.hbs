@@ -20,7 +20,7 @@
 
         <!-- Ship container with image -->
         <div class="ship-container">
-            {{> partials/eve-image type="ship" id=victim.ship.typeId size=1024 alt=victim.ship.name variant="render" class="ship-image" lazy=false}}
+            <img src="https://images.eve-kill.com/types/{{victim.ship.typeId}}/render?size=512" alt="{{victim.ship.name}}" class="ship-image" loading="eager" width="512" height="512"/>
 
             <!-- Tooltip overlay -->
             <div class="center-tooltip-overlay hidden" id="tooltipOverlay">

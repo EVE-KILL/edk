@@ -26,9 +26,21 @@ export class Controller extends WebController {
     // Find final blow attacker
     const finalBlow = killmailDetail.attackers.find(a => a.finalBlow);
 
+    // Find top damage attacker
+    const topDamage = killmailDetail.attackers.length > 0
+      ? killmailDetail.attackers.reduce((highest, current) => {
+          return (current.damageDone || 0) > (highest.damageDone || 0) ? current : highest;
+        })
+      : null;
+
+    // Calculate total damage
+    const totalDamage = killmailDetail.attackers.reduce((sum, attacker) => sum + (attacker.damageDone || 0), 0);
+
     const data = {
       ...killmailDetail,
       finalBlow,
+      topDamage,
+      totalDamage,
     };
 
     const victimName = killmailDetail.victim.character?.name || "Unknown";

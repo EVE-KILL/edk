@@ -210,6 +210,25 @@ export function registerHelpers() {
     return a === b;
   });
 
+  // Logical OR helper - returns true if any argument is truthy
+  Handlebars.registerHelper("or", function(...args: any[]) {
+    // Remove the options object (last argument)
+    const values = args.slice(0, -1);
+    return values.some(val => !!val);
+  });
+
+  // Format number with commas
+  Handlebars.registerHelper("formatNumber", function(num: number) {
+    if (!num && num !== 0) return "0";
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  });
+
+  // Calculate damage percentage
+  Handlebars.registerHelper("damagePercent", function(damage: number, totalDamage: number) {
+    if (!damage || !totalDamage || totalDamage === 0) return "0.0";
+    return ((damage / totalDamage) * 100).toFixed(1);
+  });
+
   // Comparison helpers
   Handlebars.registerHelper("gte", function(a: number, b: number) {
     return a >= b;
@@ -280,11 +299,43 @@ export function registerHelpers() {
     return value !== undefined && value !== null ? value : defaultValue;
   });
 
+  // Helper to prepare items for looping - converts slot-based structure to array of sections
+  Handlebars.registerHelper("prepareItemSections", function(items: any) {
+    const sections = [
+      { key: "highSlots", title: "High Slots" },
+      { key: "medSlots", title: "Med Slots" },
+      { key: "lowSlots", title: "Low Slots" },
+      { key: "rigSlots", title: "Rig Slots" },
+      { key: "subSlots", title: "Subsystem Slots" },
+      { key: "droneBay", title: "Drones" },
+      { key: "cargo", title: "Cargo" }
+    ];
+
+    const result: any[] = [];
+
+    sections.forEach(section => {
+      const destroyed = items.destroyed[section.key] || [];
+      const dropped = items.dropped[section.key] || [];
+
+      if (destroyed.length > 0 || dropped.length > 0) {
+        result.push({
+          title: section.title,
+          items: [
+            ...destroyed.map((item: any) => ({ ...item, isDestroyed: true })),
+            ...dropped.map((item: any) => ({ ...item, isDestroyed: false }))
+          ]
+        });
+      }
+    });
+
+    return result;
+  });
+
   // Round up to nearest valid EVE image size
   // Valid sizes: 32 (types only), 64, 128, 256, 512 (render only)
   Handlebars.registerHelper("roundImageSize", function(requestedSize: number, type: string) {
     const validSizes = type === 'type' || type === 'item' || type === 'ship'
-      ? [32, 64, 128, 256]  // types can use 32
+      ? [32, 64, 128, 256, 512]  // types can use 32
       : [64, 128, 256, 512]; // others start at 64
 
     // Find the smallest valid size that is >= requested size
