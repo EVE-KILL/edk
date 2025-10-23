@@ -75,23 +75,27 @@ export async function generateCorporationDetail(
       allianceTicker: allianceData?.ticker || undefined,
     };
 
-    // Get kills (where corp was attacker)
-    const killsCount = await db
-      .select({ count: attackers.id })
+    // Get kills (where corp was attacker) - count distinct killmails from attackers table
+    const [killsResult] = await db
+      .select({
+        count: sql<number>`COUNT(DISTINCT ${attackers.killmailId})`.mapWith(Number),
+      })
       .from(attackers)
-      .innerJoin(killmails, eq(killmails.id, attackers.killmailId))
-      .where(eq(attackers.corporationId, corporationId));
+      .where(eq(attackers.corporationId, corporationId))
+      .execute();
 
-    const kills = killsCount.length;
+    const kills = killsResult?.count || 0;
 
-    // Get losses (where corp was victim)
-    const lossesCount = await db
-      .select({ count: victims.id })
+    // Get losses (where corp was victim) - count distinct killmails from victims table
+    const [lossesResult] = await db
+      .select({
+        count: sql<number>`COUNT(DISTINCT ${victims.killmailId})`.mapWith(Number),
+      })
       .from(victims)
-      .innerJoin(killmails, eq(killmails.id, victims.killmailId))
-      .where(eq(victims.corporationId, corporationId));
+      .where(eq(victims.corporationId, corporationId))
+      .execute();
 
-    const losses = lossesCount.length;
+    const losses = lossesResult?.count || 0;
 
     // Get ISK destroyed (as attacker)
     const [iskDestroyedResult] = await db
