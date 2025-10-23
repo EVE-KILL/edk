@@ -385,7 +385,7 @@ Environment Variables:
 
 Examples:
   bun cli ${this.name}
-  
+
   # With filtering
   FOLLOWED_CHARACTER_IDS=12345,67890 bun cli ${this.name}
   FOLLOWED_ALLIANCE_IDS=99009163 bun cli ${this.name}

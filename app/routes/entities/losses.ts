@@ -126,7 +126,7 @@ export class Controller extends WebController {
 
     const totalISKDestroyed = parseFloat(killStats?.totalISKDestroyed || "0");
     const totalISKLost = parseFloat(lossStats?.totalISKLost || "0");
-    
+
     // Calculate efficiency based on kill/loss counts
     const totalKills = killStats?.totalKills || 0;
     const totalLosses = lossStats?.totalLosses || 0;
@@ -134,7 +134,7 @@ export class Controller extends WebController {
       totalKills + totalLosses > 0
         ? (totalKills / (totalKills + totalLosses)) * 100
         : 0;
-    
+
     // Calculate ISK efficiency based on ISK values
     const iskEfficiency =
       totalISKDestroyed + totalISKLost > 0

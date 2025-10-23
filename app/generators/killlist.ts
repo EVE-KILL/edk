@@ -405,10 +405,6 @@ export async function generateKilllist(
     finalBlowMap.set(fb.killmailId, fb);
   }
 
-  // Batch fetch all ship prices - get unique ship type IDs
-  const shipTypeIds = [...new Set(killmailsData.map(km => km.victim?.shipTypeId).filter(Boolean))] as number[];
-  const shipPricesMap = await getShipPricesBatch(shipTypeIds, killmailsData[0]?.killmail?.killmailTime || new Date());
-
   // Format the data
   const result: KillmailDisplay[] = [];
 
@@ -425,13 +421,13 @@ export async function generateKilllist(
     // Get attacker count from the map
     const attackerCount = attackerCountMap.get(km.killmail.id) || 0;
 
-    // Get ship price from batch results
-    const shipPrice = shipPricesMap.get(km.victim.shipTypeId) || 0;
+    // Use totalValue from killmail (pre-calculated during killmail save)
+    const totalValue = parseFloat(km.killmail.totalValue || "0");
 
     const formattedKillmail: KillmailDisplay = {
       killmail_id: km.killmail.killmailId,
       killmail_time: km.killmail.killmailTime,
-      ship_value: shipPrice,
+      ship_value: totalValue,
       attacker_count: attackerCount,
       victim: {
         character: {

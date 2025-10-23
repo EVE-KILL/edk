@@ -450,7 +450,7 @@ async function getActivePilotsStats(filters?: StatsFilters) {
       .select({ count: sql<number>`count(*)` })
       .from(characters)
       .get();
-    
+
     // Return character count for total unique pilots
     return {
       activePilotsLast24Hours: activePilots24h,
