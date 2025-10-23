@@ -275,6 +275,28 @@ export function registerHelpers() {
     return a % b;
   });
 
+  // Default value helper - returns first truthy value or the default
+  Handlebars.registerHelper("default", function(value: any, defaultValue: any) {
+    return value !== undefined && value !== null ? value : defaultValue;
+  });
+
+  // Round up to nearest valid EVE image size
+  // Valid sizes: 32 (types only), 64, 128, 256, 512 (render only)
+  Handlebars.registerHelper("roundImageSize", function(requestedSize: number, type: string) {
+    const validSizes = type === 'type' || type === 'item' || type === 'ship' 
+      ? [32, 64, 128, 256]  // types can use 32
+      : [64, 128, 256, 512]; // others start at 64
+
+    // Find the smallest valid size that is >= requested size
+    for (const size of validSizes) {
+      if (size >= requestedSize) {
+        return size;
+      }
+    }
+    // If requested size is larger than all valid sizes, return the largest
+    return validSizes[validSizes.length - 1];
+  });
+
   // EDK-style date formatting (YYYY-MM-DD HH:MM)
   Handlebars.registerHelper("formatDateEDK", function(date: string | Date) {
     const d = new Date(date);
