@@ -13,6 +13,11 @@
   </div>
   {{/if}}
 
+  <!-- Most Valuable Kills -->
+  {{#if mostValuableKills}}
+  {{> partials/mostvaluable mostValuableKills=mostValuableKills timeRange="Last 7 Days"}}
+  {{/if}}
+
   <!-- Top 10 + Recent Activity Layout -->
   <div style="display: grid; grid-template-columns: 20% 80%; gap: 5px; width: 100%; box-sizing: border-box;">
     <aside style="min-width: 0; overflow: hidden;">

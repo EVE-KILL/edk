@@ -5,6 +5,7 @@ import {
   type ShipGroupStatsFilters,
 } from "../../generators/ship-group-stats";
 import { getTop10StatsByCorporation } from "../../generators/top-10-stats";
+import { getMostValuableKills } from "../../generators/mostvaluable";
 
 export class Controller extends WebController {
   static cacheConfig = {
@@ -35,6 +36,13 @@ export class Controller extends WebController {
     // Fetch top 10 stats for this corporation
     const top10Stats = await getTop10StatsByCorporation(parseInt(corporationId, 10), 7);
 
+    // Fetch most valuable kills for this corporation (last 7 days, top 6)
+    const mostValuableKills = await getMostValuableKills({
+      limit: 6,
+      days: 7,
+      corporationIds: [parseInt(corporationId, 10)],
+    });
+
     // Split ship group stats into 3 columns
     const itemsPerColumn = Math.ceil(shipGroupStats.length / 3);
     const shipGroupColumns = [
@@ -64,6 +72,8 @@ export class Controller extends WebController {
       shipGroupColumns,
       // Top 10 stats for sidebar
       top10Stats,
+      // Most valuable kills
+      mostValuableKills,
       // Filter config for WebSocket killlist updates
       filterConfig: {
         type: 'all',

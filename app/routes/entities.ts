@@ -13,6 +13,7 @@ import {
   type ShipGroupStatsFilters,
 } from "../generators/ship-group-stats";
 import { getTop10StatsByEntities } from "../generators/top-10-stats";
+import { getMostValuableKills } from "../generators/mostvaluable";
 
 // Parse .env followed entities configuration
 const FOLLOWED_CHARACTER_IDS =
@@ -148,6 +149,15 @@ export class Controller extends WebController {
       7
     );
 
+    // Fetch most valuable kills for the tracked entities (last 7 days, top 6)
+    const mostValuableKills = await getMostValuableKills({
+      limit: 6,
+      days: 7,
+      characterIds: FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
+      corporationIds: FOLLOWED_CORPORATION_IDS.length > 0 ? FOLLOWED_CORPORATION_IDS : undefined,
+      allianceIds: FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
+    });
+
     // Fetch comprehensive statistics
     const killStats = await getKillsStatistics(statsFilters);
     const lossStats = await getLossesStatistics(statsFilters);
@@ -188,6 +198,8 @@ export class Controller extends WebController {
       shipGroupColumns,
       // Top 10 stats for sidebar
       top10Stats,
+      // Most valuable kills
+      mostValuableKills,
       // Filter config for WebSocket killlist updates (multi-entity)
       filterConfig: {
         characterIds: FOLLOWED_CHARACTER_IDS,

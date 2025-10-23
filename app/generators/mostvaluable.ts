@@ -10,7 +10,7 @@ import {
   types,
   groups,
 } from "../../db/schema";
-import { eq, desc, and, gte, sql } from "drizzle-orm";
+import { eq, desc, and, gte, sql, inArray, or } from "drizzle-orm";
 
 export interface MostValuableKill {
   killmail_id: number;
@@ -30,6 +30,9 @@ export interface MostValuableFilters {
   days?: number; // Number of days to look back (default: undefined = all time)
   limit?: number; // Number of results to return (default: 7)
   minValue?: number; // Minimum ISK value filter (default: 0)
+  characterIds?: number[]; // Filter by character IDs (victim)
+  corporationIds?: number[]; // Filter by corporation IDs (victim)
+  allianceIds?: number[]; // Filter by alliance IDs (victim)
 }
 
 /**
@@ -50,6 +53,9 @@ export async function getMostValuableKills(
       limit = 7,
       minValue = 0,
       days,
+      characterIds,
+      corporationIds,
+      allianceIds,
     } = filters;
 
     // Build where conditions
@@ -65,6 +71,21 @@ export async function getMostValuableKills(
       const now = new Date();
       const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
       conditions.push(gte(killmails.killmailTime, startDate));
+    }
+
+    // Add entity filters (any victim matching these entities)
+    const entityConditions = [];
+    if (characterIds && characterIds.length > 0) {
+      entityConditions.push(inArray(victims.characterId, characterIds));
+    }
+    if (corporationIds && corporationIds.length > 0) {
+      entityConditions.push(inArray(victims.corporationId, corporationIds));
+    }
+    if (allianceIds && allianceIds.length > 0) {
+      entityConditions.push(inArray(victims.allianceId, allianceIds));
+    }
+    if (entityConditions.length > 0) {
+      conditions.push(or(...entityConditions));
     }
 
     // Build the base query with where clause

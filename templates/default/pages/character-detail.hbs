@@ -14,6 +14,11 @@
 </div>
 {{/if}}
 
+<!-- Most Valuable Kills -->
+{{#if mostValuableKills}}
+{{> partials/mostvaluable mostValuableKills=mostValuableKills timeRange="Last 7 Days"}}
+{{/if}}
+
 <!-- Recent Activity with Top 10 Sidebar -->
 <div style="display: grid; grid-template-columns: 20% 80%; gap: 5px; width: 100%; box-sizing: border-box; margin-bottom: 20px;">
   <!-- Top 10 Sidebar -->

@@ -5,6 +5,7 @@ import {
   type ShipGroupStatsFilters,
 } from "../../generators/ship-group-stats";
 import { getTop10StatsByCharacter } from "../../generators/top-10-stats";
+import { getMostValuableKills } from "../../generators/mostvaluable";
 
 export class Controller extends WebController {
   static cacheConfig = {
@@ -43,6 +44,13 @@ export class Controller extends WebController {
     // Fetch top 10 stats specific to this character
     const top10Stats = await getTop10StatsByCharacter(parseInt(characterId, 10), 7);
 
+    // Fetch most valuable kills for this character (last 7 days, top 6)
+    const mostValuableKills = await getMostValuableKills({
+      limit: 6,
+      days: 7,
+      characterIds: [parseInt(characterId, 10)],
+    });
+
     const data = {
       ...characterDetail,
       entityName: characterDetail.character.name,
@@ -68,6 +76,8 @@ export class Controller extends WebController {
       shipGroupColumns,
       // Top 10 statistics
       top10Stats,
+      // Most valuable kills
+      mostValuableKills,
       // Filter config for WebSocket killlist updates
       filterConfig: {
         type: 'all',
