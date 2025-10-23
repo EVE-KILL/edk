@@ -115,17 +115,26 @@ async function startServer() {
   await startManagementServer();
 
   if (isDevelopment) {
-    const watcher = watch("./templates", {
+    // Watch both template and static files for changes
+    const templateWatcher = watch("./templates", {
       recursive: true,
       persistent: true,
     });
 
     (async () => {
-      for await (const event of watcher) {
-        clearTemplateCache();
-        await registerPartials();
-
-        logger.success("✅ Templates reloaded");
+      for await (const event of templateWatcher) {
+        const eventPath = event.filename || "";
+        
+        // Only reload templates if template files changed
+        if (eventPath.endsWith(".hbs")) {
+          clearTemplateCache();
+          await registerPartials();
+          logger.success("✅ Templates reloaded");
+        } 
+        // For static files, just log (browser will fetch updated files)
+        else if (eventPath.includes("/static/")) {
+          logger.success("✅ Static file updated");
+        }
       }
     })();
   }

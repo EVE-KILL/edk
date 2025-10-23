@@ -65,62 +65,111 @@ export async function renderTemplate(
  * @returns Compiled Handlebars template
  */
 async function getTemplate(templatePath: string): Promise<HandlebarsTemplateDelegate> {
-  const fullPath = `templates/${THEME}/${templatePath}.hbs`;
+  const themePath = `templates/${THEME}/${templatePath}.hbs`;
+  const defaultPath = `templates/default/${templatePath}.hbs`;
 
   // In development, clear cache to pick up template changes
   if (IS_DEVELOPMENT && !TEMPLATE_CACHE_ENABLED) {
-    templateCache.delete(fullPath);
+    templateCache.delete(themePath);
+    templateCache.delete(defaultPath);
   }
 
-  // Check cache first
-  if (templateCache.has(fullPath)) {
-    return templateCache.get(fullPath)!;
+  // Check cache first (try theme-specific first, then default)
+  if (templateCache.has(themePath)) {
+    return templateCache.get(themePath)!;
+  }
+  if (templateCache.has(defaultPath)) {
+    return templateCache.get(defaultPath)!;
   }
 
   try {
-    // Read and compile template
-    const templateSource = await readFile(join(process.cwd(), fullPath), "utf-8");
+    // Try to load from theme directory first
+    let templateSource: string;
+    let usedPath: string;
+
+    try {
+      templateSource = await readFile(join(process.cwd(), themePath), "utf-8");
+      usedPath = themePath;
+    } catch (themeError) {
+      // If not found in theme, fall back to default
+      try {
+        templateSource = await readFile(join(process.cwd(), defaultPath), "utf-8");
+        usedPath = defaultPath;
+      } catch (defaultError) {
+        throw new Error(`Template not found in theme '${THEME}' or default: ${templatePath}`);
+      }
+    }
+
+    // Compile the template
     const compiledTemplate = Handlebars.compile(templateSource);
 
-    // Cache it for future use
-    templateCache.set(fullPath, compiledTemplate);
+    // Cache it for future use (cache under the path we actually used)
+    templateCache.set(usedPath, compiledTemplate);
 
     return compiledTemplate;
   } catch (error) {
-    throw new Error(`Failed to load template ${fullPath}: ${error}`);
+    throw new Error(`Failed to load template ${templatePath}: ${error}`);
   }
 }
 
 /**
  * Register all partials from the templates/partials directory
+ * Supports theme inheritance - registers from default theme first, then overrides with theme-specific partials
  */
 export async function registerPartials() {
   try {
-    // Register partials from partials directory
-    const partialsDir = join(process.cwd(), `templates/${THEME}/partials`);
-    const files = await readdir(partialsDir, { recursive: true });
+    const registeredPartials = new Set<string>();
+    const registeredComponents = new Set<string>();
 
-    for (const file of files) {
-      if (file.endsWith(".hbs")) {
-        const partialName = file.replace(".hbs", "").replace(/\\/g, "/");
-        const partialPath = join(partialsDir, file);
-        const partialSource = await readFile(partialPath, "utf-8");
-        Handlebars.registerPartial(`partials/${partialName}`, partialSource);
+    // Helper to register partials from a directory
+    const registerFromDir = async (baseDir: string, prefix: string, registered: Set<string>) => {
+      try {
+        const files = await readdir(baseDir, { recursive: true });
+        for (const file of files) {
+          if (file.endsWith(".hbs")) {
+            const name = file.replace(".hbs", "").replace(/\\/g, "/");
+            const fullName = `${prefix}/${name}`;
+            const filePath = join(baseDir, file);
+            const source = await readFile(filePath, "utf-8");
+            Handlebars.registerPartial(fullName, source);
+            registered.add(fullName);
+          }
+        }
+      } catch (error) {
+        // Directory might not exist, which is fine
       }
+    };
+
+    // Register partials from default theme first
+    await registerFromDir(
+      join(process.cwd(), "templates/default/partials"),
+      "partials",
+      registeredPartials
+    );
+
+    // Register components from default theme first
+    await registerFromDir(
+      join(process.cwd(), "templates/default/components"),
+      "components",
+      registeredComponents
+    );
+
+    // If using a custom theme, register/override with theme-specific partials and components
+    if (THEME !== "default") {
+      await registerFromDir(
+        join(process.cwd(), `templates/${THEME}/partials`),
+        "partials",
+        registeredPartials
+      );
+
+      await registerFromDir(
+        join(process.cwd(), `templates/${THEME}/components`),
+        "components",
+        registeredComponents
+      );
     }
 
-    // Register components from components directory
-    const componentsDir = join(process.cwd(), `templates/${THEME}/components`);
-    const componentFiles = await readdir(componentsDir, { recursive: true });
-
-    for (const file of componentFiles) {
-      if (file.endsWith(".hbs")) {
-        const componentName = file.replace(".hbs", "").replace(/\\/g, "/");
-        const componentPath = join(componentsDir, file);
-        const componentSource = await readFile(componentPath, "utf-8");
-        Handlebars.registerPartial(`components/${componentName}`, componentSource);
-      }
-    }
+    console.log(`📦 Registered ${registeredPartials.size} partials and ${registeredComponents.size} components for theme '${THEME}'`);
   } catch (error) {
     console.error("Error registering partials:", error);
   }

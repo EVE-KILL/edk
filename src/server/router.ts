@@ -17,6 +17,9 @@ import { cache } from "../cache";
 import { applyOptimalHeaders, getDefaultStaticHeaders } from "../utils/headers";
 
 // Cache environment variables
+const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
+const VERBOSE_MODE = globalThis.VERBOSE_MODE || false;
+const THEME = process.env.THEME || "default";
 const API_RATE_LIMIT = parseInt(process.env.API_RATE_LIMIT || "100");
 const RESPONSE_CACHE_ENABLED =
   process.env.RESPONSE_CACHE_ENABLED !== "false" && process.env.NODE_ENV === "production";
@@ -230,36 +233,46 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
   const url = new URL(req.url);
   req.parsedUrl = url;
 
-  // Serve static assets first (before any middleware)
-  if (url.pathname.startsWith("/static/")) {
+  // Serve static assets with theme support and fallback
+  // Try theme-specific files first, then fall back to default theme
+  if (url.pathname.startsWith("/static/") || url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico)$/i)) {
     try {
-      const filePath = `.${url.pathname}`; // ./static/...
+      let filePath: string;
+      
+      if (url.pathname.startsWith("/static/")) {
+        // Direct /static/ requests
+        filePath = `.${url.pathname}`;
+      } else {
+        // Asset requests (CSS, JS, images) - check theme directories
+        // Try theme-specific directory first
+        const themeFilePath = `./templates/${THEME}/static${url.pathname}`;
+        const themeFile = Bun.file(themeFilePath);
+        
+        if (await themeFile.exists()) {
+          const response = new Response(themeFile);
+          return applyOptimalHeaders(response, getDefaultStaticHeaders());
+        }
+        
+        // Fall back to default theme
+        const defaultFilePath = `./templates/default/static${url.pathname}`;
+        const defaultFile = Bun.file(defaultFilePath);
+        
+        if (await defaultFile.exists()) {
+          const response = new Response(defaultFile);
+          return applyOptimalHeaders(response, getDefaultStaticHeaders());
+        }
+        
+        // Fall back to legacy ./static directory for backward compatibility
+        filePath = `./static${url.pathname}`;
+      }
+      
       const file = Bun.file(filePath);
-
       if (await file.exists()) {
         const response = new Response(file);
-        // Apply optimal caching headers for static assets
         return applyOptimalHeaders(response, getDefaultStaticHeaders());
       }
     } catch (error) {
       // File doesn't exist or error reading, continue to 404
-    }
-  }
-
-  // Also serve CSS/JS/images from root for EDK theme compatibility
-  // e.g., /edk.css, /themes/default/default.css, /img/kills.png
-  if (url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico)$/i)) {
-    try {
-      const filePath = `./static${url.pathname}`; // ./static/edk.css
-      const file = Bun.file(filePath);
-
-      if (await file.exists()) {
-        const response = new Response(file);
-        // Apply optimal caching headers for static assets
-        return applyOptimalHeaders(response, getDefaultStaticHeaders());
-      }
-    } catch (error) {
-      // File doesn't exist, continue to 404
     }
   }
 
