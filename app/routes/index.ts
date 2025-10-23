@@ -5,6 +5,7 @@ import {
   type StatsFilters,
 } from "../generators/statistics";
 import { getTop10Stats } from "../generators/top-10-stats";
+import { getMostValuableKills } from "../generators/mostvaluable";
 
 // Parse .env followed entities configuration
 // Empty strings should result in empty arrays, not arrays with NaN
@@ -69,6 +70,11 @@ export class Controller extends WebController {
       // Fetch top 10 statistics for the last 7 days (unfiltered - global top 10)
       const top10Stats = await getTop10Stats(7);
 
+      // Fetch most valuable kills (all time, top 6)
+      const mostValuableKills = await getMostValuableKills({
+        limit: 6,
+      });
+
       // Calculate pagination
       const totalPages = statistics ? Math.ceil(statistics.totalKillmails / limit) : 999;
       const hasNextPage = currentPage < totalPages;
@@ -98,6 +104,7 @@ export class Controller extends WebController {
         killmails,
         statistics,
         top10Stats,
+        mostValuableKills,
         pagination: {
           currentPage,
           totalPages: statistics ? totalPages : null,
@@ -140,6 +147,7 @@ export class Controller extends WebController {
           systems: [],
           regions: [],
         },
+        mostValuableKills: [],
         pagination: {
           currentPage: 1,
           totalPages: 1,
