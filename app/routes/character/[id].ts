@@ -49,7 +49,7 @@ export class Controller extends WebController {
       entityId: characterDetail.character.id,
       entityType: 'character',
       type: 'character',
-      imageUrl: `https://images.evetech.net/characters/${characterDetail.character.id}/portrait?size=512`,
+      imageUrl: `https://images.eve-kill.com/characters/${characterDetail.character.id}/portrait?size=512`,
       ticker: undefined,
       parent: characterDetail.character.corporationId ? {
         id: characterDetail.character.corporationId,

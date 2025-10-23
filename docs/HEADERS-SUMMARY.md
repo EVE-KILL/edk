@@ -18,7 +18,7 @@ CDN-Cache-Control: public, max-age=60, stale-while-revalidate=60
 
 ### 3. Resource Hints (via Link Header)
 ```http
-Link: <https://images.evetech.net>; rel=preconnect; crossorigin,
+Link: <https://images.eve-kill.com>; rel=preconnect; crossorigin,
       <https://esi.evetech.net>; rel=preconnect; crossorigin,
       </static/edk.css>; rel=preload; as=style
 ```
@@ -132,7 +132,7 @@ this.setHeaderOptions({
   performance: {
     earlyHints: true, // Enable 103 response
   },
-  preconnect: ["https://images.evetech.net"],
+  preconnect: ["https://images.eve-kill.com"],
   preload: [{ href: "/static/app.css", as: "style" }],
 });
 ```
@@ -154,7 +154,7 @@ curl -I https://eve-kill.com/static/edk.css
 ### Verify Resource Hints
 ```bash
 curl -I https://eve-kill.com/ | grep -i link
-# Should show: Link: <https://images.evetech.net>; rel=preconnect; crossorigin
+# Should show: Link: <https://images.eve-kill.com>; rel=preconnect; crossorigin
 ```
 
 ### Check Cloudflare Early Hints
@@ -215,7 +215,7 @@ export class Controller extends WebController {
 | Static assets | 24h | 30d | 24h |
 
 ### Always Preconnect To
-- `https://images.evetech.net` - EVE Online images
+- `https://images.eve-kill.com` - EVE Online images
 - `https://esi.evetech.net` - ESI API
 
 ### Always Preload

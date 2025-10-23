@@ -49,7 +49,7 @@ export class Controller extends WebController {
       entityType: "alliance",
       type: "alliance",
       ticker: allianceDetail.alliance.ticker,
-      imageUrl: `https://images.evetech.net/alliances/${allianceDetail.alliance.id}/logo?size=512`,
+      imageUrl: `https://images.eve-kill.com/alliances/${allianceDetail.alliance.id}/logo?size=512`,
       parent: undefined,
       grandparent: undefined,
       currentTab: "dashboard",

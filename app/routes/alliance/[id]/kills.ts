@@ -83,14 +83,13 @@ export class Controller extends WebController {
       {
         entityName: alliance.name,
         ticker: alliance.ticker,
-        imageUrl: `https://images.evetech.net/alliances/${alliance.id}/logo?size=512`,
+        entityType: 'alliance',
+        entityId: parseInt(allianceId, 10),
+        imageUrl: `https://images.eve-kill.com/alliances/${alliance.id}/logo?size=512`,
         stats,
         killmails,
         currentTab: "kills",
         baseUrl: `/alliance/${allianceId}`,
-        // Entity info for loss highlighting
-        entityType: 'alliance',
-        entityId: parseInt(allianceId, 10),
         // Ship group statistics
         shipGroupStats,
         shipGroupColumns,

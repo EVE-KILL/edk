@@ -97,9 +97,9 @@ export class Controller extends WebController {
 
     // Build entity image URLs for collage
     const entityImages = [
-      ...characterNames.map((c) => `https://images.evetech.net/characters/${c.id}/portrait?size=128`),
-      ...corporationNames.map((c) => `https://images.evetech.net/corporations/${c.id}/logo?size=128`),
-      ...allianceNames.map((a) => `https://images.evetech.net/alliances/${a.id}/logo?size=128`),
+      ...characterNames.map((c) => `https://images.eve-kill.com/characters/${c.id}/portrait?size=128`),
+      ...corporationNames.map((c) => `https://images.eve-kill.com/corporations/${c.id}/logo?size=128`),
+      ...allianceNames.map((a) => `https://images.eve-kill.com/alliances/${a.id}/logo?size=128`),
     ];
 
     // Build ship group stats filters
@@ -184,7 +184,7 @@ export class Controller extends WebController {
       killmails,
       entityName: "Tracked Entities",
       entityType: "entities",
-      imageUrl: entityImages.length > 0 ? entityImages[0] : "https://images.evetech.net/alliances/1/logo?size=128",
+      imageUrl: entityImages.length > 0 ? entityImages[0] : "https://images.eve-kill.com/alliances/1/logo?size=128",
       entityImages, // For collage display
       currentTab: "losses",
       baseUrl: "/entities",

@@ -98,12 +98,11 @@ export class Controller extends WebController {
       stats,
       killmails,
       entityName: character.name,
-      imageUrl: `https://images.evetech.net/characters/${character.id}/portrait?size=512`,
-      currentTab: 'losses',
-      baseUrl: `/character/${characterId}`,
-      // Entity info for loss highlighting
       entityType: 'character',
       entityId: characterIdInt,
+      imageUrl: `https://images.eve-kill.com/characters/${character.id}/portrait?size=512`,
+      currentTab: 'losses',
+      baseUrl: `/character/${characterId}`,
       // Ship group statistics
       shipGroupStats,
       shipGroupColumns,

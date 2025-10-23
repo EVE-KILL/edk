@@ -54,11 +54,11 @@ Performance optimization via Link header:
 
 ```typescript
 preconnect: [
-  "https://images.evetech.net",
+  "https://images.eve-kill.com",
   "https://esi.evetech.net",
 ],
 dnsPrefetch: [
-  "https://images.evetech.net",
+  "https://images.eve-kill.com",
 ],
 preload: [
   {
@@ -254,7 +254,7 @@ When enabled:
 **Always preconnect** to external domains used on every page:
 ```typescript
 preconnect: [
-  "https://images.evetech.net",  // Character/corp/alliance images
+  "https://images.eve-kill.com",  // Character/corp/alliance images
   "https://esi.evetech.net",     // ESI API calls
 ]
 ```
@@ -324,7 +324,7 @@ curl -I https://eve-kill.com/static/edk.css
 
 Look for `Link` header:
 ```
-Link: <https://images.evetech.net>; rel=preconnect; crossorigin,
+Link: <https://images.eve-kill.com>; rel=preconnect; crossorigin,
       <https://esi.evetech.net>; rel=preconnect; crossorigin,
       </static/edk.css>; rel=preload; as=style
 ```
@@ -388,10 +388,10 @@ Without proper Vary, CDN may serve wrong cached version.
 **Check Link header syntax**:
 ```
 # Correct
-Link: <https://images.evetech.net>; rel=preconnect; crossorigin
+Link: <https://images.eve-kill.com>; rel=preconnect; crossorigin
 
 # Wrong
-Link: https://images.evetech.net; rel=preconnect
+Link: https://images.eve-kill.com; rel=preconnect
 ```
 
 **Check browser support**:

@@ -75,7 +75,7 @@ async function getTopCharacters(days: number = 7): Promise<Top10Item[]> {
     name: namesMap[row.characterId || 0] || "Unknown",
     kills: row.kills || 0,
     imageUrl: row.characterId
-      ? `https://images.evetech.net/characters/${row.characterId}/portrait?size=64`
+      ? `https://images.eve-kill.com/characters/${row.characterId}/portrait?size=64`
       : undefined,
   }));
 }
@@ -125,7 +125,7 @@ async function getTopCorporations(days: number = 7): Promise<Top10Item[]> {
     name: namesMap[row.corporationId || 0] || "Unknown",
     kills: row.kills || 0,
     imageUrl: row.corporationId
-      ? `https://images.evetech.net/corporations/${row.corporationId}/logo?size=64`
+      ? `https://images.eve-kill.com/corporations/${row.corporationId}/logo?size=64`
       : undefined,
   }));
 }
@@ -175,7 +175,7 @@ async function getTopAlliances(days: number = 7): Promise<Top10Item[]> {
     name: namesMap[row.allianceId || 0] || "Unknown",
     kills: row.kills || 0,
     imageUrl: row.allianceId
-      ? `https://images.evetech.net/alliances/${row.allianceId}/logo?size=64`
+      ? `https://images.eve-kill.com/alliances/${row.allianceId}/logo?size=64`
       : undefined,
   }));
 }
@@ -389,7 +389,7 @@ export async function getTop10StatsByCharacter(characterId: number, days: number
       name: corpNamesMap[row.corporationId || 0] || "Unknown",
       kills: row.kills || 0,
       imageUrl: row.corporationId
-        ? `https://images.evetech.net/corporations/${row.corporationId}/logo?size=64`
+        ? `https://images.eve-kill.com/corporations/${row.corporationId}/logo?size=64`
         : undefined,
     })),
     alliances: topAlliancesAgainst.map((row) => ({
@@ -397,7 +397,7 @@ export async function getTop10StatsByCharacter(characterId: number, days: number
       name: allianceNamesMap[row.allianceId || 0] || "Unknown",
       kills: row.kills || 0,
       imageUrl: row.allianceId
-        ? `https://images.evetech.net/alliances/${row.allianceId}/logo?size=64`
+        ? `https://images.eve-kill.com/alliances/${row.allianceId}/logo?size=64`
         : undefined,
     })),
     systems: topSysAgainst.map((row) => ({
@@ -506,7 +506,7 @@ export async function getTop10StatsByCorporation(corporationId: number, days: nu
       name: allianceNamesMap[row.allianceId || 0] || "Unknown",
       kills: row.kills || 0,
       imageUrl: row.allianceId
-        ? `https://images.evetech.net/alliances/${row.allianceId}/logo?size=64`
+        ? `https://images.eve-kill.com/alliances/${row.allianceId}/logo?size=64`
         : undefined,
     })),
     systems: topSysAgainst.map((row) => ({
@@ -709,16 +709,25 @@ export async function getTop10StatsByEntities(
       id: row.characterId || 0,
       name: row.name || "Unknown",
       kills: row.kills || 0,
+      imageUrl: row.characterId
+        ? `https://images.eve-kill.com/characters/${row.characterId}/portrait?size=64`
+        : undefined,
     })),
     corporations: topCorpAgainst.map((row) => ({
       id: row.corporationId || 0,
       name: row.name || "Unknown",
       kills: row.kills || 0,
+      imageUrl: row.corporationId
+        ? `https://images.eve-kill.com/corporations/${row.corporationId}/logo?size=64`
+        : undefined,
     })),
     alliances: topAllyAgainst.map((row) => ({
       id: row.allianceId || 0,
       name: row.name || "Unknown",
       kills: row.kills || 0,
+      imageUrl: row.allianceId
+        ? `https://images.eve-kill.com/alliances/${row.allianceId}/logo?size=64`
+        : undefined,
     })),
     systems: topSysAgainst.map((row) => ({
       id: row.systemId || 0,

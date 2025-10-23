@@ -24,7 +24,7 @@ export class Controller extends WebController {
     const data = {
       ...itemDetail,
       entityName: itemDetail.item.name,
-      imageUrl: `https://images.evetech.net/types/${itemDetail.item.id}/icon?size=256`,
+      imageUrl: `https://images.eve-kill.com/types/${itemDetail.item.id}/icon?size=256`,
       currentTab: 'dashboard',
       baseUrl: `/item/${itemId}`,
     };

@@ -77,12 +77,12 @@ const DEFAULT_SECURITY_HEADERS = {
  * Default resource hints for EVE Kill
  */
 const DEFAULT_PRECONNECT = [
-  "https://images.evetech.net", // EVE Online image server
+  "https://images.eve-kill.com", // EVE Online image server
   "https://esi.evetech.net", // ESI API
 ];
 
 const DEFAULT_DNS_PREFETCH = [
-  "https://images.evetech.net",
+  "https://images.eve-kill.com",
   "https://esi.evetech.net",
 ];
 

@@ -50,7 +50,7 @@ export class Controller extends WebController {
       entityType: 'corporation',
       type: 'corporation',
       ticker: corporationDetail.corporation.ticker,
-      imageUrl: `https://images.evetech.net/corporations/${corporationDetail.corporation.id}/logo?size=512`,
+      imageUrl: `https://images.eve-kill.com/corporations/${corporationDetail.corporation.id}/logo?size=512`,
       parent: undefined,
       grandparent: corporationDetail.corporation.allianceId ? {
         id: corporationDetail.corporation.allianceId,

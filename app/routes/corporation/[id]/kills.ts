@@ -84,14 +84,13 @@ export class Controller extends WebController {
       {
         entityName: corporation.name,
         ticker: corporation.ticker,
-        imageUrl: `https://images.evetech.net/corporations/${corporation.id}/logo?size=512`,
+        entityType: 'corporation',
+        entityId: parseInt(corporationId, 10),
+        imageUrl: `https://images.eve-kill.com/corporations/${corporation.id}/logo?size=512`,
         stats,
         killmails,
         currentTab: "kills",
         baseUrl: `/corporation/${corporationId}`,
-        // Entity info for loss highlighting
-        entityType: 'corporation',
-        entityId: parseInt(corporationId, 10),
         // Ship group statistics
         shipGroupStats,
         shipGroupColumns,
