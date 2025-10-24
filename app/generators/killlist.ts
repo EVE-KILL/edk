@@ -10,7 +10,7 @@ import { groups } from "../../db/schema/groups";
 import { solarSystems } from "../../db/schema/solar-systems";
 import { regions } from "../../db/schema/regions";
 import { items as itemsTable, prices } from "../../db/schema";
-import { desc, lt, eq, and, or, gte, count, sql } from "drizzle-orm";
+import { desc, lt, eq, and, or, gte, count, sql, inArray } from "drizzle-orm";
 
 // Create aliases for final blow attacker joins
 const fbAttackers = attackers;
@@ -77,7 +77,7 @@ async function getShipPricesBatch(
     .from(prices)
     .where(
       and(
-        sql`${prices.typeId} IN (${sql.join(shipTypeIds.map(id => sql`${id}`), sql`, `)})`,
+        inArray(prices.typeId, shipTypeIds),
         sql`date(${prices.date}, 'unixepoch') BETWEEN ${fourteenDaysAgoString} AND ${dateString}`
       )
     );
@@ -227,15 +227,13 @@ export async function generateKilllist(
       .from(victims)
       .leftJoin(types, eq(victims.shipTypeId, types.typeId))
       .where(
-        sql`${types.groupId} IN (${sql.join(filters.shipGroupIds.map(id => sql`${id}`), sql`, `)})`
+        inArray(types.groupId, filters.shipGroupIds)
       );
 
     const killmailIds = victimShipsInGroup.map(v => v.killmailId);
 
     if (killmailIds.length > 0) {
-      whereConditions.push(
-        sql`${killmails.id} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`
-      );
+      whereConditions.push(inArray(killmails.id, killmailIds));
     } else {
       // No results found, return early
       return [];
@@ -251,19 +249,13 @@ export async function generateKilllist(
     const attackerConditions: any[] = [];
 
     if (filters.characterIds && filters.characterIds.length > 0) {
-      attackerConditions.push(
-        sql`${attackers.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
-      );
+      attackerConditions.push(inArray(attackers.characterId, filters.characterIds));
     }
     if (filters.corporationIds && filters.corporationIds.length > 0) {
-      attackerConditions.push(
-        sql`${attackers.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})`
-      );
+      attackerConditions.push(inArray(attackers.corporationId, filters.corporationIds));
     }
     if (filters.allianceIds && filters.allianceIds.length > 0) {
-      attackerConditions.push(
-        sql`${attackers.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})`
-      );
+      attackerConditions.push(inArray(attackers.allianceId, filters.allianceIds));
     }
 
     if (attackerConditions.length > 0) {
@@ -275,9 +267,7 @@ export async function generateKilllist(
       const killmailIds = attackerKills.map(k => k.killmailId);
 
       if (killmailIds.length > 0) {
-        whereConditions.push(
-          sql`${killmails.id} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`
-        );
+        whereConditions.push(inArray(killmails.id, killmailIds));
       } else {
         // No results found, return early
         return [];
@@ -288,19 +278,13 @@ export async function generateKilllist(
     const victimConditions: any[] = [];
 
     if (filters.characterIds && filters.characterIds.length > 0) {
-      victimConditions.push(
-        sql`${victims.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
-      );
+      victimConditions.push(inArray(victims.characterId, filters.characterIds));
     }
     if (filters.corporationIds && filters.corporationIds.length > 0) {
-      victimConditions.push(
-        sql`${victims.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})`
-      );
+      victimConditions.push(inArray(victims.corporationId, filters.corporationIds));
     }
     if (filters.allianceIds && filters.allianceIds.length > 0) {
-      victimConditions.push(
-        sql`${victims.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})`
-      );
+      victimConditions.push(inArray(victims.allianceId, filters.allianceIds));
     }
 
     if (victimConditions.length > 0) {
@@ -312,80 +296,45 @@ export async function generateKilllist(
       const killmailIds = victimLosses.map(v => v.killmailId);
 
       if (killmailIds.length > 0) {
-        whereConditions.push(
-          sql`${killmails.id} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`
-        );
+        whereConditions.push(inArray(killmails.id, killmailIds));
       } else {
         // No results found, return early
         return [];
       }
     }
   } else if (!filters?.killsOnly && !filters?.lossesOnly && (filters?.characterIds || filters?.corporationIds || filters?.allianceIds)) {
-    // Both kills and losses - need to use a subquery to get killmail IDs first
-    const killmailIdsFromAttackers: number[] = [];
-    const killmailIdsFromVictims: number[] = [];
+    // Both kills and losses - use EXISTS subqueries with inArray for proper parameter handling
+    // This avoids Drizzle's sql.join() stack overflow issue with large parameter sets
+    const entityConditions: any[] = [];
 
-    // Get killmail IDs where entity is an attacker
-    const attackerConditions: any[] = [];
+    // Character conditions (as attacker OR victim)
     if (filters.characterIds && filters.characterIds.length > 0) {
-      attackerConditions.push(
-        sql`${attackers.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
+      entityConditions.push(
+        sql`(EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${inArray(attackers.characterId, filters.characterIds)})
+             OR EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${inArray(victims.characterId, filters.characterIds)}))`
       );
     }
+
+    // Corporation conditions (as attacker OR victim)
     if (filters.corporationIds && filters.corporationIds.length > 0) {
-      attackerConditions.push(
-        sql`${attackers.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})`
+      entityConditions.push(
+        sql`(EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${inArray(attackers.corporationId, filters.corporationIds)})
+             OR EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${inArray(victims.corporationId, filters.corporationIds)}))`
       );
     }
+
+    // Alliance conditions (as attacker OR victim)
     if (filters.allianceIds && filters.allianceIds.length > 0) {
-      attackerConditions.push(
-        sql`${attackers.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})`
+      entityConditions.push(
+        sql`(EXISTS (SELECT 1 FROM ${attackers} WHERE ${attackers.killmailId} = ${killmails.id} AND ${inArray(attackers.allianceId, filters.allianceIds)})
+             OR EXISTS (SELECT 1 FROM ${victims} WHERE ${victims.killmailId} = ${killmails.id} AND ${inArray(victims.allianceId, filters.allianceIds)}))`
       );
     }
 
-    if (attackerConditions.length > 0) {
-      const attackerKills = await db
-        .selectDistinct({ killmailId: attackers.killmailId })
-        .from(attackers)
-        .where(attackerConditions.length === 1 ? attackerConditions[0] : or(...attackerConditions));
-      killmailIdsFromAttackers.push(...attackerKills.map(k => k.killmailId));
-    }
-
-    // Get killmail IDs where entity is a victim
-    const victimConditions: any[] = [];
-    if (filters.characterIds && filters.characterIds.length > 0) {
-      victimConditions.push(
-        sql`${victims.characterId} IN (${sql.join(filters.characterIds.map(id => sql`${id}`), sql`, `)})`
-      );
-    }
-    if (filters.corporationIds && filters.corporationIds.length > 0) {
-      victimConditions.push(
-        sql`${victims.corporationId} IN (${sql.join(filters.corporationIds.map(id => sql`${id}`), sql`, `)})`
-      );
-    }
-    if (filters.allianceIds && filters.allianceIds.length > 0) {
-      victimConditions.push(
-        sql`${victims.allianceId} IN (${sql.join(filters.allianceIds.map(id => sql`${id}`), sql`, `)})`
-      );
-    }
-
-    if (victimConditions.length > 0) {
-      const victimLosses = await db
-        .selectDistinct({ killmailId: victims.killmailId })
-        .from(victims)
-        .where(victimConditions.length === 1 ? victimConditions[0] : or(...victimConditions));
-      killmailIdsFromVictims.push(...victimLosses.map(v => v.killmailId));
-    }
-
-    // Combine and deduplicate killmail IDs
-    const allKillmailIds = [...new Set([...killmailIdsFromAttackers, ...killmailIdsFromVictims])];
-
-    if (allKillmailIds.length > 0) {
-      whereConditions.push(
-        sql`${killmails.id} IN (${sql.join(allKillmailIds.map(id => sql`${id}`), sql`, `)})`
-      );
+    if (entityConditions.length > 0) {
+      whereConditions.push(or(...entityConditions));
     } else {
-      // No results found, return early
+      // No filters, return early
       return [];
     }
   }
@@ -443,9 +392,7 @@ export async function generateKilllist(
       count: count(),
     })
     .from(attackers)
-    .where(
-      sql`${attackers.killmailId} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`
-    )
+    .where(inArray(attackers.killmailId, killmailIds))
     .groupBy(attackers.killmailId);
 
   // Create a map for quick lookup: killmailId -> attacker count
@@ -472,7 +419,7 @@ export async function generateKilllist(
     .leftJoin(groups, eq(types.groupId, groups.groupId))
     .where(
       and(
-        sql`${attackers.killmailId} IN (${sql.join(killmailIds.map(id => sql`${id}`), sql`, `)})`,
+        inArray(attackers.killmailId, killmailIds),
         eq(attackers.finalBlow, true)
       )
     );

@@ -96,12 +96,13 @@ class DatabaseConnection {
 
       this.rawSqlite = rawSqlite;
 
-      // Wrap SQLite connection with performance tracking
-      const wrappedSqlite = wrapDatabaseForPerformance(rawSqlite, getCurrentPerformanceTracker);
-      this.sqlite = wrappedSqlite;
+      // Temporarily disable performance wrapper to avoid recursion issues
+      // TODO: Fix the infinite recursion in wrapDatabaseForPerformance
+      // const wrappedSqlite = wrapDatabaseForPerformance(rawSqlite, getCurrentPerformanceTracker);
+      this.sqlite = rawSqlite; // Use unwrapped for now
 
       // Create Drizzle instance with performance logger for tracking
-      this.instance = drizzle(wrappedSqlite, {
+      this.instance = drizzle(rawSqlite, {
         schema,
         logger: performanceLogger,
       });
@@ -136,12 +137,12 @@ class DatabaseConnection {
 
       this.rawQueueSqlite = rawQueueSqlite;
 
-      // Wrap queue SQLite connection with performance tracking
-      const wrappedQueueSqlite = wrapDatabaseForPerformance(rawQueueSqlite, getCurrentPerformanceTracker);
-      this.queueSqlite = wrappedQueueSqlite;
+      // Temporarily disable performance wrapper to avoid recursion issues
+      // const wrappedQueueSqlite = wrapDatabaseForPerformance(rawQueueSqlite, getCurrentPerformanceTracker);
+      this.queueSqlite = rawQueueSqlite; // Use unwrapped for now
 
       // Create Drizzle instance without logging for queue (shares same SQLite connection)
-      this.queueInstance = drizzle(wrappedQueueSqlite, {
+      this.queueInstance = drizzle(rawQueueSqlite, {
         schema,
         logger: false, // Never log queue queries (too spammy)
       });

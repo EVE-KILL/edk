@@ -1,8 +1,10 @@
 import { WebController } from "../../src/controllers/web-controller";
 import { generateKilllist } from "../generators/killlist";
-import { getKillboardStatistics } from "../generators/statistics";
 import { getTop10Stats } from "../generators/top-10-stats";
 import { getMostValuableKills } from "../generators/mostvaluable";
+import { db } from "../../src/db";
+import { killmails } from "../../db/schema";
+import { sql } from "drizzle-orm";
 
 export class Controller extends WebController {
   static cacheConfig = {
@@ -20,11 +22,17 @@ export class Controller extends WebController {
       const limit = 33;
       const offset = (currentPage - 1) * limit;
 
-      // Fetch killmails WITHOUT filters - show all kills globally
-      const killmails = await generateKilllist(limit, { offset });
+      // Get total killmail count for pagination
+      const [countResult] = await db
+        .select({ count: sql<number>`COUNT(*)`.mapWith(Number) })
+        .from(killmails)
+        .execute();
 
-      // Fetch comprehensive statistics WITHOUT filtering - show global stats
-      const statistics = await getKillboardStatistics();
+      const totalKillmails = countResult?.count || 0;
+      const totalPages = Math.ceil(totalKillmails / limit) || 1;
+
+      // Fetch killmails WITHOUT filters - show all kills globally
+      const killmails_data = await generateKilllist(limit, { offset });
 
       // Fetch top 10 statistics for the last 7 days (unfiltered - global top 10)
       const top10Stats = await getTop10Stats(7);
@@ -37,7 +45,6 @@ export class Controller extends WebController {
       });
 
       // Calculate pagination
-      const totalPages = statistics ? Math.ceil(statistics.totalKillmails / limit) : 999;
       const hasNextPage = currentPage < totalPages;
       const hasPrevPage = currentPage > 1;
 
@@ -61,14 +68,13 @@ export class Controller extends WebController {
         config: {
           title: "EDK"
         },
-        killmails,
-        statistics,
+        killmails: killmails_data,
         top10Stats,
         mostValuableKills,
         mostValuableTimeRange: `Last ${mostValuableKillsDays} Days`,
         pagination: {
           currentPage,
-          totalPages: statistics ? totalPages : null,
+          totalPages: totalPages,
           hasNextPage,
           hasPrevPage,
           nextPageUrl: hasNextPage ? `/?page=${currentPage + 1}` : null,
@@ -94,12 +100,6 @@ export class Controller extends WebController {
           title: "EDK"
         },
         killmails: [],
-        statistics: {
-          totalKillmails: 0,
-          totalISK: 0,
-          activePilots: 0,
-          recentKills: 0,
-        },
         top10Stats: {
           characters: [],
           corporations: [],

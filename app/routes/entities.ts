@@ -1,10 +1,6 @@
 import { WebController } from "../../src/controllers/web-controller";
 import { generateKilllist } from "../generators/killlist";
-import {
-  getKillsStatistics,
-  getLossesStatistics,
-  type StatsFilters,
-} from "../generators/statistics";
+import { getEntityStats } from "../generators/entity-stats";
 import { characters, corporations, alliances } from "../../db/schema";
 import { inArray } from "drizzle-orm";
 import { db } from "../../src/db";
@@ -41,20 +37,6 @@ const HAS_FOLLOWED_ENTITIES =
   FOLLOWED_CORPORATION_IDS.length > 0 ||
   FOLLOWED_ALLIANCE_IDS.length > 0;
 
-// Build stats filters from .env
-const statsFilters: StatsFilters | undefined = HAS_FOLLOWED_ENTITIES
-  ? {
-      characterIds:
-        FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
-      corporationIds:
-        FOLLOWED_CORPORATION_IDS.length > 0
-          ? FOLLOWED_CORPORATION_IDS
-          : undefined,
-      allianceIds:
-        FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
-    }
-  : undefined;
-
 export class Controller extends WebController {
   static cacheConfig = {
     ttl: 30,                     // Fresh for 30 seconds
@@ -75,26 +57,27 @@ export class Controller extends WebController {
       );
     }
 
-    // Fetch entity names
+    // PHASE 1: Batch fetch all entity names in a single optimized query batch
+    // Instead of 3 separate queries, batch them with Promise.all
     const [characterNames, corporationNames, allianceNames] = await Promise.all([
       FOLLOWED_CHARACTER_IDS.length > 0
         ? db
             .select({ id: characters.characterId, name: characters.name })
             .from(characters)
             .where(inArray(characters.characterId, FOLLOWED_CHARACTER_IDS))
-        : [],
+        : Promise.resolve([]),
       FOLLOWED_CORPORATION_IDS.length > 0
         ? db
             .select({ id: corporations.corporationId, name: corporations.name })
             .from(corporations)
             .where(inArray(corporations.corporationId, FOLLOWED_CORPORATION_IDS))
-        : [],
+        : Promise.resolve([]),
       FOLLOWED_ALLIANCE_IDS.length > 0
         ? db
             .select({ id: alliances.allianceId, name: alliances.name })
             .from(alliances)
             .where(inArray(alliances.allianceId, FOLLOWED_ALLIANCE_IDS))
-        : [],
+        : Promise.resolve([]),
     ]);
 
     // Build entity list for display
@@ -111,15 +94,53 @@ export class Controller extends WebController {
       ...allianceNames.map((a) => `https://images.eve-kill.com/alliances/${a.id}/logo?size=128`),
     ];
 
-    // Build ship group stats filters
-    const shipGroupFilters: ShipGroupStatsFilters = {
-      characterIds: FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
-      corporationIds: FOLLOWED_CORPORATION_IDS.length > 0 ? FOLLOWED_CORPORATION_IDS : undefined,
-      allianceIds: FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
-    };
+    // PHASE 2: Fetch all major data sets in parallel
+    // These are all independent queries, so we parallelize them with Promise.all
+    const [
+      entityStats,
+      shipGroupStats,
+      recentKillmails,
+      top10Stats,
+      mostValuableKills,
+    ] = await Promise.all([
+      // Unified statistics query - much faster than separate kills/losses queries
+      getEntityStats({
+        characterIds: FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
+        corporationIds: FOLLOWED_CORPORATION_IDS.length > 0 ? FOLLOWED_CORPORATION_IDS : undefined,
+        allianceIds: FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
+      }),
 
-    // Fetch ship group statistics for the last 30 days (combined kills + losses)
-    const shipGroupStats = await getShipGroupCombinedStatistics(30, shipGroupFilters);
+      // Ship group statistics
+      getShipGroupCombinedStatistics(30, {
+        characterIds: FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
+        corporationIds: FOLLOWED_CORPORATION_IDS.length > 0 ? FOLLOWED_CORPORATION_IDS : undefined,
+        allianceIds: FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
+      }),
+
+      // Recent activity (last 20, both kills and losses)
+      generateKilllist(20, {
+        characterIds: FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
+        corporationIds: FOLLOWED_CORPORATION_IDS.length > 0 ? FOLLOWED_CORPORATION_IDS : undefined,
+        allianceIds: FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
+      }),
+
+      // Top 10 stats for the tracked entities
+      getTop10StatsByEntities(
+        FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
+        FOLLOWED_CORPORATION_IDS.length > 0 ? FOLLOWED_CORPORATION_IDS : undefined,
+        FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
+        7
+      ),
+
+      // Most valuable kills (last 7 days, top 6)
+      getMostValuableKills({
+        limit: 6,
+        days: 7,
+        characterIds: FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
+        corporationIds: FOLLOWED_CORPORATION_IDS.length > 0 ? FOLLOWED_CORPORATION_IDS : undefined,
+        allianceIds: FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
+      }),
+    ]);
 
     // Split ship group stats into 3 columns
     const itemsPerColumn = Math.ceil(shipGroupStats.length / 3);
@@ -129,52 +150,17 @@ export class Controller extends WebController {
       shipGroupStats.slice(itemsPerColumn * 2),
     ].filter((col) => col.length > 0);
 
-    // Fetch recent activity (last 20, both kills and losses)
-    const recentKillmails = await generateKilllist(20, {
-      characterIds:
-        FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
-      corporationIds:
-        FOLLOWED_CORPORATION_IDS.length > 0
-          ? FOLLOWED_CORPORATION_IDS
-          : undefined,
-      allianceIds:
-        FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
-    });
-
-    // Fetch top 10 stats for the tracked entities
-    const top10Stats = await getTop10StatsByEntities(
-      FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
-      FOLLOWED_CORPORATION_IDS.length > 0 ? FOLLOWED_CORPORATION_IDS : undefined,
-      FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
-      7
-    );
-
-    // Fetch most valuable kills for the tracked entities (last 7 days, top 6)
-    const mostValuableKills = await getMostValuableKills({
-      limit: 6,
-      days: 7,
-      characterIds: FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
-      corporationIds: FOLLOWED_CORPORATION_IDS.length > 0 ? FOLLOWED_CORPORATION_IDS : undefined,
-      allianceIds: FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
-    });
-
-    // Fetch comprehensive statistics
-    const killStats = await getKillsStatistics(statsFilters);
-    const lossStats = await getLossesStatistics(statsFilters);
-
-    // Combine stats
-    const totalISKDestroyed = parseFloat(killStats?.totalISKDestroyed || "0");
-    const totalISKLost = parseFloat(lossStats?.totalISKLost || "0");
+    // Extract and format statistics
     const efficiency =
-      totalISKDestroyed + totalISKLost > 0
-        ? ((totalISKDestroyed / (totalISKDestroyed + totalISKLost)) * 100).toFixed(2)
+      parseFloat(entityStats.iskDestroyed) + parseFloat(entityStats.iskLost) > 0
+        ? (parseFloat(entityStats.iskDestroyed) / (parseFloat(entityStats.iskDestroyed) + parseFloat(entityStats.iskLost)) * 100).toFixed(2)
         : "0.00";
 
     const stats = {
-      totalKills: killStats?.totalKills || 0,
-      totalValue: killStats?.totalISKDestroyed || "0",
-      totalLosses: lossStats?.totalLosses || 0,
-      totalValueLost: lossStats?.totalISKLost || "0",
+      totalKills: entityStats.kills,
+      totalValue: entityStats.iskDestroyed,
+      totalLosses: entityStats.losses,
+      totalValueLost: entityStats.iskLost,
       efficiency,
     };
 
@@ -208,15 +194,12 @@ export class Controller extends WebController {
       },
       // Statistics for the entity-header component (using the stats object format)
       stats: {
-        kills: killStats?.totalKills || 0,
-        losses: lossStats?.totalLosses || 0,
-        killLossRatio:
-          (lossStats?.totalLosses || 0) > 0
-            ? ((killStats?.totalKills || 0) / (lossStats?.totalLosses || 0)).toFixed(2)
-            : (killStats?.totalKills || 0).toString(),
+        kills: entityStats.kills,
+        losses: entityStats.losses,
+        killLossRatio: entityStats.killLossRatio.toString(),
         efficiency,
-        iskDestroyed: killStats?.totalISKDestroyed || "0",
-        iskLost: lossStats?.totalISKLost || "0",
+        iskDestroyed: entityStats.iskDestroyed,
+        iskLost: entityStats.iskLost,
         iskEfficiency: efficiency,
       },
     };
