@@ -1,6 +1,6 @@
 import { BaseCommand } from "../../src/commands/base-command";
 import { JobDispatcher } from "../../src/queue/job-dispatcher";
-import { db } from "../../src/db";
+import { db, queueDb } from "../../src/db";
 import { killmails } from "../../db/schema";
 import { eq } from "drizzle-orm";
 
@@ -41,8 +41,8 @@ export default class RedisQCommand extends BaseCommand {
   override async execute(args: string[]): Promise<void> {
     const parsedArgs = this.parseArgs(args);
 
-    // Initialize dispatcher
-    this.dispatcher = new JobDispatcher(db);
+    // Initialize dispatcher with queue database
+    this.dispatcher = new JobDispatcher(queueDb);
 
     // Get queue ID from args or env
     this.queueId = (parsedArgs.options["queue-id"] as string) || process.env.REDISQ_ID || "ekv4-default";

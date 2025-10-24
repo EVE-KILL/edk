@@ -40,7 +40,6 @@ export class CharacterService extends EveKillProxyService {
     }
 
     // Fetch from eve-kill.com (with ESI fallback)
-    logger.info(`Fetching character ${characterId} from eve-kill.com`);
     return await this.fetchAndStore(characterId);
   }
 
@@ -49,19 +48,14 @@ export class CharacterService extends EveKillProxyService {
    */
   private async fetchAndStore(characterId: number): Promise<Character> {
     try {
-      logger.info(`[CharacterService] 🔍 fetchAndStore() called for character ${characterId}`);
-      logger.info(`[CharacterService] 🌐 Attempting eve-kill.com first, ESI fallback if needed`);
       const esiData = await this.fetchWithFallback<ESICharacterResponse>(
         `/characters/${characterId}`,      // EVE-KILL endpoint
         `/characters/${characterId}/`,     // ESI endpoint
         `character:${characterId}`         // Cache key
       );
 
-      logger.info(`[CharacterService] ✅ Fetched character data: ${esiData.name} (${characterId})`);
-
       // Transform and store
       const character = this.transformESIData(characterId, esiData);
-      logger.info(`[CharacterService] 💾 Calling storeInDatabase() for character ${character.characterId}`);
       await this.storeInDatabase(character);
 
       // Fetch the stored character from database to get all fields
@@ -69,8 +63,6 @@ export class CharacterService extends EveKillProxyService {
       if (!stored) {
         throw new Error(`Failed to store character ${characterId}`);
       }
-
-      logger.info(`[CharacterService] ✅ fetchAndStore() completed successfully for character ${characterId}`);
       return stored;
     } catch (error) {
       if (error instanceof ESINotFoundError) {
@@ -106,7 +98,6 @@ export class CharacterService extends EveKillProxyService {
    */
   private async storeInDatabase(character: NewCharacter): Promise<void> {
     try {
-      logger.info(`[CharacterService.storeInDatabase] START - Inserting character ${character.characterId}: ${character.name}`);
       await db
         .insert(characters)
         .values(character)
@@ -124,20 +115,13 @@ export class CharacterService extends EveKillProxyService {
           },
         });
 
-      logger.info(`[CharacterService.storeInDatabase] DB INSERT COMPLETE - Stored character ${character.characterId} in database`);
-
       // Emit entity update event to management API (which will broadcast to websocket)
-      logger.info(`[CharacterService.storeInDatabase] BROADCAST START - About to emit entity-update event for character ${character.characterId}: ${character.name}`);
       if (character.characterId && character.name) {
-        logger.info(`[CharacterService.storeInDatabase] CALLING sendEvent with type=entity-update, ID=${character.characterId}, Name=${character.name}`);
         await sendEvent("entity-update", {
           entityType: "character",
           id: character.characterId,
           name: character.name,
         });
-        logger.info(`[CharacterService.storeInDatabase] BROADCAST COMPLETE - sendEvent returned`);
-      } else {
-        logger.warn(`[CharacterService.storeInDatabase] BROADCAST SKIPPED - missing ID or name: ID=${character.characterId}, Name=${character.name}`);
       }
     } catch (error) {
       logger.error(`Failed to store character ${character.characterId}:`, error);

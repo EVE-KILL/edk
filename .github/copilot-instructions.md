@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-EDK (ekv4) is a modern killmail tracking application for EVE Online, built with:
+EDK is a modern killmail tracking application for EVE Online, built with:
 - **Runtime**: Bun (high-performance JavaScript/TypeScript runtime)
 - **Database**: SQLite via Drizzle ORM
 - **Server**: Built-in Bun HTTP server with custom routing

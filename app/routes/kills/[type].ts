@@ -228,14 +228,14 @@ function getTitleForType(type: KillType): string {
 }
 
 export class Controller extends WebController {
-  static methods = ["GET"];
+  static override methods = ["GET"];
   static cacheConfig = {
     ttl: 30,
     staleWhileRevalidate: 60,
     vary: ["page"],
   };
 
-  async get(): Promise<Response> {
+  override async get(): Promise<Response> {
     // Get the type from the URL parameters
     const type = this.request.params?.type as string | undefined;
 
@@ -303,6 +303,51 @@ export class Controller extends WebController {
       pages.push(i);
     }
 
+    // Build filter config for WebSocket killlist updates
+    // This includes all the filters that are applied to the killlist
+    const filterConfig: any = {
+      type: killType,
+    };
+
+    // Add ship group IDs if filtering by ship type
+    if (filters.shipGroupIds) {
+      filterConfig.shipGroupIds = filters.shipGroupIds;
+    }
+
+    // Add solo filter
+    if (filters.isSolo) {
+      filterConfig.isSolo = true;
+    }
+
+    // Add NPC filter
+    if (filters.isNpc) {
+      filterConfig.isNpc = true;
+    }
+
+    // Add minimum value filter
+    if (filters.minValue !== undefined) {
+      filterConfig.minValue = filters.minValue;
+    }
+
+    // Add security status filters
+    if (filters.minSecurityStatus !== undefined) {
+      filterConfig.minSecurityStatus = filters.minSecurityStatus;
+    }
+    if (filters.maxSecurityStatus !== undefined) {
+      filterConfig.maxSecurityStatus = filters.maxSecurityStatus;
+    }
+
+    // Add region filters
+    if (filters.regionId !== undefined) {
+      filterConfig.regionId = filters.regionId;
+    }
+    if (filters.regionIdMin !== undefined) {
+      filterConfig.regionIdMin = filters.regionIdMin;
+    }
+    if (filters.regionIdMax !== undefined) {
+      filterConfig.regionIdMax = filters.regionIdMax;
+    }
+
     const data = {
       killmails,
       shipGroupStats,
@@ -327,9 +372,7 @@ export class Controller extends WebController {
         showLast: hasNextPage && endPage < totalPages,
       },
       // Filter config for WebSocket killlist updates
-      filterConfig: {
-        type: killType,
-      },
+      filterConfig,
       killType,
       pageTitle: getTitleForType(killType),
     };

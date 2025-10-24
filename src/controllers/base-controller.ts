@@ -1,7 +1,7 @@
 import { renderTemplate, type TemplateData } from "../server/templates";
 import type {} from "../../app/types/request.d"; // Import Request type extensions
 import { cache } from "../cache";
-import { db, setCurrentPerformanceTracker } from "../db";
+import { db, queueDb, setCurrentPerformanceTracker } from "../db";
 import { BaseModel } from "../../app/models/base-model";
 import { KillmailModel, Killmails } from "../../app/models/killmail";
 import { PerformanceTracker, formatStats } from "../utils/performance";
@@ -30,6 +30,12 @@ export abstract class BaseController {
    * Wrapped Drizzle ORM instance that tracks query count and timing
    */
   protected db: typeof db;
+
+  /**
+   * Queue database access (separate from main database)
+   * Use this for queue operations (JobDispatcher, etc.)
+   */
+  protected queueDb: typeof queueDb;
 
   /**
    * Models - Easy access to all models
@@ -97,8 +103,9 @@ export abstract class BaseController {
     // This allows the wrapped SQLite database to track query timing
     setCurrentPerformanceTracker(this.performanceTracker);
 
-    // Assign database directly
+    // Assign databases directly
     this.db = db;
+    this.queueDb = queueDb;
 
     this.setupCommonHeaders();
   }  /**

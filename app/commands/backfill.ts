@@ -1,6 +1,6 @@
 import { BaseCommand } from "../../src/commands/base-command";
 import { JobDispatcher } from "../../src/queue/job-dispatcher";
-import { db } from "../../src/db";
+import { db, queueDb } from "../../src/db";
 import { killmails } from "../../db/schema";
 import { eq, inArray, or } from "drizzle-orm";
 
@@ -87,7 +87,7 @@ export default class BackfillCommand extends BaseCommand {
       return;
     }
 
-    this.dispatcher = new JobDispatcher(db);
+    this.dispatcher = new JobDispatcher(queueDb);
 
     this.info("🔄 EVE-KILL Backfill");
     this.info("━".repeat(50));

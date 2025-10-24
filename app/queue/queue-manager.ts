@@ -52,6 +52,55 @@ export class QueueManager {
   }
 
   /**
+   * Setup queue database schema
+   * Creates jobs table and indexes if they don't exist
+   */
+  private async setupQueueDatabase() {
+    const { DatabaseConnection } = await import("../../src/db");
+    const queueDb = DatabaseConnection.getRawQueueSqlite();
+
+    if (!queueDb) {
+      throw new Error("Failed to connect to queue database");
+    }
+
+    // Create jobs table (matching Drizzle schema exactly)
+    queueDb.run(`
+      CREATE TABLE IF NOT EXISTS jobs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        queue TEXT NOT NULL,
+        type TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        available_at INTEGER NOT NULL,
+        reserved_at INTEGER,
+        processed_at INTEGER,
+        created_at INTEGER NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        max_attempts INTEGER NOT NULL DEFAULT 3,
+        error TEXT,
+        priority INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+
+    // Optimized indexes for fast job claiming
+    // Primary index: covers all WHERE clauses for job selection
+    queueDb.run(`
+      CREATE INDEX IF NOT EXISTS idx_job_claim
+      ON jobs(queue, status, available_at, attempts, priority, id)
+      WHERE status = 'pending'
+    `);
+
+    // Secondary index: for cleanup and monitoring queries
+    queueDb.run(`
+      CREATE INDEX IF NOT EXISTS idx_status_processed
+      ON jobs(status, processed_at)
+      WHERE status IN ('completed', 'failed')
+    `);
+
+    logger.database("Queue database schema initialized");
+  }
+
+  /**
    * Start processing jobs for all registered workers
    */
   async start() {
@@ -59,6 +108,9 @@ export class QueueManager {
       logger.warn("Queue manager already running");
       return;
     }
+
+    // Ensure queue database is set up
+    await this.setupQueueDatabase();
 
     this.running = true;
 
@@ -139,18 +191,33 @@ export class QueueManager {
       return; // All slots full, wait for next poll
     }
 
-    // Add jitter to reduce contention when many workers try to claim jobs simultaneously
-    // With 25 workers, this spreads claims over 0-50ms instead of all hitting at once
-    if (slotsAvailable > 5) {
-      const jitter = Math.random() * 50;
-      await new Promise(resolve => setTimeout(resolve, jitter));
-    }
+    // Use batch claiming if multiple slots available (more efficient)
+    if (slotsAvailable >= 3) {
+      try {
+        const claimedJobs = await this.claimJobsBatch(queueName, slotsAvailable);
 
-    // Start jobs to fill available slots (fire and forget - don't await!)
-    for (let i = 0; i < slotsAvailable; i++) {
-      this.processNextJob(queueName, worker).catch((error) => {
-        logger.error(`[${queueName}] Unhandled error in job processing:`, error);
-      });
+        if (claimedJobs.length > 0) {
+          // Process all claimed jobs concurrently
+          for (const job of claimedJobs) {
+            this.executeJob(queueName, worker, job).catch((error: Error) => {
+              logger.error(`[${queueName}] Unhandled error in job processing:`, error);
+            });
+          }
+        }
+      } catch (error) {
+        logger.error(`[${queueName}] Batch claim error:`, error);
+        // Fall back to single job claiming
+        this.processNextJob(queueName, worker).catch((error: Error) => {
+          logger.error(`[${queueName}] Unhandled error in job processing:`, error);
+        });
+      }
+    } else {
+      // Single job claiming for small slot counts (fire and forget - don't await!)
+      for (let i = 0; i < slotsAvailable; i++) {
+        this.processNextJob(queueName, worker).catch((error: Error) => {
+          logger.error(`[${queueName}] Unhandled error in job processing:`, error);
+        });
+      }
     }
   }
 
@@ -189,8 +256,6 @@ export class QueueManager {
    * This is where the atomic job claiming happens
    */
   private async processNextJob(queueName: string, worker: BaseWorker) {
-    let jobId: number | null = null;
-
     try {
       // Atomically claim a job
       const job = await this.claimJob(queueName);
@@ -200,6 +265,25 @@ export class QueueManager {
         return;
       }
 
+      // Execute the job
+      await this.executeJob(queueName, worker, job);
+    } catch (error) {
+      logger.error(`[${queueName}] Error processing job:`, error);
+    }
+  }
+
+  /**
+   * Execute a single claimed job
+   * Shared logic for both single and batch job processing
+   */
+  private async executeJob(
+    queueName: string,
+    worker: BaseWorker,
+    job: Job
+  ) {
+    let jobId: number | null = null;
+
+    try {
       jobId = job.id;
       this.trackActiveJob(queueName, jobId);
 
@@ -229,34 +313,60 @@ export class QueueManager {
         }
       }
     } catch (error) {
-      logger.error(`[${queueName}] Error processing job:`, error);
+      logger.error(`[${queueName}] Error executing job:`, error);
       if (jobId !== null) {
         this.untrackActiveJob(queueName, jobId);
       }
     }
   }  /**
-   * Atomically claim the next available job
+   * Atomically claim the next available job using two-phase strategy
    *
-   * This is the CRITICAL section that prevents race conditions:
-   * - Uses UPDATE with WHERE to claim only one job
-   * - RETURNING gives us the claimed job
-   * - SQLite's SERIALIZABLE isolation ensures only one worker succeeds
+   * Phase 1: Fast SELECT to find candidate job (uses index, no write lock)
+   * Phase 2: Quick UPDATE by ID (minimal lock time)
    *
-   * With high concurrency, adds small random jitter to reduce contention.
+   * This is much faster than UPDATE...ORDER BY...LIMIT with large tables because:
+   * - SELECT can use covering index efficiently
+   * - UPDATE by primary key is instant
+   * - Reduces lock contention time by 10-100x
    *
    * @returns The claimed job, or null if no jobs available
    */
   private async claimJob(queueName: string): Promise<Job | null> {
     const now = new Date();
-
-    // Add random jitter (0-50ms) to reduce write contention with many workers
-    // This spreads out database locks instead of all workers hitting at once
-    if (this.workers.size > 10) {
-      const jitter = Math.random() * 50;
-      await new Promise(resolve => setTimeout(resolve, jitter));
-    }
+    const nowUnix = Math.floor(now.getTime() / 1000);
 
     try {
+      // Phase 1: Fast SELECT to find candidate job ID
+      // This uses the optimized index and doesn't hold write locks
+      const { DatabaseConnection } = await import("../../src/db");
+      const queueDb = DatabaseConnection.getRawQueueSqlite();
+
+      if (!queueDb) {
+        return null;
+      }
+
+      // Raw SQL for maximum performance - finds first available job
+      // ORDER BY: priority ASC (0 = highest priority), then id DESC (newest first)
+      const candidate = queueDb
+        .query(
+          `SELECT id
+           FROM jobs
+           WHERE queue = ?
+             AND status = 'pending'
+             AND available_at <= ?
+             AND attempts < max_attempts
+           ORDER BY priority ASC, id DESC
+           LIMIT 1`
+        )
+        .get(queueName, nowUnix) as { id: number } | null;
+
+      if (!candidate) {
+        return null; // No jobs available
+      }
+
+      // Phase 2: Atomic UPDATE by ID (very fast, minimal lock)
+      // Race condition: Another worker might claim the same job
+      // That's OK - the UPDATE will affect 0 rows and we return null
       const [job] = await this.db
         .update(jobs)
         .set({
@@ -266,22 +376,104 @@ export class QueueManager {
         })
         .where(
           and(
-            eq(jobs.queue, queueName),
-            eq(jobs.status, "pending"),
-            lte(jobs.availableAt, now), // Job is available now
-            lt(jobs.attempts, jobs.maxAttempts) // Not exhausted retries
+            eq(jobs.id, candidate.id),
+            eq(jobs.status, "pending") // Double-check it's still pending
           )
         )
-        .orderBy(asc(jobs.priority), asc(jobs.id)) // Lower priority first, then FIFO
-        .limit(1)
         .returning();
 
       return job || null;
     } catch (error) {
-      // SQLITE_BUSY errors are expected under high concurrency
-      // Just return null and let the next poll cycle try again
+      // SQLITE_BUSY errors can still happen but should be rare
       if (error instanceof Error && error.message.includes("BUSY")) {
         return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Batch claim multiple jobs at once (reduces query overhead)
+   *
+   * Phase 1: SELECT multiple candidate IDs
+   * Phase 2: UPDATE all candidates in one transaction
+   *
+   * This is more efficient when concurrency > 1 because:
+   * - Fewer queries overall
+   * - Less lock contention
+   * - Better throughput under load
+   *
+   * @param queueName Queue to claim from
+   * @param count Number of jobs to claim (typically = worker concurrency)
+   * @returns Array of claimed jobs
+   */
+  private async claimJobsBatch(queueName: string, count: number): Promise<Job[]> {
+    if (count <= 0) return [];
+
+    const now = new Date();
+    const nowUnix = Math.floor(now.getTime() / 1000);
+
+    try {
+      const { DatabaseConnection } = await import("../../src/db");
+      const queueDb = DatabaseConnection.getRawQueueSqlite();
+
+      if (!queueDb) {
+        return [];
+      }
+
+      // Phase 1: SELECT multiple candidate IDs
+      // ORDER BY: priority ASC (0 = highest priority), then id DESC (newest first)
+      const candidates = queueDb
+        .query(
+          `SELECT id
+           FROM jobs
+           WHERE queue = ?
+             AND status = 'pending'
+             AND available_at <= ?
+             AND attempts < max_attempts
+           ORDER BY priority ASC, id DESC
+           LIMIT ?`
+        )
+        .all(queueName, nowUnix, count) as { id: number }[];
+
+      if (candidates.length === 0) {
+        return [];
+      }
+
+      const candidateIds = candidates.map(c => c.id);
+
+      // Phase 2: Batch UPDATE by IDs
+      // Use Drizzle ORM with inArray for type safety
+      const updatedCount = await this.db
+        .update(jobs)
+        .set({
+          status: "processing",
+          reservedAt: now,
+          attempts: sql`${jobs.attempts} + 1`,
+        })
+        .where(
+          and(
+            sql`${jobs.id} IN (${sql.join(candidateIds.map(id => sql`${id}`), sql`, `)})`,
+            eq(jobs.status, "pending") // Double-check still pending
+          )
+        );
+
+      // Fetch the claimed jobs
+      const claimedJobs = await this.db
+        .select()
+        .from(jobs)
+        .where(
+          and(
+            sql`${jobs.id} IN (${sql.join(candidateIds.map(id => sql`${id}`), sql`, `)})`,
+            eq(jobs.status, "processing"),
+            eq(jobs.reservedAt, now)
+          )
+        );
+
+      return claimedJobs;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("BUSY")) {
+        return [];
       }
       throw error;
     }
@@ -402,7 +594,6 @@ import { KillmailFetcher } from "./killmail-fetcher";
 import { KillmailValueUpdater } from "./killmail-value-updater";
 import { WebSocketEmitter } from "./websocket-emitter";
 import { ESIFetcher } from "./esi-fetcher";
-import { TypeFetcher } from "./type-fetcher";
 
 export const queueManager = new QueueManager(DatabaseConnection.getQueueInstance());
 
@@ -411,4 +602,3 @@ queueManager.registerWorker(new KillmailFetcher());
 queueManager.registerWorker(new KillmailValueUpdater());
 queueManager.registerWorker(new WebSocketEmitter());
 queueManager.registerWorker(new ESIFetcher());
-queueManager.registerWorker(new TypeFetcher());

@@ -43,29 +43,37 @@
       {{#if parent}}
       <div class="entity-hero__relations">
         {{#ifEquals type "character"}}
+          <span data-corporation-id="{{parent.id}}">
           <a href="/corporation/{{parent.id}}" class="entity-hero__link">
             {{parent.name}}{{#if parent.ticker}} [{{parent.ticker}}]{{/if}}
           </a>
+          </span>
           {{#if grandparent}}
             <span class="entity-hero__relations-sep">•</span>
+            <span data-alliance-id="{{grandparent.id}}">
             <a href="/alliance/{{grandparent.id}}" class="entity-hero__link">
               {{grandparent.name}}{{#if grandparent.ticker}} [{{grandparent.ticker}}]{{/if}}
             </a>
+            </span>
           {{/if}}
         {{else}}
           {{#if grandparent}}
+            <span data-alliance-id="{{grandparent.id}}">
             <a href="/alliance/{{grandparent.id}}" class="entity-hero__link">
               {{grandparent.name}}{{#if grandparent.ticker}} [{{grandparent.ticker}}]{{/if}}
             </a>
+            </span>
           {{/if}}
         {{/ifEquals}}
       </div>
       {{else if grandparent}}
       {{!-- Handle corporations in alliances (no parent, but has grandparent) --}}
       <div class="entity-hero__relations">
+        <span data-alliance-id="{{grandparent.id}}">
         <a href="/alliance/{{grandparent.id}}" class="entity-hero__link">
           {{grandparent.name}}{{#if grandparent.ticker}} [{{grandparent.ticker}}]{{/if}}
         </a>
+        </span>
       </div>
       {{/if}}
       {{/if}}

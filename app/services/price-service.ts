@@ -161,11 +161,9 @@ export class PriceService {
       const fallbackPrices = Array.isArray(fallbackData) ? fallbackData : [];
 
       if (fallbackPrices.length > 0) {
-        logger.debug(`[PriceService] Fetched ${fallbackPrices.length} price entries for type ${typeId} from 30-day fallback`);
         // Cache successful result with shorter TTL (5 minutes)
         this.priceCache.set(cacheKey, fallbackPrices, { ttl: 1000 * 60 * 5 });
       } else {
-        logger.warn(`[PriceService] No price data available for type ${typeId} in last 30 days`);
         // Cache failed lookup with longer TTL (1 hour) to avoid repeated failed queries
         this.priceCache.set(cacheKey, this.CACHE_MISS, { ttl: 1000 * 60 * 60 });
       }

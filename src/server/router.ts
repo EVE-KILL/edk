@@ -238,7 +238,7 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
   if (url.pathname.startsWith("/static/") || url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico)$/i)) {
     try {
       let filePath: string;
-      
+
       if (url.pathname.startsWith("/static/")) {
         // Direct /static/ requests
         filePath = `.${url.pathname}`;
@@ -247,25 +247,25 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
         // Try theme-specific directory first
         const themeFilePath = `./templates/${THEME}/static${url.pathname}`;
         const themeFile = Bun.file(themeFilePath);
-        
+
         if (await themeFile.exists()) {
           const response = new Response(themeFile);
           return applyOptimalHeaders(response, getDefaultStaticHeaders());
         }
-        
+
         // Fall back to default theme
         const defaultFilePath = `./templates/default/static${url.pathname}`;
         const defaultFile = Bun.file(defaultFilePath);
-        
+
         if (await defaultFile.exists()) {
           const response = new Response(defaultFile);
           return applyOptimalHeaders(response, getDefaultStaticHeaders());
         }
-        
+
         // Fall back to legacy ./static directory for backward compatibility
         filePath = `./static${url.pathname}`;
       }
-      
+
       const file = Bun.file(filePath);
       if (await file.exists()) {
         const response = new Response(file);

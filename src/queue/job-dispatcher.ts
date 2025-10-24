@@ -9,6 +9,9 @@ import { jobs, type Job, type NewJob } from "../../db/schema/jobs";
  * - Enqueue single or multiple jobs
  * - Get queue statistics
  * - Cleanup old jobs
+ *
+ * Note: Uses Drizzle schema for type-safe job creation.
+ * Workers use the minimal Job interface from base-worker.ts instead.
  */
 export class JobDispatcher {
   constructor(private db: BunSQLiteDatabase<any>) {}
@@ -137,7 +140,7 @@ export class JobDispatcher {
           createdAt: now,
           attempts: 0,
           maxAttempts: options.maxAttempts ?? 3,
-          priority: options.priority ?? 0,
+          priority: options.priority ?? 10,
         }))
       )
       .returning();

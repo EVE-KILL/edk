@@ -3,8 +3,6 @@
  * Central location for all table schemas
  */
 
-// Queue schemas
-export * from "./jobs";
 
 // Task schemas
 export * from "./tasks";

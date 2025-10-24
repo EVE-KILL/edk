@@ -5,6 +5,7 @@ import { db } from "../../src/db";
 import { killmails, victims, items, prices } from "../../db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { priceService } from "../services/price-service";
+import { sendEvent } from "../../src/utils/event-client";
 
 /**
  * Killmail Value Updater Worker
@@ -37,9 +38,20 @@ export class KillmailValueUpdater extends BaseWorker<{
     // Ensure killmailTime is a Date object (it might come as string from JSON)
     const killmailDate = typeof killmailTime === "string" ? new Date(killmailTime) : killmailTime;
 
-    logger.info(`💰 [Value Update] Starting for killmail DB ID ${killmailDbId}`);
-
     try {
+      // Get the killmail record to obtain the ESI killmail ID
+      const killmail = await db
+        .select()
+        .from(killmails)
+        .where(eq(killmails.id, killmailDbId))
+        .get();
+
+      if (!killmail) {
+        return;
+      }
+
+      const killmailEsiId = killmail.killmailId; // ESI killmail ID for frontend
+
       // Get victim ship type
       const victim = await db
         .select()
@@ -58,16 +70,12 @@ export class KillmailValueUpdater extends BaseWorker<{
         .from(items)
         .where(eq(items.killmailId, killmailDbId));
 
-      logger.debug(`  ↳ Found ${killmailItems.length} items for killmail DB ID ${killmailDbId}`);
-
       // Collect all type IDs (ship + items)
       const typeIds = new Set<number>();
       typeIds.add(victim.shipTypeId);
       for (const item of killmailItems) {
         typeIds.add(item.itemTypeId);
       }
-
-      logger.debug(`  ↳ Fetching prices for ${typeIds.size} unique types`);
 
       // Fetch prices for all types (uses LRU cache internally)
       const typeIdArray = Array.from(typeIds);
@@ -102,9 +110,7 @@ export class KillmailValueUpdater extends BaseWorker<{
       const fittedValue = droppedValue + destroyedValue;
       const totalValue = shipValue + fittedValue;
 
-      logger.debug(`  ↳ Calculated values: ship=${shipValue.toFixed(2)}, fitted=${fittedValue.toFixed(2)}, total=${totalValue.toFixed(2)}`);
-
-      // Update killmail with calculated values
+      // Update killmail values in database
       await db
         .update(killmails)
         .set({
@@ -117,9 +123,15 @@ export class KillmailValueUpdater extends BaseWorker<{
         })
         .where(eq(killmails.id, killmailDbId));
 
-      logger.info(
-        `✅ [Value Update] Completed for killmail DB ID ${killmailDbId}: ${totalValue.toFixed(2)} ISK (ship: ${shipValue.toFixed(2)}, fitted: ${fittedValue.toFixed(2)})`
-      );
+      // Emit value update event for live UI updates
+      await sendEvent("value-update", {
+        killmailId: killmailEsiId, // ESI killmail ID (matches data-killmail-id in HTML)
+        totalValue: parseFloat(totalValue.toFixed(2)),
+        shipValue: parseFloat(shipValue.toFixed(2)),
+        fittedValue: parseFloat(fittedValue.toFixed(2)),
+        droppedValue: parseFloat(droppedValue.toFixed(2)),
+        destroyedValue: parseFloat(destroyedValue.toFixed(2)),
+      });
     } catch (error) {
       logger.error(`❌ [Value Update] Failed for killmail DB ID ${killmailDbId}:`, error);
       throw error;
@@ -221,9 +233,6 @@ export class KillmailValueUpdater extends BaseWorker<{
           }).onConflictDoNothing();
 
           priceMap.set(typeId, { average: avgPrice });
-          logger.debug(`  ↳ Fetched and saved price for type ${typeId}: ${avgPrice.toFixed(2)} ISK`);
-        } else {
-          logger.debug(`  ↳ No price data available for type ${typeId}`);
         }
       } catch (error) {
         logger.debug(`  ↳ Could not fetch price for type ${typeId}, skipping`);

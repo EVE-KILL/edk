@@ -12,7 +12,8 @@ declare global {
 }
 
 // Cache environment variables
-const DATABASE_PATH = process.env.DATABASE_PATH || "./data/ekv4.db";
+const DATABASE_PATH = process.env.DATABASE_PATH || "./data/app.db";
+const QUEUE_DATABASE_PATH = process.env.QUEUE_DATABASE_PATH || "./data/queue.db";
 const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
 
 /**
@@ -45,7 +46,9 @@ class DatabaseConnection {
   private static instance: BunSQLiteDatabase<typeof schema> | null = null;
   private static queueInstance: BunSQLiteDatabase<typeof schema> | null = null;
   private static sqlite: Database | null = null;
+  private static queueSqlite: Database | null = null; // Separate SQLite instance for queue
   private static rawSqlite: Database | null = null; // Keep raw unwrapped instance
+  private static rawQueueSqlite: Database | null = null; // Keep raw unwrapped queue instance
 
   /**
    * Get the database connection instance (with query logging in dev)
@@ -63,7 +66,7 @@ class DatabaseConnection {
    */
   static getQueueInstance(): BunSQLiteDatabase<typeof schema> {
     if (!this.queueInstance) {
-      this.connect();
+      this.connectQueue();
     }
     return this.queueInstance!;
   }
@@ -106,12 +109,6 @@ class DatabaseConnection {
         logger: performanceLogger,
       });
 
-      // Create separate Drizzle instance without logging for queue (shares same SQLite connection)
-      this.queueInstance = drizzle(wrappedSqlite, {
-        schema,
-        logger: false, // Never log queue queries (too spammy)
-      });
-
       logger.database(`Connected: ${DATABASE_PATH}`);
     } catch (error) {
       logger.error("Failed to connect to database:", error);
@@ -120,9 +117,53 @@ class DatabaseConnection {
   }
 
   /**
+   * Connect to the queue database (separate from main database)
+   */
+  private static connectQueue(): void {
+    try {
+      const dataDir = QUEUE_DATABASE_PATH.substring(0, QUEUE_DATABASE_PATH.lastIndexOf("/"));
+      if (dataDir && !Bun.file(dataDir).exists()) {
+        require("fs").mkdirSync(dataDir, { recursive: true });
+      }
+
+      const rawQueueSqlite = new Database(QUEUE_DATABASE_PATH, { create: true });
+
+      // Queue-specific performance configuration
+      // More aggressive settings since queue only has jobs table
+      rawQueueSqlite.run("PRAGMA journal_mode = WAL;");
+      rawQueueSqlite.run("PRAGMA wal_autocheckpoint = 100;"); // More frequent checkpoints for queue
+      rawQueueSqlite.run("PRAGMA synchronous = NORMAL;");
+      rawQueueSqlite.exec("PRAGMA busy_timeout = 10000;"); // Higher timeout for queue operations
+      rawQueueSqlite.exec("PRAGMA cache_size = 10000;"); // Smaller cache, only jobs table
+      rawQueueSqlite.exec("PRAGMA temp_store = MEMORY;");
+
+      logger.database(`Queue connected: ${QUEUE_DATABASE_PATH}`);
+      logger.database("Queue optimizations: WAL, frequent checkpoints, 10s timeout");
+
+      this.rawQueueSqlite = rawQueueSqlite;
+
+      // Wrap queue SQLite connection with performance tracking
+      const wrappedQueueSqlite = wrapDatabaseForPerformance(rawQueueSqlite, getCurrentPerformanceTracker);
+      this.queueSqlite = wrappedQueueSqlite;
+
+      // Create Drizzle instance without logging for queue (shares same SQLite connection)
+      this.queueInstance = drizzle(wrappedQueueSqlite, {
+        schema,
+        logger: false, // Never log queue queries (too spammy)
+      });
+
+      logger.database(`Queue connected: ${QUEUE_DATABASE_PATH}`);
+    } catch (error) {
+      logger.error("Failed to connect to queue database:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Close the database connection
    */
   static close(): void {
+    // Close main database
     if (this.rawSqlite) {
       try {
         // Run PRAGMA optimize before closing
@@ -142,8 +183,26 @@ class DatabaseConnection {
       this.rawSqlite = null;
       this.sqlite = null;
       this.instance = null;
-      this.queueInstance = null;
       logger.database("Connection closed");
+    }
+
+    // Close queue database
+    if (this.rawQueueSqlite) {
+      try {
+        logger.database("Running PRAGMA optimize on queue...");
+        this.rawQueueSqlite.run("PRAGMA optimize;");
+
+        logger.database("Checkpointing queue WAL...");
+        this.rawQueueSqlite.run("PRAGMA wal_checkpoint(TRUNCATE);");
+      } catch (error) {
+        logger.error("Error during queue database shutdown:", error);
+      }
+
+      this.rawQueueSqlite.close();
+      this.rawQueueSqlite = null;
+      this.queueSqlite = null;
+      this.queueInstance = null;
+      logger.database("Queue connection closed");
     }
   }
 
@@ -155,6 +214,16 @@ class DatabaseConnection {
       this.connect();
     }
     return this.rawSqlite;
+  }
+
+  /**
+   * Get the raw queue SQLite database instance (for queue setup/maintenance)
+   */
+  static getRawQueueSqlite(): Database | null {
+    if (!this.rawQueueSqlite) {
+      this.connectQueue();
+    }
+    return this.rawQueueSqlite;
   }
 }
 

@@ -28,9 +28,13 @@
                 <b style="font-size: 11px;">
                     {{#if victim.character.id}}
                     {{#if victim.character.name}}
+                    <span data-character-id="{{victim.character.id}}">
                     <a href="/character/{{victim.character.id}}" style="color: var(--color-accent-blue-light); text-decoration: none;">{{victim.character.name}}</a>
+                    </span>
                     {{else}}
+                    <span data-character-id="{{victim.character.id}}">
                     <a href="/character/{{victim.character.id}}" style="color: var(--color-accent-blue-light); text-decoration: none;">Pilot #{{victim.character.id}}</a>
+                    </span>
                     {{/if}}
                     {{else}}
                     {{victim.ship.name}}
@@ -40,7 +44,9 @@
             {{#if victim.corporation.name}}
             <div style="color: var(--color-text-secondary);">
                 {{#if victim.corporation.id}}
+                <span data-corporation-id="{{victim.corporation.id}}">
                 <a href="/corporation/{{victim.corporation.id}}" style="color: var(--color-text-secondary); text-decoration: none;">{{victim.corporation.name}}</a>
+                </span>
                 {{else}}
                 {{victim.corporation.name}}
                 {{/if}}
@@ -49,7 +55,9 @@
             {{#if victim.alliance.name}}
             <div style="color: var(--color-text-secondary);">
                 {{#if victim.alliance.id}}
+                <span data-alliance-id="{{victim.alliance.id}}">
                 <a href="/alliance/{{victim.alliance.id}}" style="color: var(--color-text-secondary); text-decoration: none;">{{victim.alliance.name}}</a>
+                </span>
                 {{else}}
                 {{victim.alliance.name}}
                 {{/if}}

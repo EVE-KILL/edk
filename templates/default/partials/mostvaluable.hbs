@@ -32,9 +32,11 @@
                         <!-- Pilot Name -->
                         <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.3;">
                             {{#if victim.character.id}}
+                            <span data-character-id="{{victim.character.id}}">
                             <a href="/character/{{victim.character.id}}" style="color: #4a9eff; text-decoration: none; font-size: 11px; font-weight: 600; display: block;" onclick="event.stopPropagation();">
                                 {{victim.character.name}}
                             </a>
+                            </span>
                             {{else}}
                             <a href="/item/{{victim.ship.type_id}}" style="color: #4a9eff; text-decoration: none; font-size: 11px; font-weight: 600; display: block;" onclick="event.stopPropagation();">
                                 {{victim.ship.name}}
@@ -45,9 +47,11 @@
                         <!-- Corp Ticker -->
                         <div style="margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.3;">
                             {{#if victim.corporation.id}}
+                            <span data-corporation-id="{{victim.corporation.id}}">
                             <a href="/corporation/{{victim.corporation.id}}" style="color: var(--color-text-secondary); text-decoration: none; font-size: 9px; display: block;" onclick="event.stopPropagation();">
                                 {{victim.corporation.ticker}}
                             </a>
+                            </span>
                             {{else}}
                             <span style="color: var(--color-text-secondary); font-size: 9px;">Unknown</span>
                             {{/if}}

@@ -76,7 +76,7 @@ export class Controller extends WebController {
       }
 
       // New killmail - enqueue fetch job
-      const dispatcher = new JobDispatcher(this.db);
+      const dispatcher = new JobDispatcher(this.queueDb);
       await dispatcher.dispatch("killmail-fetch", "fetch", {
         killmailId,
         hash,

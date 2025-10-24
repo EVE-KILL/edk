@@ -93,7 +93,7 @@ export class JobDispatcher {
         createdAt: now,
         attempts: 0,
         maxAttempts: options.maxAttempts ?? 3,
-        priority: options.priority ?? 0,
+        priority: options.priority ?? 10,
       })
       .returning();
 
@@ -137,7 +137,7 @@ export class JobDispatcher {
           createdAt: now,
           attempts: 0,
           maxAttempts: options.maxAttempts ?? 3,
-          priority: options.priority ?? 0,
+          priority: options.priority ?? 10,
         }))
       )
       .returning();

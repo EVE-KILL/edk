@@ -247,10 +247,6 @@ export class KillmailService extends EveKillProxyService {
         priority: 5, // Normal priority
         skipIfExists: true,
       });
-
-      logger.info(
-        `Saved killmail ${esiData.killmail_id} with ${attackerCount} attackers and ${esiData.victim.items?.length || 0} items`
-      );
     } catch (error) {
       logger.error(`Failed to save killmail ${esiData.killmail_id}:`, error);
       throw error;
@@ -268,7 +264,6 @@ export class KillmailService extends EveKillProxyService {
     }
 
     // Fetch from EVE-KILL/ESI
-    logger.info(`Fetching killmail ${killmailId}`);
     return await this.fetchAndStore(killmailId, hash);
   }
 

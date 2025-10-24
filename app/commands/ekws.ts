@@ -1,6 +1,6 @@
 import { BaseCommand } from "../../src/commands/base-command";
 import { JobDispatcher } from "../../src/queue/job-dispatcher";
-import { db } from "../../src/db";
+import { db, queueDb } from "../../src/db";
 import { killmails } from "../../db/schema";
 import { eq } from "drizzle-orm";
 
@@ -47,8 +47,8 @@ export default class EkwsCommand extends BaseCommand {
   private filteringEnabled: boolean = false;
 
   override async execute(args: string[]): Promise<void> {
-    // Initialize dispatcher
-    this.dispatcher = new JobDispatcher(db);
+    // Initialize dispatcher with queue database
+    this.dispatcher = new JobDispatcher(queueDb);
 
     // Parse followed entities from environment
     this.followedCharacterIds = process.env.FOLLOWED_CHARACTER_IDS?.trim()

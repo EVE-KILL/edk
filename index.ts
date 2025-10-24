@@ -124,13 +124,13 @@ async function startServer() {
     (async () => {
       for await (const event of templateWatcher) {
         const eventPath = event.filename || "";
-        
+
         // Only reload templates if template files changed
         if (eventPath.endsWith(".hbs")) {
           clearTemplateCache();
           await registerPartials();
           logger.success("✅ Templates reloaded");
-        } 
+        }
         // For static files, just log (browser will fetch updated files)
         else if (eventPath.includes("/static/")) {
           logger.success("✅ Static file updated");

@@ -31,8 +31,6 @@ export class WebSocketEmitter extends BaseWorker<{
   ) {
     const { killmailId } = payload;
 
-    logger.debug(`📡 [WebSocket] Emitting event for killmail ${killmailId}`);
-
     try {
       // Fetch complete killmail data for the update event
       const killmailDisplay = await this.getKillmailDisplay(killmailId);
@@ -47,7 +45,6 @@ export class WebSocketEmitter extends BaseWorker<{
         killmail: killmailDisplay,
       });
 
-      logger.info(`✅ [WebSocket] Emitted event for killmail ${killmailId}`);
     } catch (error) {
       logger.error(`❌ [WebSocket] Failed to emit event for killmail ${killmailId}:`, error);
       throw error;
@@ -120,26 +117,33 @@ export class WebSocketEmitter extends BaseWorker<{
         .where(eq(attackers.killmailId, km.id))
         .all();
 
-      // Parse ship value from killmail record (stored as text for precision)
-      const shipPrice = parseInt(km.shipValue || "0", 10) || 0;
+      // Parse total value from killmail record (stored as text for precision)
+      // This is the total value of the killmail (ship + fitted items + cargo)
+      const totalValue = parseFloat(km.totalValue || "0") || 0;
 
       return {
         killmail_id: km.killmailId,
         killmail_hash: km.hash,
         killmail_time: km.killmailTime,
-        ship_value: shipPrice,
+        ship_value: totalValue,
+        attacker_count: attackerRows.length,
         victim: {
-          character: { id: vic.characterId || null, name: char?.name || "Unknown" },
-          corporation: { id: vic.corporationId || null, name: corp?.name || "Unknown" },
-          alliance: { id: vic.allianceId || null, name: ally?.name || null },
-          ship: { type_id: ship?.typeId || null, name: ship?.name || "Unknown", group: shipGroup?.name || "Unknown" },
+          character: { id: vic.characterId, name: char?.name || "Unknown" },
+          corporation: { id: vic.corporationId, name: corp?.name || "Unknown" },
+          alliance: { id: vic.allianceId, name: ally?.name || null },
+          ship: {
+            type_id: ship?.typeId || null,
+            name: ship?.name || "Unknown",
+            group: shipGroup?.name || "Unknown",
+            group_id: shipGroup?.groupId || null,
+          },
           damage_taken: vic.damageTaken || 0,
         },
         attackers: attackerRows
           .map((row) => ({
-            character: { id: row.attacker.characterId || null, name: row.character?.name || "Unknown" },
-            corporation: { id: row.attacker.corporationId || null, name: row.corporation?.name || "NPC" },
-            alliance: { id: row.attacker.allianceId || null, name: row.alliance?.name || null },
+            character: { id: row.attacker.characterId, name: row.character?.name || "Unknown" },
+            corporation: { id: row.attacker.corporationId, name: row.corporation?.name || "NPC" },
+            alliance: { id: row.attacker.allianceId, name: row.alliance?.name || null },
             ship: { type_id: row.attacker.shipTypeId || null, name: row.ship?.name || "Unknown", group: row.shipGroup?.name || "Unknown" },
             weapon: { type_id: row.attacker.weaponTypeId || null, name: "Unknown" },
             damage_done: row.attacker.damageDone || 0,
@@ -150,6 +154,7 @@ export class WebSocketEmitter extends BaseWorker<{
           id: sys?.systemId || null,
           name: sys?.name || "Unknown",
           region: regionName,
+          region_id: sys?.regionId || null,
           security_status: parseFloat(sys?.securityStatus || "0") || 0,
         },
       };

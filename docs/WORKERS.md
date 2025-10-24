@@ -196,7 +196,7 @@ Queue jobs will accumulate in the database but won't be processed until you star
 ### Check Queue Stats
 ```bash
 # View pending jobs in database
-sqlite3 data/ekv4.db "SELECT queue, status, COUNT(*) FROM jobs GROUP BY queue, status;"
+sqlite3 data/app.db "SELECT queue, status, COUNT(*) FROM jobs GROUP BY queue, status;"
 ```
 
 ### Check Logs

@@ -35,8 +35,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Database files
 data/
-data/ekv4.db
-data/ekv4.db-shm
-data/ekv4.db-wal
+data/*.db
+data/*.db-shm
+data/*.db-wal
 
 *.sqlite

@@ -36,7 +36,7 @@ export const jobs = sqliteTable(
     error: text("error"), // Last error message
 
     // Priority (lower = higher priority)
-    priority: integer("priority").notNull().default(0),
+    priority: integer("priority").notNull().default(10),
   },
   (table) => ({
     // Composite index for efficient job fetching

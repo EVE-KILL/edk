@@ -20,7 +20,7 @@ export function createCache(driver?: string): CacheAdapter {
     case "redis":
       return new RedisCacheAdapter({
         url: process.env.REDIS_URL,
-        prefix: process.env.REDIS_PREFIX || "ekv4:cache:",
+        prefix: process.env.REDIS_PREFIX || "app:cache:",
         ttl: parseInt(process.env.REDIS_TTL || "300", 10),
       });
 

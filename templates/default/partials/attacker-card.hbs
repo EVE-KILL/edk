@@ -48,9 +48,11 @@
         <div class="entity-names">
             <div class="entity-name character-name">
                 {{#if character.id}}
+                <span data-character-id="{{character.id}}">
                 <a href="/character/{{character.id}}" class="entity-link">
                     {{#if character.name}}{{character.name}}{{else}}Unknown{{/if}}
                 </a>
+                </span>
                 {{else}}
                 <span>{{#if character.name}}{{character.name}}{{else}}Unknown{{/if}}</span>
                 {{/if}}
@@ -65,7 +67,9 @@
             {{#if corporation.name}}
             <div class="entity-name corp-name">
                 {{#if corporation.id}}
+                <span data-corporation-id="{{corporation.id}}">
                 <a href="/corporation/{{corporation.id}}" class="entity-link">{{corporation.name}}</a>
+                </span>
                 {{else}}
                 <span>{{corporation.name}}</span>
                 {{/if}}
@@ -75,7 +79,9 @@
             {{#if alliance.name}}
             <div class="entity-name alliance-name">
                 {{#if alliance.id}}
+                <span data-alliance-id="{{alliance.id}}">
                 <a href="/alliance/{{alliance.id}}" class="entity-link">{{alliance.name}}</a>
+                </span>
                 {{else}}
                 <span>{{alliance.name}}</span>
                 {{/if}}
@@ -83,7 +89,9 @@
             {{else if faction.name}}
             <div class="entity-name alliance-name">
                 {{#if faction.id}}
+                <span data-faction-id="{{faction.id}}">
                 <a href="/faction/{{faction.id}}" class="entity-link">{{faction.name}}</a>
+                </span>
                 {{else}}
                 <span>{{faction.name}}</span>
                 {{/if}}

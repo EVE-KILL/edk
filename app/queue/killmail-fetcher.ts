@@ -35,8 +35,6 @@ export class KillmailFetcher extends BaseWorker<{
         return;
       }
 
-      logger.debug(`  ↳ Fetched and saved killmail ${killmailId}`);
-
       // Enqueue ESI fetch jobs for all related entities
       await this.enqueueESIFetches(killmail);
 
