@@ -85,10 +85,6 @@ export class WebSocketUpdatesManager {
   handleOpen(ws: any): void {
     const data = ws.data as WebSocketData;
     this.connectedClients.add(ws);
-
-    logger.info(
-      `[WebSocket] Client connected (total: ${this.connectedClients.size}, internal: ${data.isInternal})`
-    );
   }
 
   /**
@@ -99,9 +95,8 @@ export class WebSocketUpdatesManager {
 
     if (globalThis.VERBOSE_MODE) {
       logger.debug(`[WebSocket] Client disconnected (code: ${code}, reason: ${reason})`);
+      logger.debug(`[WebSocket] Client closed (total remaining: ${this.connectedClients.size})`);
     }
-
-    logger.info(`[WebSocket] Client closed (total remaining: ${this.connectedClients.size})`);
   }
 
   /**

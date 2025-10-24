@@ -101,6 +101,17 @@ export class Controller extends WebController {
       entityType: 'character',
       entityId: characterIdInt,
       imageUrl: `https://images.eve-kill.com/characters/${character.id}/portrait?size=512`,
+      // Include parent (corporation) and grandparent (alliance) to match dashboard header
+      parent: character.corporationId ? {
+        id: character.corporationId,
+        name: character.corporationName,
+        ticker: character.corporationTicker,
+      } : undefined,
+      grandparent: character.allianceId ? {
+        id: character.allianceId,
+        name: character.allianceName,
+        ticker: character.allianceTicker,
+      } : undefined,
       currentTab: 'losses',
       baseUrl: `/character/${characterId}`,
       // Ship group statistics

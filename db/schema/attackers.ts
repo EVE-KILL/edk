@@ -48,5 +48,10 @@ export const attackers = sqliteTable(
     finalBlowIdx: index("attacker_final_blow_idx").on(table.finalBlow),
     // Composite index for top killers query (final_blow + character_id)
     finalBlowCharacterIdx: index("attacker_final_blow_character_id_idx").on(table.finalBlow, table.characterId),
+    // Composite indexes for statistics aggregations (covering indexes with killmail_id for joins)
+    characterKillmailIdx: index("attacker_character_killmail_idx").on(table.characterId, table.killmailId),
+    corporationKillmailIdx: index("attacker_corporation_killmail_idx").on(table.corporationId, table.killmailId),
+    allianceKillmailIdx: index("attacker_alliance_killmail_idx").on(table.allianceId, table.killmailId),
+    shipKillmailIdx: index("attacker_ship_killmail_idx").on(table.shipTypeId, table.killmailId),
   })
 );

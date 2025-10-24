@@ -4,12 +4,8 @@ import {
   victims,
   attackers,
   characters,
-  corporations,
-  alliances,
-  types,
-  solarSystems,
 } from "../../db/schema";
-import { count, sql, desc, and, or, gte, eq, inArray } from "drizzle-orm";
+import { count, sql, and, or, eq, inArray } from "drizzle-orm";
 
 /**
  * Filters for statistics
@@ -43,18 +39,6 @@ export interface KillboardStatistics {
   killsLast7Days: number;
   killsLast30Days: number;
 
-  // Ship stats
-  mostDestroyedShip: { id: number; name: string; count: number } | null;
-  mostUsedShip: { id: number; name: string; count: number } | null;
-
-  // System stats
-  mostDangerousSystem: { id: number; name: string; count: number } | null;
-
-  // Top entities
-  topKiller: { id: number; name: string; kills: number } | null;
-  topCorporation: { id: number; name: string; kills: number } | null;
-  topAlliance: { id: number; name: string; kills: number } | null;
-
   // Misc
   soloKills: number;
   npcKills: number;
@@ -63,6 +47,15 @@ export interface KillboardStatistics {
 
 /**
  * Get comprehensive killboard statistics
+ *
+ * NOTE: For entity-specific stats (kills/losses/efficiency for a character, corp, or alliance),
+ * use the unified stats generator in entity-stats.ts instead:
+ *
+ * import { getEntityStats } from "./entity-stats";
+ * const stats = await getEntityStats({ characterIds: [123], statsType: "all" });
+ *
+ * This function is for GLOBAL dashboard statistics with comprehensive details like
+ * top killers, most dangerous systems, pilot activity, etc.
  */
 export async function getKillboardStatistics(
   filters?: StatsFilters
@@ -76,18 +69,12 @@ export async function getKillboardStatistics(
     iskStats,
     activePilotsStats,
     timeBasedStats,
-    shipStats,
-    systemStats,
-    topEntities,
     miscStats,
   ] = await Promise.all([
     getTotalStats(filters, filterConditions),
     getISKStats(filters, filterConditions),
     getActivePilotsStats(filters),
     getTimeBasedStats(filters),
-    getShipStats(filters),
-    getSystemStats(filters),
-    getTopEntities(filters),
     getMiscStats(filters),
   ]);
 
@@ -96,15 +83,16 @@ export async function getKillboardStatistics(
     ...iskStats,
     ...activePilotsStats,
     ...timeBasedStats,
-    ...shipStats,
-    ...systemStats,
-    ...topEntities,
     ...miscStats,
   };
 }
 
 /**
  * Get statistics for KILLS only (where entity is an attacker)
+ *
+ * @deprecated Use getEntityStats() from entity-stats.ts instead:
+ * import { getEntityStats } from "./entity-stats";
+ * const stats = await getEntityStats({ characterIds: [123], statsType: "kills" });
  */
 export async function getKillsStatistics(
   filters?: StatsFilters
@@ -118,18 +106,12 @@ export async function getKillsStatistics(
     iskStats,
     activePilotsStats,
     timeBasedStats,
-    shipStats,
-    systemStats,
-    topEntities,
     miscStats,
   ] = await Promise.all([
     getTotalStatsForKills(filters, killFilterConditions),
     getISKStats(filters, killFilterConditions),
     getActivePilotsStats(filters),
     getTimeBasedStats(filters),
-    getShipStats(filters),
-    getSystemStats(filters),
-    getTopEntities(filters),
     getMiscStats(filters),
   ]);
 
@@ -138,15 +120,16 @@ export async function getKillsStatistics(
     ...iskStats,
     ...activePilotsStats,
     ...timeBasedStats,
-    ...shipStats,
-    ...systemStats,
-    ...topEntities,
     ...miscStats,
   };
 }
 
 /**
  * Get statistics for LOSSES only (where entity is a victim)
+ *
+ * @deprecated Use getEntityStats() from entity-stats.ts instead:
+ * import { getEntityStats } from "./entity-stats";
+ * const stats = await getEntityStats({ characterIds: [123], statsType: "losses" });
  */
 export async function getLossesStatistics(
   filters?: StatsFilters
@@ -160,18 +143,12 @@ export async function getLossesStatistics(
     iskStats,
     activePilotsStats,
     timeBasedStats,
-    shipStats,
-    systemStats,
-    topEntities,
     miscStats,
   ] = await Promise.all([
     getTotalStatsForLosses(filters, lossFilterConditions),
     getISKStats(filters, lossFilterConditions),
     getActivePilotsStats(filters),
     getTimeBasedStats(filters),
-    getShipStats(filters),
-    getSystemStats(filters),
-    getTopEntities(filters),
     getMiscStats(filters),
   ]);
 
@@ -180,9 +157,6 @@ export async function getLossesStatistics(
     ...iskStats,
     ...activePilotsStats,
     ...timeBasedStats,
-    ...shipStats,
-    ...systemStats,
-    ...topEntities,
     ...miscStats,
   };
 }
@@ -498,196 +472,6 @@ async function getTimeBasedStats(filters?: StatsFilters) {
     killsLast24Hours: (resultMap.get('24h') as number) || 0,
     killsLast7Days: (resultMap.get('7d') as number) || 0,
     killsLast30Days: (resultMap.get('30d') as number) || 0,
-  };
-}
-
-/**
- * Get ship statistics
- */
-async function getShipStats(filters?: StatsFilters) {
-  // Build optimized filter conditions (uses EXISTS for proper index usage)
-  const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
-
-  // Most destroyed ship (victim ships) - separate query for better index usage
-  const destroyedQuery = db
-    .select({
-      shipTypeId: victims.shipTypeId,
-      shipName: types.name,
-      count: count(),
-    })
-    .from(victims)
-    .innerJoin(killmails, eq(victims.killmailId, killmails.id))
-    .leftJoin(types, eq(victims.shipTypeId, types.typeId))
-    .where(
-      and(
-        sql`${victims.shipTypeId} IS NOT NULL`,
-        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
-      )
-    )
-    .groupBy(victims.shipTypeId)
-    .orderBy(desc(count()))
-    .limit(1);
-
-  // Most used ship (attacker ships) - separate query for better index usage
-  const usedQuery = db
-    .select({
-      shipTypeId: attackers.shipTypeId,
-      shipName: types.name,
-      count: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
-    })
-    .from(attackers)
-    .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(types, eq(attackers.shipTypeId, types.typeId))
-    .where(
-      and(
-        sql`${attackers.shipTypeId} IS NOT NULL`,
-        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
-      )
-    )
-    .groupBy(attackers.shipTypeId)
-    .orderBy(desc(count()))
-    .limit(1);
-
-  const [destroyed, used] = await Promise.all([
-    destroyedQuery.execute(),
-    usedQuery.execute(),
-  ]);
-
-  return {
-    mostDestroyedShip: destroyed[0] && destroyed[0].shipTypeId
-      ? { id: destroyed[0].shipTypeId, name: destroyed[0].shipName || `Ship ${destroyed[0].shipTypeId}`, count: destroyed[0].count }
-      : null,
-    mostUsedShip: used[0] && used[0].shipTypeId
-      ? { id: used[0].shipTypeId, name: used[0].shipName || `Ship ${used[0].shipTypeId}`, count: used[0].count }
-      : null,
-  };
-}
-
-/**
- * Get system statistics
- */
-async function getSystemStats(filters?: StatsFilters) {
-  // Build optimized filter conditions (uses EXISTS for proper index usage)
-  const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
-
-  const query = db
-    .select({
-      solarSystemId: killmails.solarSystemId,
-      systemName: solarSystems.name,
-      count: count(),
-    })
-    .from(killmails)
-    .leftJoin(solarSystems, eq(killmails.solarSystemId, solarSystems.systemId))
-    .where(optimizedFilterConditions.length > 0 ? and(...optimizedFilterConditions) : undefined)
-    .groupBy(killmails.solarSystemId)
-    .orderBy(desc(count()))
-    .limit(1);
-
-  const [result] = await query.execute();
-
-  return {
-    mostDangerousSystem: result
-      ? { id: result.solarSystemId, name: result.systemName || `System ${result.solarSystemId}`, count: result.count }
-      : null,
-  };
-}
-
-/**
- * Get top entities (killer, corporation, alliance)
- */
-async function getTopEntities(filters?: StatsFilters) {
-  // Build optimized filter conditions (uses EXISTS for proper index usage)
-  const optimizedFilterConditions = buildOptimizedFilterConditions(filters);
-
-  // Top killer (character with most final blows)
-  const topKillerQuery = db
-    .select({
-      characterId: attackers.characterId,
-      characterName: characters.name,
-      kills: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
-    })
-    .from(attackers)
-    .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(characters, eq(attackers.characterId, characters.characterId))
-    .where(
-      and(
-        eq(attackers.finalBlow, true),
-        sql`${attackers.characterId} IS NOT NULL`,
-        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
-      )
-    )
-    .groupBy(attackers.characterId)
-    .orderBy(desc(sql<number>`COUNT(DISTINCT ${killmails.id})`))
-    .limit(1);
-
-  // Top corporation
-  const topCorpQuery = db
-    .select({
-      corporationId: attackers.corporationId,
-      corporationName: corporations.name,
-      kills: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
-    })
-    .from(attackers)
-    .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(corporations, eq(attackers.corporationId, corporations.corporationId))
-    .where(
-      and(
-        sql`${attackers.corporationId} IS NOT NULL`,
-        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
-      )
-    )
-    .groupBy(attackers.corporationId)
-    .orderBy(desc(sql<number>`COUNT(DISTINCT ${killmails.id})`))
-    .limit(1);
-
-  // Top alliance
-  const topAllianceQuery = db
-    .select({
-      allianceId: attackers.allianceId,
-      allianceName: alliances.name,
-      kills: sql<number>`COUNT(DISTINCT ${killmails.id})`.mapWith(Number),
-    })
-    .from(attackers)
-    .innerJoin(killmails, eq(attackers.killmailId, killmails.id))
-    .leftJoin(alliances, eq(attackers.allianceId, alliances.allianceId))
-    .where(
-      and(
-        sql`${attackers.allianceId} IS NOT NULL`,
-        ...(optimizedFilterConditions.length > 0 ? optimizedFilterConditions : [])
-      )
-    )
-    .groupBy(attackers.allianceId)
-    .orderBy(desc(sql<number>`COUNT(DISTINCT ${killmails.id})`))
-    .limit(1);
-
-  const [topKiller, topCorp, topAlliance] = await Promise.all([
-    topKillerQuery.execute(),
-    topCorpQuery.execute(),
-    topAllianceQuery.execute(),
-  ]);
-
-  return {
-    topKiller: topKiller[0] && topKiller[0].characterId
-      ? {
-          id: topKiller[0].characterId,
-          name: topKiller[0].characterName || `Character ${topKiller[0].characterId}`,
-          kills: topKiller[0].kills,
-        }
-      : null,
-    topCorporation: topCorp[0] && topCorp[0].corporationId
-      ? {
-          id: topCorp[0].corporationId,
-          name: topCorp[0].corporationName || `Corporation ${topCorp[0].corporationId}`,
-          kills: topCorp[0].kills,
-        }
-      : null,
-    topAlliance: topAlliance[0] && topAlliance[0].allianceId
-      ? {
-          id: topAlliance[0].allianceId,
-          name: topAlliance[0].allianceName || `Alliance ${topAlliance[0].allianceId}`,
-          kills: topAlliance[0].kills
-        }
-      : null,
   };
 }
 

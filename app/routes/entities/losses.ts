@@ -1,10 +1,6 @@
 import { WebController } from "../../../src/controllers/web-controller";
 import { generateKilllist } from "../../generators/killlist";
-import {
-  getKillsStatistics,
-  getLossesStatistics,
-  type StatsFilters,
-} from "../../generators/statistics";
+import { getEntityStats } from "../../generators/entity-stats";
 import { characters, corporations, alliances } from "../../../db/schema";
 import { inArray } from "drizzle-orm";
 import { db } from "../../../src/db";
@@ -38,20 +34,6 @@ const HAS_FOLLOWED_ENTITIES =
   FOLLOWED_CHARACTER_IDS.length > 0 ||
   FOLLOWED_CORPORATION_IDS.length > 0 ||
   FOLLOWED_ALLIANCE_IDS.length > 0;
-
-// Build stats filters from .env
-const statsFilters: StatsFilters | undefined = HAS_FOLLOWED_ENTITIES
-  ? {
-      characterIds:
-        FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
-      corporationIds:
-        FOLLOWED_CORPORATION_IDS.length > 0
-          ? FOLLOWED_CORPORATION_IDS
-          : undefined,
-      allianceIds:
-        FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
-    }
-  : undefined;
 
 export class Controller extends WebController {
   static cacheConfig = {
@@ -120,26 +102,18 @@ export class Controller extends WebController {
       shipGroupStats.slice(itemsPerColumn * 2),
     ].filter((col) => col.length > 0);
 
-    // Fetch comprehensive statistics
-    const killStats = await getKillsStatistics(statsFilters);
-    const lossStats = await getLossesStatistics(statsFilters);
-
-    const totalISKDestroyed = parseFloat(killStats?.totalISKDestroyed || "0");
-    const totalISKLost = parseFloat(lossStats?.totalISKLost || "0");
-
-    // Calculate efficiency based on kill/loss counts
-    const totalKills = killStats?.totalKills || 0;
-    const totalLosses = lossStats?.totalLosses || 0;
-    const efficiency =
-      totalKills + totalLosses > 0
-        ? (totalKills / (totalKills + totalLosses)) * 100
-        : 0;
-
-    // Calculate ISK efficiency based on ISK values
-    const iskEfficiency =
-      totalISKDestroyed + totalISKLost > 0
-        ? (totalISKDestroyed / (totalISKDestroyed + totalISKLost)) * 100
-        : 0;
+    // Fetch stats using unified stats generator
+    const stats = await getEntityStats({
+      characterIds:
+        FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
+      corporationIds:
+        FOLLOWED_CORPORATION_IDS.length > 0
+          ? FOLLOWED_CORPORATION_IDS
+          : undefined,
+      allianceIds:
+        FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
+      statsType: "all",
+    });
 
     // Get pagination parameters
     const url = new URL(this.request.url);
@@ -172,9 +146,7 @@ export class Controller extends WebController {
     const hasPrevPage = currentPage > 1;
 
     // Calculate total pages based on total losses
-    const totalPages = lossStats
-      ? Math.ceil(lossStats.totalLosses / limit)
-      : 999;
+    const totalPages = stats.losses > 0 ? Math.ceil(stats.losses / limit) : 999;
 
     // Calculate page numbers to display
     const maxPagesToShow = 5;
@@ -203,16 +175,13 @@ export class Controller extends WebController {
       shipGroupStats,
       shipGroupColumns,
       stats: {
-        kills: killStats?.totalKills || 0,
-        losses: lossStats?.totalLosses || 0,
-        killLossRatio:
-          (lossStats?.totalLosses || 0) > 0
-            ? (killStats?.totalKills || 0) / (lossStats?.totalLosses || 0)
-            : (killStats?.totalKills || 0),
-        efficiency,
-        iskDestroyed: killStats?.totalISKDestroyed || "0",
-        iskLost: lossStats?.totalISKLost || "0",
-        iskEfficiency,
+        kills: stats.kills,
+        losses: stats.losses,
+        killLossRatio: stats.killLossRatio,
+        efficiency: stats.efficiency,
+        iskDestroyed: stats.iskDestroyed,
+        iskLost: stats.iskLost,
+        iskEfficiency: stats.iskEfficiency,
       },
       pagination: {
         currentPage,

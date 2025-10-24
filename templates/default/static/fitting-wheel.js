@@ -121,7 +121,7 @@
         slot.style.left = position.left;
         slot.style.top = position.top;
         slot.style.transform = 'translate(-50%, -50%)';
-        
+
         // Add positioned class to make slot visible
         slot.classList.add('positioned');
 

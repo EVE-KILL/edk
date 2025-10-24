@@ -214,9 +214,6 @@ export class KillmailModel extends BaseModel<typeof killmails, Killmail, NewKill
     const killTime = currentKillmail.killmailTime;
     const oneHourAgoDate = new Date(killTime.getTime() - timeWindowSeconds * 1000);
 
-    console.log(`[Killmail Model] Looking for siblings for victim ${victimCharacterId}`);
-    console.log(`[Killmail Model] Kill time: ${killTime.toISOString()}, One hour ago: ${oneHourAgoDate.toISOString()}`);
-
     try {
       // Use the find method with a proper where clause
       return await this.find({

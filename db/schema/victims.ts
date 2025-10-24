@@ -44,5 +44,7 @@ export const victims = sqliteTable(
     corporationIdIdx: index("victim_corporation_id_idx").on(table.corporationId),
     allianceIdIdx: index("victim_alliance_id_idx").on(table.allianceId),
     shipTypeIdIdx: index("victim_ship_type_id_idx").on(table.shipTypeId),
+    // Composite indexes for statistics aggregations (covering indexes with killmail_id for joins)
+    shipKillmailIdx: index("victim_ship_killmail_idx").on(table.shipTypeId, table.killmailId),
   })
 );

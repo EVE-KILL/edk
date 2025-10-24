@@ -94,9 +94,6 @@ class DatabaseConnection {
       rawSqlite.exec("PRAGMA mmap_size = 268435456;");
       rawSqlite.exec("PRAGMA analysis_limit = 1000;");
 
-      logger.database(`Connected: ${DATABASE_PATH}`);
-      logger.database("Performance optimizations enabled: WAL, 256MB cache, 256MB mmap");
-
       this.rawSqlite = rawSqlite;
 
       // Wrap SQLite connection with performance tracking
@@ -136,9 +133,6 @@ class DatabaseConnection {
       rawQueueSqlite.exec("PRAGMA busy_timeout = 10000;"); // Higher timeout for queue operations
       rawQueueSqlite.exec("PRAGMA cache_size = 10000;"); // Smaller cache, only jobs table
       rawQueueSqlite.exec("PRAGMA temp_store = MEMORY;");
-
-      logger.database(`Queue connected: ${QUEUE_DATABASE_PATH}`);
-      logger.database("Queue optimizations: WAL, frequent checkpoints, 10s timeout");
 
       this.rawQueueSqlite = rawQueueSqlite;
 

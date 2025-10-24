@@ -1,49 +1,8 @@
 import { WebController } from "../../src/controllers/web-controller";
 import { generateKilllist } from "../generators/killlist";
-import {
-  getKillboardStatistics,
-  type StatsFilters,
-} from "../generators/statistics";
+import { getKillboardStatistics } from "../generators/statistics";
 import { getTop10Stats } from "../generators/top-10-stats";
 import { getMostValuableKills } from "../generators/mostvaluable";
-
-// Parse .env followed entities configuration
-// Empty strings should result in empty arrays, not arrays with NaN
-const FOLLOWED_CHARACTER_IDS =
-  process.env.FOLLOWED_CHARACTER_IDS?.trim()
-    ? process.env.FOLLOWED_CHARACTER_IDS.split(",").map((id) =>
-        parseInt(id.trim(), 10)
-      )
-    : [];
-const FOLLOWED_CORPORATION_IDS =
-  process.env.FOLLOWED_CORPORATION_IDS?.trim()
-    ? process.env.FOLLOWED_CORPORATION_IDS.split(",").map((id) =>
-        parseInt(id.trim(), 10)
-      )
-    : [];
-const FOLLOWED_ALLIANCE_IDS =
-  process.env.FOLLOWED_ALLIANCE_IDS?.trim()
-    ? process.env.FOLLOWED_ALLIANCE_IDS.split(",").map((id) =>
-        parseInt(id.trim(), 10)
-      )
-    : [];
-
-// Build stats filters from .env
-const statsFilters: StatsFilters | undefined =
-  FOLLOWED_CHARACTER_IDS.length > 0 ||
-  FOLLOWED_CORPORATION_IDS.length > 0 ||
-  FOLLOWED_ALLIANCE_IDS.length > 0
-    ? {
-        characterIds:
-          FOLLOWED_CHARACTER_IDS.length > 0 ? FOLLOWED_CHARACTER_IDS : undefined,
-        corporationIds:
-          FOLLOWED_CORPORATION_IDS.length > 0
-            ? FOLLOWED_CORPORATION_IDS
-            : undefined,
-        allianceIds:
-          FOLLOWED_ALLIANCE_IDS.length > 0 ? FOLLOWED_ALLIANCE_IDS : undefined,
-      }
-    : undefined;
 
 export class Controller extends WebController {
   static cacheConfig = {

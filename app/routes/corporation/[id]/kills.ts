@@ -88,6 +88,13 @@ export class Controller extends WebController {
         entityId: parseInt(corporationId, 10),
         imageUrl: `https://images.eve-kill.com/corporations/${corporation.id}/logo?size=512`,
         stats,
+        // parent is undefined for corporations; include grandparent (alliance) when available
+        parent: undefined,
+        grandparent: corporation.allianceId ? {
+          id: corporation.allianceId,
+          name: corporation.allianceName,
+          ticker: corporation.allianceTicker,
+        } : undefined,
         killmails,
         currentTab: "kills",
         baseUrl: `/corporation/${corporationId}`,

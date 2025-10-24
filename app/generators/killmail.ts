@@ -762,8 +762,6 @@ export async function generateKillmailDetail(killmailId: number): Promise<Killma
       50    // limit
     );
 
-    console.log(`[Killmail Generator] Fetched ${siblingKillmails.length} sibling killmails for victim ${km.victimCharacterId}`);
-
     // Transform sibling killmails for display
     const siblings = await Promise.all(
       siblingKillmails.map(async sibling => {
