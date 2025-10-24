@@ -866,7 +866,12 @@ textarea.killmail {
     pointer-events: auto;
     cursor: pointer;
     border: 1px solid rgba(100, 100, 100, 0.3);
-    transition: all 0.1s ease-in-out;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.slot.positioned {
+    opacity: 1;
 }
 
 .slot:hover {
