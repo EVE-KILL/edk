@@ -89,6 +89,7 @@ CREATE INDEX `victim_character_id_idx` ON `victims` (`character_id`);--> stateme
 CREATE INDEX `victim_corporation_id_idx` ON `victims` (`corporation_id`);--> statement-breakpoint
 CREATE INDEX `victim_alliance_id_idx` ON `victims` (`alliance_id`);--> statement-breakpoint
 CREATE INDEX `victim_ship_type_id_idx` ON `victims` (`ship_type_id`);--> statement-breakpoint
+CREATE INDEX `victim_ship_killmail_idx` ON `victims` (`ship_type_id`,`killmail_id`);--> statement-breakpoint
 CREATE TABLE `attackers` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`killmail_id` integer NOT NULL,
@@ -113,6 +114,10 @@ CREATE INDEX `attacker_ship_type_id_idx` ON `attackers` (`ship_type_id`);--> sta
 CREATE INDEX `attacker_weapon_type_id_idx` ON `attackers` (`weapon_type_id`);--> statement-breakpoint
 CREATE INDEX `attacker_final_blow_idx` ON `attackers` (`final_blow`);--> statement-breakpoint
 CREATE INDEX `attacker_final_blow_character_id_idx` ON `attackers` (`final_blow`,`character_id`);--> statement-breakpoint
+CREATE INDEX `attacker_character_killmail_idx` ON `attackers` (`character_id`,`killmail_id`);--> statement-breakpoint
+CREATE INDEX `attacker_corporation_killmail_idx` ON `attackers` (`corporation_id`,`killmail_id`);--> statement-breakpoint
+CREATE INDEX `attacker_alliance_killmail_idx` ON `attackers` (`alliance_id`,`killmail_id`);--> statement-breakpoint
+CREATE INDEX `attacker_ship_killmail_idx` ON `attackers` (`ship_type_id`,`killmail_id`);--> statement-breakpoint
 CREATE TABLE `items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`killmail_id` integer NOT NULL,
@@ -285,6 +290,42 @@ CREATE TABLE `esi_cache` (
 CREATE UNIQUE INDEX `esi_cache_cache_key_unique` ON `esi_cache` (`cache_key`);--> statement-breakpoint
 CREATE INDEX `esi_cache_key_idx` ON `esi_cache` (`cache_key`);--> statement-breakpoint
 CREATE INDEX `esi_cache_expires_at_idx` ON `esi_cache` (`expires_at`);--> statement-breakpoint
+CREATE TABLE `entity_stats` (
+	`entity_type` text NOT NULL,
+	`entity_id` integer NOT NULL,
+	`kills` integer DEFAULT 0 NOT NULL,
+	`losses` integer DEFAULT 0 NOT NULL,
+	`isk_destroyed` text DEFAULT '0' NOT NULL,
+	`isk_lost` text DEFAULT '0' NOT NULL,
+	`kill_loss_ratio` text DEFAULT '0' NOT NULL,
+	`efficiency` text DEFAULT '0' NOT NULL,
+	`isk_efficiency` text DEFAULT '0' NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
+	PRIMARY KEY(`entity_type`, `entity_id`)
+);
+--> statement-breakpoint
+CREATE INDEX `entity_stats_type_idx` ON `entity_stats` (`entity_type`);--> statement-breakpoint
+CREATE INDEX `entity_stats_updated_at_idx` ON `entity_stats` (`updated_at`);--> statement-breakpoint
+CREATE INDEX `entity_stats_kills_idx` ON `entity_stats` (`kills`);--> statement-breakpoint
+CREATE INDEX `entity_stats_isk_destroyed_idx` ON `entity_stats` (`isk_destroyed`);--> statement-breakpoint
+CREATE TABLE `ship_group_stats` (
+	`entity_type` text NOT NULL,
+	`entity_id` integer NOT NULL,
+	`group_id` integer NOT NULL,
+	`group_name` text NOT NULL,
+	`kills` integer DEFAULT 0 NOT NULL,
+	`losses` integer DEFAULT 0 NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
+	PRIMARY KEY(`entity_type`, `entity_id`, `group_id`)
+);
+--> statement-breakpoint
+CREATE INDEX `ship_group_stats_entity_idx` ON `ship_group_stats` (`entity_type`,`entity_id`);--> statement-breakpoint
+CREATE INDEX `ship_group_stats_group_idx` ON `ship_group_stats` (`group_id`);--> statement-breakpoint
+CREATE INDEX `ship_group_stats_kills_idx` ON `ship_group_stats` (`kills`);--> statement-breakpoint
+CREATE INDEX `ship_group_stats_losses_idx` ON `ship_group_stats` (`losses`);--> statement-breakpoint
+CREATE INDEX `ship_group_stats_updated_at_idx` ON `ship_group_stats` (`updated_at`);--> statement-breakpoint
 CREATE TABLE `categories` (
 	`category_id` integer PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,

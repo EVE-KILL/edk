@@ -53,6 +53,13 @@ export interface CacheConfig {
    * Tags for cache invalidation (future use)
    */
   tags?: string[];
+
+  /**
+   * Allow proactive cache warming when popular
+   * Set to false to disable for this route
+   * Default: enabled if cache warming is globally enabled
+   */
+  allowProactiveRefresh?: boolean;
 }
 
 /**

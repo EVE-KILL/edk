@@ -6,6 +6,7 @@ import { killmails, victims, items, prices } from "../../db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { priceService } from "../services/price-service";
 import { sendEvent } from "../../src/utils/event-client";
+import { queue } from "../../src/queue/job-dispatcher";
 
 /**
  * Killmail Value Updater Worker
@@ -131,6 +132,16 @@ export class KillmailValueUpdater extends BaseWorker<{
         fittedValue: parseFloat(fittedValue.toFixed(2)),
         droppedValue: parseFloat(droppedValue.toFixed(2)),
         destroyedValue: parseFloat(destroyedValue.toFixed(2)),
+      });
+
+      // Enqueue stats update job to update entity stats
+      await queue.dispatch("stats:update", "entity-stats", {
+        killmailId: killmailDbId,
+      });
+
+      // Enqueue ship group stats update job
+      await queue.dispatch("ship-group-stats:update", "ship-group-stats", {
+        killmailId: killmailDbId,
       });
     } catch (error) {
       logger.error(`❌ [Value Update] Failed for killmail DB ID ${killmailDbId}:`, error);

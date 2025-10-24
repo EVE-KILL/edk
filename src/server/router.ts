@@ -14,6 +14,7 @@ import {
   type CachedResponseEntry,
 } from "../cache/cache-key";
 import { cache } from "../cache";
+import { cacheWarmingCoordinator } from "../cache/warming-coordinator";
 import { applyOptimalHeaders, getDefaultStaticHeaders } from "../utils/headers";
 
 // Cache environment variables
@@ -328,6 +329,11 @@ export async function handleRequest(index: RouteIndex, req: Request): Promise<Re
       if (cachedEntry) {
         const { state, age } = getCacheEntryState(cachedEntry);
 
+        // Track visit for proactive cache warming (don't await)
+        trackCacheAccess(cacheKey, cachedEntry).catch((error) => {
+          console.error("Cache access tracking failed:", error);
+        });
+
         if (state === "fresh") {
           // Fresh cache: serve immediately
           const response = deserializeResponse(cachedEntry.data, "fresh");
@@ -479,5 +485,31 @@ async function revalidateInBackground(
   } finally {
     // Release lock
     await cache.delete(lockKey);
+  }
+}
+
+/**
+ * Track cache access for proactive cache warming
+ */
+async function trackCacheAccess(
+  cacheKey: string,
+  entry: CachedResponseEntry
+): Promise<void> {
+  // Only track in production when cache warming is enabled
+  if (process.env.NODE_ENV !== "production" || process.env.CACHE_WARMING_ENABLED === "false") {
+    return;
+  }
+
+  try {
+    // Notify coordinator about this access
+    cacheWarmingCoordinator.trackAccess(cacheKey);
+
+    // Optionally update the access count in cache metadata (can be skipped for performance)
+    // entry.accessCount = (entry.accessCount || 0) + 1;
+    // entry.lastAccessTime = Date.now();
+    // const ttl = entry.swr ? entry.ttl + entry.swr : entry.ttl;
+    // await cache.set(cacheKey, entry, ttl);
+  } catch (error) {
+    // Silently fail - tracking should never break the request
   }
 }

@@ -129,6 +129,8 @@ export interface CachedResponseEntry {
   ttl: number;            // Fresh period in seconds
   swr?: number;           // Stale-while-revalidate period in seconds
   staleIfError?: number;  // Stale-if-error period in seconds
+  accessCount?: number;   // Number of accesses in current monitoring window
+  lastAccessTime?: number; // Last access timestamp
 }
 
 /**

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f7243b6d-c34f-445c-afa5-1b103daebeb7",
+  "id": "2802ad5a-1c2c-4f47-a4fb-b2547a5d96f6",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "scheduled_task_runs": {
@@ -608,6 +608,14 @@
             "ship_type_id"
           ],
           "isUnique": false
+        },
+        "victim_ship_killmail_idx": {
+          "name": "victim_ship_killmail_idx",
+          "columns": [
+            "ship_type_id",
+            "killmail_id"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -774,6 +782,38 @@
           "columns": [
             "final_blow",
             "character_id"
+          ],
+          "isUnique": false
+        },
+        "attacker_character_killmail_idx": {
+          "name": "attacker_character_killmail_idx",
+          "columns": [
+            "character_id",
+            "killmail_id"
+          ],
+          "isUnique": false
+        },
+        "attacker_corporation_killmail_idx": {
+          "name": "attacker_corporation_killmail_idx",
+          "columns": [
+            "corporation_id",
+            "killmail_id"
+          ],
+          "isUnique": false
+        },
+        "attacker_alliance_killmail_idx": {
+          "name": "attacker_alliance_killmail_idx",
+          "columns": [
+            "alliance_id",
+            "killmail_id"
+          ],
+          "isUnique": false
+        },
+        "attacker_ship_killmail_idx": {
+          "name": "attacker_ship_killmail_idx",
+          "columns": [
+            "ship_type_id",
+            "killmail_id"
           ],
           "isUnique": false
         }
@@ -1935,6 +1975,255 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "entity_stats": {
+      "name": "entity_stats",
+      "columns": {
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kills": {
+          "name": "kills",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "losses": {
+          "name": "losses",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "isk_destroyed": {
+          "name": "isk_destroyed",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "isk_lost": {
+          "name": "isk_lost",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "kill_loss_ratio": {
+          "name": "kill_loss_ratio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "efficiency": {
+          "name": "efficiency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "isk_efficiency": {
+          "name": "isk_efficiency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "entity_stats_type_idx": {
+          "name": "entity_stats_type_idx",
+          "columns": [
+            "entity_type"
+          ],
+          "isUnique": false
+        },
+        "entity_stats_updated_at_idx": {
+          "name": "entity_stats_updated_at_idx",
+          "columns": [
+            "updated_at"
+          ],
+          "isUnique": false
+        },
+        "entity_stats_kills_idx": {
+          "name": "entity_stats_kills_idx",
+          "columns": [
+            "kills"
+          ],
+          "isUnique": false
+        },
+        "entity_stats_isk_destroyed_idx": {
+          "name": "entity_stats_isk_destroyed_idx",
+          "columns": [
+            "isk_destroyed"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "entity_stats_entity_type_entity_id_pk": {
+          "columns": [
+            "entity_type",
+            "entity_id"
+          ],
+          "name": "entity_stats_entity_type_entity_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "ship_group_stats": {
+      "name": "ship_group_stats",
+      "columns": {
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "group_name": {
+          "name": "group_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kills": {
+          "name": "kills",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "losses": {
+          "name": "losses",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "ship_group_stats_entity_idx": {
+          "name": "ship_group_stats_entity_idx",
+          "columns": [
+            "entity_type",
+            "entity_id"
+          ],
+          "isUnique": false
+        },
+        "ship_group_stats_group_idx": {
+          "name": "ship_group_stats_group_idx",
+          "columns": [
+            "group_id"
+          ],
+          "isUnique": false
+        },
+        "ship_group_stats_kills_idx": {
+          "name": "ship_group_stats_kills_idx",
+          "columns": [
+            "kills"
+          ],
+          "isUnique": false
+        },
+        "ship_group_stats_losses_idx": {
+          "name": "ship_group_stats_losses_idx",
+          "columns": [
+            "losses"
+          ],
+          "isUnique": false
+        },
+        "ship_group_stats_updated_at_idx": {
+          "name": "ship_group_stats_updated_at_idx",
+          "columns": [
+            "updated_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "ship_group_stats_entity_type_entity_id_group_id_pk": {
+          "columns": [
+            "entity_type",
+            "entity_id",
+            "group_id"
+          ],
+          "name": "ship_group_stats_entity_type_entity_id_group_id_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },

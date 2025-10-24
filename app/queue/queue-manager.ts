@@ -594,6 +594,9 @@ import { KillmailFetcher } from "./killmail-fetcher";
 import { KillmailValueUpdater } from "./killmail-value-updater";
 import { WebSocketEmitter } from "./websocket-emitter";
 import { ESIFetcher } from "./esi-fetcher";
+import { CacheWarmer } from "./cache-warmer";
+import { StatsUpdater } from "./stats-updater";
+import { ShipGroupStatsUpdater } from "./ship-group-stats-updater";
 
 export const queueManager = new QueueManager(DatabaseConnection.getQueueInstance());
 
@@ -602,3 +605,6 @@ queueManager.registerWorker(new KillmailFetcher());
 queueManager.registerWorker(new KillmailValueUpdater());
 queueManager.registerWorker(new WebSocketEmitter());
 queueManager.registerWorker(new ESIFetcher());
+queueManager.registerWorker(new CacheWarmer());
+queueManager.registerWorker(new StatsUpdater());
+queueManager.registerWorker(new ShipGroupStatsUpdater());

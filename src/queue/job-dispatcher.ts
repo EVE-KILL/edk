@@ -17,6 +17,50 @@ export class JobDispatcher {
   constructor(private db: BunSQLiteDatabase<any>) {}
 
   /**
+   * Ensure the queue database schema (jobs table + indexes) exists.
+   * This is lazily invoked from dispatch methods so CLI commands that
+   * use the dispatcher don't need the queue manager to be running.
+   */
+  private async ensureQueueDatabaseSetup(): Promise<void> {
+    const { DatabaseConnection } = await import("../db");
+    const queueDb = DatabaseConnection.getRawQueueSqlite();
+
+    if (!queueDb) return;
+
+    // Create jobs table if it does not exist (keep in sync with queue-manager)
+    queueDb.run(`
+      CREATE TABLE IF NOT EXISTS jobs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        queue TEXT NOT NULL,
+        type TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        available_at INTEGER NOT NULL,
+        reserved_at INTEGER,
+        processed_at INTEGER,
+        created_at INTEGER NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        max_attempts INTEGER NOT NULL DEFAULT 3,
+        error TEXT,
+        priority INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+
+    // Create indexes if they don't exist (optimised for claiming)
+    queueDb.run(`
+      CREATE INDEX IF NOT EXISTS idx_job_claim
+      ON jobs(queue, status, available_at, attempts, priority, id)
+      WHERE status = 'pending'
+    `);
+
+    queueDb.run(`
+      CREATE INDEX IF NOT EXISTS idx_status_processed
+      ON jobs(status, processed_at)
+      WHERE status IN ('completed', 'failed')
+    `);
+  }
+
+  /**
    * Check if a job with the same queue, type, and payload is already enqueued
    *
    * @example
@@ -75,6 +119,9 @@ export class JobDispatcher {
       skipIfExists?: boolean; // Skip if job already exists (default: false)
     } = {}
   ): Promise<Job | null> {
+    // Ensure queue database is set up
+    await this.ensureQueueDatabaseSetup();
+
     const now = new Date();
     const availableAt = options.delay
       ? new Date(now.getTime() + options.delay * 1000)
@@ -125,6 +172,9 @@ export class JobDispatcher {
     if (payloads.length === 0) {
       return [];
     }
+
+    // Ensure queue database is set up
+    await this.ensureQueueDatabaseSetup();
 
     const now = new Date();
 

@@ -306,6 +306,11 @@ export default class BackfillCommand extends BaseCommand {
     const startTime = Date.now();
     let newKillmailIds = new Set<number>(); // Track which killmails are actually new
 
+    // Prepare job arrays (to be enqueued AFTER transaction completes)
+    const entityJobs: Array<{ type: "character" | "corporation" | "alliance"; id: number }> = [];
+    const valueJobs: Array<{ killmailDbId: number; killmailTime: Date }> = [];
+    const websocketJobs: Array<{ killmailId: number }> = [];
+
     try {
       await db.transaction(async (tx) => {
         // 1. Prepare killmail data
@@ -444,10 +449,7 @@ export default class BackfillCommand extends BaseCommand {
           }
         }
 
-        // 10. Enqueue jobs for ESI entity fetches and value calculations (only for new killmails)
-        const entityJobs: Array<{ type: "character" | "corporation" | "alliance"; id: number }> = [];
-        const valueJobs: Array<{ killmailDbId: number; killmailTime: Date }> = [];
-
+        // 10. Prepare jobs for ESI entity fetches and value calculations (only for new killmails)
         const charactersToFetch = new Set<number>();
         const corporationsToFetch = new Set<number>();
         const alliancesToFetch = new Set<number>();
@@ -471,7 +473,7 @@ export default class BackfillCommand extends BaseCommand {
             if (attacker.alliance_id) alliancesToFetch.add(attacker.alliance_id);
           }
 
-          // Enqueue value calculation
+          // Prepare value calculation job
           valueJobs.push({
             killmailDbId: dbId,
             killmailTime: new Date(km.kill_time), // API returns "kill_time"
@@ -489,29 +491,34 @@ export default class BackfillCommand extends BaseCommand {
           entityJobs.push({ type: "alliance", id });
         }
 
-        // Batch enqueue ESI entity fetches
-        if (entityJobs.length > 0) {
-          await queue.dispatchMany("esi", "fetch", entityJobs, {
-            priority: 10, // Lower priority than killmail processing
-          });
-        }
-
-        // Batch enqueue value calculations
-        if (valueJobs.length > 0) {
-          await queue.dispatchMany("killmail-value", "update", valueJobs, {
-            priority: 5,
-          });
-        }
-
-        // Batch enqueue websocket emissions (only for new killmails)
+        // Prepare websocket emission jobs (only for new killmails)
         const newInsertedKillmails = insertedKillmails.filter((km) => newKillmailIds.has(km.killmailId));
-        const websocketJobs = newInsertedKillmails.map((km) => ({ killmailId: km.killmailId }));
-        if (websocketJobs.length > 0) {
-          await queue.dispatchMany("websocket", "emit", websocketJobs, {
-            priority: 5,
-          });
+        for (const km of newInsertedKillmails) {
+          websocketJobs.push({ killmailId: km.killmailId });
         }
       });
+
+      // Transaction complete - now enqueue jobs to the separate queue database
+      // Batch enqueue ESI entity fetches
+      if (entityJobs.length > 0) {
+        await queue.dispatchMany("esi", "fetch", entityJobs, {
+          priority: 10, // Lower priority than killmail processing
+        });
+      }
+
+      // Batch enqueue value calculations
+      if (valueJobs.length > 0) {
+        await queue.dispatchMany("killmail-value", "update", valueJobs, {
+          priority: 5,
+        });
+      }
+
+      // Batch enqueue websocket emissions
+      if (websocketJobs.length > 0) {
+        await queue.dispatchMany("websocket", "emit", websocketJobs, {
+          priority: 5,
+        });
+      }
 
       const duration = Date.now() - startTime;
       const newKillmailCount = newKillmailIds.size;

@@ -19,6 +19,7 @@ export {
   getCacheEntryState,
   type CachedResponseEntry,
 } from "./cache-key";
+export { cacheWarmingCoordinator } from "./warming-coordinator";
 
 // Check if cache is enabled
 const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
@@ -39,3 +40,4 @@ if (!shouldEnableCache) {
   const driver = process.env.CACHE_DRIVER || "lru";
   logger.cache(`enabled (driver: ${driver})`);
 }
+
