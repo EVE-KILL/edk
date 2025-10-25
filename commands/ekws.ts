@@ -1,4 +1,6 @@
 import { database } from '../server/helpers/database'
+import chalk from 'chalk'
+import { logger } from '../server/helpers/logger'
 
 interface KillmailData {
   killmail_id: number
@@ -105,25 +107,21 @@ class EkwsListener {
       this.parseFilter(options.filter)
     }
 
-    this.log('🚀 Starting EVE-KILL WebSocket listener')
-    this.log(`📡 WebSocket URL: ${this.WS_URL}`)
-    this.log('')
+    this.log(chalk.blue.bold('🚀 Starting EVE-KILL WebSocket listener'))
+    this.log(`📡 WebSocket URL: ${chalk.cyan(this.WS_URL)}`)
 
     if (this.filteringEnabled) {
-      this.log('🔍 Filtering enabled for followed entities:')
+      this.log(chalk.yellow('🔍 Filtering enabled for followed entities:'))
       for (const [type, ids] of this.followedEntities) {
         if (ids.size > 0) {
-          this.log(`   ${type}s: ${Array.from(ids).join(', ')}`)
+          this.log(`   ${type}s: ${chalk.green(Array.from(ids).join(', '))}`)
         }
       }
-      this.log('')
     } else {
-      this.log('📡 No filtering - importing all killmails')
-      this.log('')
+      this.log(chalk.cyan('📡 No filtering - importing all killmails'))
     }
 
-    this.log('Press Ctrl+C to stop')
-    this.log('')
+    this.log(chalk.dim('Press Ctrl+C to stop'))
 
     // Handle graceful shutdown
     process.on('SIGINT', () => this.shutdown())
@@ -161,16 +159,16 @@ class EkwsListener {
         await this.connectWebSocket()
       } catch (error) {
         this.stats.errors++
-        this.error(`❌ WebSocket error: ${error}`)
+        this.error(`WebSocket error: ${error}`)
 
         if (this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
           this.reconnectAttempts++
           this.log(
-            `🔄 Reconnecting (attempt ${this.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS})...`
+            chalk.yellow(`🔄 Reconnecting (attempt ${this.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS})...`)
           )
           await this.sleep(this.RECONNECT_DELAY)
         } else {
-          this.error('❌ Max reconnection attempts reached. Giving up.')
+          this.error('Max reconnection attempts reached. Giving up.')
           this.running = false
           break
         }
@@ -187,12 +185,12 @@ class EkwsListener {
         this.ws = new WebSocket(this.WS_URL)
 
         this.ws.onopen = () => {
-          this.success('✅ Connected to EVE-KILL WebSocket')
+          this.success('Connected to EVE-KILL WebSocket')
           this.reconnectAttempts = 0
 
           // Send subscription message
           this.ws!.send('all')
-          this.log('📡 Subscribed to "all" killmails')
+          this.log(chalk.cyan('📡 Subscribed to "all" killmails'))
         }
 
         this.ws.onmessage = (event) => {
@@ -210,7 +208,7 @@ class EkwsListener {
         }
 
         this.ws.onclose = () => {
-          this.log('🔌 WebSocket disconnected')
+          this.log(chalk.gray('🔌 WebSocket disconnected'))
           resolve()
         }
       } catch (error) {
@@ -228,14 +226,14 @@ class EkwsListener {
 
       switch (message.type) {
         case 'info':
-          this.log(`ℹ️  ${message.message}`)
+          this.log(chalk.blue(`ℹ️  ${message.message}`))
           if (message.data?.validTopics && Array.isArray(message.data.validTopics)) {
-            this.log(`   Valid topics: ${message.data.validTopics.join(', ')}`)
+            this.log(`   Valid topics: ${chalk.cyan(message.data.validTopics.join(', '))}`)
           }
           break
 
         case 'subscribed':
-          this.success(`✓ Subscribed to topics: ${message.data?.topics?.join(', ')}`)
+          this.success(`Subscribed to topics: ${chalk.green(message.data?.topics?.join(', '))}`)
           break
 
         case 'ping':
@@ -243,7 +241,6 @@ class EkwsListener {
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({ type: 'pong' }))
           }
-          this.log(`📡 Ping/pong (total pings: ${this.stats.pings})`)
           break
 
         case 'killmail':
@@ -252,7 +249,7 @@ class EkwsListener {
           break
 
         default:
-          this.log(`Unknown message type: ${message.type}`)
+          this.log(`Unknown message type: ${chalk.yellow(message.type)}`)
       }
     } catch (error) {
       this.error(`Failed to parse message: ${error}`)
@@ -352,7 +349,7 @@ class EkwsListener {
       this.stats.processed++
 
       this.success(
-        `✓ Fetched killmail ${killmailId} from ${url}`
+        `Fetched killmail ${killmailId} from ${url}`
       )
     } catch (error) {
       this.error(`Failed to fetch and process killmail ${killmailId}: ${error}`)
@@ -370,9 +367,6 @@ class EkwsListener {
       const killmailTime = new Date(esiData.killmail_time)
       const killmailTimeUnix = Math.floor(killmailTime.getTime() / 1000)
       const nowUnix = Math.floor(Date.now() / 1000)
-
-      // Get final blow attacker
-      const finalBlowAttacker = esiData.attackers.find((a) => a.final_blow)
 
       // Insert main killmail record
       const killmailRecord = {
@@ -476,13 +470,14 @@ class EkwsListener {
   private printStats(): void {
     if (this.stats.received % 25 === 0) {
       this.log('')
-      this.log(`📊 Stats (every 25 killmails):`)
-      this.log(`   Received: ${this.stats.received}`)
-      this.log(`   New: ${this.stats.new}`)
-      this.log(`   Duplicate: ${this.stats.duplicate}`)
-      this.log(`   Processed: ${this.stats.processed}`)
-      this.log(`   Pings: ${this.stats.pings}`)
-      this.log(`   Errors: ${this.stats.errors}`)
+      logger.info('Stats (every 25 killmails):', {
+        received: this.stats.received,
+        new: this.stats.new,
+        duplicate: this.stats.duplicate,
+        processed: this.stats.processed,
+        pings: this.stats.pings,
+        errors: this.stats.errors
+      })
       this.log('')
     }
   }
@@ -492,7 +487,7 @@ class EkwsListener {
    */
   private shutdown(): void {
     this.log('')
-    this.log('🛑 Shutting down EVE-KILL WebSocket listener...')
+    logger.warn('Shutting down EVE-KILL WebSocket listener...')
     this.running = false
 
     // Close WebSocket connection
@@ -502,13 +497,14 @@ class EkwsListener {
 
     // Print final stats
     this.log('')
-    this.log(`📊 Final Stats:`)
-    this.log(`   Received: ${this.stats.received}`)
-    this.log(`   New: ${this.stats.new}`)
-    this.log(`   Duplicate: ${this.stats.duplicate}`)
-    this.log(`   Processed: ${this.stats.processed}`)
-    this.log(`   Pings: ${this.stats.pings}`)
-    this.log(`   Errors: ${this.stats.errors}`)
+    logger.info('Final Stats:', {
+      received: this.stats.received,
+      new: this.stats.new,
+      duplicate: this.stats.duplicate,
+      processed: this.stats.processed,
+      pings: this.stats.pings,
+      errors: this.stats.errors
+    })
 
     process.exit(0)
   }
@@ -521,11 +517,11 @@ class EkwsListener {
   }
 
   private error(message: string): void {
-    console.error(message)
+    logger.error(message)
   }
 
   private success(message: string): void {
-    console.log(message)
+    logger.success(message)
   }
 
   private sleep(ms: number): Promise<void> {

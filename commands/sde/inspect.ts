@@ -1,5 +1,7 @@
 import { readFile } from 'fs/promises'
 import { sdeFetcher } from '../../server/helpers/sde'
+import chalk from 'chalk'
+import { logger } from '../../server/helpers/logger'
 
 interface InspectionResult {
   tableName: string
@@ -32,21 +34,21 @@ export default {
 
   async action(options: any) {
     if (!options.table) {
-      console.error('❌ Usage: bun run cli sde:inspect --table <name> [--rows <count>]')
-      console.error('Example: bun run cli sde:inspect --table invTypes')
+      logger.error('Usage: bun run cli sde:inspect --table <name> [--rows <count>]')
+      logger.error('Example: bun run cli sde:inspect --table invTypes')
       process.exit(1)
     }
 
     const tableName = options.table
     const sampleRowCount = parseInt(options.rows || '3', 10)
 
-    console.log(`🔍 Inspecting table: ${tableName}\n`)
+    logger.info(`Inspecting table: ${chalk.cyan(tableName)}`)
 
     try {
       // Check if table exists
       if (!sdeFetcher.tableExists(tableName)) {
-        console.error(`❌ Table not found: ${tableName}`)
-        console.log('\nRun "bun run cli sde:download" first to download SDE data')
+        logger.error(`Table not found: ${chalk.red(tableName)}`)
+        logger.info('Run "bun run cli sde:download" first to download SDE data')
         process.exit(1)
       }
 
@@ -56,7 +58,7 @@ export default {
       // Display results
       displayInspectionResults(result)
     } catch (error) {
-      console.error('❌ Error inspecting table:', error)
+      logger.error('Error inspecting table:', { error: String(error) })
       process.exit(1)
     }
   }
@@ -87,7 +89,7 @@ async function inspectTable(tableName: string, sampleRowCount: number): Promise<
       // Analyze field types
       analyzeObject(data, '', fields)
     } catch (error) {
-      console.warn(`⚠️  Skipped invalid JSON line ${rowCount}`)
+      logger.warn(`Skipped invalid JSON line ${rowCount}`)
     }
   }
 
@@ -186,34 +188,33 @@ function inferType(types: string[]): string {
  * Display inspection results nicely
  */
 function displayInspectionResults(result: InspectionResult): void {
-  console.log(`📊 Table: ${result.tableName}`)
-  console.log(`   Rows: ${result.rowCount.toLocaleString()}`)
-  console.log(`   Fields: ${result.schema.size}\n`)
+  logger.info(`Table: ${chalk.cyan(result.tableName)}`, {
+    rows: result.rowCount.toLocaleString(),
+    fields: result.schema.size
+  })
 
   // Display schema
-  console.log('📋 Schema:')
+  logger.info('Schema:')
   const sortedFields = Array.from(result.schema.entries()).sort((a, b) => a[0].localeCompare(b[0]))
 
   for (const [field, type] of sortedFields) {
-    console.log(`   ${field.padEnd(35)} ${type}`)
+    logger.debug(`${field.padEnd(35)} ${chalk.yellow(type)}`)
   }
 
   // Display sample data
   if (result.sampleRows.length > 0) {
-    console.log(`\n📝 Sample Data (${result.sampleRows.length} rows):\n`)
+    logger.info(`Sample Data (${chalk.blue(result.sampleRows.length.toString())} rows):`)
 
     for (let i = 0; i < result.sampleRows.length; i++) {
-      console.log(`Row ${i + 1}:`)
-      console.log(JSON.stringify(result.sampleRows[i], null, 2))
-      console.log('')
+      logger.debug(`Row ${i + 1}:`, result.sampleRows[i])
     }
   }
 
   // Display field types distribution
-  console.log('🔬 Type Distribution:\n')
+  logger.info('Type Distribution:')
   for (const [field, types] of result.fields.entries()) {
     if (types.size > 1) {
-      console.log(`   ${field.padEnd(35)} [${Array.from(types).join(', ')}]`)
+      logger.debug(`${field.padEnd(35)} ${chalk.magenta(`[${Array.from(types).join(', ')}]`)}`)
     }
   }
 }

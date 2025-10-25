@@ -1,5 +1,7 @@
 import { streamParseJSONLines, extractLanguageField } from '../../server/helpers/sde/parser'
 import { join } from 'path'
+import chalk from 'chalk'
+import { logger } from '../../server/helpers/logger'
 
 export default {
   description: 'Debug: Inspect raw parsed SDE data for a specific table',
@@ -15,44 +17,39 @@ export default {
   ],
   async action(options: { table?: string; limit?: string }) {
     if (!options.table) {
-      console.error('❌ Usage: bun cli debug:inspect-sde --table <table_name> [--limit <count>]')
-      console.error('Example: bun cli debug:inspect-sde --table mapSolarSystems --limit 1')
+      logger.error('Usage: bun cli debug:inspect-sde --table <table_name> [--limit <count>]')
+      logger.error('Example: bun cli debug:inspect-sde --table mapSolarSystems --limit 1')
       return
     }
 
     const limit = options.limit ? parseInt(options.limit, 10) : 2
     const filepath = join(process.cwd(), '.data', 'sde', 'extracted', `${options.table}.jsonl`)
 
-    console.log(`\n📊 Inspecting ${options.table} (first ${limit} records)...\n`)
+    logger.info(`Inspecting ${chalk.cyan(options.table)} (first ${chalk.yellow(limit.toString())} records)...`)
 
     try {
       let count = 0
       for await (const row of streamParseJSONLines(filepath)) {
-        console.log(`Record ${count + 1}:`)
-        console.log(JSON.stringify(row, null, 2))
+        logger.debug(`Record ${chalk.blue((count + 1).toString())}`, row)
 
         // Show extracted values for key fields
         if (row.name) {
-          console.log(`\n  ✓ name extraction: "${extractLanguageField(row.name, 'en')}"`)
+          logger.success(`name extraction: ${chalk.green(extractLanguageField(row.name, 'en'))}`)
         }
         if (row.description) {
-          console.log(`  ✓ description extraction: "${extractLanguageField(row.description, 'en')}"`)
+          logger.success(`description extraction: ${chalk.green(extractLanguageField(row.description, 'en'))}`)
         }
         if (row.position?.x !== undefined) {
-          console.log(
-            `  ✓ position.x type: ${typeof row.position.x} = ${row.position.x}`
-          )
+          logger.success(`position.x type: ${typeof row.position.x} = ${chalk.cyan(row.position.x.toString())}`)
         }
-
-        console.log('\n---\n')
 
         count++
         if (count >= limit) break
       }
 
-      console.log(`✅ Inspected ${count} records`)
+      logger.success(`Inspected ${chalk.green(count.toString())} records`)
     } catch (error) {
-      console.error('❌ Error:', error)
+      logger.error('Error:', { error: String(error) })
     }
   }
 }

@@ -2,7 +2,8 @@ import { Command } from 'commander'
 import { readdir } from 'fs/promises'
 import { join } from 'path'
 import { fileURLToPath } from 'url'
-import { blue, cyan, green, dim, bold } from 'picocolors'
+import chalk from 'chalk'
+import { logger } from './server/helpers/logger'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -22,7 +23,7 @@ async function loadCommands(program: Command): Promise<void> {
     await loadCommandsRecursive(program, commandsDir, '')
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-      console.warn('No commands directory found at:', commandsDir)
+      logger.warn('No commands directory found at:', { path: commandsDir })
     } else {
       throw error
     }
@@ -63,7 +64,7 @@ async function loadCommandsRecursive(
           registerCommand(program, commandName, commandExport)
         }
       } catch (error) {
-        console.error(`Failed to load command from ${fullPath}:`, error)
+        logger.error(`Failed to load command from ${fullPath}:`, { error: String(error) })
       }
     }
   }
@@ -153,13 +154,13 @@ function formatCategorizedHelp(): string {
       return a.localeCompare(b)
     })
 
-    output += `${bold('Commands')}:\n`
+    output += `${chalk.bold('Commands')}:\n`
     for (const category of categories) {
       const cmds = grouped.get(category)!
-      output += `  ${cyan(bold(category))}:\n`
+      output += `  ${chalk.cyan(chalk.bold(category))}:\n`
       for (const cmd of cmds) {
         const cmdName = cmd.displayName.padEnd(24)
-        output += `    ${green(cmdName)} ${dim(cmd.description)}\n`
+        output += `    ${chalk.green(cmdName)} ${chalk.dim(cmd.description)}\n`
       }
     }
   }
@@ -178,9 +179,8 @@ async function main(): Promise<void> {
   await loadCommands(program)
 
   // Override the default help by patching helpInformation
-  const originalFormatHelp = program.helpInformation.bind(program)
   program.helpInformation = function () {
-    let help = `${bold('Usage:')} ${blue(this.usage())}\n\n`
+    let help = `${chalk.bold('Usage:')} ${chalk.blue(this.usage())}\n\n`
 
     if (this.description()) {
       help += `${this.description()}\n\n`
@@ -188,11 +188,11 @@ async function main(): Promise<void> {
 
     const options = this.options
     if (options.length > 0) {
-      help += `${bold('Options')}:\n`
+      help += `${chalk.bold('Options')}:\n`
       for (const option of options) {
         const flags = option.flags
         const description = option.description || ''
-        help += `  ${cyan(flags.padEnd(20))} ${dim(description)}\n`
+        help += `  ${chalk.cyan(flags.padEnd(20))} ${chalk.dim(description)}\n`
       }
       help += '\n'
     }
@@ -210,6 +210,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  console.error('CLI Error:', error)
+  logger.error('CLI Error:', { error: String(error) })
   process.exit(1)
 })

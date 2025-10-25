@@ -1,4 +1,6 @@
 import { sdeFetcher } from '../../server/helpers/sde'
+import chalk from 'chalk'
+import { logger } from '../../server/helpers/logger'
 import {
   mapStargatesConfig,
   mapStarsConfig,
@@ -45,29 +47,28 @@ export default {
     const forceReimport = options.force || false
 
     if (forceReimport) {
-      console.log('⚠️  FORCE REIMPORT MODE ENABLED\n')
+      logger.warn('FORCE REIMPORT MODE ENABLED')
       sdeFetcher.enableForceReimport()
     }
 
-    console.log('🚀 Starting SDE sync and import...\n')
+    logger.info('Starting SDE sync and import...')
 
     try {
       // Sync (download if needed, extract)
       const metadata = await sdeFetcher.sync()
 
-      console.log('\n✅ SDE sync completed!\n')
-      console.log('📊 Metadata:')
-      console.log(`   Build Number: ${metadata.buildNumber}`)
-      console.log(`   Variant: ${metadata.variant}`)
-      console.log(`   Downloaded: ${new Date(metadata.downloadedAt).toISOString()}`)
-      if (metadata.extractedAt) {
-        console.log(`   Extracted: ${new Date(metadata.extractedAt).toISOString()}`)
-      }
-      console.log(`   URL: ${metadata.url}`)
+      logger.success('SDE sync completed!')
+      logger.info('Metadata:', {
+        buildNumber: metadata.buildNumber,
+        variant: metadata.variant,
+        downloadedAt: new Date(metadata.downloadedAt).toISOString(),
+        extractedAt: metadata.extractedAt ? new Date(metadata.extractedAt).toISOString() : 'N/A',
+        url: metadata.url
+      })
 
       // List available tables
       const tables = await sdeFetcher.listExtractedTables()
-      console.log(`\n📋 Available tables (${tables.length}):`)
+      logger.info(`Available tables: ${chalk.yellow(tables.length.toString())} total`)
 
       // Group tables by type
       const typeGroups = new Map<string, string[]>()
@@ -80,14 +81,11 @@ export default {
       }
 
       for (const [prefix, tbls] of Array.from(typeGroups.entries()).sort()) {
-        console.log(`\n   ${prefix}:`)
-        for (const table of tbls.sort()) {
-          console.log(`      • ${table}`)
-        }
+        logger.debug(`${prefix}: ${chalk.cyan(tbls.map(t => t).join(', '))}`)
       }
 
       // Import tables
-      console.log('\n\n📥 Importing tables...\n')
+      logger.info('Importing tables...')
 
       // First batch - already implemented with special handling
       await sdeFetcher.importMapSolarSystems()
@@ -131,7 +129,6 @@ export default {
       await sdeFetcher.optimizeViews()
 
       // Clean up old downloads
-      console.log('\n')
       await sdeFetcher.cleanup()
 
       // Disable force reimport if it was enabled
@@ -139,9 +136,9 @@ export default {
         sdeFetcher.disableForceReimport()
       }
 
-      console.log('\n✅ All done!')
+      logger.success('All done!')
     } catch (error) {
-      console.error('❌ Error:', error)
+      logger.error('Error:', { error: String(error) })
       process.exit(1)
     }
   }

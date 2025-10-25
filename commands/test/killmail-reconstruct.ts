@@ -1,4 +1,6 @@
 import { getKillmail } from '../../server/models/killmails-esi'
+import chalk from 'chalk'
+import { logger } from '../../server/helpers/logger'
 
 /**
  * Test command to verify killmail reconstruction from database
@@ -18,32 +20,32 @@ export default {
   ],
   async action(options: { id?: string }) {
     if (!options.id) {
-      console.error('❌ Usage: bun run cli test:killmail-reconstruct --id <killmail_id>')
-      console.error('Example: bun run cli test:killmail-reconstruct --id 130756307')
+      logger.error('Usage: bun run cli test:killmail-reconstruct --id <killmail_id>')
+      logger.error('Example: bun run cli test:killmail-reconstruct --id 130756307')
       return
     }
 
     const id = parseInt(options.id, 10)
 
     if (isNaN(id)) {
-      console.error('❌ Invalid killmail ID. Must be a number.')
+      logger.error('Invalid killmail ID. Must be a number.')
       return
     }
 
-    console.log(`🔍 Fetching killmail ${id} from database...\n`)
+    logger.info(`Fetching killmail ${chalk.cyan(id.toString())} from database...`)
 
     try {
       const killmail = await getKillmail(id)
 
       if (!killmail) {
-        console.error(`❌ Killmail ${id} not found in database`)
+        logger.error(`Killmail ${chalk.red(id.toString())} not found in database`)
         return
       }
 
-      console.log('✅ Killmail reconstructed successfully!\n')
-      console.log(JSON.stringify(killmail, null, 2))
+      logger.success('Killmail reconstructed successfully!')
+      logger.debug('Result:', killmail)
     } catch (error) {
-      console.error(`❌ Error fetching killmail:`, error)
+      logger.error('Error fetching killmail:', { error: String(error) })
     }
   }
 }

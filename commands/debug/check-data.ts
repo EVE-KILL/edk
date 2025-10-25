@@ -1,4 +1,6 @@
-import { database } from '../../server/helpers/database';
+import { database } from '../../server/helpers/database'
+import chalk from 'chalk'
+import { logger } from '../../server/helpers/logger'
 
 export default {
   description: 'Debug: Check raw data in database for a specific killmail',
@@ -10,13 +12,13 @@ export default {
   ],
   async action(options: { id?: string }) {
     if (!options.id) {
-      console.error('❌ Usage: bun run cli debug:check-data --id <killmail_id>')
+      logger.error('Usage: bun run cli debug:check-data --id <killmail_id>')
       return
     }
 
     const killmailId = parseInt(options.id, 10);
 
-    console.log(`\n📊 Checking data for killmail ${killmailId}...\n`);
+    logger.info(`Checking data for killmail ${chalk.cyan(killmailId.toString())}...`);
 
     try {
       // Check killmail
@@ -24,26 +26,21 @@ export default {
         `SELECT * FROM edk.killmails WHERE killmailId = ${killmailId}`
       );
 
-      console.log('✅ Killmail exists:', killmail.length > 0);
-      if (killmail.length > 0) {
-        console.log(JSON.stringify(killmail[0], null, 2));
-      }
+      logger.success(`Killmail exists: ${killmail.length > 0 ? chalk.green('✓') : chalk.red('✗')}`, { data: killmail[0] });
 
       // Check attackers
       const attackers = await database.query(
         `SELECT COUNT(*) as count FROM edk.attackers WHERE killmailId = ${killmailId}`
       );
 
-      console.log('\n✅ Attackers count:');
-      console.log(JSON.stringify(attackers, null, 2));
+      logger.success(`Attackers count: ${chalk.blue((attackers[0]?.count || 0).toString())}`, attackers);
 
       // Check items
       const items = await database.query(
         `SELECT COUNT(*) as count FROM edk.items WHERE killmailId = ${killmailId}`
       );
 
-      console.log('\n✅ Items count:');
-      console.log(JSON.stringify(items, null, 2));
+      logger.success(`Items count: ${chalk.blue((items[0]?.count || 0).toString())}`, items);
 
       // Check materialized view data
       const viewData = await database.query(
@@ -58,7 +55,7 @@ export default {
       );
 
       // Test the subqueries separately
-      console.log('\n✅ Testing attackers subquery:');
+      logger.info('Testing attackers subquery...');
       const attackersSubquery = await database.query(
         `SELECT
           killmailId,
@@ -78,9 +75,9 @@ export default {
         WHERE killmailId = ${killmailId}
         GROUP BY killmailId`
       );
-      console.log(JSON.stringify(attackersSubquery, null, 2));
+      logger.success('Attackers subquery result:', attackersSubquery);
 
-      console.log('\n✅ Testing items subquery:');
+      logger.info('Testing items subquery...');
       const itemsSubquery = await database.query(
         `SELECT
           killmailId,
@@ -97,16 +94,16 @@ export default {
         WHERE killmailId = ${killmailId}
         GROUP BY killmailId`
       );
-      console.log(JSON.stringify(itemsSubquery, null, 2));
+      logger.success('Items subquery result:', itemsSubquery);
 
-      console.log('\n✅ Materialized view data:');
+      logger.info('Materialized view data:');
       if (viewData.length > 0) {
-        console.log(JSON.stringify(viewData[0], null, 2));
+        logger.success('View data found:', viewData[0]);
       } else {
-        console.log('⚠️  No view data found!');
+        logger.warn('No view data found!');
       }
     } catch (error) {
-      console.error('❌ Error:', error);
+      logger.error('Error:', { error: String(error) });
     }
   }
 }
