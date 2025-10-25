@@ -1,4 +1,4 @@
-import { sdeFetcher } from '../../server/helpers/sde'
+import { sdeFetcher } from '../../server/helpers/sde/fetcher'
 import chalk from 'chalk'
 import { logger } from '../../server/helpers/logger'
 import {

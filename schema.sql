@@ -180,14 +180,13 @@ CREATE TABLE IF NOT EXISTS mapConstellations (
 ORDER BY constellationId;
 
 -- ============================================================================
--- MATERIALIZED VIEWS & HELPER TABLES
+-- VIEWS AND MATERIALIZED VIEWS
 -- ============================================================================
 
 -- killmails_esi - View reconstructing killmails in ESI API format
 -- This view combines killmails, attackers, and items into ESI-compatible format
 -- Uses a regular VIEW (not materialized) to always query live data
-DROP VIEW IF EXISTS killmails_esi;
-CREATE VIEW killmails_esi AS
+CREATE VIEW IF NOT EXISTS killmails_esi AS
 SELECT
   k.killmailId as killmail_id,
   formatDateTime(k.killmailTime, '%Y-%m-%dT%H:%i:%SZ') as killmail_time,
@@ -462,6 +461,74 @@ CREATE TABLE IF NOT EXISTS npcCharacters (
   version UInt64
 ) ENGINE = ReplacingMergeTree(version)
 ORDER BY characterId;
+
+-- ============================================================================
+-- PLAYER CHARACTER/CORPORATION/ALLIANCE TABLES (ESI DATA)
+-- ============================================================================
+
+-- Player Characters - Stores ESI character data
+CREATE TABLE IF NOT EXISTS characters (
+  character_id UInt32 NOT NULL,
+  alliance_id Nullable(UInt32),
+  birthday String,
+  bloodline_id UInt32,
+  corporation_id UInt32,
+  description String,
+  gender String,
+  name String,
+  race_id UInt32,
+  security_status Float32,
+  updated_at DateTime DEFAULT now(),
+  version UInt64,
+
+  INDEX idx_alliance (alliance_id) TYPE minmax GRANULARITY 3,
+  INDEX idx_corporation (corporation_id) TYPE minmax GRANULARITY 3,
+  INDEX idx_bloodline (bloodline_id) TYPE minmax GRANULARITY 3,
+  INDEX idx_race (race_id) TYPE minmax GRANULARITY 3
+) ENGINE = ReplacingMergeTree(version)
+ORDER BY character_id;
+
+-- Player Corporations - Stores ESI corporation data
+CREATE TABLE IF NOT EXISTS corporations (
+  corporation_id UInt32 NOT NULL,
+  alliance_id Nullable(UInt32),
+  ceo_id UInt32,
+  creator_id UInt32,
+  date_founded String,
+  description String,
+  home_station_id Nullable(UInt32),
+  member_count UInt32,
+  name String,
+  shares UInt64,
+  tax_rate Float32,
+  ticker String,
+  url String,
+  updated_at DateTime DEFAULT now(),
+  version UInt64,
+
+  INDEX idx_alliance (alliance_id) TYPE minmax GRANULARITY 3,
+  INDEX idx_ceo (ceo_id) TYPE minmax GRANULARITY 3,
+  INDEX idx_creator (creator_id) TYPE minmax GRANULARITY 3
+) ENGINE = ReplacingMergeTree(version)
+ORDER BY corporation_id;
+
+-- Player Alliances - Stores ESI alliance data
+CREATE TABLE IF NOT EXISTS alliances (
+  alliance_id UInt32 NOT NULL,
+  creator_corporation_id UInt32,
+  creator_id UInt32,
+  date_founded String,
+  executor_corporation_id UInt32,
+  name String,
+  ticker String,
+  updated_at DateTime DEFAULT now(),
+  version UInt64,
+
+  INDEX idx_creator_corp (creator_corporation_id) TYPE minmax GRANULARITY 3,
+  INDEX idx_creator (creator_id) TYPE minmax GRANULARITY 3,
+  INDEX idx_executor_corp (executor_corporation_id) TYPE minmax GRANULARITY 3
+) ENGINE = ReplacingMergeTree(version)
+ORDER BY alliance_id;
 
 -- ============================================================================
 -- CHARACTER ATTRIBUTES SDE TABLES

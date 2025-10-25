@@ -1,4 +1,5 @@
 import { database } from '../server/helpers/database'
+import { enqueueJobMany, QueueType } from '../server/helpers/queue'
 import chalk from 'chalk'
 import { logger } from '../server/helpers/logger'
 
@@ -423,6 +424,68 @@ class EkwsListener {
 
       if (itemRecords.length > 0) {
         await database.bulkInsert('edk.items', itemRecords)
+      }
+
+      // Enqueue entity update jobs for character, corporation, and alliance data
+      // This happens in the background after killmail is stored
+      try {
+        const characterIds: number[] = []
+        const corporationIds: number[] = []
+        const allianceIds: number[] = []
+
+        // Collect victim IDs
+        if (victim.character_id) {
+          characterIds.push(victim.character_id)
+        }
+        if (victim.corporation_id) {
+          corporationIds.push(victim.corporation_id)
+        }
+        if (victim.alliance_id) {
+          allianceIds.push(victim.alliance_id)
+        }
+
+        // Collect attacker IDs
+        for (const attacker of esiData.attackers) {
+          if (attacker.character_id) {
+            characterIds.push(attacker.character_id)
+          }
+          if (attacker.corporation_id) {
+            corporationIds.push(attacker.corporation_id)
+          }
+          if (attacker.alliance_id) {
+            allianceIds.push(attacker.alliance_id)
+          }
+        }
+
+        // Remove duplicates
+        const uniqueCharacterIds = [...new Set(characterIds)]
+        const uniqueCorporationIds = [...new Set(corporationIds)]
+        const uniqueAllianceIds = [...new Set(allianceIds)]
+
+        // Enqueue jobs
+        if (uniqueCharacterIds.length > 0) {
+          await enqueueJobMany(
+            QueueType.CHARACTER,
+            uniqueCharacterIds.map((id) => ({ id }))
+          )
+        }
+
+        if (uniqueCorporationIds.length > 0) {
+          await enqueueJobMany(
+            QueueType.CORPORATION,
+            uniqueCorporationIds.map((id) => ({ id }))
+          )
+        }
+
+        if (uniqueAllianceIds.length > 0) {
+          await enqueueJobMany(
+            QueueType.ALLIANCE,
+            uniqueAllianceIds.map((id) => ({ id }))
+          )
+        }
+      } catch (error) {
+        // Log but don't fail killmail processing if queue enqueuing fails
+        this.error(`Failed to enqueue entity update jobs: ${error}`)
       }
     } catch (error) {
       this.error(`Failed to store killmail: ${error}`)
