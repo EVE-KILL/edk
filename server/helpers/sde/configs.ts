@@ -1,4 +1,5 @@
 import { TableConfig } from './types'
+import { extractLanguageField } from './parser'
 
 /**
  * SDE Table Configurations
@@ -84,8 +85,8 @@ export const typesConfig: TableConfig = {
   name: 'types',
   mappings: [
     { source: '_key', target: 'typeId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
-    { source: 'description', target: 'description', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'capacity', target: 'capacity', type: 'number' },
     { source: 'factionId', target: 'factionId', type: 'number' },
     { source: 'graphicId', target: 'graphicId', type: 'number' },
@@ -107,7 +108,7 @@ export const groupsConfig: TableConfig = {
   name: 'groups',
   mappings: [
     { source: '_key', target: 'groupId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'categoryId', target: 'categoryId', type: 'number', required: true },
     { source: 'iconId', target: 'iconId', type: 'number' },
     { source: 'published', target: 'published', type: 'boolean' }
@@ -118,7 +119,7 @@ export const categoriesConfig: TableConfig = {
   name: 'categories',
   mappings: [
     { source: '_key', target: 'categoryId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'iconId', target: 'iconId', type: 'number' },
     { source: 'published', target: 'published', type: 'boolean' }
   ]
@@ -129,8 +130,8 @@ export const npcCorporationsConfig: TableConfig = {
   name: 'npcCorporations',
   mappings: [
     { source: '_key', target: 'corporationId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
-    { source: 'description', target: 'description', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'ceoId', target: 'ceoId', type: 'number' },
     { source: 'factionId', target: 'factionId', type: 'number' },
     { source: 'solarSystemId', target: 'solarSystemId', type: 'number' },
@@ -145,7 +146,7 @@ export const npcStationsConfig: TableConfig = {
   name: 'npcStations',
   mappings: [
     { source: '_key', target: 'stationId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'solarSystemId', target: 'solarSystemId', type: 'number' },
     { source: 'typeId', target: 'typeId', type: 'number' },
     { source: 'ownerIds', target: 'ownerIds', type: 'array' },
@@ -166,8 +167,8 @@ export const stationOperationsConfig: TableConfig = {
   name: 'stationOperations',
   mappings: [
     { source: '_key', target: 'operationId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
-    { source: 'description', target: 'description', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'activityId', target: 'activityId', type: 'number' },
     { source: 'border', target: 'border', type: 'number' },
     { source: 'corridor', target: 'corridor', type: 'number' },
@@ -184,7 +185,7 @@ export const npcCharactersConfig: TableConfig = {
   name: 'npcCharacters',
   mappings: [
     { source: '_key', target: 'characterId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'corporationId', target: 'corporationId', type: 'number' },
     { source: 'allianceId', target: 'allianceId', type: 'number' },
     { source: 'bloodlineId', target: 'bloodlineId', type: 'number' },
@@ -199,8 +200,9 @@ export const factionsConfig: TableConfig = {
   name: 'factions',
   mappings: [
     { source: '_key', target: 'factionId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
-    { source: 'description', target: 'description', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'shortDescription', target: 'shortDescription', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'corporationId', target: 'corporationId', type: 'number' },
     { source: 'militiaCorporationId', target: 'militiaCorporationId', type: 'number' },
     { source: 'solarSystemId', target: 'solarSystemId', type: 'number' }
@@ -211,8 +213,8 @@ export const racesConfig: TableConfig = {
   name: 'races',
   mappings: [
     { source: '_key', target: 'raceId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
-    { source: 'description', target: 'description', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'iconId', target: 'iconId', type: 'number' }
   ]
 }
@@ -221,8 +223,8 @@ export const bloodlinesConfig: TableConfig = {
   name: 'bloodlines',
   mappings: [
     { source: '_key', target: 'bloodlineId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
-    { source: 'description', target: 'description', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'raceId', target: 'raceId', type: 'number', required: true },
     { source: 'shipTypeId', target: 'shipTypeId', type: 'number' },
     { source: 'corporationId', target: 'corporationId', type: 'number' },
@@ -239,9 +241,9 @@ export const ancestriesConfig: TableConfig = {
   name: 'ancestries',
   mappings: [
     { source: '_key', target: 'ancestryId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'bloodlineId', target: 'bloodlineId', type: 'number', required: true },
-    { source: 'description', target: 'description', type: 'string' },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'iconId', target: 'iconId', type: 'number' },
     { source: 'shortDescription', target: 'shortDescription', type: 'string' }
   ]
@@ -252,8 +254,8 @@ export const marketGroupsConfig: TableConfig = {
   name: 'marketGroups',
   mappings: [
     { source: '_key', target: 'marketGroupId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
-    { source: 'description', target: 'description', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'iconId', target: 'iconId', type: 'number' },
     { source: 'hasTypes', target: 'hasTypes', type: 'boolean' },
     { source: 'parentGroupId', target: 'parentGroupId', type: 'number' }
@@ -264,8 +266,8 @@ export const metaGroupsConfig: TableConfig = {
   name: 'metaGroups',
   mappings: [
     { source: '_key', target: 'metaGroupId', type: 'number', required: true },
-    { source: 'name', target: 'name', type: 'string' },
-    { source: 'description', target: 'description', type: 'string' },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'iconId', target: 'iconId', type: 'number' }
   ]
 }
@@ -290,11 +292,13 @@ export const dogmaAttributesConfig: TableConfig = {
     { source: 'categoryId', target: 'categoryId', type: 'number' },
     { source: 'defaultValue', target: 'defaultValue', type: 'number' },
     { source: 'description', target: 'description', type: 'string' },
-    { source: 'displayName', target: 'displayName', type: 'string' },
+    { source: 'displayName', target: 'displayName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'iconId', target: 'iconId', type: 'number' },
     { source: 'highIsGood', target: 'highIsGood', type: 'boolean' },
     { source: 'published', target: 'published', type: 'boolean' },
     { source: 'stackable', target: 'stackable', type: 'boolean' },
+    { source: 'tooltipDescription', target: 'tooltipDescription', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'tooltipTitle', target: 'tooltipTitle', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'unitId', target: 'unitId', type: 'number' }
   ]
 }
@@ -305,10 +309,10 @@ export const dogmaEffectsConfig: TableConfig = {
     { source: '_key', target: 'effectId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string' },
     { source: 'categoryId', target: 'categoryId', type: 'number' },
-    { source: 'description', target: 'description', type: 'string' },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'disallowAutoRepeat', target: 'disallowAutoRepeat', type: 'boolean' },
     { source: 'dischargeAttributeId', target: 'dischargeAttributeId', type: 'number' },
-    { source: 'displayName', target: 'displayName', type: 'string' },
+    { source: 'displayName', target: 'displayName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
     { source: 'durationAttributeId', target: 'durationAttributeId', type: 'number' },
     { source: 'effectCategory', target: 'effectCategory', type: 'string' },
     { source: 'falloffAttributeId', target: 'falloffAttributeId', type: 'number' },
@@ -328,6 +332,130 @@ export const dogmaEffectsConfig: TableConfig = {
   ]
 }
 
+// Additional SDE Tables with language fields
+export const npcCorporationDivisionsConfig: TableConfig = {
+  name: 'npcCorporationDivisions',
+  mappings: [
+    { source: '_key', target: 'divisionId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'leaderTypeName', target: 'leaderTypeName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'displayName', target: 'displayName', type: 'string' },
+    { source: 'internalName', target: 'internalName', type: 'string' }
+  ]
+}
+
+export const landmarksConfig: TableConfig = {
+  name: 'landmarks',
+  mappings: [
+    { source: '_key', target: 'landmarkId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'position.x', target: 'positionX', type: 'number' },
+    { source: 'position.y', target: 'positionY', type: 'number' },
+    { source: 'position.z', target: 'positionZ', type: 'number' }
+  ]
+}
+
+export const mapRegionsConfig: TableConfig = {
+  name: 'mapRegions',
+  mappings: [
+    { source: '_key', target: 'regionId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') }
+  ]
+}
+
+export const certificatesConfig: TableConfig = {
+  name: 'certificates',
+  mappings: [
+    { source: '_key', target: 'certificateId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'categoryId', target: 'categoryId', type: 'number' },
+    { source: 'classId', target: 'classId', type: 'number' },
+    { source: 'groupId', target: 'groupId', type: 'number' },
+    { source: 'iconId', target: 'iconId', type: 'number' }
+  ]
+}
+
+export const skinMaterialsConfig: TableConfig = {
+  name: 'skinMaterials',
+  mappings: [
+    { source: '_key', target: 'skinMaterialId', type: 'number', required: true },
+    { source: 'displayName', target: 'displayName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'materialSetId', target: 'materialSetId', type: 'number' }
+  ]
+}
+
+export const mapConstellationsConfig: TableConfig = {
+  name: 'mapConstellations',
+  mappings: [
+    { source: '_key', target: 'constellationId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'regionId', target: 'regionId', type: 'number' }
+  ]
+}
+
+export const planetSchematicsConfig: TableConfig = {
+  name: 'planetSchematics',
+  mappings: [
+    { source: '_key', target: 'schematicId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'cycleTime', target: 'cycleTime', type: 'number' }
+  ]
+}
+
+export const stationServicesConfig: TableConfig = {
+  name: 'stationServices',
+  mappings: [
+    { source: '_key', target: 'serviceId', type: 'number', required: true },
+    { source: 'serviceName', target: 'serviceName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'chargePerUnit', target: 'chargePerUnit', type: 'number' }
+  ]
+}
+
+export const dogmaUnitsConfig: TableConfig = {
+  name: 'dogmaUnits',
+  mappings: [
+    { source: '_key', target: 'unitId', type: 'number', required: true },
+    { source: 'displayName', target: 'displayName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'description', target: 'description', type: 'string', transform: (v) => extractLanguageField(v, 'en') }
+  ]
+}
+
+export const characterAttributesConfig: TableConfig = {
+  name: 'characterAttributes',
+  mappings: [
+    { source: '_key', target: 'attributeId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'shortDescription', target: 'shortDescription', type: 'string' },
+    { source: 'description', target: 'description', type: 'string' },
+    { source: 'notes', target: 'notes', type: 'string' },
+    { source: 'iconId', target: 'iconId', type: 'number' }
+  ]
+}
+
+export const corporationActivitiesConfig: TableConfig = {
+  name: 'corporationActivities',
+  mappings: [
+    { source: '_key', target: 'activityId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') }
+  ]
+}
+
+export const dbuffCollectionsConfig: TableConfig = {
+  name: 'dbuffCollections',
+  mappings: [
+    { source: '_key', target: 'collectionId', type: 'number', required: true },
+    { source: 'displayName', target: 'displayName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
+    { source: 'aggregateMode', target: 'aggregateMode', type: 'string' },
+    { source: 'developerDescription', target: 'developerDescription', type: 'string' },
+    { source: 'operationName', target: 'operationName', type: 'string' }
+  ]
+}
+
 /**
  * All table configurations
  */
@@ -338,25 +466,38 @@ export const ALL_TABLE_CONFIGS = [
   mapPlanetsConfig,
   mapMoonsConfig,
   mapAsteroidBeltsConfig,
+  mapRegionsConfig,
+  mapConstellationsConfig,
   // Item/Type tables
   typesConfig,
   groupsConfig,
   categoriesConfig,
   // NPC tables
   npcCorporationsConfig,
+  npcCorporationDivisionsConfig,
   npcStationsConfig,
   stationOperationsConfig,
+  stationServicesConfig,
   npcCharactersConfig,
   // Character attributes
   factionsConfig,
   racesConfig,
   bloodlinesConfig,
   ancestriesConfig,
+  characterAttributesConfig,
   // Market/Meta
   marketGroupsConfig,
   metaGroupsConfig,
   skinsConfig,
+  skinMaterialsConfig,
   // Dogma tables
   dogmaAttributesConfig,
-  dogmaEffectsConfig
+  dogmaEffectsConfig,
+  dogmaUnitsConfig,
+  // Other tables
+  certificatesConfig,
+  planetSchematicsConfig,
+  landmarksConfig,
+  dbuffCollectionsConfig,
+  corporationActivitiesConfig
 ]

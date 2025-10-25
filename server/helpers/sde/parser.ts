@@ -86,29 +86,47 @@ export async function* streamParseJSONLines(filepath: string): AsyncGenerator<an
 
 /**
  * Extract nested language field (e.g., name.en, name.de)
+ * Always returns a proper string, never [object Object]
  */
 export function extractLanguageField(obj: any, lang: string = 'en'): string {
+  // If it's already a string, return it
   if (typeof obj === 'string') {
     return obj
   }
-  if (typeof obj === 'object' && obj !== null) {
-    // Try to get the language version
-    if (obj[lang]) {
+
+  // If it's an object with language keys
+  if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
+    // Try to get the requested language
+    if (obj[lang] && typeof obj[lang] === 'string') {
       return obj[lang]
     }
+
     // Fall back to English
-    if (obj.en) {
+    if (obj.en && typeof obj.en === 'string') {
       return obj.en
     }
-    // Fall back to first available language
-    const values = Object.values(obj).filter(v => typeof v === 'string')
-    return (values[0] as string) || String(obj)
+
+    // Fall back to first available language key
+    for (const key of Object.keys(obj)) {
+      const value = obj[key]
+      if (typeof value === 'string' && value.length > 0) {
+        return value
+      }
+    }
   }
-  return String(obj)
+
+  // If we get here and it's an object, return empty string instead of [object Object]
+  if (typeof obj === 'object' && obj !== null) {
+    return ''
+  }
+
+  // For any other type, return empty string
+  return ''
 }
 
 /**
  * Extract nested description field
+ * Always returns a proper string, never [object Object]
  */
 export function extractDescription(obj: any, lang: string = 'en'): string {
   return extractLanguageField(obj, lang)
