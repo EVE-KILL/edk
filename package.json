@@ -1,0 +1,19 @@
+{
+  "name": "nitro-app",
+  "private": true,
+  "scripts": {
+    "build": "nitro build",
+    "dev": "nitro dev",
+    "preview": "node .output/server/index.mjs",
+    "type-check": "bun tsc --noEmit",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "lint": "echo 'No linter configured yet'",
+    "format": "echo 'No formatter configured yet'",
+    "start": "bun run preview"
+  },
+  "devDependencies": {
+    "h3": "^1.15.4",
+    "nitropack": "^2.12.4"
+  }
+}

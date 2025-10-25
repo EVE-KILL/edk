@@ -1,0 +1,79 @@
+{
+  "ai": {
+    "codeGeneration": {
+      "enabled": true,
+      "enableCodebaseContext": true,
+      "enableDocumentationContext": true
+    },
+    "chat": {
+      "enabled": true,
+      "enableCodebaseContext": true,
+      "enableDocumentationContext": true
+    },
+    "inlineChat": {
+      "enabled": true
+    },
+    "review": {
+      "enabled": true
+    }
+  },
+  "workspace": {
+    "indexing": {
+      "enabled": true,
+      "includePatterns": [
+        "**/*.ts",
+        "**/*.js",
+        "**/*.json",
+        "**/*.md",
+        "**/nitro.config.*",
+        "**/package.json",
+        "**/tsconfig.json"
+      ],
+      "excludePatterns": [
+        "**/node_modules/**",
+        "**/.output/**",
+        "**/.nitro/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/.git/**",
+        "**/coverage/**",
+        "**/*.log"
+      ]
+    }
+  },
+  "language": {
+    "typescript": {
+      "completions": {
+        "enabled": true,
+        "suggestions": {
+          "functions": true,
+          "classes": true,
+          "interfaces": true,
+          "types": true,
+          "imports": true
+        }
+      }
+    },
+    "javascript": {
+      "completions": {
+        "enabled": true
+      }
+    }
+  },
+  "frameworks": {
+    "nitro": {
+      "enabled": true,
+      "apiRoutes": {
+        "contextAware": true,
+        "h3Handlers": true
+      }
+    }
+  },
+  "suggestions": {
+    "priority": {
+      "codebaseContext": "high",
+      "documentationContext": "medium",
+      "generalKnowledge": "low"
+    }
+  }
+}
