@@ -1,0 +1,27 @@
+{{!-- Item Row Partial - Displays a single item with quantity, price, total value, and destroyed/dropped status --}}
+<tr class="kb-table-row-odd" style="cursor: pointer;">
+    <td class="kb-table-cell" style="padding: 4px 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            {{> partials/eve-image type="item" id=this.typeId size=32 alt=this.name}}
+            <span>{{this.name}}</span>
+        </div>
+    </td>
+    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{this.quantity}}</td>
+    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
+        {{#if this.price}}
+            <span>{{formatISK this.price}}</span>
+        {{else}}
+            <span style="color: #999;">N/A</span>
+        {{/if}}
+    </td>
+    <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
+        {{#if this.totalValue}}
+            <span class="isk-value">{{formatISK this.totalValue}}</span>
+        {{else}}
+            <span style="color: #999;">N/A</span>
+        {{/if}}
+    </td>
+    <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">
+        <span class="{{#if this.isDestroyed}}kl-loss{{else}}kl-kill{{/if}}">{{#if this.isDestroyed}}Destroyed{{else}}Dropped{{/if}}</span>
+    </td>
+</tr>

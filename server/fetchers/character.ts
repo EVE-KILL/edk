@@ -1,4 +1,5 @@
 import { database } from '../helpers/database'
+import { fetchEveKill, fetchESI } from '../helpers/fetcher'
 
 /**
  * ESI Character Data - Fields we store
@@ -15,9 +16,6 @@ export interface ESICharacter {
   race_id: number
   security_status: number
 }
-
-const ESI_BASE_URL = 'https://esi.evetech.net/latest'
-const EVEKILL_BASE_URL = 'https://eve-kill.com/api'
 
 /**
  * Fetch character data from EVE-KILL with fallback to ESI
@@ -57,7 +55,7 @@ export async function fetchAndStoreCharacter(characterId: number): Promise<ESICh
  */
 async function fetchFromEveKill(characterId: number): Promise<any | null> {
   try {
-    const response = await fetch(`${EVEKILL_BASE_URL}/characters/${characterId}`)
+    const response = await fetchEveKill(`/characters/${characterId}`)
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -66,7 +64,7 @@ async function fetchFromEveKill(characterId: number): Promise<any | null> {
       throw new Error(`EVE-KILL API error: ${response.statusText}`)
     }
 
-    return await response.json()
+    return response.data
   } catch (error) {
     console.warn(`⚠️  EVE-KILL fetch failed for character ${characterId}:`, error)
     return null
@@ -78,7 +76,7 @@ async function fetchFromEveKill(characterId: number): Promise<any | null> {
  */
 async function fetchFromESI(characterId: number): Promise<any | null> {
   try {
-    const response = await fetch(`${ESI_BASE_URL}/characters/${characterId}`)
+    const response = await fetchESI(`/characters/${characterId}`)
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -87,7 +85,7 @@ async function fetchFromESI(characterId: number): Promise<any | null> {
       throw new Error(`ESI API error: ${response.statusText}`)
     }
 
-    return await response.json()
+    return response.data
   } catch (error) {
     console.warn(`⚠️  ESI fetch failed for character ${characterId}:`, error)
     return null

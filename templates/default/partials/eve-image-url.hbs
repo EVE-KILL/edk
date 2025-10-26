@@ -1,0 +1,21 @@
+{{~#if (eq type "character")~}}
+https://images.eve-kill.com/characters/{{id}}/{{#if variant}}{{variant}}{{else}}portrait{{/if}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{~else if (eq type "corporation")~}}
+https://images.eve-kill.com/corporations/{{id}}/{{#if variant}}{{variant}}{{else}}logo{{/if}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{~else if (eq type "alliance")~}}
+https://images.eve-kill.com/alliances/{{id}}/{{#if variant}}{{variant}}{{else}}logo{{/if}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{~else if (eq type "ship")~}}
+https://images.eve-kill.com/types/{{id}}/{{#if variant}}{{variant}}{{else}}overlayrender{{/if}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{~else if (eq type "item")~}}
+https://images.eve-kill.com/types/{{id}}/icon?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{~else if (eq type "type")~}}
+https://images.eve-kill.com/types/{{id}}/{{#if variant}}{{variant}}{{else}}icon{{/if}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{~else if (eq type "system")~}}
+https://images.eve-kill.com/systems/{{id}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{~else if (eq type "constellation")~}}
+https://images.eve-kill.com/constellations/{{id}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{~else if (eq type "region")~}}
+https://images.eve-kill.com/regions/{{id}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{~else~}}
+https://images.eve-kill.com/types/{{id}}/icon?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{~/if~}}

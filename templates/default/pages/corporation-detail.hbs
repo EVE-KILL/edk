@@ -1,0 +1,35 @@
+<!-- Corporation Detail - EDK Style -->
+
+<!-- Corporation Stats Header -->
+{{> partials/entity-stats}}
+
+<!-- Corporation Navigation Tabs -->
+{{> partials/entity-navbar}}
+
+<!-- Ship Group Statistics (Combined Kills & Losses) -->
+{{#if data.shipGroupStats}}
+<div style="margin-bottom: 20px;">
+    <div class="block-header2">Ship Groups (Last 30 Days)</div>
+    {{> components/ship-group-combined-stats columns=data.shipGroupColumns}}
+</div>
+{{/if}}
+
+<!-- Most Valuable Kills -->
+{{#if data.mostValuableKills}}
+{{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange="Last 7 Days"}}
+{{/if}}
+
+<!-- Recent Activity with Top 10 Sidebar -->
+<div style="display: grid; grid-template-columns: minmax(200px, 225px) 1fr; gap: 12px; width: 100%; box-sizing: border-box; margin-bottom: 20px;">
+  <!-- Top 10 Sidebar -->
+  <aside style="min-width: 0; overflow: hidden;">
+    {{#if data.top10Stats}}
+      {{> components/top-10-stats stats=data.top10Stats}}
+    {{/if}}
+  </aside>
+
+  <!-- Recent Killmails -->
+  <section style="min-width: 0; overflow: hidden;">
+      {{> partials/killmail-list killmails=data.recentKillmails}}
+  </section>
+</div>

@@ -1,4 +1,9 @@
 import { defineNitroConfig } from "nitropack/config"
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 // https://nitro.build/config
 export default defineNitroConfig({
@@ -6,6 +11,14 @@ export default defineNitroConfig({
   srcDir: "server",
   minify: true,
   sourceMap: process.env.NODE_ENV !== 'production',
+  serveStatic: true,
+  publicAssets: [
+    {
+      baseURL: '/',
+      dir: resolve(__dirname, `templates/${process.env.THEME || 'default'}/public`),
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    }
+  ],
   compressPublicAssets: {
     gzip: true,
     brotli: true

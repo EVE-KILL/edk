@@ -1,4 +1,5 @@
 import { database } from '../helpers/database'
+import { fetchEveKill, fetchESI } from '../helpers/fetcher'
 
 /**
  * ESI Alliance Data - Fields we store
@@ -12,9 +13,6 @@ export interface ESIAlliance {
   name: string
   ticker: string
 }
-
-const ESI_BASE_URL = 'https://esi.evetech.net/latest'
-const EVEKILL_BASE_URL = 'https://eve-kill.com/api'
 
 /**
  * Fetch alliance data from EVE-KILL with fallback to ESI
@@ -54,7 +52,7 @@ export async function fetchAndStoreAlliance(allianceId: number): Promise<ESIAlli
  */
 async function fetchFromEveKill(allianceId: number): Promise<any | null> {
   try {
-    const response = await fetch(`${EVEKILL_BASE_URL}/alliances/${allianceId}`)
+    const response = await fetchEveKill(`/alliances/${allianceId}`)
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -63,7 +61,7 @@ async function fetchFromEveKill(allianceId: number): Promise<any | null> {
       throw new Error(`EVE-KILL API error: ${response.statusText}`)
     }
 
-    return await response.json()
+    return response.data
   } catch (error) {
     console.warn(`⚠️  EVE-KILL fetch failed for alliance ${allianceId}:`, error)
     return null
@@ -75,7 +73,7 @@ async function fetchFromEveKill(allianceId: number): Promise<any | null> {
  */
 async function fetchFromESI(allianceId: number): Promise<any | null> {
   try {
-    const response = await fetch(`${ESI_BASE_URL}/alliances/${allianceId}`)
+    const response = await fetchESI(`/alliances/${allianceId}`)
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -84,7 +82,7 @@ async function fetchFromESI(allianceId: number): Promise<any | null> {
       throw new Error(`ESI API error: ${response.statusText}`)
     }
 
-    return await response.json()
+    return response.data
   } catch (error) {
     console.warn(`⚠️  ESI fetch failed for alliance ${allianceId}:`, error)
     return null

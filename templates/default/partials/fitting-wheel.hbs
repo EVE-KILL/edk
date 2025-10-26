@@ -1,0 +1,159 @@
+<div class="fitting-wheel-container" id="fittingWheel">
+    <div class="fitting-wheel">
+        <!-- Outer ring -->
+        <div class="outer-ring">
+            <svg viewBox="24 24 464 464" xmlns="http://www.w3.org/2000/svg">
+                <g>
+                    <circle cx="256" cy="256" r="224" style="fill: none; stroke: rgb(0, 0, 0); stroke-width: 16;"></circle>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Inner ring -->
+        <div class="inner-ring">
+            <svg viewBox="24 24 464 464" xmlns="http://www.w3.org/2000/svg">
+                <g>
+                    <circle cx="256" cy="256" r="195" style="fill: none; stroke: rgb(0, 0, 0); stroke-width: 46; stroke-opacity: 0.6;"></circle>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Ship container with image -->
+        <div class="ship-container">
+            <img src="https://images.eve-kill.com/types/{{victim.ship.typeId}}/render?size=512" alt="{{victim.ship.name}}" class="ship-image" loading="eager" width="512" height="512"/>
+
+            <!-- Tooltip overlay -->
+            <div class="center-tooltip-overlay hidden" id="tooltipOverlay">
+                <div class="center-tooltip">
+                    <div class="tooltip-name" id="tooltipName"></div>
+                    <div class="tooltip-value" id="tooltipValue"></div>
+                    <div class="tooltip-status" id="tooltipStatus"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slots container -->
+        <div class="slots-container">
+            <!-- Slot type indicators -->
+            <div class="slot-indicator high-indicator"></div>
+            <div class="slot-indicator mid-indicator"></div>
+            <div class="slot-indicator low-indicator"></div>
+
+            <!-- High slots -->
+            {{#each fittingWheel.destroyed.highSlots}}
+            <div class="slot high-slot" data-slot-type="high" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="destroyed">
+                <div class="module-container">
+                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                </div>
+                <!-- Ammo overlay - positioned via CSS -->
+                {{#if ammo}}
+                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="destroyed">
+                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
+                </div>
+                {{/if}}
+            </div>
+            {{/each}}
+
+            {{#each fittingWheel.dropped.highSlots}}
+            <div class="slot high-slot" data-slot-type="high" data-slot-index="{{add (length ../fittingWheel.destroyed.highSlots) @index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="dropped">
+                <div class="module-container">
+                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                </div>
+                {{#if ammo}}
+                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="dropped">
+                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
+                </div>
+                {{/if}}
+            </div>
+            {{/each}}
+
+            <!-- Med slots -->
+            {{#each fittingWheel.destroyed.medSlots}}
+            <div class="slot mid-slot" data-slot-type="mid" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="destroyed">
+                <div class="module-container">
+                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                </div>
+                <!-- Ammo overlay - positioned via CSS -->
+                {{#if ammo}}
+                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="destroyed">
+                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
+                </div>
+                {{/if}}
+            </div>
+            {{/each}}
+
+            {{#each fittingWheel.dropped.medSlots}}
+            <div class="slot mid-slot" data-slot-type="mid" data-slot-index="{{add (length ../fittingWheel.destroyed.medSlots) @index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="dropped">
+                <div class="module-container">
+                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                </div>
+                {{#if ammo}}
+                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="dropped">
+                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
+                </div>
+                {{/if}}
+            </div>
+            {{/each}}
+
+            <!-- Low slots -->
+            {{#each fittingWheel.destroyed.lowSlots}}
+            <div class="slot low-slot" data-slot-type="low" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="destroyed">
+                <div class="module-container">
+                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                </div>
+                <!-- Ammo overlay - positioned via CSS -->
+                {{#if ammo}}
+                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="destroyed">
+                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
+                </div>
+                {{/if}}
+            </div>
+            {{/each}}
+
+            {{#each fittingWheel.dropped.lowSlots}}
+            <div class="slot low-slot" data-slot-type="low" data-slot-index="{{add (length ../fittingWheel.destroyed.lowSlots) @index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="dropped">
+                <div class="module-container">
+                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                </div>
+                {{#if ammo}}
+                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="dropped">
+                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
+                </div>
+                {{/if}}
+            </div>
+            {{/each}}
+
+            <!-- Rig slots -->
+            {{#each fittingWheel.destroyed.rigSlots}}
+            <div class="slot rig-slot" data-slot-type="rig" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="destroyed">
+                <div class="module-container">
+                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                </div>
+            </div>
+            {{/each}}
+            {{#each fittingWheel.dropped.rigSlots}}
+            <div class="slot rig-slot" data-slot-type="rig" data-slot-index="{{add (length ../fittingWheel.destroyed.rigSlots) @index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="dropped">
+                <div class="module-container">
+                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                </div>
+            </div>
+            {{/each}}
+
+            <!-- Subsystem slots -->
+            {{#each fittingWheel.destroyed.subSlots}}
+            <div class="slot subsystem-slot" data-slot-type="subsystem" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="destroyed">
+                <div class="module-container">
+                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                </div>
+            </div>
+            {{/each}}
+            {{#each fittingWheel.dropped.subSlots}}
+            <div class="slot subsystem-slot" data-slot-type="subsystem" data-slot-index="{{add (length ../fittingWheel.destroyed.subSlots) @index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="dropped">
+                <div class="module-container">
+                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                </div>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+</div>

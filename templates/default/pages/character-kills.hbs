@@ -1,0 +1,30 @@
+<!-- Character Kills Page -->
+
+<!-- Character Stats Header -->
+{{> partials/entity-stats}}
+
+<!-- Character Navigation Tabs -->
+{{> partials/entity-navbar}}
+
+<!-- Ship Group Statistics (Kills) -->
+{{#if data.shipGroupStats}}
+<div style="margin-bottom: 20px;">
+    <div class="block-header2">Ship Groups (Last 30 Days - Kills)</div>
+    {{> components/ship-group-stats columns=data.shipGroupColumns}}
+</div>
+{{/if}}
+
+<!-- Pagination (Top) -->
+{{#if data.pagination}}
+    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+{{/if}}
+
+<!-- Kills List -->
+<div style="margin-bottom: 20px;">
+    {{> partials/killmail-list killmails=data.killmails}}
+</div>
+
+<!-- Pagination (Bottom) -->
+{{#if data.pagination}}
+    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+{{/if}}

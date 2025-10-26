@@ -1,0 +1,171 @@
+<!-- Killmail Detail - EDK Style -->
+
+<!-- Sibling Killmails Navbar -->
+{{> partials/killmail-navbar killmail=data.killmail solarSystem=data.solarSystem victim=data.victim siblings=data.siblings}}
+
+<!-- Two Column Layout -->
+<div class="killmail-detail-wrapper">
+    <!-- Left Column - Items -->
+    <div id="kl-detail-left">
+
+        <!-- Fitting Wheel -->
+        <div class="mb-lg">
+            {{#if (or data.fittingWheel.destroyed.highSlots data.fittingWheel.destroyed.medSlots data.fittingWheel.destroyed.lowSlots data.fittingWheel.destroyed.rigSlots data.fittingWheel.destroyed.subSlots data.fittingWheel.dropped.highSlots data.fittingWheel.dropped.medSlots data.fittingWheel.dropped.lowSlots data.fittingWheel.dropped.rigSlots data.fittingWheel.dropped.subSlots)}}
+            {{> partials/fitting-wheel victim=data.victim fittingWheel=data.fittingWheel}}
+            {{/if}}
+        </div>
+
+        <!-- Items Destroyed/Dropped -->
+        <div class="kl-detail-fitting">
+            <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;">
+                <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+                    <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Items Destroyed & Dropped
+                    </div>
+                </div>
+
+                <div style="padding: 12px 16px;">
+                    <table class="kb-table" cellspacing="1" style="width: 100%; background: transparent; border: none; border-spacing: 0;">
+                        <tr class="kb-table-header" style="background: transparent;">
+                            <td class="kb-table-header" style="text-align: left; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Item</td>
+                            <td class="kb-table-header" style="text-align: center; width: 50px; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Qty</td>
+                            <td class="kb-table-header" style="text-align: right; width: 100px; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Price</td>
+                            <td class="kb-table-header" style="text-align: right; width: 120px; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Total ISK</td>
+                            <td class="kb-table-header" style="text-align: center; width: 80px; padding: 4px 8px; background: transparent; border: none; color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Status</td>
+                        </tr>
+
+                        {{#with (prepareItemSections data.items)}}
+                        {{#if this.length}}
+                            {{#each this}}
+                            <tr class="kb-table-row-even">
+                                <td class="kb-table-cell" colspan="5" style="padding: 4px 8px;"><b>{{this.title}}</b></td>
+                            </tr>
+                            {{#each this.items}}
+                            {{> partials/item-row}}
+                            {{/each}}
+                            {{/each}}
+                        {{else}}
+                            <tr class="kb-table-row-even" style="background: transparent;">
+                                <td class="kb-table-cell" colspan="5" style="text-align: center; font-style: italic; color: var(--color-text-secondary); padding: 8px; background: transparent; border: none;">No items destroyed or dropped</td>
+                            </tr>
+                        {{/if}}
+                        {{/with}}
+
+                        <!-- Totals Row -->
+                        <tr class="kb-table-header">
+                            <td class="kb-table-cell" colspan="5" style="text-align: left;"><b>TOTALS</b></td>
+                        </tr>
+                        <tr class="kb-table-row-odd">
+                            <td class="kb-table-cell"><b>Total Destroyed:</b></td>
+                            <td class="kb-table-cell" style="text-align: right;" colspan="4">
+                                <span class="isk-value">{{formatISK data.stats.destroyedValue}}</span>
+                            </td>
+                        </tr>
+                        <tr class="kb-table-row-even">
+                            <td class="kb-table-cell"><b>Total Dropped:</b></td>
+                            <td class="kb-table-cell" style="text-align: right;" colspan="4">
+                                <span class="isk-value">{{formatISK data.stats.droppedValue}}</span>
+                            </td>
+                        </tr>
+                        <tr class="kb-table-row-odd">
+                            <td class="kb-table-cell"><b>Fit Value:</b></td>
+                            <td class="kb-table-cell" style="text-align: right;" colspan="4">
+                                <span class="isk-value">{{formatISK data.stats.fitValue}}</span>
+                            </td>
+                        </tr>
+                        <tr class="kb-table-row-even">
+                            <td class="kb-table-cell"><b>Ship Value:</b></td>
+                            <td class="kb-table-cell" style="text-align: right;" colspan="4">
+                                <span class="isk-value">{{formatISK data.stats.shipValue}}</span>
+                            </td>
+                        </tr>
+                        <tr class="kb-table-row-odd">
+                            <td class="kb-table-cell"><b>Total:</b></td>
+                            <td class="kb-table-cell" style="text-align: right;" colspan="4">
+                                <span class="isk-value">{{formatISK data.stats.totalValue}}</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right Column - People -->
+    <div id="kl-detail-right">
+
+        <!-- Victim Info -->
+        <div style="margin-bottom: 10px;">
+            {{> partials/killmail-victim-info victim=data.victim killmail=data.killmail stats=data.stats}}
+        </div>
+
+        <!-- Final Blow (only show if more than 1 attacker) -->
+        {{#if data.finalBlow}}
+        {{#if (gt data.attackers.length 1)}}
+        <div class="attacker-section">
+            <div class="section-title-attackers">Final Blow</div>
+            {{#with data.finalBlow}}
+            {{> partials/attacker-card
+                character=this.character
+                corporation=this.corporation
+                alliance=this.alliance
+                ship=this.ship
+                weapon=this.weapon
+                damageDone=this.damageDone
+                damagePercent=(damagePercent this.damageDone ../data.totalDamage)
+                isFinalBlow=true
+            }}
+            {{/with}}
+        </div>
+        {{/if}}
+        {{/if}}
+
+        <!-- Top Damage (only show if different from final blow and more than 1 attacker) -->
+        {{#if data.topDamage}}
+        {{#if (gt data.attackers.length 1)}}
+        {{#unless (eq data.topDamage.character.id data.finalBlow.character.id)}}
+        <div class="attacker-section">
+            <div class="section-title-attackers">Top Damage</div>
+            {{#with data.topDamage}}
+            {{> partials/attacker-card
+                character=this.character
+                corporation=this.corporation
+                alliance=this.alliance
+                ship=this.ship
+                weapon=this.weapon
+                damageDone=this.damageDone
+                damagePercent=(damagePercent this.damageDone ../data.totalDamage)
+                isTopDamage=true
+            }}
+            {{/with}}
+        </div>
+        {{/unless}}
+        {{/if}}
+        {{/if}}
+
+        <!-- Involved Parties -->
+        {{#if data.attackers}}
+        <div class="attacker-section">
+            <div class="section-title-attackers">Involved Parties ({{data.attackers.length}})</div>
+            {{#each data.attackers}}
+            {{> partials/attacker-card
+                character=this.character
+                corporation=this.corporation
+                alliance=this.alliance
+                ship=this.ship
+                weapon=this.weapon
+                damageDone=this.damageDone
+                damagePercent=(damagePercent this.damageDone ../data.totalDamage)
+                isFinalBlow=this.finalBlow
+                isTopDamage=(eq this ../data.topDamage)
+            }}
+            {{#unless @last}}
+            <div class="attacker-separator"></div>
+            {{/unless}}
+            {{/each}}
+        </div>
+        {{/if}}
+
+    </div>
+</div>

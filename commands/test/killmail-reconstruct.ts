@@ -1,4 +1,4 @@
-import { getKillmail } from '../../server/models/killmails-esi'
+import { getKillmail } from '../../server/models/killmails'
 import chalk from 'chalk'
 import { logger } from '../../server/helpers/logger'
 

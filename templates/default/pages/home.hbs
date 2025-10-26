@@ -1,0 +1,24 @@
+<!-- Home Page - EDK Style -->
+
+<!-- Most Valuable Kills - Full Width at Top -->
+{{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange="Last 7 Days"}}
+
+<!-- Two Column Layout: Sidebar + Killmail List -->
+<div style="display: grid; grid-template-columns: minmax(200px, 225px) 1fr; gap: 12px; width: 100%; box-sizing: border-box;">
+  <!-- Sidebar: Top 10 Stats -->
+  <aside style="min-width: 0;">
+    {{> components/top-10-stats stats=data.top10Stats}}
+  </aside>
+
+  <!-- Main Content: Killmail List -->
+  <section style="min-width: 0;">
+    <!-- Pagination Top -->
+    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+
+    <!-- Killmail List -->
+    {{> partials/killmail-list killmails=data.killmails}}
+
+    <!-- Pagination Bottom -->
+    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+  </section>
+</div>

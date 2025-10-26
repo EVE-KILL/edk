@@ -1,0 +1,154 @@
+{{!-- Killmail Victim Information Box --}}
+
+<!-- Victim Character/Corp/Alliance -->
+<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 10px; overflow: visible; position: relative;">
+    <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+        <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Victim
+            {{#if data.stats.isSolo}}
+            <span style="margin-left: 8px; font-size: 9px; padding: 2px 6px; border-radius: 3px; background: #3b82f6; color: white;">SOLO</span>
+            {{/if}}
+            {{#if (gte data.stats.totalValue 1000000000)}}
+            <span style="margin-left: 8px; font-size: 9px; padding: 2px 6px; border-radius: 3px; background: #dc2626; color: white;">HIGH VALUE</span>
+            {{/if}}
+        </div>
+    </div>
+    <div style="padding: 12px 16px; display: flex; gap: 12px; align-items: flex-start;">
+        <div style="flex-shrink: 0;">
+            {{#if data.victim.character.id}}
+            <a href="/character/{{data.victim.character.id}}" style="text-decoration: none;">
+                {{> partials/eve-image type="character" id=data.victim.character.id size=64 alt=data.victim.character.name lazy=false}}
+            </a>
+            {{else}}
+                {{> partials/eve-image type="ship" id=data.victim.ship.typeId size=64 alt=data.victim.ship.name lazy=false}}
+            {{/if}}
+        </div>
+        <div style="flex: 1; font-size: 10px; line-height: 1.4;">
+            <div style="margin-bottom: 3px;">
+                <b style="font-size: 11px;">
+                    {{#if data.victim.character.id}}
+                    {{#if data.victim.character.name}}
+                    <span data-character-id="{{data.victim.character.id}}">
+                    <a href="/character/{{data.victim.character.id}}" style="color: #4a9eff; text-decoration: none;">{{data.victim.character.name}}</a>
+                    </span>
+                    {{else}}
+                    <span data-character-id="{{data.victim.character.id}}">
+                    <a href="/character/{{data.victim.character.id}}" style="color: #4a9eff; text-decoration: none;">Pilot #{{data.victim.character.id}}</a>
+                    </span>
+                    {{/if}}
+                    {{else}}
+                    {{data.victim.ship.name}}
+                    {{/if}}
+                </b>
+            </div>
+            {{#if data.victim.corporation.name}}
+            <div style="color: var(--color-text-secondary);">
+                {{#if data.victim.corporation.id}}
+                <span data-corporation-id="{{data.victim.corporation.id}}">
+                <a href="/corporation/{{data.victim.corporation.id}}" style="color: var(--color-text-secondary); text-decoration: none;">{{data.victim.corporation.name}}</a>
+                </span>
+                {{else}}
+                {{data.victim.corporation.name}}
+                {{/if}}
+            </div>
+            {{/if}}
+            {{#if data.victim.alliance.name}}
+            <div style="color: var(--color-text-secondary);">
+                {{#if data.victim.alliance.id}}
+                <span data-alliance-id="{{data.victim.alliance.id}}">
+                <a href="/alliance/{{data.victim.alliance.id}}" style="color: var(--color-text-secondary); text-decoration: none;">{{data.victim.alliance.name}}</a>
+                </span>
+                {{else}}
+                {{data.victim.alliance.name}}
+                {{/if}}
+            </div>
+            {{/if}}
+        </div>
+    </div>
+    <div style="padding: 0 16px 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+        <div>
+            <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Ship</div>
+            <div style="font-size: 10px;">
+                {{#if data.victim.ship.typeId}}
+                <a href="/item/{{data.victim.ship.typeId}}" style="color: #4a9eff; text-decoration: none;">{{data.victim.ship.name}}</a>
+                {{else}}
+                {{data.victim.ship.name}}
+                {{/if}}
+                {{#if data.victim.ship.groupName}}
+                <span style="color: var(--color-text-secondary);"> ({{data.victim.ship.groupName}})</span>
+                {{/if}}
+            </div>
+        </div>
+        <div>
+            <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Damage</div>
+            <div style="font-size: 10px;">
+                <span style="color: #ef4444; font-weight: bold;">{{formatNumber data.victim.damageTaken}}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Kill Details -->
+<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 10px; overflow: visible; position: relative;">
+    <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+        <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Kill Details
+        </div>
+    </div>
+    <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">System</div>
+            <div style="text-align: right; font-size: 10px;">
+                {{#if data.killmail.systemId}}
+                <a href="/system/{{data.killmail.systemId}}" style="color: #4a9eff; text-decoration: none; font-weight: 600;"><b>{{data.killmail.systemName}}</b></a>
+                {{else}}
+                <b>{{data.killmail.systemName}}</b>
+                {{/if}}
+                <span style="padding: 1px 4px; font-size: 9px; border-radius: 2px; margin-left: 4px; {{#if (gte data.killmail.securityStatus 0.5)}}background: #2F75FE; color: white;{{else}}{{#if (gte data.killmail.securityStatus 0.1)}}background: #F9A825; color: black;{{else}}background: #D32F2F; color: white;{{/if}}{{/if}}">
+                    {{formatSecurity data.killmail.securityStatus}}
+                </span>
+                {{#if data.killmail.regionName}}
+                <div style="color: var(--color-text-secondary); margin-top: 4px;">{{data.killmail.regionName}}</div>
+                {{/if}}
+            </div>
+        </div>
+        <div style="border-top: 1px solid var(--color-border-dark); padding-top: 12px; display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Time</div>
+            <div style="text-align: right; font-size: 10px;">
+                <div>{{formatDate data.killmail.time}}</div>
+                <div style="color: var(--color-text-secondary); font-size: 9px;">{{timeAgo data.killmail.time}}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ISK Value -->
+<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; overflow: visible; position: relative;">
+    <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+        <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            ISK Value
+        </div>
+    </div>
+    <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600;">Destroyed:</div>
+            <div style="color: #4ade80; font-weight: bold;">{{formatISK data.stats.destroyedValue}}</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600;">Dropped:</div>
+            <div style="color: #4ade80; font-weight: bold;">{{formatISK data.stats.droppedValue}}</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600;">Ship:</div>
+            <div style="color: #4ade80; font-weight: bold;">{{formatISK data.stats.shipValue}}</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600;">Fitting:</div>
+            <div style="color: #4ade80; font-weight: bold;">{{formatISK data.stats.fitValue}}</div>
+        </div>
+        <div style="border-top: 1px solid var(--color-border-dark); padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Total:</div>
+            <div style="color: #4ade80; font-weight: bold; font-size: 11px;">{{formatISK data.stats.totalValue}}</div>
+        </div>
+    </div>
+</div>

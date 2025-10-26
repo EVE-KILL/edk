@@ -1,50 +1,8 @@
 import { database } from '../server/helpers/database'
-import { enqueueJobMany, QueueType } from '../server/helpers/queue'
+import { enqueueJob } from '../server/helpers/queue'
+import { QueueType } from '../server/helpers/queue'
 import chalk from 'chalk'
 import { logger } from '../server/helpers/logger'
-
-interface KillmailData {
-  killmail_id: number
-  killmail_hash: string
-  killmail_time: string
-  solar_system_id: number
-  victim: {
-    character_id?: number
-    corporation_id: number
-    alliance_id?: number
-    faction_id?: number
-    damage_taken: number
-    ship_type_id: number
-    position?: {
-      x: number
-      y: number
-      z: number
-    }
-  }
-  attackers: Attacker[]
-  items: Item[]
-  total_value?: number
-}
-
-interface Attacker {
-  character_id?: number
-  corporation_id?: number
-  alliance_id?: number
-  faction_id?: number
-  damage_done: number
-  final_blow: boolean
-  security_status?: number
-  ship_type_id?: number
-  weapon_type_id?: number
-}
-
-interface Item {
-  item_type_id: number
-  quantity_dropped?: number
-  quantity_destroyed?: number
-  flag: number
-  singleton: number
-}
 
 /**
  * EVE-KILL WebSocket Listener Command
@@ -52,8 +10,8 @@ interface Item {
  * Connects to EVE-KILL's WebSocket stream for real-time killmails.
  * When a killmail is received:
  * 1. Check if it already exists in database
- * 2. If new, fetch complete ESI data from EVE-KILL API
- * 3. Parse and store into ClickHouse
+ * 2. If new, enqueue it for processing
+ * 3. Killmail queue worker will fetch all entity/price data then store it
  *
  * Usage:
  *   bun cli ekws
@@ -76,7 +34,6 @@ export default {
 
 class EkwsListener {
   private readonly WS_URL = 'wss://ws.eve-kill.com/killmails'
-  private readonly ESI_API_BASE = 'https://esi.evetech.net/latest/killmails'
   private running = false
   private ws: WebSocket | null = null
   private reconnectAttempts = 0
@@ -313,183 +270,19 @@ class EkwsListener {
    */
   private async fetchAndProcessKillmail(killmailId: number, hash: string): Promise<void> {
     try {
-      const url = `${this.ESI_API_BASE}/${killmailId}/${hash}`
+      // Enqueue killmail for processing
+      // The killmail queue worker will:
+      // 1. Fetch killmail from ESI
+      // 2. Fetch all entity data (characters, corporations, alliances)
+      // 3. Fetch all price data
+      // 4. Store killmail (materialized view will have complete data)
+      await enqueueJob(QueueType.KILLMAIL, { killmailId, hash })
 
-      const response = await fetch(url)
-      if (!response.ok) {
-        this.error(`Failed to fetch killmail ${killmailId}: ${response.statusText}`)
-        this.stats.errors++
-        return
-      }
-
-      const esiData = (await response.json()) as any
-
-      // Log first killmail to see structure
-      if (this.stats.processed === 0) {
-        this.log(`📋 Sample ESI response keys: ${Object.keys(esiData).join(', ')}`)
-      }
-
-      // Validate data
-      if (!esiData.killmail_id || !esiData.victim || !esiData.attackers) {
-        this.error(`Invalid killmail data for ${killmailId}`)
-        this.error(`Response keys: ${Object.keys(esiData).join(', ')}`)
-        this.stats.errors++
-        return
-      }
-
-      // ESI might not include items in the response, handle gracefully
-      // Note: Items are nested under victim in the ESI response
-      if (!esiData.victim?.items) {
-        esiData.items = []
-      } else {
-        esiData.items = esiData.victim.items
-      }
-
-      // Process and store the killmail
-      await this.storeKillmail(esiData)
       this.stats.processed++
-
-      this.success(
-        `Fetched killmail ${killmailId} from ${url}`
-      )
+      this.success(`Enqueued killmail ${killmailId} for processing`)
     } catch (error) {
-      this.error(`Failed to fetch and process killmail ${killmailId}: ${error}`)
+      this.error(`Failed to enqueue killmail ${killmailId}: ${error}`)
       this.stats.errors++
-    }
-  }
-
-  /**
-   * Store killmail and related data into ClickHouse
-   */
-  private async storeKillmail(esiData: KillmailData): Promise<void> {
-    try {
-      // Prepare victim data
-      const victim = esiData.victim
-      const killmailTime = new Date(esiData.killmail_time)
-      const killmailTimeUnix = Math.floor(killmailTime.getTime() / 1000)
-      const nowUnix = Math.floor(Date.now() / 1000)
-
-      // Insert main killmail record
-      const killmailRecord = {
-        killmailId: esiData.killmail_id,
-        killmailTime: killmailTimeUnix,
-        solarSystemId: esiData.solar_system_id,
-
-        // Victim information
-        victimAllianceId: victim.alliance_id || null,
-        victimCharacterId: victim.character_id || null,
-        victimCorporationId: victim.corporation_id,
-        victimDamageTaken: victim.damage_taken,
-        victimShipTypeId: victim.ship_type_id,
-
-        // Victim position
-        positionX: victim.position?.x || null,
-        positionY: victim.position?.y || null,
-        positionZ: victim.position?.z || null,
-
-        createdAt: nowUnix
-      }
-
-      // Insert killmail
-      await database.insert('edk.killmails', killmailRecord)
-
-      // Insert attackers
-      const attackerRecords = esiData.attackers.map((attacker) => ({
-        killmailId: esiData.killmail_id,
-        allianceId: attacker.alliance_id || null,
-        corporationId: attacker.corporation_id || null,
-        characterId: attacker.character_id || null,
-        damageDone: attacker.damage_done,
-        finalBlow: attacker.final_blow ? 1 : 0,
-        securityStatus: attacker.security_status || null,
-        shipTypeId: attacker.ship_type_id || null,
-        weaponTypeId: attacker.weapon_type_id || null,
-        createdAt: nowUnix
-      }))
-
-      if (attackerRecords.length > 0) {
-        await database.bulkInsert('edk.attackers', attackerRecords)
-      }
-
-      // Insert items
-      const itemRecords = esiData.items.map((item) => ({
-        killmailId: esiData.killmail_id,
-        flag: item.flag,
-        itemTypeId: item.item_type_id,
-        quantityDropped: item.quantity_dropped || 0,
-        quantityDestroyed: item.quantity_destroyed || 0,
-        singleton: item.singleton,
-        createdAt: nowUnix
-      }))
-
-      if (itemRecords.length > 0) {
-        await database.bulkInsert('edk.items', itemRecords)
-      }
-
-      // Enqueue entity update jobs for character, corporation, and alliance data
-      // This happens in the background after killmail is stored
-      try {
-        const characterIds: number[] = []
-        const corporationIds: number[] = []
-        const allianceIds: number[] = []
-
-        // Collect victim IDs
-        if (victim.character_id) {
-          characterIds.push(victim.character_id)
-        }
-        if (victim.corporation_id) {
-          corporationIds.push(victim.corporation_id)
-        }
-        if (victim.alliance_id) {
-          allianceIds.push(victim.alliance_id)
-        }
-
-        // Collect attacker IDs
-        for (const attacker of esiData.attackers) {
-          if (attacker.character_id) {
-            characterIds.push(attacker.character_id)
-          }
-          if (attacker.corporation_id) {
-            corporationIds.push(attacker.corporation_id)
-          }
-          if (attacker.alliance_id) {
-            allianceIds.push(attacker.alliance_id)
-          }
-        }
-
-        // Remove duplicates
-        const uniqueCharacterIds = [...new Set(characterIds)]
-        const uniqueCorporationIds = [...new Set(corporationIds)]
-        const uniqueAllianceIds = [...new Set(allianceIds)]
-
-        // Enqueue jobs
-        if (uniqueCharacterIds.length > 0) {
-          await enqueueJobMany(
-            QueueType.CHARACTER,
-            uniqueCharacterIds.map((id) => ({ id }))
-          )
-        }
-
-        if (uniqueCorporationIds.length > 0) {
-          await enqueueJobMany(
-            QueueType.CORPORATION,
-            uniqueCorporationIds.map((id) => ({ id }))
-          )
-        }
-
-        if (uniqueAllianceIds.length > 0) {
-          await enqueueJobMany(
-            QueueType.ALLIANCE,
-            uniqueAllianceIds.map((id) => ({ id }))
-          )
-        }
-      } catch (error) {
-        // Log but don't fail killmail processing if queue enqueuing fails
-        this.error(`Failed to enqueue entity update jobs: ${error}`)
-      }
-    } catch (error) {
-      this.error(`Failed to store killmail: ${error}`)
-      throw error
     }
   }
 
@@ -537,7 +330,7 @@ class EkwsListener {
         received: this.stats.received,
         new: this.stats.new,
         duplicate: this.stats.duplicate,
-        processed: this.stats.processed,
+        enqueued: this.stats.processed, // Changed: now counts enqueued jobs
         pings: this.stats.pings,
         errors: this.stats.errors
       })

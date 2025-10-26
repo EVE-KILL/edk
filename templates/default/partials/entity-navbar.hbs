@@ -1,0 +1,9 @@
+<!-- Entity Navigation Tabs -->
+{{> components/tabs
+    tabs=(array
+        (obj id="dashboard" label="DASHBOARD" url=data.entityBaseUrl)
+        (obj id="kills" label="KILLS" url=(concat data.entityBaseUrl "/kills"))
+        (obj id="losses" label="LOSSES" url=(concat data.entityBaseUrl "/losses"))
+    )
+    active=data.currentTab
+}}

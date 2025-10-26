@@ -1,0 +1,14 @@
+{{~#if id~}}
+<img
+  src="{{~> partials/eve-image-url type=type id=id size=size variant=variant~}}"
+  alt="{{alt}}"
+  {{#if class}}class="{{class}}"{{/if}}
+  {{#if style}}style="{{style}}"{{/if}}
+  {{#unless (eq lazy false)}}loading="lazy"{{/unless}}
+  width="{{#if size}}{{size}}{{else}}64{{/if}}"
+  height="{{#if size}}{{size}}{{else}}64{{/if}}"
+  decoding="async"
+/>
+{{~else~}}
+<div class="eve-image-placeholder" style="width: {{#if size}}{{size}}{{else}}64{{/if}}px; height: {{#if size}}{{size}}{{else}}64{{/if}}px; background: var(--color-bg-dark);"></div>
+{{~/if~}}

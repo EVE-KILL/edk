@@ -1,0 +1,13 @@
+<div class="stat-box">
+    {{#if title}}
+    {{> components/section-header title=title icon=icon bordered=true}}
+    {{/if}}
+
+    <table class="kb-table data-table" cellspacing="1">
+        <tbody>
+        {{#each stats}}
+            {{> components/stat-row label=this.label value=this.value classes=this.classes highlight=this.highlight}}
+        {{/each}}
+        </tbody>
+    </table>
+</div>

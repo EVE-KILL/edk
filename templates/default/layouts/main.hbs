@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{#if page.description}}{{page.description}}{{else}}EDK Killboard - Real-time killmail tracking{{/if}}" />
+    <meta name="keywords" content="{{#if page.keywords}}{{page.keywords}}{{else}}EDK, killboard, EVE Online, killmail{{/if}}" />
+    <title>{{#if page.title}}{{page.title}} - {{/if}}{{#if config.title}}{{config.title}}{{else}}EVE-KILL{{/if}}</title>
+
+    <link rel="stylesheet" type="text/css" href="/edk.css" />
+
+    <!-- Dropdown Menu & Search Styles -->
+    <style>
+        /* Dropdown Styles */
+        .nav-dropdown {
+            overflow: visible;
+        }
+
+        .nav-dropdown-wrapper {
+            position: relative;
+            display: block;
+            width: 100%;
+        }
+
+        .nav-dropdown-wrapper > a {
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .nav-dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+            width: 100%;
+            z-index: 1000;
+            border: 1px solid var(--color-border-dark);
+            border-radius: 4px;
+            margin-top: 4px;
+            left: 0;
+            top: 100%;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Multi-column layout for dropdowns with many items */
+        .nav-dropdown-content.multi-column {
+            display: none;
+            column-count: 3;
+            column-gap: 0;
+            width: auto;
+            min-width: 600px;
+            max-width: 800px;
+            padding: 8px 0;
+        }
+
+        .nav-dropdown-content.multi-column > * {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .nav-dropdown-content a {
+            color: var(--color-text-secondary);
+            padding: 10px 15px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            font-size: 11px;
+            transition: color 0.2s ease, background-color 0.2s ease;
+            border: none;
+        }
+
+        .nav-dropdown-content a:hover {
+            background-color: rgba(74, 158, 255, 0.1);
+            color: #4a9eff;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-content {
+            display: block;
+        }
+
+        .nav-dropdown:hover .nav-dropdown-content.multi-column {
+            display: block;
+            column-count: 3;
+        }
+
+        .nav-dropdown-wrapper:hover .nav-dropdown-content {
+            display: block;
+        }
+
+        .nav-dropdown-wrapper:hover .nav-dropdown-content.multi-column {
+            display: block;
+            column-count: 3;
+        }
+
+        .dropdown-section-header {
+            color: var(--color-text-tertiary);
+            padding: 8px 15px;
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin: 8px 0 0 0;
+        }
+
+        .dropdown-section-header:first-child {
+            margin: 0;
+        }
+
+        /* Search Box Styles */
+        .nav-search {
+            position: relative;
+            overflow: visible !important;
+            padding: 10px 12px !important;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        #globalSearch {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 11px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--color-text-secondary);
+            border-radius: 3px;
+            box-sizing: border-box;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease;
+        }
+
+        #globalSearch:focus {
+            outline: none;
+            border-color: #4a9eff;
+            background: rgba(74, 158, 255, 0.05);
+            color: var(--color-text-primary);
+        }
+
+        #globalSearch::placeholder {
+            color: var(--color-text-tertiary);
+            font-size: 11px;
+        }
+
+        .search-results {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            min-width: 300px;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--color-border-dark);
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .search-group {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .search-group:last-child {
+            border-bottom: none;
+        }
+
+        .search-group-header {
+            color: var(--color-text-tertiary);
+            padding: 8px 15px;
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .search-item {
+            display: block;
+            padding: 10px 15px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            font-size: 11px;
+        }
+
+        .search-item:hover,
+        .search-item.active {
+            background-color: rgba(74, 158, 255, 0.1);
+            color: #4a9eff;
+        }
+
+        .search-item-name {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 2px;
+            font-size: 11px;
+        }
+
+        .search-item-description {
+            display: block;
+            font-size: 10px;
+            color: var(--color-text-tertiary);
+        }
+
+        .search-no-results,
+        .search-error {
+            padding: 20px 15px;
+            text-align: center;
+            color: var(--color-text-tertiary);
+            font-size: 11px;
+        }
+
+        .search-error {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <!-- Popup container for modals -->
+    <div id="popup"></div>
+
+    <!-- Main container using modern flexbox but EDK styling -->
+    <div class="main-wrapper">
+        <!-- Header / Banner -->
+        <header>
+            <h1>
+                {{#if config.title}}{{config.title}}{{else}}EVE-KILL{{/if}}
+            </h1>
+            {{#if config.subtitle}}
+            <p>{{config.subtitle}}</p>
+            {{/if}}
+        </header>
+
+        <!-- Navigation Menu -->
+        <nav class="navigation">
+            <table cellspacing="0" cellpadding="0">
+                <tr>
+                    <td><a href="/">Home</a></td>
+                    <td><a href="/about">About</a></td>
+                    <td class="nav-dropdown">
+                        <div class="nav-dropdown-wrapper">
+                            <a href="/kills">Kills</a>
+                            <div class="nav-dropdown-content multi-column">
+                                <div class="dropdown-section-header">Main</div>
+                                <a href="/kills/latest">Latest</a>
+                                <a href="/kills/big">Big Kills</a>
+                                <a href="/kills/solo">Solo</a>
+                                <a href="/kills/npc">NPC</a>
+                                <div class="dropdown-section-header">Security Status</div>
+                                <a href="/kills/highsec">High-Sec</a>
+                                <a href="/kills/lowsec">Low-Sec</a>
+                                <a href="/kills/nullsec">Null-Sec</a>
+                                <a href="/kills/w-space">W-Space</a>
+                                <a href="/kills/abyssal">Abyssal</a>
+                                <a href="/kills/pochven">Pochven</a>
+                                <div class="dropdown-section-header">Ship Classes</div>
+                                <a href="/kills/frigates">Frigates</a>
+                                <a href="/kills/destroyers">Destroyers</a>
+                                <a href="/kills/cruisers">Cruisers</a>
+                                <a href="/kills/battlecruisers">Battlecruisers</a>
+                                <a href="/kills/battleships">Battleships</a>
+                                <a href="/kills/capitals">Capitals</a>
+                                <a href="/kills/supercarriers">Supercarriers</a>
+                                <a href="/kills/titans">Titans</a>
+                                <a href="/kills/freighters">Freighters</a>
+                                <div class="dropdown-section-header">Structures</div>
+                                <a href="/kills/citadels">Citadels</a>
+                                <a href="/kills/structures">All Structures</a>
+                                <div class="dropdown-section-header">Tech Level</div>
+                                <a href="/kills/t1">T1</a>
+                                <a href="/kills/t2">T2</a>
+                                <a href="/kills/t3">T3</a>
+                                <div class="dropdown-section-header">Value</div>
+                                <a href="/kills/5b">5B+</a>
+                                <a href="/kills/10b">10B+</a>
+                            </div>
+                        </div>
+                    </td>
+                    <td><a href="/entities">Entities</a></td>
+                    <td><a href="/post">Post</a></td>
+                    <td class="nav-search">
+                        <div class="search-container">
+                            <input
+                                type="text"
+                                id="globalSearch"
+                                placeholder="Search..."
+                                autocomplete="off"
+                            />
+                            <div id="searchResults" class="search-results"></div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main>
+            {{{body}}}
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <p>
+                Powered by <strong>EDK</strong>
+                {{#if config.copyright}}{{config.copyright}}{{else}}&copy; 2025{{/if}}
+            </p>
+            {{#if config.showVersion}}
+            <p style="color: #666; margin: 5px 0 0 0; font-size: 9px;">
+                Version {{version}} | Build {{buildDate}}
+            </p>
+            {{/if}}
+            {{#if performance}}
+            <p style="color: #555; margin: 5px 0 0 0; font-size: 9px;">
+                Page loaded in {{performance.totalTime}}ms
+                {{#if performance.queryCount}}
+                | {{performance.queryCount}} {{#if (eq performance.queryCount 1)}}query{{else}}queries{{/if}} ({{performance.queryTime}}ms)
+                {{/if}}
+            </p>
+            {{/if}}
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script type="text/javascript">
+        // Toggle popup display
+        function ReverseContentDisplay(id) {
+            var element = document.getElementById(id);
+            if (element.style.display === 'none' || element.style.display === '') {
+                element.style.display = 'block';
+            } else {
+                element.style.display = 'none';
+            }
+        }
+
+        // Clickable table rows
+        document.addEventListener('DOMContentLoaded', function() {
+            var clickableRows = document.querySelectorAll('tr[onclick]');
+            clickableRows.forEach(function(row) {
+                row.style.cursor = 'pointer';
+            });
+        });
+
+        // Basic search functionality placeholder
+        document.addEventListener('DOMContentLoaded', function() {
+            var searchInput = document.getElementById('globalSearch');
+            var searchResults = document.getElementById('searchResults');
+
+            if (searchInput) {
+                searchInput.addEventListener('focus', function() {
+                    // Show search results on focus
+                    searchResults.style.display = 'block';
+                });
+
+                searchInput.addEventListener('blur', function() {
+                    // Hide search results on blur (with delay for clicks)
+                    setTimeout(function() {
+                        searchResults.style.display = 'none';
+                    }, 200);
+                });
+            }
+        });
+    </script>
+
+    <!-- Fitting Wheel Script -->
+    <script src="/fitting-wheel.js" type="text/javascript"></script>
+</body>
+</html>

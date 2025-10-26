@@ -5,9 +5,11 @@ import { Queue } from 'bullmq'
  * Add new queue types here for type-safe queue operations
  */
 export enum QueueType {
+  KILLMAIL = 'killmail',
   CHARACTER = 'character',
   CORPORATION = 'corporation',
-  ALLIANCE = 'alliance'
+  ALLIANCE = 'alliance',
+  PRICE = 'price'
 }
 
 /**
@@ -15,9 +17,11 @@ export enum QueueType {
  * Each queue type maps to its job data structure
  */
 export interface QueueJobData {
+  [QueueType.KILLMAIL]: { killmailId: number; hash: string }
   [QueueType.CHARACTER]: { id: number }
   [QueueType.CORPORATION]: { id: number }
   [QueueType.ALLIANCE]: { id: number }
+  [QueueType.PRICE]: { typeId: number; date?: number }
 }
 
 /**
@@ -61,6 +65,15 @@ function getQueue<T extends QueueType>(queueType: T): Queue {
 }
 
 /**
+ * Create a sanitized job ID without colons (BullMQ restriction)
+ */
+function createJobId(queueType: QueueType, data: any): string {
+  // Convert data to a string without colons
+  const dataStr = JSON.stringify(data).replace(/:/g, '_')
+  return `${queueType}-${dataStr}`
+}
+
+/**
  * Enqueue a single job
  * Type-safe job enqueuing for a specific queue
  */
@@ -71,7 +84,7 @@ export async function enqueueJob<T extends QueueType>(
   const queue = getQueue(queueType)
 
   // Use data properties as unique job ID to prevent duplicates
-  const jobId = `${queueType}:${JSON.stringify(data)}`
+  const jobId = createJobId(queueType, data)
 
   await queue.add(queueType, data, {
     jobId,
@@ -93,7 +106,7 @@ export async function enqueueJobMany<T extends QueueType>(
     name: queueType,
     data,
     opts: {
-      jobId: `${queueType}:${JSON.stringify(data)}`,
+      jobId: createJobId(queueType, data),
       removeOnComplete: true
     }
   }))
