@@ -1,5 +1,5 @@
-import { database } from '../helpers/database'
 import { fetchEveKill, fetchESI } from '../helpers/fetcher'
+import { storeCharacter as storeCharacterInDB, getCharacter } from '../models/characters'
 
 /**
  * ESI Character Data - Fields we store
@@ -113,24 +113,17 @@ function extractESIFields(data: any): ESICharacter {
  * Store character in database
  */
 async function storeCharacter(characterId: number, character: ESICharacter): Promise<void> {
-  const now = Math.floor(Date.now() / 1000)
-
-  await database.bulkInsert('edk.characters', [
-    {
-      character_id: characterId,
-      alliance_id: character.alliance_id,
-      birthday: character.birthday,
-      bloodline_id: character.bloodline_id,
-      corporation_id: character.corporation_id,
-      description: character.description,
-      gender: character.gender,
-      name: character.name,
-      race_id: character.race_id,
-      security_status: character.security_status,
-      updated_at: now,
-      version: now
-    }
-  ])
+  await storeCharacterInDB(characterId, {
+    allianceId: character.alliance_id,
+    birthday: character.birthday,
+    bloodlineId: character.bloodline_id,
+    corporationId: character.corporation_id,
+    description: character.description,
+    gender: character.gender,
+    name: character.name,
+    raceId: character.race_id,
+    securityStatus: character.security_status
+  })
 }
 
 /**
@@ -138,25 +131,22 @@ async function storeCharacter(characterId: number, character: ESICharacter): Pro
  */
 export async function getCachedCharacter(characterId: number): Promise<ESICharacter | null> {
   try {
-    const result = await database.queryOne<any>(
-      'SELECT * FROM edk.characters WHERE character_id = {id:UInt32}',
-      { id: characterId }
-    )
+    const result = await getCharacter(characterId)
 
     if (!result) {
       return null
     }
 
     return {
-      alliance_id: result.alliance_id,
+      alliance_id: result.allianceId,
       birthday: result.birthday,
-      bloodline_id: result.bloodline_id,
-      corporation_id: result.corporation_id,
+      bloodline_id: result.bloodlineId,
+      corporation_id: result.corporationId,
       description: result.description,
       gender: result.gender,
       name: result.name,
-      race_id: result.race_id,
-      security_status: result.security_status
+      race_id: result.raceId,
+      security_status: result.securityStatus
     }
   } catch (error) {
     console.warn(`⚠️  Failed to get cached character ${characterId}:`, error)

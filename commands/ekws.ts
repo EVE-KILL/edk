@@ -1,6 +1,6 @@
-import { database } from '../server/helpers/database'
 import { enqueueJob } from '../server/helpers/queue'
 import { QueueType } from '../server/helpers/queue'
+import { killmailExists } from '../server/models/killmails'
 import chalk from 'chalk'
 import { logger } from '../server/helpers/logger'
 
@@ -243,10 +243,7 @@ class EkwsListener {
 
     // Check if killmail already exists
     try {
-      const existing = await database.queryOne(
-        'SELECT 1 FROM edk.killmails WHERE killmailId = {id:UInt32}',
-        { id: killmailId }
-      )
+      const existing = await killmailExists(killmailId)
 
       if (existing) {
         this.stats.duplicate++

@@ -20,7 +20,7 @@ export interface MarketGroup {
  */
 export async function getMarketGroup(marketGroupId: number): Promise<MarketGroup | null> {
   return await database.queryOne<MarketGroup>(
-    'SELECT * FROM edk.marketGroups WHERE marketGroupId = {id:UInt32}',
+    'SELECT * FROM marketGroups FINAL WHERE marketGroupId = {id:UInt32}',
     { id: marketGroupId }
   )
 }
@@ -30,7 +30,7 @@ export async function getMarketGroup(marketGroupId: number): Promise<MarketGroup
  */
 export async function getMarketGroupsByParent(parentGroupId: number): Promise<MarketGroup[]> {
   return await database.query<MarketGroup>(
-    'SELECT * FROM edk.marketGroups WHERE parentGroupId = {parentId:UInt32} ORDER BY name',
+    'SELECT * FROM marketGroups FINAL WHERE parentGroupId = {parentId:UInt32} ORDER BY name',
     { parentId: parentGroupId }
   )
 }
@@ -40,7 +40,7 @@ export async function getMarketGroupsByParent(parentGroupId: number): Promise<Ma
  */
 export async function getRootMarketGroups(): Promise<MarketGroup[]> {
   return await database.query<MarketGroup>(
-    'SELECT * FROM edk.marketGroups WHERE parentGroupId IS NULL ORDER BY name'
+    'SELECT * FROM marketGroups FINAL WHERE parentGroupId IS NULL ORDER BY name'
   )
 }
 
@@ -49,7 +49,7 @@ export async function getRootMarketGroups(): Promise<MarketGroup[]> {
  */
 export async function getMarketGroupsWithTypes(): Promise<MarketGroup[]> {
   return await database.query<MarketGroup>(
-    'SELECT * FROM edk.marketGroups WHERE hasTypes = 1 ORDER BY name'
+    'SELECT * FROM marketGroups FINAL WHERE hasTypes = 1 ORDER BY name'
   )
 }
 
@@ -58,7 +58,7 @@ export async function getMarketGroupsWithTypes(): Promise<MarketGroup[]> {
  */
 export async function searchMarketGroups(namePattern: string, limit: number = 10): Promise<MarketGroup[]> {
   return await database.query<MarketGroup>(
-    'SELECT * FROM edk.marketGroups WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM marketGroups FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -68,7 +68,7 @@ export async function searchMarketGroups(namePattern: string, limit: number = 10
  */
 export async function getMarketGroupName(marketGroupId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.marketGroups WHERE marketGroupId = {id:UInt32}',
+    'SELECT name FROM marketGroups FINAL WHERE marketGroupId = {id:UInt32}',
     { id: marketGroupId }
   )
   return result || null
@@ -78,5 +78,5 @@ export async function getMarketGroupName(marketGroupId: number): Promise<string 
  * Count total market groups
  */
 export async function countMarketGroups(): Promise<number> {
-  return await database.count('edk.marketGroups')
+  return await database.count('marketGroups')
 }

@@ -8,15 +8,15 @@ import { logger } from '../helpers/logger'
 import { database } from '../helpers/database'
 
 export interface Price {
-  type_id: number
-  region_id: number
-  price_date: string // Date in YYYY-MM-DD format
-  average_price: number
-  highest_price: number
-  lowest_price: number
-  order_count: number
+  typeId: number
+  regionId: number
+  priceDate: string // Date in YYYY-MM-DD format
+  averagePrice: number
+  highestPrice: number
+  lowestPrice: number
+  orderCount: number
   volume: number
-  updated_at: string
+  updatedAt: string
 }
 
 export interface PriceAPIResponse {
@@ -29,6 +29,9 @@ export interface PriceAPIResponse {
   order_count: number
   volume: number
 }
+
+// Default price region used for ISK calculations (The Forge / Jita)
+const DEFAULT_PRICE_REGION_ID = 10000002
 
 /**
  * Get price for a specific type on a specific date (or closest available)
@@ -46,20 +49,20 @@ export async function getPrice(
 
   const sql = `
     SELECT
-      type_id,
-      region_id,
-      formatDateTime(price_date, '%Y-%m-%d') as price_date,
-      average_price,
-      highest_price,
-      lowest_price,
-      order_count,
+      typeId,
+      regionId,
+      formatDateTime(priceDate, '%Y-%m-%d') as priceDate,
+      averagePrice,
+      highestPrice,
+      lowestPrice,
+      orderCount,
       volume,
-      formatDateTime(updated_at, '%Y-%m-%d %H:%i:%S') as updated_at
+      formatDateTime(updatedAt, '%Y-%m-%d %H:%i:%S') as updatedAt
     FROM prices
-    WHERE type_id = {typeId:UInt32}
-      AND region_id = {regionId:UInt32}
-      AND price_date = {date:Date}
-    ORDER BY updated_at DESC
+    WHERE typeId = {typeId:UInt32}
+      AND regionId = {regionId:UInt32}
+      AND priceDate = {date:Date}
+    ORDER BY updatedAt DESC
     LIMIT 1
   `
 
@@ -84,20 +87,20 @@ export async function getPriceHistory(
 ): Promise<Price[]> {
   const sql = `
     SELECT
-      type_id,
-      region_id,
-      formatDateTime(price_date, '%Y-%m-%d') as price_date,
-      average_price,
-      highest_price,
-      lowest_price,
-      order_count,
+      typeId,
+      regionId,
+      formatDateTime(priceDate, '%Y-%m-%d') as priceDate,
+      averagePrice,
+      highestPrice,
+      lowestPrice,
+      orderCount,
       volume,
-      formatDateTime(updated_at, '%Y-%m-%d %H:%i:%S') as updated_at
+      formatDateTime(updatedAt, '%Y-%m-%d %H:%i:%S') as updatedAt
     FROM prices
-    WHERE type_id = {typeId:UInt32}
-      AND region_id = {regionId:UInt32}
-      AND price_date >= today() - INTERVAL {days:UInt32} DAY
-    ORDER BY price_date DESC
+    WHERE typeId = {typeId:UInt32}
+      AND regionId = {regionId:UInt32}
+      AND priceDate >= today() - INTERVAL {days:UInt32} DAY
+    ORDER BY priceDate DESC
   `
 
   return await database.query<Price>(sql, {
@@ -119,19 +122,19 @@ export async function getLatestPrice(
 ): Promise<Price | null> {
   const sql = `
     SELECT
-      type_id,
-      region_id,
-      formatDateTime(price_date, '%Y-%m-%d') as price_date,
-      average_price,
-      highest_price,
-      lowest_price,
-      order_count,
+      typeId,
+      regionId,
+      formatDateTime(priceDate, '%Y-%m-%d') as priceDate,
+      averagePrice,
+      highestPrice,
+      lowestPrice,
+      orderCount,
       volume,
-      formatDateTime(updated_at, '%Y-%m-%d %H:%i:%S') as updated_at
+      formatDateTime(updatedAt, '%Y-%m-%d %H:%i:%S') as updatedAt
     FROM prices
-    WHERE type_id = {typeId:UInt32}
-      AND region_id = {regionId:UInt32}
-    ORDER BY price_date DESC, updated_at DESC
+    WHERE typeId = {typeId:UInt32}
+      AND regionId = {regionId:UInt32}
+    ORDER BY priceDate DESC, updatedAt DESC
     LIMIT 1
   `
 
@@ -151,20 +154,20 @@ export async function storePrices(data: PriceAPIResponse[]): Promise<void> {
   const version = Date.now()
 
   const records = data.map((price) => ({
-    type_id: price.type_id,
-    region_id: price.region_id,
-    price_date: price.date.split('T')[0], // Extract YYYY-MM-DD
-    average_price: price.average,
-    highest_price: price.highest,
-    lowest_price: price.lowest,
-    order_count: price.order_count,
+    typeId: price.type_id,
+    regionId: price.region_id,
+    priceDate: price.date.split('T')[0], // Extract YYYY-MM-DD
+    averagePrice: price.average,
+    highestPrice: price.highest,
+    lowestPrice: price.lowest,
+    orderCount: price.order_count,
     volume: price.volume,
-    updated_at: Math.floor(Date.now() / 1000), // Unix timestamp
+    updatedAt: Math.floor(Date.now() / 1000), // Unix timestamp
     version
   }))
 
   try {
-    await database.bulkInsert('edk.prices', records)
+    await database.bulkInsert('prices', records)
   } catch (error) {
     logger.error(`[Prices] Failed to store prices for type ${data[0].type_id}`, { error, sample: records[0] })
     throw error
@@ -186,9 +189,9 @@ export async function hasRecentPrice(
   const sql = `
     SELECT count() as count
     FROM prices
-    WHERE type_id = {typeId:UInt32}
-      AND region_id = {regionId:UInt32}
-      AND price_date >= today() - INTERVAL {maxAgeDays:UInt32} DAY
+    WHERE typeId = {typeId:UInt32}
+      AND regionId = {regionId:UInt32}
+      AND priceDate >= today() - INTERVAL {maxAgeDays:UInt32} DAY
   `
 
   const count = await database.queryValue<number>(sql, {
@@ -198,4 +201,51 @@ export async function hasRecentPrice(
   })
 
   return (count || 0) > 0
+}
+
+/**
+ * Get the latest available average price for multiple types in a single query.
+ * Optionally restricts prices to those published on or before a specific date.
+ */
+export async function getLatestPricesForTypes(
+  typeIds: number[],
+  regionId: number = DEFAULT_PRICE_REGION_ID,
+  asOfDate?: string | Date
+): Promise<Map<number, number>> {
+  if (typeIds.length === 0) {
+    return new Map()
+  }
+
+  const params: Record<string, unknown> = {
+    typeIds,
+    regionId
+  }
+
+  let dateClause = ''
+  if (asOfDate) {
+    const dateString = typeof asOfDate === 'string'
+      ? asOfDate.split('T')[0]
+      : asOfDate.toISOString().split('T')[0]
+
+    params.asOfDate = dateString
+    dateClause = 'AND priceDate <= {asOfDate:Date}'
+  }
+
+  const rows = await database.query<{ typeId: number; averagePrice: number | null }>(`
+    SELECT
+      typeId,
+      argMax(averagePrice, toUInt64(priceDate) * 1000000000 + version) AS averagePrice
+    FROM prices
+    WHERE regionId = {regionId:UInt32}
+      AND typeId IN ({typeIds:Array(UInt32)})
+      ${dateClause}
+    GROUP BY typeId
+  `, params)
+
+  const priceMap = new Map<number, number>()
+  for (const row of rows) {
+    priceMap.set(row.typeId, row.averagePrice ?? 0)
+  }
+
+  return priceMap
 }

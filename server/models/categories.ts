@@ -18,7 +18,7 @@ export interface Category {
  */
 export async function getCategory(categoryId: number): Promise<Category | null> {
   return await database.queryOne<Category>(
-    'SELECT * FROM edk.categories WHERE categoryId = {id:UInt32}',
+    'SELECT * FROM categories FINAL WHERE categoryId = {id:UInt32}',
     { id: categoryId }
   )
 }
@@ -28,7 +28,7 @@ export async function getCategory(categoryId: number): Promise<Category | null> 
  */
 export async function getPublishedCategories(): Promise<Category[]> {
   return await database.query<Category>(
-    'SELECT * FROM edk.categories WHERE published = 1 ORDER BY name'
+    'SELECT * FROM categories FINAL WHERE published = 1 ORDER BY name'
   )
 }
 
@@ -37,7 +37,7 @@ export async function getPublishedCategories(): Promise<Category[]> {
  */
 export async function getAllCategories(): Promise<Category[]> {
   return await database.query<Category>(
-    'SELECT * FROM edk.categories ORDER BY name'
+    'SELECT * FROM categories FINAL ORDER BY name'
   )
 }
 
@@ -46,7 +46,7 @@ export async function getAllCategories(): Promise<Category[]> {
  */
 export async function searchCategories(namePattern: string, limit: number = 10): Promise<Category[]> {
   return await database.query<Category>(
-    'SELECT * FROM edk.categories WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM categories FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -56,7 +56,7 @@ export async function searchCategories(namePattern: string, limit: number = 10):
  */
 export async function getCategoryName(categoryId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.categories WHERE categoryId = {id:UInt32}',
+    'SELECT name FROM categories FINAL WHERE categoryId = {id:UInt32}',
     { id: categoryId }
   )
   return result || null
@@ -66,5 +66,5 @@ export async function getCategoryName(categoryId: number): Promise<string | null
  * Count total categories
  */
 export async function countCategories(): Promise<number> {
-  return await database.count('edk.categories')
+  return await database.count('categories')
 }

@@ -18,7 +18,7 @@ export interface MetaGroup {
  */
 export async function getMetaGroup(metaGroupId: number): Promise<MetaGroup | null> {
   return await database.queryOne<MetaGroup>(
-    'SELECT * FROM edk.metaGroups WHERE metaGroupId = {id:UInt32}',
+    'SELECT * FROM metaGroups FINAL WHERE metaGroupId = {id:UInt32}',
     { id: metaGroupId }
   )
 }
@@ -28,7 +28,7 @@ export async function getMetaGroup(metaGroupId: number): Promise<MetaGroup | nul
  */
 export async function getAllMetaGroups(): Promise<MetaGroup[]> {
   return await database.query<MetaGroup>(
-    'SELECT * FROM edk.metaGroups ORDER BY name'
+    'SELECT * FROM metaGroups FINAL ORDER BY name'
   )
 }
 
@@ -37,7 +37,7 @@ export async function getAllMetaGroups(): Promise<MetaGroup[]> {
  */
 export async function searchMetaGroups(namePattern: string, limit: number = 10): Promise<MetaGroup[]> {
   return await database.query<MetaGroup>(
-    'SELECT * FROM edk.metaGroups WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM metaGroups FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -47,7 +47,7 @@ export async function searchMetaGroups(namePattern: string, limit: number = 10):
  */
 export async function getMetaGroupName(metaGroupId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.metaGroups WHERE metaGroupId = {id:UInt32}',
+    'SELECT name FROM metaGroups FINAL WHERE metaGroupId = {id:UInt32}',
     { id: metaGroupId }
   )
   return result || null
@@ -57,5 +57,5 @@ export async function getMetaGroupName(metaGroupId: number): Promise<string | nu
  * Count total meta groups
  */
 export async function countMetaGroups(): Promise<number> {
-  return await database.count('edk.metaGroups')
+  return await database.count('metaGroups')
 }

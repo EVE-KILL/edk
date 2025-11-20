@@ -1,0 +1,123 @@
+<!-- About Page - Statistics -->
+
+<h1 style="color: var(--color-text-white); margin-bottom: 20px; font-size: 24px;">Killboard Statistics</h1>
+
+<!-- Statistics Section -->
+{{#if statistics}}
+<section class="section mb-lg">
+    <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;">
+        <!-- Header -->
+        <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Killboard Statistics
+                </div>
+                <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                    All Time
+                </div>
+            </div>
+        </div>
+
+        <!-- Compact Content Grid -->
+        <div style="padding: 12px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <!-- Overall Stats -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Total Killmails</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.totalKillmails}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Total ISK</span>
+                <span style="color: #4ade80; font-size: 13px; font-weight: 600;">{{formatISK statistics.totalISKDestroyed}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Solo Kills</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.soloKills}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">NPC Kills</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.npcKills}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Avg Attackers</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.averageAttackersPerKill}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Unique Pilots</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.totalUniquePilots}}</span>
+            </div>
+
+            <!-- Activity Stats -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Pilots (24h)</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.activePilotsLast24Hours}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Pilots (7d)</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.activePilotsLast7Days}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Kills (24h)</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.killsLast24Hours}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Kills (7d)</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.killsLast7Days}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Kills (30d)</span>
+                <span style="color: var(--color-text-white); font-size: 13px; font-weight: 600;">{{statistics.killsLast30Days}}</span>
+            </div>
+
+            <!-- Top Entities -->
+            {{#if statistics.topKiller}}
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Top Killer</span>
+                    <a href="/character/{{statistics.topKiller.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.topKiller.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.topKiller.kills}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Top Corp</span>
+                    <a href="/corporation/{{statistics.topCorporation.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.topCorporation.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.topCorporation.kills}}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Top Alliance</span>
+                    <a href="/alliance/{{statistics.topAlliance.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.topAlliance.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.topAlliance.kills}}</span>
+            </div>
+
+            <!-- Ships & Systems -->
+            {{#if statistics.mostDestroyedShip}}
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Most Destroyed</span>
+                    <a href="/type/{{statistics.mostDestroyedShip.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.mostDestroyedShip.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.mostDestroyedShip.count}}x</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Most Used</span>
+                    <a href="/type/{{statistics.mostUsedShip.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.mostUsedShip.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.mostUsedShip.count}}x</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;">Most Dangerous</span>
+                    <a href="/system/{{statistics.mostDangerousSystem.id}}" style="color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{statistics.mostDangerousSystem.name}}</a>
+                </div>
+                <span style="color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;">{{statistics.mostDangerousSystem.count}}</span>
+            </div>
+            {{/if}}
+            {{/if}}
+        </div>
+    </div>
+</section>
+{{/if}}

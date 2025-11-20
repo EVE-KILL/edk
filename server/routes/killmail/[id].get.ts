@@ -6,6 +6,12 @@
 import type { H3Event } from 'h3'
 import { timeAgo } from '../../helpers/time'
 import { render } from '../../helpers/templates'
+import {
+  getKillmailDetails,
+  getKillmailItems,
+  getKillmailAttackers,
+  getSiblingKillmails
+} from '../../models/killmails'
 
 // Item slot mapping - which flag number corresponds to which slot
 const SLOT_MAPPING: Record<number, string> = {
@@ -77,35 +83,8 @@ export default defineEventHandler(async (event: H3Event) => {
 
   const id = parseInt(killmailId, 10)
 
-  // Fetch killmail from both entity_killlist and killmails tables for complete data
-  const killmail = await database.queryOne<any>(`
-    SELECT
-      k.killmailId as killmail_id,
-      k.killmailTime as killmail_time,
-      k.victimDamageTaken as victim_damage_taken,
-      k.hash as hash,
-      el.victim_character_id,
-      el.victim_character_name,
-      el.victim_corporation_id,
-      el.victim_corporation_name,
-      el.victim_corporation_ticker,
-      el.victim_alliance_id,
-      el.victim_alliance_name,
-      el.victim_alliance_ticker,
-      el.victim_ship_type_id,
-      el.victim_ship_name,
-      el.victim_ship_group,
-      el.victim_ship_value,
-      el.solar_system_id,
-      el.solar_system_name,
-      el.region_name,
-      el.solar_system_security
-    FROM edk.killmails k
-    FINAL
-    LEFT JOIN entity_killlist el ON k.killmailId = el.killmail_id
-    WHERE k.killmailId = {id:UInt32}
-    LIMIT 1
-  `, { id })
+  // Fetch killmail details using model
+  const killmail = await getKillmailDetails(id)
 
   if (!killmail) {
     throw createError({
@@ -114,38 +93,8 @@ export default defineEventHandler(async (event: H3Event) => {
     })
   }
 
-  // Fetch all items for this killmail with details
-  const itemsWithDetails = await database.query<{
-    itemTypeId: number
-    name: string
-    quantityDropped: number
-    quantityDestroyed: number
-    flag: number
-    price: number
-  }>(`
-    SELECT
-      i.itemTypeId,
-      t.name,
-      i.quantityDropped,
-      i.quantityDestroyed,
-      i.flag,
-      coalesce(p.average_price, 0) as price
-    FROM edk.items i
-    FINAL
-    LEFT JOIN edk.types t ON i.itemTypeId = t.typeId
-    LEFT JOIN (
-      SELECT
-        type_id,
-        argMax(average_price, version) as average_price
-      FROM edk.prices
-      FINAL
-      WHERE region_id = 10000002
-      AND price_date = (SELECT max(price_date) FROM edk.prices WHERE region_id = 10000002)
-      GROUP BY type_id
-    ) p ON i.itemTypeId = p.type_id
-    WHERE i.killmailId = {id:UInt32}
-    AND i.itemTypeId IS NOT NULL
-  `, { id })
+  // Fetch all items for this killmail with prices using model
+  const itemsWithDetails = await getKillmailItems(id)
 
   // Organize items by slot
   const itemsBySlot: ItemsBySlot = {
@@ -228,64 +177,20 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   // Calculate base stats (before attackers are fetched)
-  const shipValue = killmail.victim_ship_value || 0
+  const shipValue = killmail.victimShipValue || 0
   const itemsValue = totalValue
   const totalKillValue = shipValue + itemsValue
 
-  // Fetch all attackers for this killmail to find final blow and top damage
-  const attackers = await database.query<{
-    character_id: number
-    character_name: string
-    corporation_id: number
-    corporation_name: string
-    corporation_ticker: string
-    alliance_id: number | null
-    alliance_name: string
-    alliance_ticker: string
-    damage_done: number
-    final_blow: number
-    security_status: number | null
-    ship_type_id: number | null
-    ship_name: string | null
-    weapon_type_id: number | null
-    weapon_name: string | null
-  }>(`
-    SELECT
-      a.characterId as character_id,
-      coalesce(c.name, nc.name, 'Unknown') as character_name,
-      a.corporationId as corporation_id,
-      coalesce(corp.name, npc_corp.name, 'Unknown') as corporation_name,
-      coalesce(corp.ticker, npc_corp.tickerName, '???') as corporation_ticker,
-      a.allianceId as alliance_id,
-      coalesce(a_alliance.name, 'Unknown') as alliance_name,
-      coalesce(a_alliance.ticker, '???') as alliance_ticker,
-      a.damageDone as damage_done,
-      a.finalBlow as final_blow,
-      a.securityStatus as security_status,
-      a.shipTypeId as ship_type_id,
-      coalesce(t.name, 'Unknown') as ship_name,
-      a.weaponTypeId as weapon_type_id,
-      coalesce(w.name, 'Unknown') as weapon_name
-    FROM edk.attackers a
-    FINAL
-    LEFT JOIN edk.characters c FINAL ON a.characterId = c.character_id
-    LEFT JOIN edk.npcCharacters nc FINAL ON a.characterId = nc.characterId
-    LEFT JOIN edk.corporations corp FINAL ON a.corporationId = corp.corporation_id
-    LEFT JOIN edk.npcCorporations npc_corp FINAL ON a.corporationId = npc_corp.corporationId
-    LEFT JOIN edk.alliances a_alliance FINAL ON a.allianceId = a_alliance.alliance_id
-    LEFT JOIN edk.types t FINAL ON a.shipTypeId = t.typeId
-    LEFT JOIN edk.types w FINAL ON a.weaponTypeId = w.typeId
-    WHERE a.killmailId = {id:UInt32}
-    ORDER BY a.damageDone DESC
-  `, { id })
+  // Fetch all attackers for this killmail using model
+  const attackers = await getKillmailAttackers(id)
 
   // Calculate stats after attackers are fetched
-  const finalBlowAttacker = attackers.find(a => a.final_blow === 1)
+  const finalBlowAttacker = attackers.find(a => a.finalBlow === 1)
   const topDamageAttacker = attackers[0] || null
-  const totalDamage = attackers.reduce((sum, a) => sum + a.damage_done, 0)
+  const totalDamage = attackers.reduce((sum, a) => sum + a.damageDone, 0)
 
   // Fetch sibling killmails (same victim character within 1 hour)
-  const killmailDate = new Date(killmail.killmail_time)
+  const killmailDate = new Date(killmail.killmailTime)
   const startDate = new Date(killmailDate.getTime() - 60 * 60 * 1000)
   const endDate = new Date(killmailDate.getTime() + 60 * 60 * 1000)
 
@@ -300,108 +205,85 @@ export default defineEventHandler(async (event: H3Event) => {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
   }
 
-  const siblings = await database.query<{
-    killmail_id: number
-    killmail_time: string
-    victim_character_name: string
-    victim_character_id: number | null
-    victim_ship_name: string
-    victim_ship_type_id: number
-    total_value: number
-  }>(`
-    SELECT
-      killmail_id,
-      killmail_time,
-      victim_character_name,
-      victim_character_id,
-      victim_ship_name,
-      victim_ship_type_id,
-      total_value
-    FROM entity_killlist
-    WHERE victim_character_id = {victimCharId:UInt32}
-    AND killmail_time >= {startTime:DateTime}
-    AND killmail_time <= {endTime:DateTime}
-    AND killmail_id != {id:UInt32}
-    ORDER BY killmail_time DESC
-    LIMIT 20
-  `, {
-    victimCharId: killmail.victim_character_id,
-    startTime: formatDateTime(startDate),
-    endTime: formatDateTime(endDate),
-    id
-  })
+  const siblings = await getSiblingKillmails(
+    killmail.victimCharacterId || 0,
+    formatDateTime(startDate),
+    formatDateTime(endDate),
+    id,
+    20
+  )
 
   // Format data for template
-  const victimName = killmail.victim_character_name || 'Unknown'
-  const shipName = killmail.victim_ship_name || 'Unknown'
+  const victimName = killmail.victimCharacterName || 'Unknown'
+  const shipName = killmail.victimShipName || 'Unknown'
   const valueBillion = (totalKillValue / 1_000_000_000).toFixed(2)
 
   const templateData = {
     killmail: {
-      id: killmail.killmail_id,
-      killmailId: killmail.killmail_id,
+      id: killmail.killmailId,
+      killmailId: killmail.killmailId,
       hash: killmail.hash,
-      time: killmail.killmail_time,
-      timeAgo: timeAgo(new Date(killmail.killmail_time)),
-      systemName: killmail.solar_system_name,
-      systemId: killmail.solar_system_id,
-      regionName: killmail.region_name,
-      securityStatus: killmail.solar_system_security
+      time: killmail.killmailTime,
+      timeAgo: timeAgo(new Date(killmail.killmailTime)),
+      systemName: killmail.solarSystemName,
+      systemId: killmail.solarSystemId,
+      regionName: killmail.regionName,
+      securityStatus: killmail.solarSystemSecurity
     },
     victim: {
-      character: killmail.victim_character_id ? {
-        id: killmail.victim_character_id,
-        name: killmail.victim_character_name
+      character: killmail.victimCharacterId ? {
+        id: killmail.victimCharacterId,
+        name: killmail.victimCharacterName
       } : null,
-      corporation: killmail.victim_corporation_id ? {
-        id: killmail.victim_corporation_id,
-        name: killmail.victim_corporation_name,
-        ticker: killmail.victim_corporation_ticker
+      corporation: killmail.victimCorporationId ? {
+        id: killmail.victimCorporationId,
+        name: killmail.victimCorporationName,
+        ticker: killmail.victimCorporationTicker
       } : null,
-      alliance: killmail.victim_alliance_id ? {
-        id: killmail.victim_alliance_id,
-        name: killmail.victim_alliance_name,
-        ticker: killmail.victim_alliance_ticker
+      alliance: killmail.victimAllianceId ? {
+        id: killmail.victimAllianceId,
+        name: killmail.victimAllianceName,
+        ticker: killmail.victimAllianceTicker
       } : null,
       ship: {
-        typeId: killmail.victim_ship_type_id,
-        name: killmail.victim_ship_name,
-        groupName: killmail.victim_ship_group
+        typeId: killmail.victimShipTypeId,
+        name: killmail.victimShipName,
+        groupName: killmail.victimShipGroup
       },
-      damageTaken: killmail.victim_damage_taken || 0
+      damageTaken: killmail.victimDamageTaken || 0
     },
     solarSystem: {
-      id: killmail.solar_system_id,
-      name: killmail.solar_system_name,
-      region: killmail.region_name,
-      security: killmail.solar_system_security
+      id: killmail.solarSystemId,
+      name: killmail.solarSystemName,
+      region: killmail.regionName,
+      security: killmail.solarSystemSecurity
     },
     attackers: attackers.map(a => ({
-      character: a.character_id ? {
-        id: a.character_id,
-        name: a.character_name
+      character: a.characterId ? {
+        id: a.characterId,
+        name: a.characterName
       } : null,
-      corporation: a.corporation_id ? {
-        id: a.corporation_id,
-        name: a.corporation_name,
-        ticker: a.corporation_ticker
+      corporation: a.corporationId ? {
+        id: a.corporationId,
+        name: a.corporationName,
+        ticker: a.corporationTicker
       } : null,
-      alliance: a.alliance_id ? {
-        id: a.alliance_id,
-        name: a.alliance_name,
-        ticker: a.alliance_ticker
+      alliance: a.allianceId ? {
+        id: a.allianceId,
+        name: a.allianceName,
+        ticker: a.allianceTicker
       } : null,
-      ship: a.ship_type_id ? {
-        typeId: a.ship_type_id,
-        name: a.ship_name
+      ship: a.shipTypeId ? {
+        typeId: a.shipTypeId,
+        name: a.shipName
       } : null,
-      weapon: a.weapon_type_id ? {
-        typeId: a.weapon_type_id,
-        name: a.weapon_name
+      weapon: a.weaponTypeId ? {
+        typeId: a.weaponTypeId,
+        name: a.weaponName
       } : null,
-      damageDone: a.damage_done,
-      finalBlow: a.final_blow === 1,
-      securityStatus: a.security_status
+      damageDone: a.damageDone,
+      finalBlow: a.finalBlow === 1,
+      securityStatus: a.securityStatus
     })),
     items: itemsBySlot,
     fittingWheel: {
@@ -419,66 +301,66 @@ export default defineEventHandler(async (event: H3Event) => {
       isSolo: attackers.length === 1
     },
     siblings: siblings.map(s => ({
-      killmailId: s.killmail_id,
-      killmailTime: s.killmail_time,
-      victimName: s.victim_character_name,
-      victimCharacterId: s.victim_character_id,
-      shipName: s.victim_ship_name,
-      shipTypeId: s.victim_ship_type_id,
-      totalValue: s.total_value
+      killmailId: s.killmailId,
+      killmailTime: s.killmailTime,
+      victimName: s.victimCharacterName,
+      victimCharacterId: s.victimCharacterId,
+      shipName: s.victimShipName,
+      shipTypeId: s.victimShipTypeId,
+      totalValue: s.totalValue
     })),
     finalBlow: finalBlowAttacker ? {
-      character: finalBlowAttacker.character_id ? {
-        id: finalBlowAttacker.character_id,
-        name: finalBlowAttacker.character_name
+      character: finalBlowAttacker.characterId ? {
+        id: finalBlowAttacker.characterId,
+        name: finalBlowAttacker.characterName
       } : null,
-      corporation: finalBlowAttacker.corporation_id ? {
-        id: finalBlowAttacker.corporation_id,
-        name: finalBlowAttacker.corporation_name,
-        ticker: finalBlowAttacker.corporation_ticker
+      corporation: finalBlowAttacker.corporationId ? {
+        id: finalBlowAttacker.corporationId,
+        name: finalBlowAttacker.corporationName,
+        ticker: finalBlowAttacker.corporationTicker
       } : null,
-      alliance: finalBlowAttacker.alliance_id ? {
-        id: finalBlowAttacker.alliance_id,
-        name: finalBlowAttacker.alliance_name,
-        ticker: finalBlowAttacker.alliance_ticker
+      alliance: finalBlowAttacker.allianceId ? {
+        id: finalBlowAttacker.allianceId,
+        name: finalBlowAttacker.allianceName,
+        ticker: finalBlowAttacker.allianceTicker
       } : null,
-      ship: finalBlowAttacker.ship_type_id ? {
-        typeId: finalBlowAttacker.ship_type_id,
-        name: finalBlowAttacker.ship_name
+      ship: finalBlowAttacker.shipTypeId ? {
+        typeId: finalBlowAttacker.shipTypeId,
+        name: finalBlowAttacker.shipName
       } : null,
-      weapon: finalBlowAttacker.weapon_type_id ? {
-        typeId: finalBlowAttacker.weapon_type_id,
-        name: finalBlowAttacker.weapon_name
+      weapon: finalBlowAttacker.weaponTypeId ? {
+        typeId: finalBlowAttacker.weaponTypeId,
+        name: finalBlowAttacker.weaponName
       } : null,
-      damageDone: finalBlowAttacker.damage_done,
-      damagePercent: totalDamage > 0 ? (finalBlowAttacker.damage_done / totalDamage * 100) : 0,
+      damageDone: finalBlowAttacker.damageDone,
+      damagePercent: totalDamage > 0 ? (finalBlowAttacker.damageDone / totalDamage * 100) : 0,
       isFinalBlow: true
     } : null,
     topDamage: topDamageAttacker ? {
-      character: topDamageAttacker.character_id ? {
-        id: topDamageAttacker.character_id,
-        name: topDamageAttacker.character_name
+      character: topDamageAttacker.characterId ? {
+        id: topDamageAttacker.characterId,
+        name: topDamageAttacker.characterName
       } : null,
-      corporation: topDamageAttacker.corporation_id ? {
-        id: topDamageAttacker.corporation_id,
-        name: topDamageAttacker.corporation_name,
-        ticker: topDamageAttacker.corporation_ticker
+      corporation: topDamageAttacker.corporationId ? {
+        id: topDamageAttacker.corporationId,
+        name: topDamageAttacker.corporationName,
+        ticker: topDamageAttacker.corporationTicker
       } : null,
-      alliance: topDamageAttacker.alliance_id ? {
-        id: topDamageAttacker.alliance_id,
-        name: topDamageAttacker.alliance_name,
-        ticker: topDamageAttacker.alliance_ticker
+      alliance: topDamageAttacker.allianceId ? {
+        id: topDamageAttacker.allianceId,
+        name: topDamageAttacker.allianceName,
+        ticker: topDamageAttacker.allianceTicker
       } : null,
-      ship: topDamageAttacker.ship_type_id ? {
-        typeId: topDamageAttacker.ship_type_id,
-        name: topDamageAttacker.ship_name
+      ship: topDamageAttacker.shipTypeId ? {
+        typeId: topDamageAttacker.shipTypeId,
+        name: topDamageAttacker.shipName
       } : null,
-      weapon: topDamageAttacker.weapon_type_id ? {
-        typeId: topDamageAttacker.weapon_type_id,
-        name: topDamageAttacker.weapon_name
+      weapon: topDamageAttacker.weaponTypeId ? {
+        typeId: topDamageAttacker.weaponTypeId,
+        name: topDamageAttacker.weaponName
       } : null,
-      damageDone: topDamageAttacker.damage_done,
-      damagePercent: totalDamage > 0 ? (topDamageAttacker.damage_done / totalDamage * 100) : 0
+      damageDone: topDamageAttacker.damageDone,
+      damagePercent: totalDamage > 0 ? (topDamageAttacker.damageDone / totalDamage * 100) : 0
     } : null,
     totalDamage
   }

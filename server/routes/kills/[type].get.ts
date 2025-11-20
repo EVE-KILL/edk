@@ -3,7 +3,15 @@
  */
 import type { H3Event } from 'h3'
 import { timeAgo } from '../../helpers/time'
-import { render } from '../../helpers/templates'
+import { render, normalizeKillRow } from '../../helpers/templates'
+import { getFilteredKillsWithNames, countFilteredKills, buildKilllistWhereClause, type KilllistFilters } from '../../models/killlist'
+import {
+  getTopSystemsFiltered,
+  getTopRegionsFiltered,
+  getTopCharactersFiltered,
+  getTopCorporationsFiltered,
+  getTopAlliancesFiltered
+} from '../../models/topBoxes'
 
 // Ship group IDs for filtering
 const SHIP_GROUPS = {
@@ -69,23 +77,9 @@ const VALID_KILL_TYPES = [
 
 type KillType = typeof VALID_KILL_TYPES[number]
 
-interface KilllistFilters {
-  spaceType?: string
-  isSolo?: boolean
-  isBig?: boolean
-  isNpc?: boolean
-  minValue?: number
-  shipGroupIds?: number[]
-  minSecurityStatus?: number
-  maxSecurityStatus?: number
-  regionId?: number
-  regionIdMin?: number
-  regionIdMax?: number
-}
-
 /**
  * Build filters based on the kill type
- * Uses pre-computed columns in entity_killlist for maximum performance
+ * Uses pre-computed columns in killlist for maximum performance
  */
 function buildFiltersForType(type: KillType): KilllistFilters {
   const filters: KilllistFilters = {}
@@ -238,78 +232,6 @@ function getTitleForType(type: KillType): string {
   return titles[type] || 'Kills'
 }
 
-/**
- * Build WHERE clause based on filters
- * Constructs conditions using actual database fields
- */
-function buildWhereClause(filters: KilllistFilters): { clause: string; params: Record<string, any> } {
-  const conditions: string[] = []
-  const params: Record<string, any> = {}
-
-  if (filters.isSolo) {
-    conditions.push('is_solo = 1')
-  }
-
-  if (filters.isBig) {
-    // Big kills - victim in specific ship groups
-    params.bigShipGroupIds = [547, 485, 513, 902, 941, 30, 659]
-    conditions.push(`victim_ship_group_id IN {bigShipGroupIds:Array(UInt32)}`)
-  }
-
-  if (filters.minSecurityStatus !== undefined) {
-    params.minSecurityStatus = filters.minSecurityStatus
-    conditions.push(`solar_system_security >= {minSecurityStatus:Float32}`)
-  }
-
-  if (filters.maxSecurityStatus !== undefined) {
-    params.maxSecurityStatus = filters.maxSecurityStatus
-    // For nullsec, also exclude w-space region IDs (11000001-11000033)
-    if (filters.maxSecurityStatus === 0.0) {
-      conditions.push(`(solar_system_security < {maxSecurityStatus:Float32} AND (region_id < 11000001 OR region_id > 11000033))`)
-    } else {
-      conditions.push(`solar_system_security < {maxSecurityStatus:Float32}`)
-    }
-  }
-
-  if (filters.regionId !== undefined) {
-    params.regionId = filters.regionId
-    conditions.push(`region_id = {regionId:UInt32}`)
-  }
-
-  if (filters.regionIdMin !== undefined && filters.regionIdMax !== undefined) {
-    params.regionIdMin = filters.regionIdMin
-    params.regionIdMax = filters.regionIdMax
-    conditions.push(`(region_id >= {regionIdMin:UInt32} AND region_id <= {regionIdMax:UInt32})`)
-  }
-
-  if (filters.isNpc) {
-    conditions.push('is_npc_kill = 1')
-  }
-
-  if (filters.shipGroupIds && filters.shipGroupIds.length > 0) {
-    params.shipGroupIds = filters.shipGroupIds
-    conditions.push(`victim_ship_group_id IN {shipGroupIds:Array(UInt32)}`)
-  }
-
-  // Value filter - goes in WHERE clause
-  if (filters.minValue !== undefined) {
-    params.minValue = filters.minValue
-    conditions.push(`total_value >= {minValue:UInt64}`)
-  }
-
-  const clause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : ''
-
-  return { clause, params }
-}
-
-/**
- * Convert WHERE clause to AND conditions for use in nested queries
- */
-function whereClauseToAndConditions(whereClause: string): string {
-  if (!whereClause) return ''
-  return whereClause.replace(/^WHERE /, '')
-}
-
 export default defineEventHandler(async (event: H3Event) => {
   const type = getRouterParam(event, 'type') as string | undefined
 
@@ -327,318 +249,95 @@ export default defineEventHandler(async (event: H3Event) => {
   const query = getQuery(event)
   const page = Math.max(1, Number.parseInt(query.page as string) || 1)
   const perPage = 30
-  const offset = (page - 1) * perPage
 
   // Build filters based on the type
   const filters = buildFiltersForType(killType)
-  const whereClause = buildWhereClause(filters)
+  const whereClause = buildKilllistWhereClause(filters, 'kl')
 
-  // Build query params - merge whereClause params with pagination params
-  const queryParams: any = { perPage, offset, ...whereClause.params }
+  // Fetch killmails and count in parallel using model functions
+  const [killmailsData, totalKillmails] = await Promise.all([
+    getFilteredKillsWithNames(filters, page, perPage),
+    countFilteredKills(filters)
+  ])
 
-  // Fetch paginated killmails
-  const killmails = await database.query<{
-    killmail_id: number
-    killmail_time: string
-    victim_character_id: number | null
-    victim_character_name: string
-    victim_corporation_id: number
-    victim_corporation_name: string
-    victim_corporation_ticker: string
-    victim_alliance_id: number | null
-    victim_alliance_name: string
-    victim_alliance_ticker: string
-    victim_ship_name: string
-    victim_ship_type_id: number
-    attacker_character_id: number | null
-    attacker_character_name: string
-    attacker_corporation_id: number | null
-    attacker_corporation_name: string
-    attacker_corporation_ticker: string
-    attacker_alliance_id: number | null
-    attacker_alliance_name: string
-    attacker_alliance_ticker: string
-    solar_system_name: string
-    region_name: string
-    total_value: number
-    attacker_count: number
-    is_solo: number
-  }>(`
-    SELECT
-      killmail_id,
-      killmail_time,
-      victim_character_id,
-      victim_character_name,
-      victim_corporation_id,
-      victim_corporation_name,
-      victim_corporation_ticker,
-      victim_alliance_id,
-      victim_alliance_name,
-      victim_alliance_ticker,
-      victim_ship_name,
-      victim_ship_type_id,
-      attacker_character_id,
-      attacker_character_name,
-      attacker_corporation_id,
-      attacker_corporation_name,
-      attacker_corporation_ticker,
-      attacker_alliance_id,
-      attacker_alliance_name,
-      attacker_alliance_ticker,
-      solar_system_name,
-      region_name,
-      total_value,
-      attacker_count,
-      is_solo
-    FROM entity_killlist
-    ${whereClause.clause}
-    ORDER BY killmail_time DESC
-    LIMIT {perPage:UInt32}
-    OFFSET {offset:UInt32}
-  `, queryParams)
-
-  // Get total count for pagination
-  const countResult = await database.queryOne<{ total: number }>(`
-    SELECT count() as total
-    FROM entity_killlist
-    ${whereClause.clause}
-  `, queryParams)
-
-  const totalKillmails = countResult?.total || 0
   const totalPages = Math.ceil(totalKillmails / perPage)
 
   // Format killmail data for template
-  const recentKillmails = killmails.map(km => ({
-    killmail_id: km.killmail_id,
-    killmail_time: timeAgo(new Date(km.killmail_time)),
-    isLoss: false, // Filtered kills page shows all kills, not from any particular perspective
-    victim: {
-      character: {
-        id: km.victim_character_id,
-        name: km.victim_character_name
-      },
-      corporation: {
-        id: km.victim_corporation_id,
-        name: km.victim_corporation_name,
-        ticker: km.victim_corporation_ticker
-      },
-      alliance: km.victim_alliance_id ? {
-        id: km.victim_alliance_id,
-        name: km.victim_alliance_name,
-        ticker: km.victim_alliance_ticker
-      } : null,
-      ship: {
-        type_id: km.victim_ship_type_id,
-        name: km.victim_ship_name
-      }
-    },
-    solar_system: {
-      name: km.solar_system_name,
-      region: km.region_name
-    },
-    attackers: [
-      {
-        character: {
-          id: km.attacker_character_id,
-          name: km.attacker_character_name
-        },
-        corporation: {
-          id: km.attacker_corporation_id,
-          name: km.attacker_corporation_name,
-          ticker: km.attacker_corporation_ticker
-        },
-        alliance: km.attacker_alliance_id ? {
-          id: km.attacker_alliance_id,
-          name: km.attacker_alliance_name,
-          ticker: km.attacker_alliance_ticker
-        } : null
-      }
-    ],
-    total_value: km.total_value,
-    attacker_count: km.attacker_count,
-    is_solo: km.is_solo
-  }))
-
-  // Get Top Systems
-  const topSystems = await database.query<{
-    solar_system_id: number
-    solar_system_name: string
-    kills: number
-  }>(`
-    SELECT
-      solar_system_id,
-      solar_system_name,
-      count() as kills
-    FROM entity_killlist
-    WHERE killmail_time >= now() - INTERVAL 30 DAY
-      ${whereClauseToAndConditions(whereClause.clause) ? `AND ${whereClauseToAndConditions(whereClause.clause)}` : ''}
-    GROUP BY solar_system_id, solar_system_name
-    ORDER BY kills DESC
-    LIMIT 10
-  `, queryParams)
-
-  // Get Top Regions
-  const topRegions = await database.query<{
-    region_id: number
-    region_name: string
-    kills: number
-  }>(`
-    SELECT
-      region_id,
-      region_name,
-      count() as kills
-    FROM entity_killlist
-    WHERE killmail_time >= now() - INTERVAL 30 DAY
-      ${whereClauseToAndConditions(whereClause.clause) ? `AND ${whereClauseToAndConditions(whereClause.clause)}` : ''}
-    GROUP BY region_id, region_name
-    ORDER BY kills DESC
-    LIMIT 10
-  `, queryParams)
-
-  // Get Top Characters (by final blow)
-  // For top boxes, we want to show stats from ALL kills in this category
-  // Build the same WHERE conditions but explicitly
-  const topCharacters = await database.query<{
-    attacker_character_id: number
-    attacker_character_name: string
-    kills: number
-  }>(`
-    SELECT
-      attacker_character_id,
-      attacker_character_name,
-      count() as kills
-    FROM entity_killlist
-    WHERE killmail_time >= now() - INTERVAL 30 DAY
-      AND attacker_character_name != ''
-      ${whereClauseToAndConditions(whereClause.clause) ? `AND ${whereClauseToAndConditions(whereClause.clause)}` : ''}
-    GROUP BY attacker_character_id, attacker_character_name
-    ORDER BY kills DESC
-    LIMIT 10
-  `, queryParams)
-
-  // Get Top Corporations (by final blow)
-  const topCorporations = await database.query<{
-    attacker_corporation_id: number
-    attacker_corporation_name: string
-    kills: number
-  }>(`
-    SELECT
-      attacker_corporation_id,
-      attacker_corporation_name,
-      count() as kills
-    FROM entity_killlist
-    WHERE killmail_time >= now() - INTERVAL 30 DAY
-      AND attacker_corporation_name != ''
-      ${whereClauseToAndConditions(whereClause.clause) ? `AND ${whereClauseToAndConditions(whereClause.clause)}` : ''}
-    GROUP BY attacker_corporation_id, attacker_corporation_name
-    ORDER BY kills DESC
-    LIMIT 10
-  `, queryParams)
-
-  // Get Top Alliances (by final blow)
-  const topAlliances = await database.query<{
-    attacker_alliance_id: number
-    attacker_alliance_name: string
-    kills: number
-  }>(`
-    SELECT
-      attacker_alliance_id,
-      attacker_alliance_name,
-      count() as kills
-    FROM entity_killlist
-    WHERE killmail_time >= now() - INTERVAL 30 DAY
-      AND attacker_alliance_name != ''
-      ${whereClauseToAndConditions(whereClause.clause) ? `AND ${whereClauseToAndConditions(whereClause.clause)}` : ''}
-    GROUP BY attacker_alliance_id, attacker_alliance_name
-    ORDER BY kills DESC
-    LIMIT 10
-  `, queryParams)
-
-  // Get Most Valuable Kills
-  const mostValuableKillsRaw = await database.query<{
-    killmail_id: number
-    killmail_time: string
-    total_value: number
-    victim_character_name: string
-    victim_corporation_name: string
-    victim_ship_type_id: number
-    victim_ship_name: string
-    solar_system_name: string
-    region_name: string
-  }>(`
-    SELECT
-      killmail_id,
-      killmail_time,
-      total_value,
-      victim_character_name,
-      victim_corporation_name,
-      victim_ship_type_id,
-      victim_ship_name,
-      solar_system_name,
-      region_name
-    FROM entity_killlist
-    ${whereClause.clause}
-    ORDER BY total_value DESC
-    LIMIT 6
-  `, queryParams)
-
-  const mostValuableKills = mostValuableKillsRaw.map(k => ({
-    killmail_id: k.killmail_id,
-    killmail_time: new Date(k.killmail_time),
-    total_value: k.total_value,
-    victim: {
-      character_name: k.victim_character_name,
-      corporation_name: k.victim_corporation_name,
-      ship: {
-        type_id: k.victim_ship_type_id,
-        name: k.victim_ship_name
-      }
-    },
-    solar_system: {
-      name: k.solar_system_name,
-      region: k.region_name
+  const recentKillmails = killmailsData.map(km => {
+    const normalized = normalizeKillRow(km)
+    return {
+      ...normalized,
+      killmailTimeRelative: timeAgo(new Date(km.killmailTime ?? normalized.killmailTime))
     }
-  }))
+  })
+
+  // Get Top Boxes data using model functions with whereClause
+  const [topSystems, topRegions, topCharacters, topCorporations, topAlliances] = await Promise.all([
+    getTopSystemsFiltered(whereClause.clause, whereClause.params, 10, whereClause.prewhereClause, whereClause.basePrewhereClause),
+    getTopRegionsFiltered(whereClause.clause, whereClause.params, 10, whereClause.prewhereClause, whereClause.basePrewhereClause),
+    getTopCharactersFiltered(whereClause.clause, whereClause.params, 10, whereClause.prewhereClause, whereClause.basePrewhereClause),
+    getTopCorporationsFiltered(whereClause.clause, whereClause.params, 10, whereClause.prewhereClause, whereClause.basePrewhereClause),
+    getTopAlliancesFiltered(whereClause.clause, whereClause.params, 10, whereClause.prewhereClause, whereClause.basePrewhereClause)
+  ])
+
+  // Get Most Valuable Kills for this filter
+  // Note: Using the filtered killmails function with ordering by value
+  const mostValuableKillsData = await getFilteredKillsWithNames({...filters, minValue: undefined}, 1, 6)
+  // Sort by value descending (in case the query doesn't)
+  mostValuableKillsData.sort((a, b) => b.totalValue - a.totalValue)
+
+  const mostValuableKills = mostValuableKillsData.map(k => {
+    const normalized = normalizeKillRow(k)
+    const killmailTimeRaw: unknown = k.killmailTime ?? normalized.killmailTime
+    const killmailTimeValue = killmailTimeRaw instanceof Date
+      ? killmailTimeRaw.toISOString()
+      : String(killmailTimeRaw)
+    return {
+      ...normalized,
+      totalValue: k.totalValue ?? normalized.totalValue,
+      killmailTime: killmailTimeValue
+    }
+  })
 
   // Format top boxes data for partial
   const topCharactersFormatted = topCharacters.map(c => ({
-    name: c.attacker_character_name,
+    name: c.name,
     kills: c.kills,
     imageType: 'character',
-    imageId: c.attacker_character_id,
-    link: `/character/${c.attacker_character_id}`
+    imageId: c.id,
+    link: `/character/${c.id}`
   }))
 
   const topCorporationsFormatted = topCorporations.map(c => ({
-    name: c.attacker_corporation_name,
+    name: c.name,
     kills: c.kills,
     imageType: 'corporation',
-    imageId: c.attacker_corporation_id,
-    link: `/corporation/${c.attacker_corporation_id}`
+    imageId: c.id,
+    link: `/corporation/${c.id}`
   }))
 
   const topAlliancesFormatted = topAlliances.map(a => ({
-    name: a.attacker_alliance_name,
+    name: a.name,
     kills: a.kills,
     imageType: 'alliance',
-    imageId: a.attacker_alliance_id,
-    link: `/alliance/${a.attacker_alliance_id}`
+    imageId: a.id,
+    link: `/alliance/${a.id}`
   }))
 
   const topSystemsFormatted = topSystems.map(s => ({
-    name: s.solar_system_name,
+    name: s.name,
     kills: s.kills,
     imageType: 'system',
-    imageId: s.solar_system_id,
-    link: `/system/${s.solar_system_id}`
+    imageId: s.id,
+    link: `/system/${s.id}`
   }))
 
   const topRegionsFormatted = topRegions.map(r => ({
-    name: r.region_name,
+    name: r.name,
     kills: r.kills,
     imageType: 'region',
-    imageId: r.region_id,
-    link: `/region/${r.region_id}`
+    imageId: r.id,
+    link: `/region/${r.id}`
   }))
 
   // Pagination

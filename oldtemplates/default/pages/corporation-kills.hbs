@@ -1,0 +1,30 @@
+<!-- Corporation Kills Page -->
+
+<!-- Entity Stats Header -->
+{{> partials/entity-stats}}
+
+<!-- Entity Navigation -->
+{{> partials/entity-navbar}}
+
+<!-- Ship Group Statistics (Kills) -->
+{{#if shipGroupStats}}
+<div style="margin-bottom: 20px;">
+    <div class="block-header2">Ship Groups (Last 30 Days - Kills)</div>
+    {{> components/ship-group-stats columns=shipGroupColumns}}
+</div>
+{{/if}}
+
+<!-- Pagination (Top) -->
+{{#if pagination}}
+    {{> partials/pagination}}
+{{/if}}
+
+<!-- Kills List -->
+<div style="margin-bottom: 20px;">
+    {{> partials/killmail-list}}
+</div>
+
+<!-- Pagination (Bottom) -->
+{{#if pagination}}
+    {{> partials/pagination}}
+{{/if}}

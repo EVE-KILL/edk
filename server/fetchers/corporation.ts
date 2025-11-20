@@ -1,5 +1,5 @@
-import { database } from '../helpers/database'
 import { fetchEveKill, fetchESI } from '../helpers/fetcher'
+import { storeCorporation as storeCorporationInDB, getCorporation } from '../models/corporations'
 
 /**
  * ESI Corporation Data - Fields we store
@@ -119,27 +119,20 @@ function extractESIFields(data: any): ESICorporation {
  * Store corporation in database
  */
 async function storeCorporation(corporationId: number, corporation: ESICorporation): Promise<void> {
-  const now = Math.floor(Date.now() / 1000)
-
-  await database.bulkInsert('edk.corporations', [
-    {
-      corporation_id: corporationId,
-      alliance_id: corporation.alliance_id,
-      ceo_id: corporation.ceo_id,
-      creator_id: corporation.creator_id,
-      date_founded: corporation.date_founded,
-      description: corporation.description,
-      home_station_id: corporation.home_station_id,
-      member_count: corporation.member_count,
-      name: corporation.name,
-      shares: corporation.shares,
-      tax_rate: corporation.tax_rate,
-      ticker: corporation.ticker,
-      url: corporation.url,
-      updated_at: now,
-      version: now
-    }
-  ])
+  await storeCorporationInDB(corporationId, {
+    allianceId: corporation.alliance_id,
+    ceoId: corporation.ceo_id,
+    creatorId: corporation.creator_id,
+    dateFounded: corporation.date_founded,
+    description: corporation.description,
+    homeStationId: corporation.home_station_id,
+    memberCount: corporation.member_count,
+    name: corporation.name,
+    shares: corporation.shares,
+    taxRate: corporation.tax_rate,
+    ticker: corporation.ticker,
+    url: corporation.url
+  })
 }
 
 /**
@@ -147,26 +140,23 @@ async function storeCorporation(corporationId: number, corporation: ESICorporati
  */
 export async function getCachedCorporation(corporationId: number): Promise<ESICorporation | null> {
   try {
-    const result = await database.queryOne<any>(
-      'SELECT * FROM edk.corporations WHERE corporation_id = {id:UInt32}',
-      { id: corporationId }
-    )
+    const result = await getCorporation(corporationId)
 
     if (!result) {
       return null
     }
 
     return {
-      alliance_id: result.alliance_id,
-      ceo_id: result.ceo_id,
-      creator_id: result.creator_id,
-      date_founded: result.date_founded,
+      alliance_id: result.allianceId,
+      ceo_id: result.ceoId,
+      creator_id: result.creatorId,
+      date_founded: result.dateFounded,
       description: result.description,
-      home_station_id: result.home_station_id,
-      member_count: result.member_count,
+      home_station_id: result.homeStationId,
+      member_count: result.memberCount,
       name: result.name,
       shares: result.shares,
-      tax_rate: result.tax_rate,
+      tax_rate: result.taxRate,
       ticker: result.ticker,
       url: result.url
     }

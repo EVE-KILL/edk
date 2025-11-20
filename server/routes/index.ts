@@ -1,4 +1,8 @@
 import type { H3Event } from 'h3'
+import { getFilteredKillsWithNames, countFilteredKills } from '../models/killlist'
+import { getTopByKills } from '../models/topBoxes'
+import { getMostValuableKillsByPeriod } from '../models/mostValuableKills'
+import { normalizeKillRow } from '../helpers/templates'
 
 export default defineEventHandler(async (event: H3Event) => {
   // Page context
@@ -12,45 +16,47 @@ export default defineEventHandler(async (event: H3Event) => {
   const query = getQuery(event)
   const page = Math.max(1, Number.parseInt(query.page as string) || 1)
   const perPage = 30
-  const offset = (page - 1) * perPage
 
-  // Fetch total count for pagination
-  const totalKillmails = await getTotalKillmailCount()
+  // Fetch recent killmails with names, count, and top 10 stats in parallel
+  const [killmailsData, totalKillmails, topCharacters, topCorporations, topAlliances, topSystems, topRegions] = await Promise.all([
+    getFilteredKillsWithNames({}, page, perPage),
+    countFilteredKills({}),
+    getTopByKills('week', 'character', 10),
+    getTopByKills('week', 'corporation', 10),
+    getTopByKills('week', 'alliance', 10),
+    getTopByKills('week', 'system', 10),
+    getTopByKills('week', 'region', 10)
+  ])
+
   const totalPages = Math.ceil(totalKillmails / perPage)
 
-  // Fetch recent killmails from materialized view
-  const killmailsData = await getRecentKillmails(perPage, offset)
-
-  // Fetch top 10 stats
-  const top10Stats = await getTopBoxStats()
-
-  // Transform top10Stats to add imageType and link properties
+  // Transform top10 stats to add imageType and link properties
   const top10 = {
-    characters: top10Stats.characters.map(c => ({
+    characters: topCharacters.map(c => ({
       ...c,
       imageType: 'character',
       imageId: c.id,
       link: `/character/${c.id}`
     })),
-    corporations: top10Stats.corporations.map(c => ({
+    corporations: topCorporations.map(c => ({
       ...c,
       imageType: 'corporation',
       imageId: c.id,
       link: `/corporation/${c.id}`
     })),
-    alliances: top10Stats.alliances.map(a => ({
+    alliances: topAlliances.map(a => ({
       ...a,
       imageType: 'alliance',
       imageId: a.id,
       link: `/alliance/${a.id}`
     })),
-    systems: top10Stats.systems.map(s => ({
+    systems: topSystems.map(s => ({
       ...s,
       imageType: 'system',
       imageId: s.id,
       link: `/system/${s.id}`
     })),
-    regions: top10Stats.regions.map(r => ({
+    regions: topRegions.map(r => ({
       ...r,
       imageType: 'region',
       imageId: r.id,
@@ -58,69 +64,30 @@ export default defineEventHandler(async (event: H3Event) => {
     }))
   }
 
-  // Fetch most valuable kills (last 7 days)
-  const mostValuableKills = await getMostValuableKills(6)
+  // Fetch most valuable kills (weekly, top 6)
+  const mostValuableKillsData = await getMostValuableKillsByPeriod('week', 6)
 
-  // Transform killmail data to match component expectations
-  const killmails = killmailsData.map(km => ({
-    killmail_id: km.killmail_id,
-    victim: {
-      ship: {
-        type_id: km.victim_ship_type_id,
-        name: km.victim_ship_name || 'Unknown Ship',
-        group: km.victim_ship_group || 'Unknown'
-      },
-      character: {
-        id: km.victim_character_id,
-        name: km.victim_character_name || 'Unknown'
-      },
-      corporation: {
-        id: km.victim_corporation_id,
-        name: km.victim_corporation_name || 'Unknown Corp',
-        ticker: km.victim_corporation_ticker || '???'
-      },
-      alliance: km.victim_alliance_id ? {
-        id: km.victim_alliance_id,
-        name: km.victim_alliance_name || 'Unknown Alliance',
-        ticker: km.victim_alliance_ticker || '???'
-      } : undefined
-    },
-    attackers: [{
-      character: {
-        id: km.attacker_character_id || 0,
-        name: km.attacker_character_name || 'Unknown'
-      },
-      corporation: {
-        id: km.attacker_corporation_id || 0,
-        name: km.attacker_corporation_name || 'Unknown Corp',
-        ticker: km.attacker_corporation_ticker || '???'
-      },
-      alliance: km.attacker_alliance_id ? {
-        id: km.attacker_alliance_id,
-        name: km.attacker_alliance_name || 'Unknown Alliance',
-        ticker: km.attacker_alliance_ticker || '???'
-      } : undefined
-    }],
-    solar_system: {
-      id: km.solar_system_id,
-      name: km.solar_system_name || 'Unknown System',
-      region: km.region_name || 'Unknown Region'
-    },
-    ship_value: km.ship_value || 0,
-    total_value: km.total_value || 0,
-    attacker_count: km.attacker_count || 0,
-    killmail_time: timeAgo(new Date(km.killmail_time))
-  }))
+  // Normalize killmail data to a consistent template-friendly shape
+  const killmails = killmailsData.map((km: any) => {
+    const normalized = normalizeKillRow(km)
+    const killmailDate = km.killmailTime ?? km.killmail_time ?? normalized.killmailTime
+    return {
+      ...normalized,
+      killmailTimeRelative: timeAgo(new Date(killmailDate))
+    }
+  })
 
   // Data for the home page
   const data = {
     // Real Most Valuable Kills from database (last 7 days)
-    mostValuableKills: mostValuableKills.map(mvk => ({
-      killmail_id: mvk.killmail_id,
-      victim: mvk.victim,
-      total_value: mvk.total_value, // Pass raw number for abbreviateISK helper
-      killmail_time: mvk.killmail_time // Pass raw date/string for formatDate helper
-    })),
+    mostValuableKills: mostValuableKillsData.map(mvk => {
+      const normalized = normalizeKillRow(mvk)
+      return {
+        ...normalized,
+        totalValue: mvk.totalValue ?? normalized.totalValue,
+        killmailTime: mvk.killmailTime ?? normalized.killmailTime
+      }
+    }),
 
     // Real top 10 stats from database (last 7 days)
     top10Stats: top10,

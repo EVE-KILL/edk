@@ -7,36 +7,39 @@ import { database } from '../helpers/database'
 
 export class FactionQueries {
   static async getFaction(factionId: number) {
-    const result = await database.query(`
-      SELECT * FROM edk.factions WHERE factionId = ${factionId} LIMIT 1
-    `)
+    const result = await database.query(
+      `SELECT * FROM factions FINAL WHERE factionId = {factionId:UInt32} LIMIT 1`,
+      { factionId }
+    )
     return result[0] || null
   }
 
   static async getFactionName(factionId: number): Promise<string | null> {
-    const result = await database.query(`
-      SELECT name FROM edk.factions WHERE factionId = ${factionId} LIMIT 1
-    `)
+    const result = await database.query(
+      `SELECT name FROM factions FINAL WHERE factionId = {factionId:UInt32} LIMIT 1`,
+      { factionId }
+    )
     return result[0]?.name || null
   }
 
   static async getAllFactions() {
     return await database.query(`
-      SELECT * FROM edk.factions ORDER BY factionId
+      SELECT * FROM factions FINAL ORDER BY factionId
     `)
   }
 
   static async searchFactions(query: string, limit: number = 10) {
-    return await database.query(`
-      SELECT * FROM edk.factions
-      WHERE name ILIKE '%${query}%'
-      ORDER BY factionId
-      LIMIT ${limit}
-    `)
+    return await database.query(
+      `SELECT * FROM factions FINAL
+       WHERE name ILIKE {query:String}
+       ORDER BY factionId
+       LIMIT {limit:UInt32}`,
+      { query: `%${query}%`, limit }
+    )
   }
 
   static async countFactions(): Promise<number> {
-    const result = await database.query(`SELECT count() FROM edk.factions`)
+    const result = await database.query(`SELECT count() FROM factions`)
     return result[0]['count()'] || 0
   }
 }

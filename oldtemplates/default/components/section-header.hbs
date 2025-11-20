@@ -1,0 +1,25 @@
+{{!--
+  Section Header Component
+  Consistent section headers throughout the site
+
+  Usage:
+  {{> components/section-header title="Statistics" icon="kills"}}
+
+  Props:
+  - title: string (section title)
+  - icon: string (optional: "kills", "losses", "campaign")
+  - bordered: boolean (optional, adds bottom border)
+--}}
+{{#if icon}}
+<div class="kb-{{icon}}-header">
+  {{title}}
+</div>
+{{else if bordered}}
+<div class="section__title">
+  {{title}}
+</div>
+{{else}}
+<div class="section__header">
+  {{title}}
+</div>
+{{/if}}

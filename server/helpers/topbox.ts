@@ -3,34 +3,34 @@
  * Used across all pages and entities
  */
 
-export interface TopBoxItem {
+export interface TopBoxItemHelper {
   id: number
   name: string
   kills: number
   imageType: 'ship' | 'character' | 'corporation' | 'alliance' | 'system' | 'region' | 'type'
 }
 
-export interface TopBoxStats {
-  ships?: TopBoxItem[]
-  characters?: TopBoxItem[]
-  corporations?: TopBoxItem[]
-  alliances?: TopBoxItem[]
-  systems?: TopBoxItem[]
-  regions?: TopBoxItem[]
+export interface TopBoxStatsHelper {
+  ships?: TopBoxItemHelper[]
+  characters?: TopBoxItemHelper[]
+  corporations?: TopBoxItemHelper[]
+  alliances?: TopBoxItemHelper[]
+  systems?: TopBoxItemHelper[]
+  regions?: TopBoxItemHelper[]
 }
 
 /**
  * Transform TopBoxStats into format expected by partials
  */
-export function formatTopBoxes(stats: TopBoxStats): {
-  ships?: Array<TopBoxItem & { link: string }>
-  characters?: Array<TopBoxItem & { link: string }>
-  corporations?: Array<TopBoxItem & { link: string }>
-  alliances?: Array<TopBoxItem & { link: string }>
-  systems?: Array<TopBoxItem & { link: string }>
-  regions?: Array<TopBoxItem & { link: string }>
+export function formatTopBoxesHelper(stats: TopBoxStatsHelper): {
+  ships?: Array<TopBoxItemHelper & { link: string }>
+  characters?: Array<TopBoxItemHelper & { link: string }>
+  corporations?: Array<TopBoxItemHelper & { link: string }>
+  alliances?: Array<TopBoxItemHelper & { link: string }>
+  systems?: Array<TopBoxItemHelper & { link: string }>
+  regions?: Array<TopBoxItemHelper & { link: string }>
 } {
-  const typeToUrlMap: Record<TopBoxItem['imageType'], string> = {
+  const typeToUrlMap: Record<TopBoxItemHelper['imageType'], string> = {
     ship: '/type',
     type: '/type',
     character: '/character',
@@ -42,10 +42,10 @@ export function formatTopBoxes(stats: TopBoxStats): {
 
   const formatted: any = {}
 
-  for (const [key, items] of Object.entries(stats)) {
+  for (const [key, items] of Object.entries(stats) as Array<[string, TopBoxItemHelper[]]>) {
     if (Array.isArray(items) && items.length > 0) {
       const baseUrl = typeToUrlMap[items[0].imageType]
-      formatted[key] = items.map((item: TopBoxItem) => ({
+      formatted[key] = items.map((item: TopBoxItemHelper) => ({
         ...item,
         link: `${baseUrl}/${item.id}`
       }))

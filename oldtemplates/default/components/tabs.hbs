@@ -1,0 +1,63 @@
+{{!--
+  Reusable Tabs Component with Soft Aesthetic
+
+  Usage:
+  {{> components/tabs tabs=tabList active="kills"}}
+
+  Where tabList is an array of objects with:
+  - id: string (unique identifier)
+  - label: string (display text)
+  - url: string (link href)
+--}}
+<nav class="tabs">
+  {{#each tabs}}
+    <a href="{{this.url}}" class="tabs__link {{#ifEquals this.id ../active}}tabs__link--active{{/ifEquals}}">
+      {{this.label}}
+    </a>
+  {{/each}}
+</nav>
+
+<style>
+.tabs {
+  display: flex;
+  gap: 0;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: 4px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.tabs__link {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-right: 1px solid var(--color-border-dark);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.tabs__link:last-child {
+  border-right: none;
+}
+
+.tabs__link:hover {
+  background: rgba(74, 158, 255, 0.15);
+  color: #4a9eff;
+}
+
+.tabs__link--active {
+  background: rgba(74, 158, 255, 0.2);
+  color: #4a9eff;
+  border-bottom: 2px solid #4a9eff;
+  position: relative;
+  margin-bottom: -1px;
+  padding-bottom: 11px;
+}
+</style>

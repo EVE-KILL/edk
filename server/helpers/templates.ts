@@ -1,34 +1,271 @@
-import Handlebars from 'handlebars'
-import { readFile, access, readdir } from 'node:fs/promises'
-import { join } from 'node:path'
-import type { H3Event } from 'h3'
+import Handlebars from "handlebars";
+import { readFile, access, readdir } from "node:fs/promises";
+import { join } from "node:path";
+import type { H3Event } from "h3";
+
+export interface NormalizedKillmailEntity {
+  id: number | null;
+  name: string;
+  ticker?: string;
+}
+
+export interface NormalizedKillmailAttacker {
+  character: NormalizedKillmailEntity;
+  corporation: NormalizedKillmailEntity;
+  alliance?: NormalizedKillmailEntity;
+}
+
+export interface NormalizedKillmail {
+  killmailId: number;
+  killmailTime: string;
+  victim: {
+    ship: {
+      typeId: number;
+      name: string;
+      group: string;
+    };
+    character: NormalizedKillmailEntity;
+    corporation: NormalizedKillmailEntity;
+    alliance?: NormalizedKillmailEntity;
+  };
+  attackers: NormalizedKillmailAttacker[];
+  solarSystem: {
+    id: number;
+    name: string;
+    region: string;
+  };
+  shipValue: number;
+  totalValue: number;
+  attackerCount: number;
+  isLoss: boolean;
+  isSolo: boolean;
+  isNpc: boolean;
+}
+
+export function normalizeKillRow(km: any): NormalizedKillmail {
+  const killmailId = Number(km.killmailId ?? km.killmail_id ?? 0);
+  const killmailRawTime = km.killmailTime ?? km.killmail_time ?? "";
+  const killmailTime =
+    killmailRawTime instanceof Date
+      ? killmailRawTime.toISOString()
+      : String(killmailRawTime);
+
+  const victimShipTypeId = Number(
+    km.victimShipTypeId ?? km.victim_ship_type_id ?? 0
+  );
+  const victimShipName =
+    km.victimShipName ?? km.victim_ship_name ?? "Unknown Ship";
+  const victimShipGroup =
+    km.victimShipGroup ?? km.victim_ship_group ?? "Unknown";
+
+  const victimCharacterId =
+    km.victimCharacterId ?? km.victim_character_id ?? null;
+  const victimCharacterName =
+    km.victimCharacterName ?? km.victim_character_name ?? "Unknown";
+  const victimCorporationId =
+    km.victimCorporationId ?? km.victim_corporation_id ?? null;
+  const victimCorporationName =
+    km.victimCorporationName ?? km.victim_corporation_name ?? "Unknown Corp";
+  const victimCorporationTicker =
+    km.victimCorporationTicker ?? km.victim_corporation_ticker ?? "???";
+  const victimAllianceId = km.victimAllianceId ?? km.victim_alliance_id ?? null;
+  const victimAllianceName =
+    km.victimAllianceName ?? km.victim_alliance_name ?? "Unknown Alliance";
+  const victimAllianceTicker =
+    km.victimAllianceTicker ?? km.victim_alliance_ticker ?? "???";
+
+  const attackerCharacterId =
+    km.attackerCharacterId ??
+    km.topAttackerCharacterId ??
+    km.attacker_character_id ??
+    null;
+  const attackerCharacterName =
+    km.attackerCharacterName ??
+    km.topAttackerCharacterName ??
+    km.attacker_character_name ??
+    (attackerCharacterId ? "Unknown" : "Unknown");
+  const attackerCorporationId =
+    km.attackerCorporationId ??
+    km.topAttackerCorporationId ??
+    km.attacker_corporation_id ??
+    null;
+  const attackerCorporationName =
+    km.attackerCorporationName ??
+    km.topAttackerCorporationName ??
+    km.attacker_corporation_name ??
+    (attackerCorporationId ? "Unknown Corp" : "Unknown Corp");
+  const attackerCorporationTicker =
+    km.attackerCorporationTicker ??
+    km.topAttackerCorporationTicker ??
+    km.attacker_corporation_ticker ??
+    "???";
+  const attackerAllianceId =
+    km.attackerAllianceId ??
+    km.topAttackerAllianceId ??
+    km.attacker_alliance_id ??
+    null;
+  const attackerAllianceName =
+    km.attackerAllianceName ??
+    km.topAttackerAllianceName ??
+    km.attacker_alliance_name ??
+    (attackerAllianceId ? "Unknown Alliance" : "Unknown Alliance");
+  const attackerAllianceTicker =
+    km.attackerAllianceTicker ??
+    km.topAttackerAllianceTicker ??
+    km.attacker_alliance_ticker ??
+    "???";
+
+  const attackers: NormalizedKillmailAttacker[] =
+    Array.isArray(km.attackers) && km.attackers.length > 0
+      ? km.attackers.map((a: any) => {
+          const characterId =
+            a.character?.id ?? a.characterId ?? a.character_id ?? null;
+          const corporationId =
+            a.corporation?.id ?? a.corporationId ?? a.corporation_id ?? null;
+          const allianceId =
+            a.alliance?.id ?? a.allianceId ?? a.alliance_id ?? null;
+
+          return {
+            character: {
+              id: characterId,
+              name:
+                a.character?.name ??
+                a.characterName ??
+                a.character_name ??
+                "Unknown",
+            },
+            corporation: {
+              id: corporationId,
+              name:
+                a.corporation?.name ??
+                a.corporationName ??
+                a.corporation_name ??
+                "Unknown Corp",
+              ticker:
+                a.corporation?.ticker ??
+                a.corporationTicker ??
+                a.corporation_ticker ??
+                "???",
+            },
+            alliance:
+              allianceId != null
+                ? {
+                    id: allianceId,
+                    name:
+                      a.alliance?.name ??
+                      a.allianceName ??
+                      a.alliance_name ??
+                      "Unknown Alliance",
+                    ticker:
+                      a.alliance?.ticker ??
+                      a.allianceTicker ??
+                      a.alliance_ticker ??
+                      "???",
+                  }
+                : undefined,
+          };
+        })
+      : [];
+
+  if (
+    attackers.length === 0 &&
+    (attackerCharacterId ||
+      attackerCharacterName ||
+      attackerCorporationId ||
+      attackerCorporationName)
+  ) {
+    attackers.push({
+      character: {
+        id: attackerCharacterId,
+        name: attackerCharacterName || "Unknown",
+      },
+      corporation: {
+        id: attackerCorporationId,
+        name: attackerCorporationName || "Unknown Corp",
+        ticker: attackerCorporationTicker || "???",
+      },
+      alliance:
+        attackerAllianceId != null
+          ? {
+              id: attackerAllianceId,
+              name: attackerAllianceName || "Unknown Alliance",
+              ticker: attackerAllianceTicker || "???",
+            }
+          : undefined,
+    });
+  }
+
+  const attackerCount =
+    km.attackerCount ?? km.attacker_count ?? attackers.length;
+
+  return {
+    killmailId,
+    killmailTime,
+    victim: {
+      ship: {
+        typeId: victimShipTypeId,
+        name: victimShipName,
+        group: victimShipGroup,
+      },
+      character: {
+        id: victimCharacterId,
+        name: victimCharacterName,
+      },
+      corporation: {
+        id: victimCorporationId,
+        name: victimCorporationName,
+        ticker: victimCorporationTicker,
+      },
+      alliance:
+        victimAllianceId != null
+          ? {
+              id: victimAllianceId,
+              name: victimAllianceName,
+              ticker: victimAllianceTicker,
+            }
+          : undefined,
+    },
+    attackers,
+    solarSystem: {
+      id: km.solarSystemId ?? km.solar_system_id ?? 0,
+      name: km.solarSystemName ?? km.solar_system_name ?? "Unknown System",
+      region: km.regionName ?? km.region_name ?? "Unknown Region",
+    },
+    shipValue: km.shipValue ?? km.ship_value ?? 0,
+    totalValue: km.totalValue ?? km.total_value ?? 0,
+    attackerCount,
+    isLoss: Boolean(km.isLoss ?? km.is_loss ?? false),
+    isSolo: Boolean(km.isSolo ?? km.is_solo ?? attackerCount === 1),
+    isNpc: Boolean(km.isNpc ?? km.is_npc ?? false),
+  };
+}
 
 // Template cache for compiled templates
-const templateCache = new Map<string, HandlebarsTemplateDelegate>()
+const templateCache = new Map<string, HandlebarsTemplateDelegate>();
 
 // Track if partials have been registered
-let partialsRegistered = false
+let partialsRegistered = false;
 
 // Get the current theme from environment
 function getTheme(): string {
-  return process.env.THEME || 'default'
+  return process.env.THEME || "default";
 }
 
 // Default page context that's always available
 interface DefaultPageContext {
-  title: string
-  description: string
-  keywords?: string
-  url?: string
-  image?: string
-  type?: string
+  title: string;
+  description: string;
+  keywords?: string;
+  url?: string;
+  image?: string;
+  type?: string;
 }
 
 // Default data that's always passed to templates
 interface DefaultData {
-  siteName: string
-  year: number
-  env: string
+  siteName: string;
+  year: number;
+  env: string;
 }
 
 /**
@@ -36,307 +273,361 @@ interface DefaultData {
  */
 function registerHelpers() {
   // JSON helper
-  Handlebars.registerHelper('json', function (value: any) {
-    return JSON.stringify(value)
-  })
+  Handlebars.registerHelper("json", function (value: any) {
+    return JSON.stringify(value);
+  });
 
   // Format number with commas (handles decimals correctly)
   // Format ISK values with appropriate suffix
-  Handlebars.registerHelper('formatISK', function (value: number) {
-    if (!value || value === 0) return '0 ISK'
-    if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B ISK`
-    if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M ISK`
-    if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K ISK`
-    return `${value.toLocaleString()} ISK`
-  })
+  Handlebars.registerHelper("formatISK", function (value: number) {
+    if (!value || value === 0) return "0 ISK";
+    if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B ISK`;
+    if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M ISK`;
+    if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K ISK`;
+    return `${value.toLocaleString()} ISK`;
+  });
 
   // Abbreviate ISK for compact display (no ISK suffix)
-  Handlebars.registerHelper('abbreviateISK', function (value: number) {
-    if (!value || value === 0) return '0'
-    if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`
-    if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`
-    if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`
-    return value.toLocaleString()
-  })
+  Handlebars.registerHelper("abbreviateISK", function (value: number) {
+    if (!value || value === 0) return "0";
+    if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`;
+    if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
+    if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+    return value.toLocaleString();
+  });
 
   // Format number with comma separators
-  Handlebars.registerHelper('formatNumber', function (value: number) {
-    if (!value && value !== 0) return '0'
-    return value.toLocaleString()
-  })
+  Handlebars.registerHelper("formatNumber", function (value: number) {
+    if (!value && value !== 0) return "0";
+    return value.toLocaleString();
+  });
 
   // URL encode helper for Handlebars block content
-  Handlebars.registerHelper('urlencode', function (this: any, options: any) {
-    const content = options.fn(this)
-    return encodeURIComponent(content.trim())
-  })
+  Handlebars.registerHelper("urlencode", function (this: any, options: any) {
+    const content = options.fn(this);
+    return encodeURIComponent(content.trim());
+  });
 
   // Date formatting
-  Handlebars.registerHelper('formatDate', function (date: string | Date) {
-    const d = new Date(date)
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    })
-  })
+  Handlebars.registerHelper("formatDate", function (date: string | Date) {
+    const d = new Date(date);
+    return d.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  });
 
   // EDK-style date formatting (YYYY-MM-DD HH:MM)
-  Handlebars.registerHelper('formatDateEDK', function (date: string | Date) {
-    const d = new Date(date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    const hours = String(d.getHours()).padStart(2, '0')
-    const minutes = String(d.getMinutes()).padStart(2, '0')
-    return `${year}-${month}-${day} ${hours}:${minutes}`
-  })
+  Handlebars.registerHelper("formatDateEDK", function (date: string | Date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  });
 
   // EDK-style short date for tables
-  Handlebars.registerHelper('formatDateShort', function (date: string | Date) {
-    const d = new Date(date)
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    const hours = String(d.getHours()).padStart(2, '0')
-    const minutes = String(d.getMinutes()).padStart(2, '0')
-    return `${month}/${day} ${hours}:${minutes}`
-  })
+  Handlebars.registerHelper("formatDateShort", function (date: string | Date) {
+    const d = new Date(date);
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${month}/${day} ${hours}:${minutes}`;
+  });
 
   // Time ago helper
-  Handlebars.registerHelper('timeAgo', function (date: string | Date) {
-    const now = new Date()
-    const past = new Date(date)
-    const diffMs = now.getTime() - past.getTime()
-    const minutes = Math.floor(diffMs / 60000)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
-    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
-    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
-    return 'Just now'
-  })
+  Handlebars.registerHelper("timeAgo", function (date: string | Date) {
+    const now = new Date();
+    const past = new Date(date);
+    const diffMs = now.getTime() - past.getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    return "Just now";
+  });
 
   // Format time ago (more detailed)
-  Handlebars.registerHelper('formatTimeAgo', function (date: string | Date) {
-    const now = new Date()
-    const past = new Date(date)
-    const diffMs = now.getTime() - past.getTime()
-    const seconds = Math.floor(diffMs / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
-    const months = Math.floor(days / 30)
-    const years = Math.floor(days / 365)
-    if (years > 0) return `${years} year${years > 1 ? 's' : ''} ago`
-    if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
-    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
-    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
-    return 'Just now'
-  })
+  Handlebars.registerHelper("formatTimeAgo", function (date: string | Date) {
+    const now = new Date();
+    const past = new Date(date);
+    const diffMs = now.getTime() - past.getTime();
+    const seconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
+    if (years > 0) return `${years} year${years > 1 ? "s" : ""} ago`;
+    if (months > 0) return `${months} month${months > 1 ? "s" : ""} ago`;
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    return "Just now";
+  });
 
   // Conditional helpers
-  Handlebars.registerHelper('ifEquals', function (this: any, arg1: any, arg2: any, options: any) {
-    return arg1 == arg2 ? options.fn(this) : options.inverse(this)
-  })
+  Handlebars.registerHelper(
+    "ifEquals",
+    function (this: any, arg1: any, arg2: any, options: any) {
+      return arg1 == arg2 ? options.fn(this) : options.inverse(this);
+    }
+  );
 
-  Handlebars.registerHelper('eq', function (a: any, b: any) {
-    return a === b
-  })
+  Handlebars.registerHelper("eq", function (a: any, b: any) {
+    return a === b;
+  });
 
-  Handlebars.registerHelper('gt', function (a: number, b: number) {
-    return a > b
-  })
+  Handlebars.registerHelper("gt", function (a: number, b: number) {
+    return a > b;
+  });
 
-  Handlebars.registerHelper('gte', function (a: number, b: number) {
-    return a >= b
-  })
+  Handlebars.registerHelper("gte", function (a: number, b: number) {
+    return a >= b;
+  });
 
-  Handlebars.registerHelper('lt', function (a: number, b: number) {
-    return a < b
-  })
+  Handlebars.registerHelper("lt", function (a: number, b: number) {
+    return a < b;
+  });
 
-  Handlebars.registerHelper('lte', function (a: number, b: number) {
-    return a <= b
-  })
+  Handlebars.registerHelper("lte", function (a: number, b: number) {
+    return a <= b;
+  });
 
   // Logical helpers
-  Handlebars.registerHelper('and', function (...args: any[]) {
-    const values = args.slice(0, -1)
-    return values.every((v) => v)
-  })
+  Handlebars.registerHelper("and", function (...args: any[]) {
+    const values = args.slice(0, -1);
+    return values.every((v) => v);
+  });
 
-  Handlebars.registerHelper('or', function (...args: any[]) {
-    const values = args.slice(0, -1)
-    return values.some((v) => !!v)
-  })
+  Handlebars.registerHelper("or", function (...args: any[]) {
+    const values = args.slice(0, -1);
+    return values.some((v) => !!v);
+  });
 
   // Math helpers
-  Handlebars.registerHelper('add', function (a: number, b: number) {
-    return a + b
-  })
+  Handlebars.registerHelper("add", function (a: number, b: number) {
+    return a + b;
+  });
 
-  Handlebars.registerHelper('subtract', function (a: number, b: number) {
-    return a - b
-  })
+  Handlebars.registerHelper("subtract", function (a: number, b: number) {
+    return a - b;
+  });
 
-  Handlebars.registerHelper('multiply', function (a: number, b: number) {
-    return a * b
-  })
+  Handlebars.registerHelper("multiply", function (a: number, b: number) {
+    return a * b;
+  });
 
-  Handlebars.registerHelper('mult', function (a: number, b: number) {
-    return a * b
-  })
+  Handlebars.registerHelper("mult", function (a: number, b: number) {
+    return a * b;
+  });
 
-  Handlebars.registerHelper('div', function (a: number, b: number) {
-    return b !== 0 ? a / b : 0
-  })
+  Handlebars.registerHelper("div", function (a: number, b: number) {
+    return b !== 0 ? a / b : 0;
+  });
 
-  Handlebars.registerHelper('mod', function (a: number, b: number) {
-    return a % b
-  })
+  Handlebars.registerHelper("mod", function (a: number, b: number) {
+    return a % b;
+  });
 
-  Handlebars.registerHelper('ceil', function (a: number) {
-    return Math.ceil(a)
-  })
+  Handlebars.registerHelper("ceil", function (a: number) {
+    return Math.ceil(a);
+  });
 
   // Utility helpers
-  Handlebars.registerHelper('default', function (value: any, defaultValue: any) {
-    return value !== undefined && value !== null ? value : defaultValue
-  })
+  Handlebars.registerHelper(
+    "default",
+    function (value: any, defaultValue: any) {
+      return value !== undefined && value !== null ? value : defaultValue;
+    }
+  );
 
-  Handlebars.registerHelper('isEven', function (num: number) {
-    return num % 2 === 0
-  })
+  Handlebars.registerHelper("isEven", function (num: number) {
+    return num % 2 === 0;
+  });
 
-  Handlebars.registerHelper('length', function (array: any[]) {
-    return Array.isArray(array) ? array.length : 0
-  })
+  Handlebars.registerHelper("length", function (array: any[]) {
+    return Array.isArray(array) ? array.length : 0;
+  });
 
-  Handlebars.registerHelper('concat', function (...args: any[]) {
-    return args.slice(0, -1).join('')
-  })
+  Handlebars.registerHelper("concat", function (...args: any[]) {
+    return args.slice(0, -1).join("");
+  });
 
   // Array and object creation helpers
-  Handlebars.registerHelper('array', function (...args: any[]) {
-    return args.slice(0, -1) // Remove Handlebars options object
-  })
+  Handlebars.registerHelper("array", function (...args: any[]) {
+    return args.slice(0, -1); // Remove Handlebars options object
+  });
 
-  Handlebars.registerHelper('obj', function (this: any, options: any) {
-    return options.hash // Returns the hash object from Handlebars
-  })
+  Handlebars.registerHelper("obj", function (this: any, options: any) {
+    return options.hash; // Returns the hash object from Handlebars
+  });
 
   // Prepare item sections - organizes items by slot type with titles
-  Handlebars.registerHelper('prepareItemSections', function (items: any) {
-    if (!items || typeof items !== 'object') return []
+  Handlebars.registerHelper("prepareItemSections", function (items: any) {
+    if (!items || typeof items !== "object") return [];
 
-    const sections: Array<{ title: string; items: any[] }> = []
+    const sections: Array<{ title: string; items: any[] }> = [];
 
     const sectionMap = [
-      { key: 'highSlots', title: 'High Slots' },
-      { key: 'medSlots', title: 'Medium Slots' },
-      { key: 'lowSlots', title: 'Low Slots' },
-      { key: 'rigSlots', title: 'Rig Slots' },
-      { key: 'subSlots', title: 'Subsystems' },
-      { key: 'droneBay', title: 'Drone Bay' },
-      { key: 'cargo', title: 'Cargo Hold' },
-      { key: 'other', title: 'Other' }
-    ]
+      { key: "highSlots", title: "High Slots" },
+      { key: "medSlots", title: "Medium Slots" },
+      { key: "lowSlots", title: "Low Slots" },
+      { key: "rigSlots", title: "Rig Slots" },
+      { key: "subSlots", title: "Subsystems" },
+      { key: "droneBay", title: "Drone Bay" },
+      { key: "cargo", title: "Cargo Hold" },
+      { key: "other", title: "Other" },
+    ];
 
     for (const { key, title } of sectionMap) {
-      const itemsInSection = items[key]
+      const itemsInSection = items[key];
       if (Array.isArray(itemsInSection) && itemsInSection.length > 0) {
-        sections.push({ title, items: itemsInSection })
+        sections.push({ title, items: itemsInSection });
       }
     }
 
-    return sections
-  })
+    return sections;
+  });
 
   // Calculate damage percentage
-  Handlebars.registerHelper('damagePercent', function (damage: number, totalDamage: number) {
-    if (!damage || !totalDamage || totalDamage === 0) return '0.0'
-    return ((damage / totalDamage) * 100).toFixed(1)
-  })
+  Handlebars.registerHelper(
+    "damagePercent",
+    function (damage: number, totalDamage: number) {
+      if (!damage || !totalDamage || totalDamage === 0) return "0.0";
+      return ((damage / totalDamage) * 100).toFixed(1);
+    }
+  );
 
   // Security status formatting
-  Handlebars.registerHelper('formatSecStatus', function (sec: number) {
-    if (sec >= 0.5) return `<span style="color: #2fef2f;">${sec.toFixed(1)}</span>`
-    if (sec >= 0.1) return `<span style="color: #efef2f;">${sec.toFixed(1)}</span>`
-    return `<span style="color: #ef2f2f;">${sec.toFixed(1)}</span>`
-  })
+  Handlebars.registerHelper("formatSecStatus", function (sec: number) {
+    if (sec >= 0.5)
+      return `<span style="color: #2fef2f;">${sec.toFixed(1)}</span>`;
+    if (sec >= 0.1)
+      return `<span style="color: #efef2f;">${sec.toFixed(1)}</span>`;
+    return `<span style="color: #ef2f2f;">${sec.toFixed(1)}</span>`;
+  });
 
-  Handlebars.registerHelper('formatSecurity', function (sec: number | string | undefined) {
-    if (sec === undefined || sec === null) return '?'
-    const numSec = typeof sec === 'string' ? parseFloat(sec) : sec
-    if (isNaN(numSec)) return '?'
-    return numSec.toFixed(1)
-  })
+  Handlebars.registerHelper(
+    "formatSecurity",
+    function (sec: number | string | undefined) {
+      if (sec === undefined || sec === null) return "?";
+      const numSec = typeof sec === "string" ? parseFloat(sec) : sec;
+      if (isNaN(numSec)) return "?";
+      return numSec.toFixed(1);
+    }
+  );
 
   // Round up to nearest valid EVE image size
-  Handlebars.registerHelper('roundImageSize', function (requestedSize: number, type: string) {
-    const validSizes = type === 'type' || type === 'item' || type === 'ship' ? [32, 64, 128, 256, 512] : [64, 128, 256, 512]
-    for (const size of validSizes) {
-      if (size >= requestedSize) return size
+  Handlebars.registerHelper(
+    "roundImageSize",
+    function (requestedSize: number, type: string) {
+      const validSizes =
+        type === "type" || type === "item" || type === "ship"
+          ? [32, 64, 128, 256, 512]
+          : [64, 128, 256, 512];
+      for (const size of validSizes) {
+        if (size >= requestedSize) return size;
+      }
+      return validSizes[validSizes.length - 1];
     }
-    return validSizes[validSizes.length - 1]
-  })
+  );
 
   // Check if killmail is a loss for followed entities
-  Handlebars.registerHelper('isFollowedLoss', function (victim: any, followedEntities: any) {
-    if (!followedEntities || !victim) return false
-    const { characterIds = [], corporationIds = [], allianceIds = [] } = followedEntities
-    if (characterIds.length > 0 && victim.character?.id && characterIds.includes(victim.character.id)) return true
-    if (corporationIds.length > 0 && victim.corporation?.id && corporationIds.includes(victim.corporation.id)) return true
-    if (allianceIds.length > 0 && victim.alliance?.id && allianceIds.includes(victim.alliance.id)) return true
-    return false
-  })
+  Handlebars.registerHelper(
+    "isFollowedLoss",
+    function (victim: any, followedEntities: any) {
+      if (!followedEntities || !victim) return false;
+      const {
+        characterIds = [],
+        corporationIds = [],
+        allianceIds = [],
+      } = followedEntities;
+      if (
+        characterIds.length > 0 &&
+        victim.character?.id &&
+        characterIds.includes(victim.character.id)
+      )
+        return true;
+      if (
+        corporationIds.length > 0 &&
+        victim.corporation?.id &&
+        corporationIds.includes(victim.corporation.id)
+      )
+        return true;
+      if (
+        allianceIds.length > 0 &&
+        victim.alliance?.id &&
+        allianceIds.includes(victim.alliance.id)
+      )
+        return true;
+      return false;
+    }
+  );
 
   // Check if killmail is a loss for a specific entity
-  Handlebars.registerHelper('isEntityLoss', function (victim: any, entityType: string, entityId: number) {
-    if (!victim || !entityType || !entityId) return false
-    if (entityType === 'character' && victim.character?.id === entityId) return true
-    if (entityType === 'corporation' && victim.corporation?.id === entityId) return true
-    if (entityType === 'alliance' && victim.alliance?.id === entityId) return true
-    return false
-  })
+  Handlebars.registerHelper(
+    "isEntityLoss",
+    function (victim: any, entityType: string, entityId: number) {
+      if (!victim || !entityType || !entityId) return false;
+      if (entityType === "character" && victim.character?.id === entityId)
+        return true;
+      if (entityType === "corporation" && victim.corporation?.id === entityId)
+        return true;
+      if (entityType === "alliance" && victim.alliance?.id === entityId)
+        return true;
+      return false;
+    }
+  );
 
   // Switch/case helper for template control flow
-  Handlebars.registerHelper('switch', function (this: any, value: any, options: any) {
-    this._switch_value_ = value
-    const html = options.fn(this)
-    delete this._switch_value_
-    return html
-  })
-
-  Handlebars.registerHelper('case', function (this: any, value: any, options: any) {
-    if (value == this._switch_value_) {
-      return options.fn(this)
+  Handlebars.registerHelper(
+    "switch",
+    function (this: any, value: any, options: any) {
+      this._switch_value_ = value;
+      const html = options.fn(this);
+      delete this._switch_value_;
+      return html;
     }
-  })
+  );
 
-  Handlebars.registerHelper('default', function (this: any, options: any) {
+  Handlebars.registerHelper(
+    "case",
+    function (this: any, value: any, options: any) {
+      if (value == this._switch_value_) {
+        return options.fn(this);
+      }
+    }
+  );
+
+  Handlebars.registerHelper("default", function (this: any, options: any) {
     if (this._switch_value_ === undefined) {
-      return options.fn(this)
+      return options.fn(this);
     }
-  })
+  });
 }
 
 // Register helpers on module load
-registerHelpers()
+registerHelpers();
 
 /**
  * Get default data that's always available in templates
  */
 function getDefaultData(): DefaultData {
   return {
-    siteName: 'EVE-KILL',
+    siteName: "EVE-KILL",
     year: new Date().getFullYear(),
-    env: process.env.NODE_ENV || 'development'
-  }
+    env: process.env.NODE_ENV || "development",
+  };
 }
 
 /**
@@ -344,11 +635,11 @@ function getDefaultData(): DefaultData {
  */
 function getDefaultPageContext(): DefaultPageContext {
   return {
-    title: 'Home',
-    description: 'Real-time killmail tracking and analytics for EVE Online',
-    keywords: 'eve online, killmail, pvp, tracking, analytics',
-    type: 'website'
-  }
+    title: "Home",
+    description: "Real-time killmail tracking and analytics for EVE Online",
+    keywords: "eve online, killmail, pvp, tracking, analytics",
+    type: "website",
+  };
 }
 
 /**
@@ -356,10 +647,10 @@ function getDefaultPageContext(): DefaultPageContext {
  */
 async function fileExists(path: string): Promise<boolean> {
   try {
-    await access(path)
-    return true
+    await access(path);
+    return true;
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -371,30 +662,36 @@ async function fileExists(path: string): Promise<boolean> {
  * 3. Error if neither exists
  */
 async function resolveTemplatePath(templatePath: string): Promise<string> {
-  const theme = getTheme()
-  const templatesDir = join(process.cwd(), 'templates')
+  const theme = getTheme();
+  const templatesDir = join(process.cwd(), "templates");
 
   // Auto-append .hbs extension if not present
-  const fullTemplatePath = templatePath.endsWith('.hbs') ? templatePath : `${templatePath}.hbs`
+  const fullTemplatePath = templatePath.endsWith(".hbs")
+    ? templatePath
+    : `${templatePath}.hbs`;
 
   // Try theme-specific template first
-  if (theme !== 'default') {
-    const themePath = join(templatesDir, theme, fullTemplatePath)
+  if (theme !== "default") {
+    const themePath = join(templatesDir, theme, fullTemplatePath);
     if (await fileExists(themePath)) {
-      logger.debug(`Using theme template: ${theme}/${fullTemplatePath}`)
-      return themePath
+      logger.debug(`Using theme template: ${theme}/${fullTemplatePath}`);
+      return themePath;
     }
-    logger.debug(`Theme template not found, falling back to default: ${fullTemplatePath}`)
+    logger.debug(
+      `Theme template not found, falling back to default: ${fullTemplatePath}`
+    );
   }
 
   // Fallback to default theme
-  const defaultPath = join(templatesDir, 'default', fullTemplatePath)
+  const defaultPath = join(templatesDir, "default", fullTemplatePath);
   if (await fileExists(defaultPath)) {
-    return defaultPath
+    return defaultPath;
   }
 
   // Neither exists - error
-  throw new Error(`Template not found in theme '${theme}' or 'default': ${fullTemplatePath}`)
+  throw new Error(
+    `Template not found in theme '${theme}' or 'default': ${fullTemplatePath}`
+  );
 }
 
 /**
@@ -402,81 +699,83 @@ async function resolveTemplatePath(templatePath: string): Promise<string> {
  */
 async function registerPartials() {
   // In development, always re-register to pick up changes
-  if (partialsRegistered && process.env.NODE_ENV === 'production') return
+  if (partialsRegistered && process.env.NODE_ENV === "production") return;
 
-  const theme = getTheme()
-  const templatesDir = join(process.cwd(), 'templates', theme)
+  const theme = getTheme();
+  const templatesDir = join(process.cwd(), "templates", theme);
 
   // Register partials from partials/ directory
-  const partialsDir = join(templatesDir, 'partials')
+  const partialsDir = join(templatesDir, "partials");
   if (await fileExists(partialsDir)) {
     try {
-      const files = await readdir(partialsDir)
+      const files = await readdir(partialsDir);
       for (const file of files) {
-        if (file.endsWith('.hbs')) {
-          const partialName = 'partials/' + file.replace('.hbs', '')
-          const partialPath = join(partialsDir, file)
-          const partialContent = await readFile(partialPath, 'utf-8')
-          Handlebars.registerPartial(partialName, partialContent)
+        if (file.endsWith(".hbs")) {
+          const partialName = "partials/" + file.replace(".hbs", "");
+          const partialPath = join(partialsDir, file);
+          const partialContent = await readFile(partialPath, "utf-8");
+          Handlebars.registerPartial(partialName, partialContent);
         }
       }
     } catch (error) {
-      logger.warn('Could not load partials', { error })
+      logger.warn("Could not load partials", { error });
     }
   }
 
   // Register components from components/ directory
-  const componentsDir = join(templatesDir, 'components')
+  const componentsDir = join(templatesDir, "components");
   if (await fileExists(componentsDir)) {
     try {
-      const files = await readdir(componentsDir)
+      const files = await readdir(componentsDir);
       for (const file of files) {
-        if (file.endsWith('.hbs')) {
-          const componentName = 'components/' + file.replace('.hbs', '')
-          const componentPath = join(componentsDir, file)
-          const componentContent = await readFile(componentPath, 'utf-8')
-          Handlebars.registerPartial(componentName, componentContent)
+        if (file.endsWith(".hbs")) {
+          const componentName = "components/" + file.replace(".hbs", "");
+          const componentPath = join(componentsDir, file);
+          const componentContent = await readFile(componentPath, "utf-8");
+          Handlebars.registerPartial(componentName, componentContent);
         }
       }
     } catch (error) {
-      logger.warn('Could not load components', { error })
+      logger.warn("Could not load components", { error });
     }
   }
 
-  partialsRegistered = true
+  partialsRegistered = true;
 }
 
 /**
  * Load and compile a Handlebars template with theme support
  */
-async function loadTemplate(templatePath: string): Promise<HandlebarsTemplateDelegate> {
+async function loadTemplate(
+  templatePath: string
+): Promise<HandlebarsTemplateDelegate> {
   // Register partials if not already done
-  await registerPartials()
+  await registerPartials();
 
   // Create cache key that includes theme
-  const theme = getTheme()
-  const cacheKey = `${theme}:${templatePath}`
+  const theme = getTheme();
+  const cacheKey = `${theme}:${templatePath}`;
 
   // Check cache first
   if (templateCache.has(cacheKey)) {
-    return templateCache.get(cacheKey)!
+    return templateCache.get(cacheKey)!;
   }
 
   // Resolve template path with fallback
-  const fullPath = await resolveTemplatePath(templatePath)
+  const fullPath = await resolveTemplatePath(templatePath);
 
   // Read template file
-  const templateSource = await readFile(fullPath, 'utf-8')
+  const templateSource = await readFile(fullPath, "utf-8");
 
   // Compile template
-  const template = Handlebars.compile(templateSource)
+  const template = Handlebars.compile(templateSource);
 
   // Cache compiled template (in production)
-  if (process.env.NODE_ENV === 'production') {
-    templateCache.set(cacheKey, template)
+  if (process.env.NODE_ENV === "production") {
+    templateCache.set(cacheKey, template);
   }
 
-  return template
+  return template;
 }
 
 /**
@@ -502,17 +801,17 @@ export async function render(
   data: any = null,
   event?: H3Event,
   useLayout: boolean = true,
-  layoutPath: string = 'layouts/main.hbs'
+  layoutPath: string = "layouts/main.hbs"
 ): Promise<string> {
   try {
     // Load main content template
-    const contentTemplate = await loadTemplate(templatePath)
+    const contentTemplate = await loadTemplate(templatePath);
 
     // Merge page context with defaults
     const page: DefaultPageContext = {
       ...getDefaultPageContext(),
-      ...pageContext
-    }
+      ...pageContext,
+    };
 
     // Build full context
     const context: any = {
@@ -520,55 +819,55 @@ export async function render(
       data,
       default: getDefaultData(),
       config: {
-        title: process.env.SITE_TITLE || 'EVE-KILL',
-        subtitle: process.env.SITE_SUBTITLE || 'Real-time Killmail Tracking',
+        title: process.env.SITE_TITLE || "EVE-KILL",
+        subtitle: process.env.SITE_SUBTITLE || "Real-time Killmail Tracking",
         copyright: `© ${new Date().getFullYear()}`,
-        showVersion: process.env.NODE_ENV === 'development'
-      }
-    }
+        showVersion: process.env.NODE_ENV === "development",
+      },
+    };
 
     // Render content
-    const bodyHtml = contentTemplate(context)
+    const bodyHtml = contentTemplate(context);
 
     // If layout is disabled, return just the content
     if (!useLayout) {
       if (event) {
         setResponseHeaders(event, {
-          'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, max-age=60'
-        })
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=60",
+        });
       }
-      return bodyHtml
+      return bodyHtml;
     }
 
     // Load layout template
-    const layoutTemplate = await loadTemplate(layoutPath)
+    const layoutTemplate = await loadTemplate(layoutPath);
 
     // Render layout with body content
     const html = layoutTemplate({
       ...context,
-      body: bodyHtml
-    })
+      body: bodyHtml,
+    });
 
     // Set response headers if event provided
     if (event) {
       setResponseHeaders(event, {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=60'
-      })
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "public, max-age=60",
+      });
     }
 
-    return html
+    return html;
   } catch (error) {
-    const theme = getTheme()
-    logger.error('Template rendering error', {
+    const theme = getTheme();
+    logger.error("Template rendering error", {
       templatePath,
       theme,
-      error: error instanceof Error ? error.message : String(error)
-    })
+      error: error instanceof Error ? error.message : String(error),
+    });
 
     // Return error page in development
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== "production") {
       return `
         <!DOCTYPE html>
         <html>
@@ -577,14 +876,16 @@ export async function render(
           <h1>Template Rendering Error</h1>
           <p><strong>Template:</strong> ${templatePath}</p>
           <p><strong>Theme:</strong> ${theme}</p>
-          <p><strong>Error:</strong> ${error instanceof Error ? error.message : String(error)}</p>
-          <pre>${error instanceof Error ? error.stack : ''}</pre>
+          <p><strong>Error:</strong> ${
+            error instanceof Error ? error.message : String(error)
+          }</p>
+          <pre>${error instanceof Error ? error.stack : ""}</pre>
         </body>
         </html>
-      `
+      `;
     }
 
-    throw error
+    throw error;
   }
 }
 
@@ -592,8 +893,8 @@ export async function render(
  * Clear template cache (useful for development)
  */
 export function clearTemplateCache() {
-  templateCache.clear()
-  logger.info('Template cache cleared')
+  templateCache.clear();
+  logger.info("Template cache cleared");
 }
 
 /**
@@ -602,6 +903,6 @@ export function clearTemplateCache() {
 export function getTemplateCacheStats() {
   return {
     size: templateCache.size,
-    templates: Array.from(templateCache.keys())
-  }
+    templates: Array.from(templateCache.keys()),
+  };
 }

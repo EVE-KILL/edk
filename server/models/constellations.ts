@@ -3,20 +3,21 @@ import { database } from '../helpers/database'
 /**
  * Constellations Model
  *
- * Provides query methods for mapConstellations SDE table
+ * Provides query methods for constellations SDE table
  */
 
 export interface Constellation {
   constellationId: number
-  factionId?: number
   name: string
+  regionId: number
+  factionId?: number
   positionX: number
   positionY: number
   positionZ: number
-  regionId: number
   solarSystemIds: number[]
   wormholeClassId?: number
-  updatedAt: string
+  updatedAt: Date
+  version: number
 }
 
 /**
@@ -24,7 +25,7 @@ export interface Constellation {
  */
 export async function getConstellation(constellationId: number): Promise<Constellation | null> {
   return await database.queryOne<Constellation>(
-    'SELECT * FROM edk.mapConstellations WHERE constellationId = {id:UInt32}',
+    'SELECT * FROM constellations WHERE constellationId = {id:UInt32} FINAL',
     { id: constellationId }
   )
 }
@@ -34,7 +35,7 @@ export async function getConstellation(constellationId: number): Promise<Constel
  */
 export async function getConstellationsByRegion(regionId: number): Promise<Constellation[]> {
   return await database.query<Constellation>(
-    'SELECT * FROM edk.mapConstellations WHERE regionId = {regionId:UInt32} ORDER BY name',
+    'SELECT * FROM constellations WHERE regionId = {regionId:UInt32} FINAL ORDER BY name',
     { regionId }
   )
 }
@@ -44,9 +45,9 @@ export async function getConstellationsByRegion(regionId: number): Promise<Const
  */
 export async function searchConstellations(namePattern: string, limit: number = 10): Promise<Constellation[]> {
   return await database.query<Constellation>(
-    `SELECT * FROM edk.mapConstellations 
-     WHERE name LIKE {pattern:String} 
-     ORDER BY name 
+    `SELECT * FROM constellations FINAL
+     WHERE name LIKE {pattern:String}
+     ORDER BY name
      LIMIT {limit:UInt32}`,
     { pattern: `%${namePattern}%`, limit }
   )
@@ -57,7 +58,7 @@ export async function searchConstellations(namePattern: string, limit: number = 
  */
 export async function getConstellationName(constellationId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.mapConstellations WHERE constellationId = {id:UInt32}',
+    'SELECT name FROM constellations WHERE constellationId = {id:UInt32} FINAL',
     { id: constellationId }
   )
   return result || null
@@ -68,7 +69,7 @@ export async function getConstellationName(constellationId: number): Promise<str
  */
 export async function getConstellationsByFaction(factionId: number): Promise<Constellation[]> {
   return await database.query<Constellation>(
-    'SELECT * FROM edk.mapConstellations WHERE factionId = {factionId:UInt32} ORDER BY name',
+    'SELECT * FROM constellations WHERE factionId = {factionId:UInt32} FINAL ORDER BY name',
     { factionId }
   )
 }
@@ -77,5 +78,5 @@ export async function getConstellationsByFaction(factionId: number): Promise<Con
  * Count total constellations
  */
 export async function countConstellations(): Promise<number> {
-  return await database.count('edk.mapConstellations')
+  return await database.count('constellations')
 }

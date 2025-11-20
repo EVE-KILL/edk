@@ -19,7 +19,7 @@ export interface Group {
  */
 export async function getGroup(groupId: number): Promise<Group | null> {
   return await database.queryOne<Group>(
-    'SELECT * FROM edk.groups WHERE groupId = {id:UInt32}',
+    'SELECT * FROM groups FINAL WHERE groupId = {id:UInt32}',
     { id: groupId }
   )
 }
@@ -29,7 +29,7 @@ export async function getGroup(groupId: number): Promise<Group | null> {
  */
 export async function getGroupsByCategory(categoryId: number): Promise<Group[]> {
   return await database.query<Group>(
-    'SELECT * FROM edk.groups WHERE categoryId = {categoryId:UInt32} ORDER BY name',
+    'SELECT * FROM groups FINAL WHERE categoryId = {categoryId:UInt32} ORDER BY name',
     { categoryId }
   )
 }
@@ -39,7 +39,7 @@ export async function getGroupsByCategory(categoryId: number): Promise<Group[]> 
  */
 export async function getPublishedGroups(): Promise<Group[]> {
   return await database.query<Group>(
-    'SELECT * FROM edk.groups WHERE published = 1 ORDER BY categoryId, name'
+    'SELECT * FROM groups FINAL WHERE published = 1 ORDER BY categoryId, name'
   )
 }
 
@@ -48,7 +48,7 @@ export async function getPublishedGroups(): Promise<Group[]> {
  */
 export async function searchGroups(namePattern: string, limit: number = 10): Promise<Group[]> {
   return await database.query<Group>(
-    'SELECT * FROM edk.groups WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM groups FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -58,7 +58,7 @@ export async function searchGroups(namePattern: string, limit: number = 10): Pro
  */
 export async function getGroupName(groupId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.groups WHERE groupId = {id:UInt32}',
+    'SELECT name FROM groups FINAL WHERE groupId = {id:UInt32}',
     { id: groupId }
   )
   return result || null
@@ -68,5 +68,5 @@ export async function getGroupName(groupId: number): Promise<string | null> {
  * Count total groups
  */
 export async function countGroups(): Promise<number> {
-  return await database.count('edk.groups')
+  return await database.count('groups')
 }

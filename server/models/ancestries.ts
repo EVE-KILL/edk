@@ -20,7 +20,7 @@ export interface Ancestry {
  */
 export async function getAncestry(ancestryId: number): Promise<Ancestry | null> {
   return await database.queryOne<Ancestry>(
-    'SELECT * FROM edk.ancestries WHERE ancestryId = {id:UInt32}',
+    'SELECT * FROM ancestries FINAL WHERE ancestryId = {id:UInt32}',
     { id: ancestryId }
   )
 }
@@ -30,7 +30,7 @@ export async function getAncestry(ancestryId: number): Promise<Ancestry | null> 
  */
 export async function getAncestriesByBloodline(bloodlineId: number): Promise<Ancestry[]> {
   return await database.query<Ancestry>(
-    'SELECT * FROM edk.ancestries WHERE bloodlineId = {bloodlineId:UInt32} ORDER BY name',
+    'SELECT * FROM ancestries FINAL WHERE bloodlineId = {bloodlineId:UInt32} ORDER BY name',
     { bloodlineId }
   )
 }
@@ -40,7 +40,7 @@ export async function getAncestriesByBloodline(bloodlineId: number): Promise<Anc
  */
 export async function getAllAncestries(): Promise<Ancestry[]> {
   return await database.query<Ancestry>(
-    'SELECT * FROM edk.ancestries ORDER BY bloodlineId, name'
+    'SELECT * FROM ancestries FINAL ORDER BY bloodlineId, name'
   )
 }
 
@@ -49,7 +49,7 @@ export async function getAllAncestries(): Promise<Ancestry[]> {
  */
 export async function searchAncestries(namePattern: string, limit: number = 10): Promise<Ancestry[]> {
   return await database.query<Ancestry>(
-    'SELECT * FROM edk.ancestries WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM ancestries FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -59,7 +59,7 @@ export async function searchAncestries(namePattern: string, limit: number = 10):
  */
 export async function getAncestryName(ancestryId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.ancestries WHERE ancestryId = {id:UInt32}',
+    'SELECT name FROM ancestries FINAL WHERE ancestryId = {id:UInt32}',
     { id: ancestryId }
   )
   return result || null
@@ -69,5 +69,5 @@ export async function getAncestryName(ancestryId: number): Promise<string | null
  * Count total ancestries
  */
 export async function countAncestries(): Promise<number> {
-  return await database.count('edk.ancestries')
+  return await database.count('ancestries')
 }

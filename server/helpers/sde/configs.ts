@@ -8,7 +8,8 @@ import { extractLanguageField } from './parser'
 
 // Map Tables
 export const mapStargatesConfig: TableConfig = {
-  name: 'mapStargates',
+  name: 'stargates',
+  sourceName: 'mapStargates',
   mappings: [
     { source: '_key', target: 'stargateId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string' },
@@ -23,7 +24,8 @@ export const mapStargatesConfig: TableConfig = {
 }
 
 export const mapStarsConfig: TableConfig = {
-  name: 'mapStars',
+  name: 'stars',
+  sourceName: 'mapStars',
   mappings: [
     { source: '_key', target: 'starId', type: 'number', required: true },
     { source: 'age', target: 'age', type: 'number' },
@@ -38,7 +40,8 @@ export const mapStarsConfig: TableConfig = {
 }
 
 export const mapPlanetsConfig: TableConfig = {
-  name: 'mapPlanets',
+  name: 'planets',
+  sourceName: 'mapPlanets',
   mappings: [
     { source: '_key', target: 'planetId', type: 'number', required: true },
     { source: 'celestialIndex', target: 'celestialIndex', type: 'number' },
@@ -52,7 +55,8 @@ export const mapPlanetsConfig: TableConfig = {
 }
 
 export const mapMoonsConfig: TableConfig = {
-  name: 'mapMoons',
+  name: 'moons',
+  sourceName: 'mapMoons',
   mappings: [
     { source: '_key', target: 'moonId', type: 'number', required: true },
     { source: 'celestialIndex', target: 'celestialIndex', type: 'number' },
@@ -67,7 +71,8 @@ export const mapMoonsConfig: TableConfig = {
 }
 
 export const mapAsteroidBeltsConfig: TableConfig = {
-  name: 'mapAsteroidBelts',
+  name: 'asteroidBelts',
+  sourceName: 'mapAsteroidBelts',
   mappings: [
     { source: '_key', target: 'asteroidBeltId', type: 'number', required: true },
     { source: 'celestialIndex', target: 'celestialIndex', type: 'number' },
@@ -359,7 +364,8 @@ export const landmarksConfig: TableConfig = {
 }
 
 export const mapRegionsConfig: TableConfig = {
-  name: 'mapRegions',
+  name: 'regions',
+  sourceName: 'mapRegions',
   mappings: [
     { source: '_key', target: 'regionId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -390,7 +396,8 @@ export const skinMaterialsConfig: TableConfig = {
 }
 
 export const mapConstellationsConfig: TableConfig = {
-  name: 'mapConstellations',
+  name: 'constellations',
+  sourceName: 'mapConstellations',
   mappings: [
     { source: '_key', target: 'constellationId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },

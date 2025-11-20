@@ -3,21 +3,22 @@ import { database } from '../helpers/database'
 /**
  * Regions Model
  *
- * Provides query methods for mapRegions SDE table
+ * Provides query methods for regions SDE table
  */
 
 export interface Region {
   regionId: number
+  name: string
   constellationIds: number[]
   description: string
   factionId?: number
-  name: string
   nebulaId?: number
   positionX: number
   positionY: number
   positionZ: number
   wormholeClassId?: number
-  updatedAt: string
+  updatedAt: Date
+  version: number
 }
 
 /**
@@ -25,7 +26,7 @@ export interface Region {
  */
 export async function getRegion(regionId: number): Promise<Region | null> {
   return await database.queryOne<Region>(
-    'SELECT * FROM edk.mapRegions WHERE regionId = {id:UInt32}',
+    'SELECT * FROM regions WHERE regionId = {id:UInt32} FINAL',
     { id: regionId }
   )
 }
@@ -35,7 +36,7 @@ export async function getRegion(regionId: number): Promise<Region | null> {
  */
 export async function getAllRegions(): Promise<Region[]> {
   return await database.query<Region>(
-    'SELECT * FROM edk.mapRegions ORDER BY name'
+    'SELECT * FROM regions FINAL ORDER BY name'
   )
 }
 
@@ -44,7 +45,7 @@ export async function getAllRegions(): Promise<Region[]> {
  */
 export async function searchRegions(namePattern: string, limit: number = 10): Promise<Region[]> {
   return await database.query<Region>(
-    `SELECT * FROM edk.mapRegions
+    `SELECT * FROM regions FINAL
      WHERE name LIKE {pattern:String}
      ORDER BY name
      LIMIT {limit:UInt32}`,
@@ -57,7 +58,7 @@ export async function searchRegions(namePattern: string, limit: number = 10): Pr
  */
 export async function getRegionName(regionId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.mapRegions WHERE regionId = {id:UInt32}',
+    'SELECT name FROM regions WHERE regionId = {id:UInt32} FINAL',
     { id: regionId }
   )
   return result || null
@@ -68,7 +69,7 @@ export async function getRegionName(regionId: number): Promise<string | null> {
  */
 export async function getRegionsByFaction(factionId: number): Promise<Region[]> {
   return await database.query<Region>(
-    'SELECT * FROM edk.mapRegions WHERE factionId = {factionId:UInt32} ORDER BY name',
+    'SELECT * FROM regions WHERE factionId = {factionId:UInt32} FINAL ORDER BY name',
     { factionId }
   )
 }
@@ -77,5 +78,5 @@ export async function getRegionsByFaction(factionId: number): Promise<Region[]> 
  * Count total regions
  */
 export async function countRegions(): Promise<number> {
-  return await database.count('edk.mapRegions')
+  return await database.count('regions')
 }

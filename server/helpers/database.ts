@@ -33,7 +33,7 @@ export class DatabaseHelper {
       try {
         await this.client.ping()
         this.isConnected = true
-        console.log('🎯 ClickHouse connection established')
+        console.log('🎯 ClickHouse database connection established')
       } catch (error) {
         console.error('❌ Failed to connect to ClickHouse:', error)
         throw error

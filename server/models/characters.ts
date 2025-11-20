@@ -2,6 +2,7 @@
  * Character Model
  * Handles character-related data queries
  */
+import { database } from '../helpers/database'
 
 export interface CharacterInfo {
   id: number
@@ -37,7 +38,7 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
   }>(`
     SELECT name
     FROM characters
-    WHERE character_id = {characterId:UInt32}
+    WHERE characterId = {characterId:UInt32}
     LIMIT 1
   `, { characterId })
 
@@ -73,8 +74,8 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
       FROM attackers a
       FINAL
       LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
-      LEFT JOIN corporations corp FINAL ON a.corporationId = corp.corporation_id
-      LEFT JOIN corporations alliance FINAL ON a.allianceId = alliance.corporation_id
+      LEFT JOIN corporations corp FINAL ON a.corporationId = corp.corporationId
+      LEFT JOIN corporations alliance FINAL ON a.allianceId = alliance.corporationId
       WHERE a.characterId = {characterId:UInt32}
 
       UNION ALL
@@ -89,8 +90,8 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
         k.killmailTime as lastSeen
       FROM killmails k
       FINAL
-      LEFT JOIN corporations corp FINAL ON k.victimCorporationId = corp.corporation_id
-      LEFT JOIN corporations alliance FINAL ON k.victimAllianceId = alliance.corporation_id
+      LEFT JOIN corporations corp FINAL ON k.victimCorporationId = corp.corporationId
+      LEFT JOIN corporations alliance FINAL ON k.victimAllianceId = alliance.corporationId
       WHERE k.victimCharacterId = {characterId:UInt32}
 
       ORDER BY lastSeen DESC
@@ -129,20 +130,20 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
       kills_stats AS (
         SELECT
           count() as kills,
-          sum(k.victimDamageTaken * COALESCE(p.average_price, 0)) +
+          sum(k.victimDamageTaken * COALESCE(p.averagePrice, 0)) +
           sum(i.totalValue) as iskDestroyed
         FROM attackers a
         FINAL
         LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
-        LEFT JOIN prices p ON k.victimShipTypeId = p.type_id AND toDate(k.killmailTime) = p.price_date
+        LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND toDate(k.killmailTime) = p.priceDate
         LEFT JOIN (
           SELECT
             items.killmailId as killmailId,
-            sum((quantityDestroyed + quantityDropped) * COALESCE(prices.average_price, 0)) as totalValue
+            sum((quantityDestroyed + quantityDropped) * COALESCE(prices.averagePrice, 0)) as totalValue
           FROM items
           FINAL
           LEFT JOIN killmails km FINAL ON items.killmailId = km.killmailId
-          LEFT JOIN prices ON items.itemTypeId = prices.type_id AND toDate(km.killmailTime) = prices.price_date
+          LEFT JOIN prices ON items.itemTypeId = prices.typeId AND toDate(km.killmailTime) = prices.priceDate
           GROUP BY items.killmailId
         ) i ON k.killmailId = i.killmailId
         WHERE a.characterId = {characterId:UInt32}
@@ -150,19 +151,19 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
       losses_stats AS (
         SELECT
           count() as losses,
-          sum(k.victimDamageTaken * COALESCE(p.average_price, 0)) +
+          sum(k.victimDamageTaken * COALESCE(p.averagePrice, 0)) +
           sum(i.totalValue) as iskLost
         FROM killmails k
         FINAL
-        LEFT JOIN prices p ON k.victimShipTypeId = p.type_id AND toDate(k.killmailTime) = p.price_date
+        LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND toDate(k.killmailTime) = p.priceDate
         LEFT JOIN (
           SELECT
             items.killmailId as killmailId,
-            sum((quantityDestroyed + quantityDropped) * COALESCE(prices.average_price, 0)) as totalValue
+            sum((quantityDestroyed + quantityDropped) * COALESCE(prices.averagePrice, 0)) as totalValue
           FROM items
           FINAL
           LEFT JOIN killmails km FINAL ON items.killmailId = km.killmailId
-          LEFT JOIN prices ON items.itemTypeId = prices.type_id AND toDate(km.killmailTime) = prices.price_date
+          LEFT JOIN prices ON items.itemTypeId = prices.typeId AND toDate(km.killmailTime) = prices.priceDate
           GROUP BY items.killmailId
         ) i ON k.killmailId = i.killmailId
         WHERE k.victimCharacterId = {characterId:UInt32}
@@ -254,97 +255,6 @@ export async function getShipGroupStatsByCharacter(characterId: number): Promise
   `, { characterId })
 
   return stats
-}
-
-export interface CharacterMostValuableKill {
-  killmail_id: number
-  killmail_time: Date
-  total_value: number
-  victim: {
-    ship: {
-      type_id: number
-      name: string
-    }
-    character: {
-      id: number | null
-      name: string
-    }
-    corporation: {
-      id: number
-      ticker: string
-    }
-  }
-}
-
-/**
- * Get most valuable kills for a character (last 7 days)
- */
-export async function getMostValuableKillsByCharacter(characterId: number, limit: number = 6): Promise<CharacterMostValuableKill[]> {
-  // Query killmails where character was an attacker
-  const result = await database.query<{
-    killmail_id: number
-    killmail_time: Date
-    total_value: number
-    victim_ship_type_id: number
-    victim_ship_name: string
-    victim_character_id: number | null
-    victim_character_name: string
-    victim_corporation_id: number
-    victim_corporation_ticker: string
-  }>(`
-    SELECT
-      k.killmailId as killmail_id,
-      k.killmailTime as killmail_time,
-      (k.victimDamageTaken * COALESCE(p.average_price, 0)) + COALESCE(i.totalValue, 0) as total_value,
-      k.victimShipTypeId as victim_ship_type_id,
-      t.name as victim_ship_name,
-      k.victimCharacterId as victim_character_id,
-      COALESCE(c.name, 'Unknown') as victim_character_name,
-      k.victimCorporationId as victim_corporation_id,
-      COALESCE(corp.tickerName, '') as victim_corporation_ticker
-    FROM attackers a
-    FINAL
-    LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
-    LEFT JOIN types t ON k.victimShipTypeId = t.typeId
-    LEFT JOIN npcCharacters c ON k.victimCharacterId = c.characterId
-    LEFT JOIN npcCorporations corp ON k.victimCorporationId = corp.corporationId
-    LEFT JOIN prices p ON k.victimShipTypeId = p.type_id AND toDate(k.killmailTime) = p.price_date
-    LEFT JOIN (
-      SELECT
-        items.killmailId as killmailId,
-        sum((quantityDestroyed + quantityDropped) * COALESCE(prices.average_price, 0)) as totalValue
-      FROM items
-      FINAL
-      LEFT JOIN killmails km FINAL ON items.killmailId = km.killmailId
-      LEFT JOIN prices ON items.itemTypeId = prices.type_id AND toDate(km.killmailTime) = prices.price_date
-      GROUP BY items.killmailId
-    ) i ON k.killmailId = i.killmailId
-    WHERE a.characterId = {characterId:UInt32}
-      AND k.killmailTime >= now() - INTERVAL 7 DAY
-    ORDER BY total_value DESC
-    LIMIT {limit:UInt32}
-  `, { characterId, limit })
-
-  // Transform to match template expectations
-  return result.map(row => ({
-    killmail_id: row.killmail_id,
-    killmail_time: row.killmail_time,
-    total_value: row.total_value,
-    victim: {
-      ship: {
-        type_id: row.victim_ship_type_id,
-        name: row.victim_ship_name
-      },
-      character: {
-        id: row.victim_character_id,
-        name: row.victim_character_name
-      },
-      corporation: {
-        id: row.victim_corporation_id,
-        ticker: row.victim_corporation_ticker
-      }
-    }
-  }))
 }
 
 export interface CharacterTopEntity {
@@ -473,20 +383,20 @@ export interface CharacterKillmailRow {
   victim_ship_type_id: number
   victim_ship_name: string
   victim_ship_group: string
-  victim_character_id: number | null
+  victim_characterId: number | null
   victim_character_name: string
-  victim_corporation_id: number
+  victim_corporationId: number
   victim_corporation_name: string
   victim_corporation_ticker: string
-  victim_alliance_id: number | null
+  victim_allianceId: number | null
   victim_alliance_name: string | null
   victim_alliance_ticker: string | null
-  attacker_character_id: number | null
+  attacker_characterId: number | null
   attacker_character_name: string
-  attacker_corporation_id: number | null
+  attacker_corporationId: number | null
   attacker_corporation_name: string
   attacker_corporation_ticker: string
-  attacker_alliance_id: number | null
+  attacker_allianceId: number | null
   attacker_alliance_name: string | null
   attacker_alliance_ticker: string | null
   solar_system_id: number
@@ -525,12 +435,12 @@ export async function getCharacterKillmails(
     `
   } else if (type === 'losses') {
     // Character was the victim
-    whereClause = `AND victim_character_id = {characterId:UInt32}`
+    whereClause = `AND victim_characterId = {characterId:UInt32}`
   } else {
     // All: either attacker or victim
     whereClause = `
       AND (
-        victim_character_id = {characterId:UInt32}
+        victim_characterId = {characterId:UInt32}
         OR killmail_id IN (
           SELECT killmailId
           FROM attackers
@@ -548,20 +458,20 @@ export async function getCharacterKillmails(
       victim_ship_type_id,
       victim_ship_name,
       victim_ship_group,
-      victim_character_id,
+      victim_characterId,
       victim_character_name,
-      victim_corporation_id,
+      victim_corporationId,
       victim_corporation_name,
       victim_corporation_ticker,
-      victim_alliance_id,
+      victim_allianceId,
       victim_alliance_name,
       victim_alliance_ticker,
-      attacker_character_id,
+      attacker_characterId,
       attacker_character_name,
-      attacker_corporation_id,
+      attacker_corporationId,
       attacker_corporation_name,
       attacker_corporation_ticker,
-      attacker_alliance_id,
+      attacker_allianceId,
       attacker_alliance_name,
       attacker_alliance_ticker,
       solar_system_id,
@@ -606,11 +516,11 @@ export async function getCharacterKillmailCount(
       )
     `
   } else if (type === 'losses') {
-    whereClause = `AND victim_character_id = {characterId:UInt32}`
+    whereClause = `AND victim_characterId = {characterId:UInt32}`
   } else {
     whereClause = `
       AND (
-        victim_character_id = {characterId:UInt32}
+        victim_characterId = {characterId:UInt32}
         OR killmail_id IN (
           SELECT killmailId
           FROM attackers
@@ -632,4 +542,187 @@ export async function getCharacterKillmailCount(
   return result || 0
 }
 
+/**
+ * Character database record interface
+ */
+export interface Character {
+  characterId: number
+  allianceId: number | null
+  birthday: string
+  bloodlineId: number
+  corporationId: number
+  description: string
+  gender: string
+  name: string
+  raceId: number
+  securityStatus: number
+  updatedAt: Date
+  version: number
+}
 
+/**
+ * Get character by ID (basic record)
+ */
+export async function getCharacter(characterId: number): Promise<Character | null> {
+  return await database.queryOne<Character>(
+    'SELECT * FROM characters FINAL WHERE characterId = {id:UInt32}',
+    { id: characterId }
+  )
+}
+
+/**
+ * Get multiple characters by IDs
+ */
+export async function getCharacters(characterIds: number[]): Promise<Character[]> {
+  if (characterIds.length === 0) return []
+
+  return await database.query<Character>(
+    'SELECT * FROM characters FINAL WHERE characterId IN ({ids:Array(UInt32)})',
+    { ids: characterIds }
+  )
+}
+
+/**
+ * Search characters by name
+ */
+export async function searchCharacters(searchTerm: string, limit: number = 20): Promise<Character[]> {
+  return await database.query<Character>(
+    `SELECT * FROM characters FINAL
+     WHERE name ILIKE {search:String}
+     ORDER BY name
+     LIMIT {limit:UInt32}`,
+    { search: `%${searchTerm}%`, limit }
+  )
+}
+
+/**
+ * Get character name by ID
+ */
+export async function getCharacterName(characterId: number): Promise<string | null> {
+  const name = await database.queryValue<string>(
+    'SELECT name FROM characters FINAL WHERE characterId = {id:UInt32}',
+    { id: characterId }
+  )
+  return name || null
+}
+
+/**
+ * Character with corporation and alliance info
+ */
+export interface CharacterWithCorporationAndAlliance {
+  name: string
+  corporationId: number
+  corporationName: string
+  corporationTicker: string
+  allianceId: number | null
+  allianceName: string | null
+  allianceTicker: string | null
+}
+
+/**
+ * Get character with joined corporation and alliance data
+ */
+export async function getCharacterWithCorporationAndAlliance(
+  characterId: number
+): Promise<CharacterWithCorporationAndAlliance | null> {
+  return await database.queryOne<CharacterWithCorporationAndAlliance>(
+    `SELECT
+      c.name as name,
+      c.corporationId as corporationId,
+      corp.name as corporationName,
+      corp.ticker as corporationTicker,
+      corp.allianceId as allianceId,
+      alliance.name as allianceName,
+      alliance.ticker as allianceTicker
+    FROM characters c FINAL
+    LEFT JOIN corporations corp FINAL ON c.corporationId = corp.corporationId
+    LEFT JOIN alliances alliance FINAL ON corp.allianceId = alliance.allianceId
+    WHERE c.characterId = {characterId:UInt32}
+    LIMIT 1`,
+    { characterId }
+  )
+}
+
+/**
+ * Store or update character data
+ */
+export async function storeCharacter(
+  characterId: number,
+  data: {
+    allianceId: number | null
+    birthday: string
+    bloodlineId: number
+    corporationId: number
+    description: string
+    gender: string
+    name: string
+    raceId: number
+    securityStatus: number
+  }
+): Promise<void> {
+  const now = Math.floor(Date.now() / 1000)
+
+  await database.bulkInsert('characters', [
+    {
+      characterId: characterId,
+      allianceId: data.allianceId,
+      birthday: data.birthday,
+      bloodline_id: data.bloodlineId,
+      corporationId: data.corporationId,
+      description: data.description,
+      gender: data.gender,
+      name: data.name,
+      race_id: data.raceId,
+      security_status: data.securityStatus,
+      updated_at: now,
+      version: now
+    }
+  ])
+}
+
+/**
+ * Bulk store character data (for backfill/import)
+ */
+export async function storeCharactersBulk(
+  characters: Array<{
+    characterId: number
+    allianceId: number | null
+    birthday: string
+    bloodlineId: number
+    corporationId: number
+    description: string
+    gender: string
+    name: string
+    raceId: number
+    securityStatus: number
+  }>
+): Promise<void> {
+  if (characters.length === 0) return
+
+  const now = Math.floor(Date.now() / 1000)
+
+  const records = characters.map(char => ({
+    characterId: char.characterId,
+    allianceId: char.allianceId,
+    birthday: char.birthday,
+    bloodlineId: char.bloodlineId,
+    corporationId: char.corporationId,
+    description: char.description,
+    gender: char.gender,
+    name: char.name,
+    raceId: char.raceId,
+    securityStatus: char.securityStatus,
+    updatedAt: now,
+    version: now
+  }))
+
+  await database.bulkInsert('characters', records)
+}
+
+/**
+ * Check if character exists
+ */
+export async function characterExists(characterId: number): Promise<boolean> {
+  const count = await database.count('characters', 'characterId = {id:UInt32}', { id: characterId })
+  return count > 0
+}

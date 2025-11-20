@@ -1,0 +1,19 @@
+-- DEPRECATED: This file is no longer used
+--
+-- Previously, this file created an entity_stats table that tried to pre-compute
+-- stats for all time periods (hour/day/week/month/all) using materialized views.
+-- This caused duplication because UNION ALL across periods meant 5 rows per entity
+-- being inserted every day.
+--
+-- The new architecture:
+-- 1. File 41 (entity_stats_daily_*.sql) creates daily aggregation tables
+--    - One row per entity per day
+--    - Materialized views fire daily from killmails table
+--    - Clean deduplication via COUNT(DISTINCT killmailId)
+--
+-- 2. TypeScript models (topBoxes.ts, entityStats.ts) handle period aggregation
+--    - Query the daily tables with date range filtering
+--    - SUM across dates for any period (hour/day/week/month/all)
+--    - No duplication, no pre-computed bloat
+--
+-- This simplifies the architecture and eliminates data duplication.

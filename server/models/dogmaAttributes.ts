@@ -25,7 +25,7 @@ export interface DogmaAttribute {
  */
 export async function getDogmaAttribute(attributeId: number): Promise<DogmaAttribute | null> {
   return await database.queryOne<DogmaAttribute>(
-    'SELECT * FROM edk.dogmaAttributes WHERE attributeId = {id:UInt32}',
+    'SELECT * FROM dogmaAttributes FINAL WHERE attributeId = {id:UInt32}',
     { id: attributeId }
   )
 }
@@ -35,7 +35,7 @@ export async function getDogmaAttribute(attributeId: number): Promise<DogmaAttri
  */
 export async function getPublishedDogmaAttributes(): Promise<DogmaAttribute[]> {
   return await database.query<DogmaAttribute>(
-    'SELECT * FROM edk.dogmaAttributes WHERE published = 1 ORDER BY name'
+    'SELECT * FROM dogmaAttributes FINAL WHERE published = 1 ORDER BY name'
   )
 }
 
@@ -44,7 +44,7 @@ export async function getPublishedDogmaAttributes(): Promise<DogmaAttribute[]> {
  */
 export async function getDogmaAttributesByCategory(categoryId: number): Promise<DogmaAttribute[]> {
   return await database.query<DogmaAttribute>(
-    'SELECT * FROM edk.dogmaAttributes WHERE categoryId = {categoryId:UInt32} ORDER BY name',
+    'SELECT * FROM dogmaAttributes FINAL WHERE categoryId = {categoryId:UInt32} ORDER BY name',
     { categoryId }
   )
 }
@@ -54,7 +54,7 @@ export async function getDogmaAttributesByCategory(categoryId: number): Promise<
  */
 export async function searchDogmaAttributes(namePattern: string, limit: number = 10): Promise<DogmaAttribute[]> {
   return await database.query<DogmaAttribute>(
-    'SELECT * FROM edk.dogmaAttributes WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM dogmaAttributes FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -64,7 +64,7 @@ export async function searchDogmaAttributes(namePattern: string, limit: number =
  */
 export async function getDogmaAttributeName(attributeId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.dogmaAttributes WHERE attributeId = {id:UInt32}',
+    'SELECT name FROM dogmaAttributes FINAL WHERE attributeId = {id:UInt32}',
     { id: attributeId }
   )
   return result || null
@@ -74,5 +74,5 @@ export async function getDogmaAttributeName(attributeId: number): Promise<string
  * Count total dogma attributes
  */
 export async function countDogmaAttributes(): Promise<number> {
-  return await database.count('edk.dogmaAttributes')
+  return await database.count('dogmaAttributes')
 }

@@ -1,0 +1,36 @@
+{{!--
+  EVE Image Component with Lazy Loading
+
+  Universal component for all EVE Online images from images.evetech.net
+  Automatically handles lazy loading, fallbacks, and optimal sizing
+
+  Usage:
+    {{> partials/eve-image type="character" id=characterId size=64 alt="Character Name"}}
+    {{> partials/eve-image type="corporation" id=corpId size=128 alt="Corp Name"}}
+    {{> partials/eve-image type="alliance" id=allianceId size=256 alt="Alliance Name"}}
+    {{> partials/eve-image type="ship" id=typeId size=64 alt="Ship Name" variant="icon"}}
+    {{> partials/eve-image type="item" id=typeId size=32 alt="Item Name"}}
+
+  Parameters:
+    - type: "character" | "corporation" | "alliance" | "ship" | "item" | "type"
+    - id: The entity ID
+    - size: Image size (32, 64, 128, 256, 512, 1024) - default 64
+    - alt: Alt text for accessibility
+    - variant: "portrait" | "icon" | "render" | "logo" (optional, auto-selected)
+    - lazy: Enable lazy loading (default true, set to false for above-fold images)
+    - class: Additional CSS classes
+--}}
+{{~#if id~}}
+<img
+  src="{{~> partials/eve-image-url type=type id=id size=size variant=variant~}}"
+  alt="{{alt}}"
+  {{#if class}}class="{{class}}"{{/if}}
+  {{#unless (eq lazy false)}}loading="lazy"{{/unless}}
+  width="{{#if size}}{{size}}{{else}}64{{/if}}"
+  height="{{#if size}}{{size}}{{else}}64{{/if}}"
+  decoding="async"
+/>
+{{~else~}}
+{{! Fallback for missing ID }}
+<div class="eve-image-placeholder" style="width: {{#if size}}{{size}}{{else}}64{{/if}}px; height: {{#if size}}{{size}}{{else}}64{{/if}}px;"></div>
+{{~/if~}}

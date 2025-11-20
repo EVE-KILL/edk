@@ -24,7 +24,7 @@ export interface NPCCorporation {
  */
 export async function getNPCCorporation(corporationId: number): Promise<NPCCorporation | null> {
   return await database.queryOne<NPCCorporation>(
-    'SELECT * FROM edk.npcCorporations WHERE corporationId = {id:UInt32}',
+    'SELECT * FROM npcCorporations FINAL WHERE corporationId = {id:UInt32}',
     { id: corporationId }
   )
 }
@@ -34,7 +34,7 @@ export async function getNPCCorporation(corporationId: number): Promise<NPCCorpo
  */
 export async function getNPCCorporationsByFaction(factionId: number): Promise<NPCCorporation[]> {
   return await database.query<NPCCorporation>(
-    'SELECT * FROM edk.npcCorporations WHERE factionId = {factionId:UInt32} ORDER BY name',
+    'SELECT * FROM npcCorporations FINAL WHERE factionId = {factionId:UInt32} ORDER BY name',
     { factionId }
   )
 }
@@ -44,7 +44,7 @@ export async function getNPCCorporationsByFaction(factionId: number): Promise<NP
  */
 export async function getActiveNPCCorporations(): Promise<NPCCorporation[]> {
   return await database.query<NPCCorporation>(
-    'SELECT * FROM edk.npcCorporations WHERE deleted = 0 ORDER BY name'
+    'SELECT * FROM npcCorporations FINAL WHERE deleted = 0 ORDER BY name'
   )
 }
 
@@ -53,7 +53,7 @@ export async function getActiveNPCCorporations(): Promise<NPCCorporation[]> {
  */
 export async function searchNPCCorporations(namePattern: string, limit: number = 10): Promise<NPCCorporation[]> {
   return await database.query<NPCCorporation>(
-    'SELECT * FROM edk.npcCorporations WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM npcCorporations FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -63,7 +63,7 @@ export async function searchNPCCorporations(namePattern: string, limit: number =
  */
 export async function getNPCCorporationName(corporationId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.npcCorporations WHERE corporationId = {id:UInt32}',
+    'SELECT name FROM npcCorporations FINAL WHERE corporationId = {id:UInt32}',
     { id: corporationId }
   )
   return result || null
@@ -73,5 +73,5 @@ export async function getNPCCorporationName(corporationId: number): Promise<stri
  * Count total NPC corporations
  */
 export async function countNPCCorporations(): Promise<number> {
-  return await database.count('edk.npcCorporations')
+  return await database.count('npcCorporations')
 }

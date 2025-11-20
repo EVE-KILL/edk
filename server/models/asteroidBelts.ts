@@ -3,7 +3,7 @@ import { database } from '../helpers/database'
 /**
  * Asteroid Belts Model
  *
- * Provides query methods for mapAsteroidBelts SDE table
+ * Provides query methods for asteroidBelts SDE table
  */
 
 export interface AsteroidBelt {
@@ -22,7 +22,7 @@ export interface AsteroidBelt {
  */
 export async function getAsteroidBelt(asteroidBeltId: number): Promise<AsteroidBelt | null> {
   return await database.queryOne<AsteroidBelt>(
-    'SELECT * FROM edk.mapAsteroidBelts WHERE asteroidBeltId = {id:UInt32}',
+    'SELECT * FROM asteroidBelts FINAL WHERE asteroidBeltId = {id:UInt32}',
     { id: asteroidBeltId }
   )
 }
@@ -32,7 +32,7 @@ export async function getAsteroidBelt(asteroidBeltId: number): Promise<AsteroidB
  */
 export async function getAsteroidBeltsBySystem(solarSystemId: number): Promise<AsteroidBelt[]> {
   return await database.query<AsteroidBelt>(
-    'SELECT * FROM edk.mapAsteroidBelts WHERE solarSystemId = {systemId:UInt32} ORDER BY celestialIndex',
+    'SELECT * FROM asteroidBelts FINAL WHERE solarSystemId = {systemId:UInt32} ORDER BY celestialIndex',
     { systemId: solarSystemId }
   )
 }
@@ -42,7 +42,7 @@ export async function getAsteroidBeltsBySystem(solarSystemId: number): Promise<A
  */
 export async function searchAsteroidBelts(namePattern: string, limit: number = 10): Promise<AsteroidBelt[]> {
   return await database.query<AsteroidBelt>(
-    'SELECT * FROM edk.mapAsteroidBelts WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM asteroidBelts FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -52,7 +52,7 @@ export async function searchAsteroidBelts(namePattern: string, limit: number = 1
  */
 export async function getAsteroidBeltName(asteroidBeltId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.mapAsteroidBelts WHERE asteroidBeltId = {id:UInt32}',
+    'SELECT name FROM asteroidBelts FINAL WHERE asteroidBeltId = {id:UInt32}',
     { id: asteroidBeltId }
   )
   return result || null
@@ -62,5 +62,5 @@ export async function getAsteroidBeltName(asteroidBeltId: number): Promise<strin
  * Count total asteroid belts
  */
 export async function countAsteroidBelts(): Promise<number> {
-  return await database.count('edk.mapAsteroidBelts')
+  return await database.count('asteroidBelts')
 }

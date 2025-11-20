@@ -1,0 +1,2 @@
+-- Migration 44: Reserved for future use
+-- Most valuable kills table denormalization is now handled in 42-create-valuable-kills-views.sql

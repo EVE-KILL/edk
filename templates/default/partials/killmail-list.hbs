@@ -10,10 +10,10 @@
     </div>
 
     {{#each killmails}}
-    <div class="kb-kl-row{{#if isLoss}} kb-kl-row--loss{{/if}}" data-killmail-id="{{killmail_id}}" onclick="window.location.href='/killmail/{{killmail_id}}';" style="cursor: pointer;">
+  <div class="kb-kl-row{{#if isLoss}} kb-kl-row--loss{{/if}}" data-killmail-id="{{killmailId}}" onclick="window.location.href='/killmail/{{killmailId}}';" style="cursor: pointer;">
         <div class="kb-kl-col kb-kl-col--ship">
             <div class="kb-kl-ship">
-                {{> partials/eve-image type="ship" id=victim.ship.type_id size=48 alt=victim.ship.name class="kb-kl-ship-icon"}}
+        {{> partials/eve-image type="ship" id=victim.ship.typeId size=48 alt=victim.ship.name class="kb-kl-ship-icon"}}
                 <div class="kb-kl-info kb-kl-info--ship">
                     <div class="kb-kl-info__primary">{{victim.ship.name}}</div>
                     <div class="kb-kl-info__secondary">{{victim.ship.group}}</div>
@@ -83,26 +83,26 @@
 
         <div class="kb-kl-col kb-kl-col--location">
             <div class="kb-kl-info">
-                <div class="kb-kl-info__primary">{{solar_system.name}}</div>
-                <div class="kb-kl-info__secondary">{{solar_system.region}}</div>
+                <div class="kb-kl-info__primary">{{solarSystem.name}}</div>
+        <div class="kb-kl-info__secondary">{{solarSystem.region}}</div>
             </div>
         </div>
 
         <div class="kb-kl-col kb-kl-col--value">
             <div class="kb-kl-info kb-kl-info--value">
-                {{#if total_value}}
-                    <div class="kb-kl-value" data-total-value="{{killmail_id}}">{{abbreviateISK total_value}}</div>
+        {{#if totalValue}}
+          <div class="kb-kl-value" data-total-value="{{killmailId}}">{{abbreviateISK totalValue}}</div>
                 {{else}}
-                    <div class="kb-kl-value--unknown" data-total-value="{{killmail_id}}">N/A</div>
+          <div class="kb-kl-value--unknown" data-total-value="{{killmailId}}">N/A</div>
                 {{/if}}
-                {{#if attacker_count}}
-                    <div class="kb-kl-info__secondary kb-kl-attackers-count">({{attacker_count}})</div>
+        {{#if attackerCount}}
+          <div class="kb-kl-info__secondary kb-kl-attackers-count">({{attackerCount}})</div>
                 {{/if}}
             </div>
         </div>
 
         <div class="kb-kl-col kb-kl-col--time">
-            <span class="kb-kl-time">{{killmail_time}}</span>
+      <span class="kb-kl-time">{{killmailTimeRelative}}</span>
         </div>
     </div>
     {{/each}}

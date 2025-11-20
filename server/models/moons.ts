@@ -3,7 +3,7 @@ import { database } from '../helpers/database'
 /**
  * Moons Model
  *
- * Provides query methods for mapMoons SDE table
+ * Provides query methods for moons SDE table
  */
 
 export interface Moon {
@@ -23,7 +23,7 @@ export interface Moon {
  */
 export async function getMoon(moonId: number): Promise<Moon | null> {
   return await database.queryOne<Moon>(
-    'SELECT * FROM edk.mapMoons WHERE moonId = {id:UInt32}',
+    'SELECT * FROM moons FINAL WHERE moonId = {id:UInt32}',
     { id: moonId }
   )
 }
@@ -33,7 +33,7 @@ export async function getMoon(moonId: number): Promise<Moon | null> {
  */
 export async function getMoonsByPlanet(planetId: number): Promise<Moon[]> {
   return await database.query<Moon>(
-    'SELECT * FROM edk.mapMoons WHERE planetId = {planetId:UInt32} ORDER BY celestialIndex',
+    'SELECT * FROM moons FINAL WHERE planetId = {planetId:UInt32} ORDER BY celestialIndex',
     { planetId }
   )
 }
@@ -43,7 +43,7 @@ export async function getMoonsByPlanet(planetId: number): Promise<Moon[]> {
  */
 export async function getMoonsBySystem(solarSystemId: number): Promise<Moon[]> {
   return await database.query<Moon>(
-    'SELECT * FROM edk.mapMoons WHERE solarSystemId = {systemId:UInt32} ORDER BY name',
+    'SELECT * FROM moons FINAL WHERE solarSystemId = {systemId:UInt32} ORDER BY name',
     { systemId: solarSystemId }
   )
 }
@@ -53,7 +53,7 @@ export async function getMoonsBySystem(solarSystemId: number): Promise<Moon[]> {
  */
 export async function searchMoons(namePattern: string, limit: number = 10): Promise<Moon[]> {
   return await database.query<Moon>(
-    'SELECT * FROM edk.mapMoons WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM moons FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -63,7 +63,7 @@ export async function searchMoons(namePattern: string, limit: number = 10): Prom
  */
 export async function getMoonName(moonId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM edk.mapMoons WHERE moonId = {id:UInt32}',
+    'SELECT name FROM moons FINAL WHERE moonId = {id:UInt32}',
     { id: moonId }
   )
   return result || null
@@ -73,5 +73,5 @@ export async function getMoonName(moonId: number): Promise<string | null> {
  * Count total moons
  */
 export async function countMoons(): Promise<number> {
-  return await database.count('edk.mapMoons')
+  return await database.count('moons')
 }

@@ -1,0 +1,219 @@
+{{#if killmails}}
+<!-- Kills for Followed Entities or Global Feed -->
+
+<!-- Most Valuable Kills Section - Full Width -->
+{{#if mostValuableKills}}
+<section class="section mb-lg">
+    {{> partials/mostvaluable mostValuableKills=mostValuableKills timeRange="Last 30 Days"}}
+</section>
+{{/if}}
+
+<div class="killlist-wrapper">
+  <!-- Top 10 Stats (Left Sidebar) -->
+  {{#if top10Stats}}
+  {{> components/top-10-stats top10Stats=top10Stats}}
+  {{/if}}
+
+  <!-- Main Content Area (Right 80%) -->
+  <div class="killlist-main">
+  <!-- Ship Group Statistics (for global feed) -->
+  {{#if shipGroupStats}}
+  <section class="section mb-lg">
+      {{> components/section-header title="Ship Groups (Last 30 Days)" bordered=true}}
+      {{> components/ship-group-stats shipGroupStats=shipGroupStats shipGroupColumns=shipGroupColumns}}
+  </section>
+  {{/if}}
+
+  <!-- Statistics Section -->
+  {{#if statistics}}
+  <section class="section mb-lg">
+      {{> components/section-header title="Kills Statistics" icon="kills" bordered=true}}
+
+      <table class="kb-table" cellspacing="1">
+        <thead>
+            <tr class="kb-table-header">
+                <th class="kb-table-header text-center" colspan="4">Overall Statistics</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="kb-table-row-even">
+                <td class="kb-table-cell"><b>Total Kills:</b></td>
+                <td class="kb-table-cell">{{statistics.totalKills}}</td>
+                <td class="kb-table-cell"><b>Total ISK Destroyed:</b></td>
+                <td class="kb-table-cell"><span class="isk-value">{{formatISK statistics.totalISKDestroyed}}</span></td>
+            </tr>
+            <tr class="kb-table-row-odd">
+                <td class="kb-table-cell"><b>Solo Kills:</b></td>
+                <td class="kb-table-cell">{{statistics.soloKills}}</td>
+                <td class="kb-table-cell"><b>NPC Kills:</b></td>
+                <td class="kb-table-cell">{{statistics.npcKills}}</td>
+            </tr>
+            <tr class="kb-table-row-even">
+                <td class="kb-table-cell"><b>Avg Attackers/Kill:</b></td>
+                <td class="kb-table-cell">{{statistics.averageAttackersPerKill}}</td>
+                <td class="kb-table-cell"><b>Unique Pilots:</b></td>
+                <td class="kb-table-cell">{{statistics.totalUniquePilots}}</td>
+            </tr>
+
+            <tr class="kb-table-header">
+                <th class="kb-table-header text-center" colspan="4">Activity</th>
+            </tr>
+            <tr class="kb-table-row-even">
+                <td class="kb-table-cell"><b>Active Pilots (24h):</b></td>
+                <td class="kb-table-cell">{{statistics.activePilotsLast24Hours}}</td>
+                <td class="kb-table-cell"><b>Active Pilots (7d):</b></td>
+                <td class="kb-table-cell">{{statistics.activePilotsLast7Days}}</td>
+            </tr>
+            <tr class="kb-table-row-odd">
+                <td class="kb-table-cell"><b>Kills (Last 24h):</b></td>
+                <td class="kb-table-cell">{{statistics.killsLast24Hours}}</td>
+                <td class="kb-table-cell"><b>Kills (Last 7d):</b></td>
+                <td class="kb-table-cell">{{statistics.killsLast7Days}}</td>
+            </tr>
+            <tr class="kb-table-row-even">
+                <td class="kb-table-cell"><b>Kills (Last 30d):</b></td>
+                <td class="kb-table-cell">{{statistics.killsLast30Days}}</td>
+                <td class="kb-table-cell"></td>
+                <td class="kb-table-cell"></td>
+            </tr>
+
+            {{#if statistics.topKiller}}
+            <tr class="kb-table-header">
+                <th class="kb-table-header text-center" colspan="4">Top Attackers & Organizations</th>
+            </tr>
+            <tr class="kb-table-row-even">
+                <td class="kb-table-cell"><b>Top Killer:</b></td>
+                <td class="kb-table-cell"><a href="/character/{{statistics.topKiller.id}}">{{statistics.topKiller.name}}</a> ({{statistics.topKiller.kills}} kills)</td>
+                <td class="kb-table-cell"><b>Top Corporation:</b></td>
+                <td class="kb-table-cell"><a href="/corporation/{{statistics.topCorporation.id}}">{{statistics.topCorporation.name}}</a> ({{statistics.topCorporation.kills}} kills)</td>
+            </tr>
+            <tr class="kb-table-row-odd">
+                <td class="kb-table-cell"><b>Top Alliance:</b></td>
+                <td class="kb-table-cell"><a href="/alliance/{{statistics.topAlliance.id}}">{{statistics.topAlliance.name}}</a> ({{statistics.topAlliance.kills}} kills)</td>
+                <td class="kb-table-cell"></td>
+                <td class="kb-table-cell"></td>
+            </tr>
+            {{/if}}
+
+            {{#if statistics.mostDestroyedShip}}
+            <tr class="kb-table-header">
+                <th class="kb-table-header text-center" colspan="4">Ships & Systems</th>
+            </tr>
+            <tr class="kb-table-row-even">
+                <td class="kb-table-cell"><b>Most Destroyed Ship:</b></td>
+                <td class="kb-table-cell"><a href="/type/{{statistics.mostDestroyedShip.id}}">{{statistics.mostDestroyedShip.name}}</a> ({{statistics.mostDestroyedShip.count}}x)</td>
+                <td class="kb-table-cell"><b>Most Used Ship:</b></td>
+                <td class="kb-table-cell"><a href="/type/{{statistics.mostUsedShip.id}}">{{statistics.mostUsedShip.name}}</a> ({{statistics.mostUsedShip.count}}x)</td>
+            </tr>
+            <tr class="kb-table-row-odd">
+                <td class="kb-table-cell"><b>Most Dangerous System:</b></td>
+                <td class="kb-table-cell"><a href="/system/{{statistics.mostDangerousSystem.id}}">{{statistics.mostDangerousSystem.name}}</a> ({{statistics.mostDangerousSystem.count}} kills)</td>
+                <td class="kb-table-cell"></td>
+                <td class="kb-table-cell"></td>
+            </tr>
+            {{/if}}
+        </tbody>
+    </table>
+  </section>
+  {{/if}}
+
+  <!-- Pagination (Top) -->
+  {{#if pagination}}
+      {{> partials/pagination}}
+  {{/if}}
+
+  <!-- Killmails List -->
+  <section class="killlist-content">
+      {{> partials/killmail-list}}
+  </section>
+
+  <!-- Pagination (Bottom) -->
+  {{#if pagination}}
+      {{> partials/pagination}}
+  {{/if}}
+</div>
+</div>
+
+<style>
+/* Outer flexbox container - handles layout of top boxes and main content */
+.killlist-wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+/* Top boxes section - fixed 25% width on the left */
+.killlist-wrapper .top-10-container {
+  flex: 0 0 25%;
+  box-sizing: border-box;
+  min-width: 200px;
+  padding: 0;
+  margin: 0;
+}
+
+/* Main content section - takes remaining 75% space */
+.killlist-main {
+  flex: 1 1 75%;
+  box-sizing: border-box;
+  min-width: 300px;
+  padding: 0;
+  margin: 0;
+}
+
+.killlist-content {
+  clear: both;
+}
+
+/* Responsive: stack on smaller screens */
+@media (max-width: 1200px) {
+  .killlist-wrapper {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .killlist-wrapper .top-10-container {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: auto;
+  }
+
+  .killlist-main {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: auto;
+  }
+}
+</style>
+
+{{else}}
+<!-- No killmails found for this filter -->
+<div class="box">
+    <div class="box-content" style="text-align: center; padding: 40px 20px;">
+        <p style="font-size: 18px; color: #999; margin-bottom: 15px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.3; margin-bottom: 20px;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M16 16s-1.5-2-4-2-4 2-4 2"></path>
+                <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                <line x1="15" y1="9" x2="15.01" y2="9"></line>
+            </svg>
+        </p>
+        <p style="font-size: 16px; margin-bottom: 10px;">No killmails found</p>
+        <p style="color: #666; font-size: 14px;">
+            {{#if pageTitle}}
+                There are currently no {{pageTitle}} in the database.
+            {{else}}
+                There are currently no killmails matching your criteria.
+            {{/if}}
+        </p>
+        <p style="color: #666; font-size: 14px; margin-top: 10px;">
+            Check back later or try a different filter.
+        </p>
+    </div>
+</div>
+{{/if}}
+
+

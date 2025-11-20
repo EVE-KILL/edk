@@ -3,7 +3,7 @@ import { database } from '../helpers/database'
 /**
  * Stars Model
  *
- * Provides query methods for mapStars SDE table
+ * Provides query methods for stars SDE table
  */
 
 export interface Star {
@@ -23,7 +23,7 @@ export interface Star {
  */
 export async function getStar(starId: number): Promise<Star | null> {
   return await database.queryOne<Star>(
-    'SELECT * FROM edk.mapStars WHERE starId = {id:UInt32}',
+    'SELECT * FROM stars FINAL WHERE starId = {id:UInt32}',
     { id: starId }
   )
 }
@@ -33,7 +33,7 @@ export async function getStar(starId: number): Promise<Star | null> {
  */
 export async function getStarBySystem(solarSystemId: number): Promise<Star | null> {
   return await database.queryOne<Star>(
-    'SELECT * FROM edk.mapStars WHERE solarSystemId = {systemId:UInt32}',
+    'SELECT * FROM stars FINAL WHERE solarSystemId = {systemId:UInt32}',
     { systemId: solarSystemId }
   )
 }
@@ -43,7 +43,7 @@ export async function getStarBySystem(solarSystemId: number): Promise<Star | nul
  */
 export async function getStarsBySpectralClass(spectralClass: string): Promise<Star[]> {
   return await database.query<Star>(
-    'SELECT * FROM edk.mapStars WHERE spectralClass = {class:String} ORDER BY temperature DESC',
+    'SELECT * FROM stars FINAL WHERE spectralClass = {class:String} ORDER BY temperature DESC',
     { class: spectralClass }
   )
 }
@@ -53,7 +53,7 @@ export async function getStarsBySpectralClass(spectralClass: string): Promise<St
  */
 export async function searchStars(namePattern: string, limit: number = 10): Promise<Star[]> {
   return await database.query<Star>(
-    'SELECT * FROM edk.mapStars WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM stars FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -63,7 +63,7 @@ export async function searchStars(namePattern: string, limit: number = 10): Prom
  */
 export async function getHottestStars(limit: number = 10): Promise<Star[]> {
   return await database.query<Star>(
-    'SELECT * FROM edk.mapStars ORDER BY temperature DESC LIMIT {limit:UInt32}',
+    'SELECT * FROM stars FINAL ORDER BY temperature DESC LIMIT {limit:UInt32}',
     { limit }
   )
 }
@@ -72,5 +72,5 @@ export async function getHottestStars(limit: number = 10): Promise<Star[]> {
  * Count total stars
  */
 export async function countStars(): Promise<number> {
-  return await database.count('edk.mapStars')
+  return await database.count('stars')
 }

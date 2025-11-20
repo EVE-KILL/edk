@@ -10,4 +10,5 @@ export interface TableConfig {
   name: string
   mappings: FieldMapping[]
   batchSize?: number
+  sourceName?: string
 }

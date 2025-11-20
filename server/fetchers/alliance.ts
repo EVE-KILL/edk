@@ -1,5 +1,5 @@
-import { database } from '../helpers/database'
 import { fetchEveKill, fetchESI } from '../helpers/fetcher'
+import { storeAlliance as storeAllianceInDB, getAlliance } from '../models/alliances'
 
 /**
  * ESI Alliance Data - Fields we store
@@ -107,21 +107,14 @@ function extractESIFields(data: any): ESIAlliance {
  * Store alliance in database
  */
 async function storeAlliance(allianceId: number, alliance: ESIAlliance): Promise<void> {
-  const now = Math.floor(Date.now() / 1000)
-
-  await database.bulkInsert('edk.alliances', [
-    {
-      alliance_id: allianceId,
-      creator_corporation_id: alliance.creator_corporation_id,
-      creator_id: alliance.creator_id,
-      date_founded: alliance.date_founded,
-      executor_corporation_id: alliance.executor_corporation_id,
-      name: alliance.name,
-      ticker: alliance.ticker,
-      updated_at: now,
-      version: now
-    }
-  ])
+  await storeAllianceInDB(allianceId, {
+    creatorCorporationId: alliance.creator_corporation_id,
+    creatorId: alliance.creator_id,
+    dateFounded: alliance.date_founded,
+    executorCorporationId: alliance.executor_corporation_id,
+    name: alliance.name,
+    ticker: alliance.ticker
+  })
 }
 
 /**
@@ -129,20 +122,17 @@ async function storeAlliance(allianceId: number, alliance: ESIAlliance): Promise
  */
 export async function getCachedAlliance(allianceId: number): Promise<ESIAlliance | null> {
   try {
-    const result = await database.queryOne<any>(
-      'SELECT * FROM edk.alliances WHERE alliance_id = {id:UInt32}',
-      { id: allianceId }
-    )
+    const result = await getAlliance(allianceId)
 
     if (!result) {
       return null
     }
 
     return {
-      creator_corporation_id: result.creator_corporation_id,
-      creator_id: result.creator_id,
-      date_founded: result.date_founded,
-      executor_corporation_id: result.executor_corporation_id,
+      creator_corporation_id: result.creatorCorporationId,
+      creator_id: result.creatorId,
+      date_founded: result.dateFounded,
+      executor_corporation_id: result.executorCorporationId,
       name: result.name,
       ticker: result.ticker
     }

@@ -130,7 +130,7 @@ export default defineEventHandler(async (event: H3Event) => {
  */
 async function getTotalKillmailCount(): Promise<number> {
   const result = await database.queryValue<number>(
-    'SELECT count() FROM edk.killmails'
+    'SELECT count() FROM killmails'
   )
   return result || 0
 }
@@ -140,7 +140,7 @@ async function getTotalKillmailCount(): Promise<number> {
  */
 async function getTotalISKDestroyed(): Promise<number> {
   const result = await database.queryValue<number>(
-    'SELECT sum(total_value) FROM killlist_frontpage'
+    'SELECT sum(totalValue) FROM killmails'
   )
   return result || 0
 }
@@ -152,11 +152,11 @@ async function getUniqueEntityCount(type: 'character' | 'corporation' | 'allianc
   let sql = ''
 
   if (type === 'character') {
-    sql = 'SELECT count(DISTINCT victimCharacterId) FROM edk.killmails WHERE victimCharacterId > 0'
+    sql = 'SELECT count(DISTINCT victimCharacterId) FROM killmails WHERE victimCharacterId > 0'
   } else if (type === 'corporation') {
-    sql = 'SELECT count(DISTINCT victimCorporationId) FROM edk.killmails WHERE victimCorporationId > 0'
+    sql = 'SELECT count(DISTINCT victimCorporationId) FROM killmails WHERE victimCorporationId > 0'
   } else {
-    sql = 'SELECT count(DISTINCT victimAllianceId) FROM edk.killmails WHERE victimAllianceId > 0'
+    sql = 'SELECT count(DISTINCT victimAllianceId) FROM killmails WHERE victimAllianceId > 0'
   }
 
   const result = await database.queryValue<number>(sql)
@@ -168,7 +168,7 @@ async function getUniqueEntityCount(type: 'character' | 'corporation' | 'allianc
  */
 async function getSoloKillsCount(): Promise<number> {
   const result = await database.queryValue<number>(
-    'SELECT countIf(attacker_count = 1) FROM killlist_frontpage'
+    'SELECT countIf(solo) FROM killmails'
   )
   return result || 0
 }
@@ -178,7 +178,7 @@ async function getSoloKillsCount(): Promise<number> {
  */
 async function getAverageAttackersPerKill(): Promise<number> {
   const result = await database.queryValue<number>(
-    'SELECT avg(attacker_count) FROM killlist_frontpage'
+    'SELECT avg(attackerCount) FROM killmails'
   )
   return result || 0
 }
@@ -191,12 +191,12 @@ async function getActivityStats(hours: number): Promise<{ pilots: number, kills:
 
   const [pilotsResult, killsResult] = await Promise.all([
     database.queryValue<number>(
-      `SELECT count(DISTINCT victimCharacterId) FROM edk.killmails
+      `SELECT count(DISTINCT victimCharacterId) FROM killmails
        WHERE toUnixTimestamp(killmailTime) >= {cutoff:UInt32}`,
       { cutoff: cutoffTime }
     ),
     database.queryValue<number>(
-      `SELECT count() FROM edk.killmails
+      `SELECT count() FROM killmails
        WHERE toUnixTimestamp(killmailTime) >= {cutoff:UInt32}`,
       { cutoff: cutoffTime }
     )
@@ -212,15 +212,16 @@ async function getActivityStats(hours: number): Promise<{ pilots: number, kills:
  * Get top characters by kill count (as attacker with final blow)
  */
 async function getTopCharactersByKills(limit: number = 5): Promise<Array<{id: number, name: string, kills: number}>> {
-  // Using entity_killlist materialized view if available
   const result = await database.query<{id: number, name: string, kills: number}>(
     `SELECT
-      attacker_character_id as id,
-      attacker_character_name as name,
+      km.topAttackerCharacterId as id,
+      COALESCE(c.name, nc.name, 'Unknown') as name,
       count() as kills
-    FROM entity_killlist
-    WHERE attacker_character_id > 0
-    GROUP BY attacker_character_id, attacker_character_name
+    FROM killmails km
+    LEFT JOIN characters c FINAL ON km.topAttackerCharacterId = c.characterId
+    LEFT JOIN npcCharacters nc FINAL ON km.topAttackerCharacterId = nc.characterId
+    WHERE km.topAttackerCharacterId > 0
+    GROUP BY km.topAttackerCharacterId, c.name, nc.name
     ORDER BY kills DESC
     LIMIT {limit:UInt32}`,
     { limit }
@@ -234,12 +235,14 @@ async function getTopCharactersByKills(limit: number = 5): Promise<Array<{id: nu
 async function getTopCorporationsByKills(limit: number = 5): Promise<Array<{id: number, name: string, kills: number}>> {
   const result = await database.query<{id: number, name: string, kills: number}>(
     `SELECT
-      attacker_corporation_id as id,
-      attacker_corporation_name as name,
+      km.topAttackerCorporationId as id,
+      COALESCE(c.name, nc.name, 'Unknown') as name,
       count() as kills
-    FROM entity_killlist
-    WHERE attacker_corporation_id > 0
-    GROUP BY attacker_corporation_id, attacker_corporation_name
+    FROM killmails km
+    LEFT JOIN corporations c FINAL ON km.topAttackerCorporationId = c.corporationId
+    LEFT JOIN npcCorporations nc FINAL ON km.topAttackerCorporationId = nc.corporationId
+    WHERE km.topAttackerCorporationId > 0
+    GROUP BY km.topAttackerCorporationId, c.name, nc.name
     ORDER BY kills DESC
     LIMIT {limit:UInt32}`,
     { limit }
@@ -253,12 +256,13 @@ async function getTopCorporationsByKills(limit: number = 5): Promise<Array<{id: 
 async function getTopAlliancesByKills(limit: number = 5): Promise<Array<{id: number, name: string, kills: number}>> {
   const result = await database.query<{id: number, name: string, kills: number}>(
     `SELECT
-      attacker_alliance_id as id,
-      attacker_alliance_name as name,
+      km.topAttackerAllianceId as id,
+      COALESCE(a.name, 'Unknown') as name,
       count() as kills
-    FROM entity_killlist
-    WHERE attacker_alliance_id > 0
-    GROUP BY attacker_alliance_id, attacker_alliance_name
+    FROM killmails km
+    LEFT JOIN alliances a FINAL ON km.topAttackerAllianceId = a.allianceId
+    WHERE km.topAttackerAllianceId > 0
+    GROUP BY km.topAttackerAllianceId, a.name
     ORDER BY kills DESC
     LIMIT {limit:UInt32}`,
     { limit }
@@ -272,11 +276,13 @@ async function getTopAlliancesByKills(limit: number = 5): Promise<Array<{id: num
 async function getMostDestroyedShips(limit: number = 5): Promise<Array<{id: number, name: string, count: number}>> {
   const result = await database.query<{id: number, name: string, count: number}>(
     `SELECT
-      victim_ship_type_id as id,
-      victim_ship_name as name,
+      km.victimShipTypeId as id,
+      COALESCE(t.name, 'Unknown Ship') as name,
       count() as count
-    FROM killlist_frontpage
-    GROUP BY victim_ship_type_id, victim_ship_name
+    FROM killmails km
+    LEFT JOIN types t FINAL ON km.victimShipTypeId = t.typeId
+    WHERE km.victimShipTypeId > 0
+    GROUP BY km.victimShipTypeId, t.name
     ORDER BY count DESC
     LIMIT {limit:UInt32}`,
     { limit }
@@ -290,11 +296,13 @@ async function getMostDestroyedShips(limit: number = 5): Promise<Array<{id: numb
 async function getMostDangerousSystems(limit: number = 5): Promise<Array<{id: number, name: string, count: number}>> {
   const result = await database.query<{id: number, name: string, count: number}>(
     `SELECT
-      solar_system_id as id,
-      solar_system_name as name,
+      km.solarSystemId as id,
+      COALESCE(sys.name, 'Unknown') as name,
       count() as count
-    FROM killlist_frontpage
-    GROUP BY solar_system_id, solar_system_name
+    FROM killmails km
+    LEFT JOIN solarSystems sys FINAL ON km.solarSystemId = sys.solarSystemId
+    WHERE km.solarSystemId > 0
+    GROUP BY km.solarSystemId, sys.name
     ORDER BY count DESC
     LIMIT {limit:UInt32}`,
     { limit }

@@ -3,6 +3,7 @@ import { existsSync } from 'fs'
 import { join, basename } from 'path'
 import { database } from '../database'
 import { streamParseJSONLines, extractLanguageField, toBoolean, parseNumber } from './parser'
+import type { TableConfig } from './types'
 
 /**
  * SDE Fetcher - Downloads and manages EVE-Online Static Data Export
@@ -298,7 +299,7 @@ export class SDEFetcher {
   private async isTableAlreadyImported(tableName: string, buildNumber: number): Promise<boolean> {
     try {
       const result = await database.queryOne<any>(
-        `SELECT configValue FROM edk.config
+        `SELECT configValue FROM config
          WHERE configKey = {key:String} AND buildNumber = {build:UInt32}
          ORDER BY version DESC LIMIT 1`,
         { key: `sde_imported_${tableName}`, build: buildNumber }
@@ -325,7 +326,7 @@ export class SDEFetcher {
       const seconds = String(now.getSeconds()).padStart(2, '0')
       const formattedDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 
-      await database.bulkInsert('edk.config', [{
+      await database.bulkInsert('config', [{
         configKey: `sde_imported_${tableName}`,
         configValue: 'imported',
         buildNumber,
@@ -350,8 +351,8 @@ export class SDEFetcher {
 
       // List of all SDE tables to optimize
       const tables = [
-        'mapSolarSystems', 'mapRegions', 'mapConstellations',
-        'mapStargates', 'mapStars', 'mapPlanets', 'mapMoons', 'mapAsteroidBelts',
+        'solarSystems', 'regions', 'constellations',
+        'stargates', 'stars', 'planets', 'moons', 'asteroidBelts',
         'types', 'groups', 'categories',
         'npcCorporations', 'npcStations', 'stationOperations', 'npcCharacters',
         'factions', 'races', 'bloodlines', 'ancestries',
@@ -360,7 +361,7 @@ export class SDEFetcher {
       ]
 
       for (const table of tables) {
-        await database.query(`OPTIMIZE TABLE edk.${table}`)
+        await database.query(`OPTIMIZE TABLE ${table}`)
       }
       console.log(`   ✓ Optimized ${tables.length} SDE tables`)
     } catch (error) {
@@ -418,7 +419,7 @@ export class SDEFetcher {
 
         // Batch insert
         if (records.length >= BATCH_SIZE) {
-          await database.bulkInsert('edk.mapSolarSystems', records)
+          await database.bulkInsert('solarSystems', records)
           console.log(`   Inserted ${imported} rows...`)
           records.length = 0
         }
@@ -426,7 +427,7 @@ export class SDEFetcher {
 
       // Insert remaining
       if (records.length > 0) {
-        await database.bulkInsert('edk.mapSolarSystems', records)
+        await database.bulkInsert('solarSystems', records)
       }
 
       console.log(`✅ Imported ${imported} solar systems`)
@@ -474,7 +475,7 @@ export class SDEFetcher {
 
         // Batch insert
         if (records.length >= BATCH_SIZE) {
-          await database.bulkInsert('edk.mapRegions', records)
+          await database.bulkInsert('regions', records)
           console.log(`   Inserted ${imported} rows...`)
           records.length = 0
         }
@@ -482,7 +483,7 @@ export class SDEFetcher {
 
       // Insert remaining
       if (records.length > 0) {
-        await database.bulkInsert('edk.mapRegions', records)
+        await database.bulkInsert('regions', records)
       }
 
       console.log(`✅ Imported ${imported} regions`)
@@ -529,7 +530,7 @@ export class SDEFetcher {
 
         // Batch insert
         if (records.length >= BATCH_SIZE) {
-          await database.bulkInsert('edk.mapConstellations', records)
+          await database.bulkInsert('constellations', records)
           console.log(`   Inserted ${imported} rows...`)
           records.length = 0
         }
@@ -537,7 +538,7 @@ export class SDEFetcher {
 
       // Insert remaining
       if (records.length > 0) {
-        await database.bulkInsert('edk.mapConstellations', records)
+        await database.bulkInsert('constellations', records)
       }
 
       console.log(`✅ Imported ${imported} constellations`)
@@ -560,7 +561,8 @@ export class SDEFetcher {
       transform?: (value: any) => any
     }>,
     buildNumber?: number,
-    forceReimport?: boolean
+    forceReimport?: boolean,
+    sourceTableName?: string
   ): Promise<number> {
     // Get buildNumber if not provided
     if (!buildNumber) {
@@ -583,9 +585,10 @@ export class SDEFetcher {
 
     console.log(`📥 Importing ${tableName}...`)
 
-    const filepath = this.getTablePath(tableName)
+    const sourceName = sourceTableName ?? tableName
+    const filepath = this.getTablePath(sourceName)
     if (!existsSync(filepath)) {
-      console.error(`❌ ${tableName}.jsonl not found at ${filepath}`)
+      console.error(`❌ ${sourceName}.jsonl not found at ${filepath}`)
       return 0
     }
 
@@ -614,14 +617,14 @@ export class SDEFetcher {
         imported++
 
         if (records.length >= BATCH_SIZE) {
-          await database.bulkInsert(`edk.${tableName}`, records)
+          await database.bulkInsert(`${tableName}`, records)
           console.log(`   Inserted ${imported} rows...`)
           records.length = 0
         }
       }
 
       if (records.length > 0) {
-        await database.bulkInsert(`edk.${tableName}`, records)
+        await database.bulkInsert(`${tableName}`, records)
       }
 
       // Mark as imported
@@ -633,6 +636,16 @@ export class SDEFetcher {
       console.error(`❌ Error importing ${tableName}:`, error)
       throw error
     }
+  }
+
+  async importConfiguredTable(config: TableConfig, buildNumber?: number): Promise<number> {
+    return await this.importTable(
+      config.name,
+      config.mappings,
+      buildNumber,
+      undefined,
+      config.sourceName
+    )
   }
 
   /**
