@@ -203,7 +203,7 @@ export default {
       // Check which killmails already exist (batch query)
       const killmailIds = killmails.map((k) => k.killmail_id);
       const existingIds = await database.query<{ killmailId: number }>(
-        "SELECT killmailId FROM killmails WHERE killmailId IN ({ids:Array(UInt32)})",
+        "SELECT killmailId FROM killmails WHERE killmailId = ANY({ids:Array(UInt32)})",
         { ids: killmailIds }
       );
       const existingIdsSet = new Set(existingIds.map((row) => row.killmailId));
@@ -422,7 +422,7 @@ async function filterExistingRecords<T>(
 
     const rows = await database.query<{ id: number }>(
       `SELECT ${idColumn} AS id FROM ${table}
-       WHERE ${idColumn} IN ({ids:Array(UInt32)})`,
+       WHERE ${idColumn} = ANY({ids:Array(UInt32)})`,
       { ids }
     );
 

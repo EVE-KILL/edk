@@ -3,72 +3,61 @@
 
 -- Categories table
 CREATE TABLE IF NOT EXISTS categories (
-    categoryId UInt32,
-    name String,
-    iconId Nullable(UInt32),
-    published UInt8,
-    version UInt32
-) ENGINE = ReplacingMergeTree(version)
-ORDER BY categoryId
-SETTINGS index_granularity = 16;
+    categoryId INTEGER PRIMARY KEY,
+    name TEXT,
+    iconId INTEGER,
+    published BOOLEAN,
+    version INTEGER
+);
 
 -- Groups table
 CREATE TABLE IF NOT EXISTS groups (
-    groupId UInt32,
-    name String,
-    categoryId UInt32,
-    iconId Nullable(UInt32),
-    published UInt8,
-    version UInt32
-) ENGINE = ReplacingMergeTree(version)
-ORDER BY groupId
-SETTINGS index_granularity = 16;
+    groupId INTEGER PRIMARY KEY,
+    name TEXT,
+    categoryId INTEGER,
+    iconId INTEGER,
+    published BOOLEAN,
+    version INTEGER
+);
 
 -- Types table
 CREATE TABLE IF NOT EXISTS types (
-    typeId UInt32,
-    name String,
-    description String,
-    groupId UInt32,
-    capacity Nullable(Float64),
-    factionId Nullable(UInt32),
-    graphicId Nullable(UInt32),
-    iconId Nullable(UInt32),
-    marketGroupId Nullable(UInt32),
-    mass Nullable(Float64),
-    metaGroupId Nullable(UInt32),
-    portionSize Nullable(UInt32),
-    published UInt8,
-    raceId Nullable(UInt32),
-    radius Nullable(Float64),
-    soundId Nullable(UInt32),
-    volume Nullable(Float64),
-    version UInt32
-) ENGINE = ReplacingMergeTree(version)
-ORDER BY typeId
-SETTINGS index_granularity = 16;
+    typeId INTEGER PRIMARY KEY,
+    name TEXT,
+    description TEXT,
+    groupId INTEGER,
+    capacity DOUBLE PRECISION,
+    factionId INTEGER,
+    graphicId INTEGER,
+    iconId INTEGER,
+    marketGroupId INTEGER,
+    mass DOUBLE PRECISION,
+    metaGroupId INTEGER,
+    portionSize INTEGER,
+    published BOOLEAN,
+    raceId INTEGER,
+    radius DOUBLE PRECISION,
+    soundId INTEGER,
+    volume DOUBLE PRECISION,
+    version INTEGER
+);
 
 -- Market Groups table
 CREATE TABLE IF NOT EXISTS marketGroups (
-    marketGroupId UInt32,
-    name String,
-    description Nullable(String),
-    iconId Nullable(UInt32),
-    hasTypes UInt8,
-    parentGroupId Nullable(UInt32),
-    version UInt32
-) ENGINE = ReplacingMergeTree(version)
-ORDER BY marketGroupId
-SETTINGS index_granularity = 16;
+    marketGroupId INTEGER PRIMARY KEY,
+    name TEXT,
+    description TEXT,
+    iconId INTEGER,
+    hasTypes BOOLEAN,
+    parentGroupId INTEGER,
+    version INTEGER
+);
 
 -- Meta Groups table
 CREATE TABLE IF NOT EXISTS metaGroups (
-    metaGroupId UInt32,
-    name String,
-    description Nullable(String),
-    iconId Nullable(UInt32),
-    version UInt32
-) ENGINE = ReplacingMergeTree(version)
-ORDER BY metaGroupId
-SETTINGS index_granularity = 16;
-
+    metaGroupId INTEGER PRIMARY KEY,
+    name TEXT,
+    description TEXT,
+    iconId INTEGER,
+    version INTEGER
+);

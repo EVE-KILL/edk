@@ -29,8 +29,8 @@ export default {
       alliance.tickerName as allianceTicker,
       k.killmailTime as lastSeen
     FROM attackers a
-    FINAL
-    LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
+
+    LEFT JOIN killmails k ON a.killmailId = k.killmailId
     LEFT JOIN characters c ON a.characterId = c.character_id
     LEFT JOIN npcCorporations corp ON a.corporationId = corp.corporationId
     LEFT JOIN npcCorporations alliance ON a.allianceId = alliance.corporationId
@@ -54,7 +54,7 @@ export default {
       alliance.tickerName as allianceTicker,
       k.killmailTime as lastSeen
     FROM killmails k
-    FINAL
+
     LEFT JOIN characters c ON k.victimCharacterId = c.character_id
     LEFT JOIN npcCorporations corp ON k.victimCorporationId = corp.corporationId
     LEFT JOIN npcCorporations alliance ON k.victimAllianceId = alliance.corporationId
@@ -89,8 +89,8 @@ export default {
     losses: number
   }>(`
     SELECT
-      (SELECT count() FROM attackers FINAL WHERE characterId = {characterId:UInt32}) as kills,
-      (SELECT count() FROM killmails FINAL WHERE victimCharacterId = {characterId:UInt32}) as losses
+      (SELECT count(*) FROM attackers WHERE characterId = {characterId:UInt32}) as kills,
+      (SELECT count(*) FROM killmails WHERE victimCharacterId = {characterId:UInt32}) as losses
   `, { characterId })
 
   console.log('Stats:', statsQuery)

@@ -17,34 +17,36 @@ export default defineEventHandler(async (event) => {
 
     // Get current schema info
     const tableNames = await database.query<{ name: string }>(`
-      SELECT name
-      FROM system.tables
-      WHERE database = {database:String}
-      ORDER BY name
-    `, { database: process.env.CLICKHOUSE_DB || 'edk' })
+      SELECT table_name as name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `)
 
     // Get actual row counts and sizes for each table
     const tables = await Promise.all(
       tableNames.map(async (table) => {
         try {
           const rowCount = await database.queryValue<number>(
-            `SELECT count() FROM \`${table.name}\``
+            `SELECT count(*) FROM "${table.name}"`
           )
+          // In Postgres, getting exact size usually involves pg_total_relation_size
           const size = await database.queryValue<number>(
-            `SELECT sum(bytes_on_disk) FROM system.parts WHERE database = {database:String} AND table = {table:String}`,
-            { database: process.env.CLICKHOUSE_DB || 'edk', table: table.name }
+            `SELECT pg_total_relation_size($1) as size`,
+            { table: table.name }
           )
 
           return {
             name: table.name,
-            engine: 'MergeTree',
-            total_rows: rowCount || 0,
-            total_bytes: size || 0
+            engine: 'Postgres',
+            total_rows: Number(rowCount) || 0,
+            total_bytes: Number(size) || 0
           }
         } catch (err) {
+          console.error(`Error getting stats for ${table.name}:`, err)
           return {
             name: table.name,
-            engine: 'MergeTree',
+            engine: 'Postgres',
             total_rows: 0,
             total_bytes: 0
           }
@@ -56,7 +58,7 @@ export default defineEventHandler(async (event) => {
     const dbInfo = await database.queryOne(`
       SELECT
         version() as version,
-        uptime() as uptime
+        EXTRACT(EPOCH FROM (now() - pg_postmaster_start_time())) as uptime
     `)
 
     return {
@@ -64,7 +66,7 @@ export default defineEventHandler(async (event) => {
       database: {
         version: dbInfo?.version || 'unknown',
         uptime: dbInfo?.uptime || 0,
-        name: process.env.CLICKHOUSE_DB || 'edk'
+        name: process.env.POSTGRES_DB || 'edk'
       },
       migrations: {
         total: migrations.length,

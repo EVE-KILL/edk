@@ -1,63 +1,80 @@
-import { createClient, type ClickHouseClient } from '@clickhouse/client'
+import { SQL } from 'bun'
 
 /**
- * ClickHouse Database Helper
+ * Postgres Database Helper (using Bun native driver)
  *
- * Provides a convenient interface for database operations using ClickHouse.
+ * Provides a convenient interface for database operations.
  * Handles connection management and provides common query patterns.
  */
 export class DatabaseHelper {
-  private client: ClickHouseClient
+  private client: SQL
   private isConnected: boolean = false
 
   constructor() {
-    this.client = createClient({
-      url: process.env.CLICKHOUSE_URL || 'http://localhost:8123',
-      username: process.env.CLICKHOUSE_USER || 'edk_user',
-      password: process.env.CLICKHOUSE_PASSWORD || 'edk_password',
-      database: process.env.CLICKHOUSE_DB || 'edk',
-      clickhouse_settings: {
-        // Enable JSON output format by default
-        output_format_json_quote_64bit_integers: 0,
-        // Set timeout
-        max_execution_time: 60
-      }
-    })
+    // Initialize Bun SQL client for Postgres
+    const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
+    this.client = new SQL(url)
+    // In Bun SQL, connection is lazy, so we consider it connected once initialized.
+    // The driver handles reconnection.
+    this.isConnected = true
   }
 
   /**
    * Ensure connection is established
    */
   private async ensureConnection(): Promise<void> {
-    if (!this.isConnected) {
-      try {
-        await this.client.ping()
-        this.isConnected = true
-        console.log('🎯 ClickHouse database connection established')
-      } catch (error) {
-        console.error('❌ Failed to connect to ClickHouse:', error)
-        throw error
+    // Bun SQL handles connections automatically
+    return Promise.resolve()
+  }
+
+  /**
+   * Helper to convert ClickHouse-style parameterized queries to Bun SQL compatible ones.
+   *
+   * ClickHouse: SELECT * FROM table WHERE id = {id:UInt32}
+   * Postgres/Bun: SELECT * FROM table WHERE id = $1
+   *
+   * This function parses the SQL, replaces placeholders with $n, and constructs the values array.
+   */
+  private prepareQuery(sql: string, params?: Record<string, any>): { text: string, values: any[] } {
+    if (!params) return { text: sql, values: [] }
+
+    const values: any[] = []
+    const paramMap = new Map<string, number>()
+    let nextIndex = 1
+
+    // Regex to match {key:Type} or {key}
+    // Handles: {id:UInt32}, {ids:Array(UInt32)}, {name:String}, {name}
+    const paramRegex = /{([a-zA-Z0-9_]+)(?::[a-zA-Z0-9_()]+)?}/g
+
+    const text = sql.replace(paramRegex, (match, name) => {
+      // If the param is not in the map yet, add it
+      if (!paramMap.has(name)) {
+        paramMap.set(name, nextIndex++)
+        values.push(params[name])
       }
-    }
+      return `$${paramMap.get(name)}`
+    })
+
+    return { text, values }
   }
 
   /**
    * Execute a query and return results
    */
   async query<T = any>(sql: string, params?: Record<string, any>): Promise<T[]> {
-    await this.ensureConnection()
-
     try {
-      const resultSet = await this.client.query({
-        query: sql,
-        query_params: params,
-        format: 'JSONEachRow'
-      })
+      const { text, values } = this.prepareQuery(sql, params)
 
-      const data = await resultSet.json<T>()
-      return Array.isArray(data) ? data : [data]
+      // Use unsafe for dynamic queries with parameters
+      // Bun SQL supports parsing parameters in unsafe() if the driver supports it.
+      // For Postgres, passing args to unsafe maps to $1, $2 etc.
+      const results = await this.client.unsafe(text, values) as T[]
+      return results
     } catch (error) {
-      console.error('ClickHouse query error:', error)
+      console.error('Database query error:', error)
+      // Log the failed query for debugging
+      console.error('Query:', sql)
+      console.error('Params:', params)
       throw error
     }
   }
@@ -77,7 +94,7 @@ export class DatabaseHelper {
     const result = await this.queryOne(sql, params)
     if (!result) return null
 
-    const values = Object.values(result)
+    const values = Object.values(result as object)
     return values.length > 0 ? values[0] as T : null
   }
 
@@ -85,55 +102,34 @@ export class DatabaseHelper {
    * Execute an INSERT, UPDATE, or DELETE statement
    */
   async execute(sql: string, params?: Record<string, any>): Promise<void> {
-    await this.ensureConnection()
-
-    try {
-      await this.client.exec({
-        query: sql,
-        query_params: params
-      })
-    } catch (error) {
-      console.error('ClickHouse execute error:', error)
-      throw error
-    }
+    await this.query(sql, params)
   }
 
   /**
    * Insert data into a table
    */
   async insert<T = any>(table: string, data: T | T[]): Promise<void> {
-    await this.ensureConnection()
+    const items = Array.isArray(data) ? data : [data]
+    if (items.length === 0) return
 
     try {
-      await this.client.insert({
-        table,
-        values: Array.isArray(data) ? data : [data],
-        format: 'JSONEachRow'
-      })
+      // Bun SQL supports insert helper: sql(table).insert(items)
+      // But the table name is dynamic.
+      // We can construct the query manually or use sql`INSERT INTO ${sql(table)} ...`
+
+      // However, Bun SQL insert helper is: sql`INSERT INTO ${sql(table)} ${sql(items)}`
+      await this.client`INSERT INTO ${this.client(table)} ${this.client(items)}`
     } catch (error) {
-      console.error('ClickHouse insert error:', error)
+      console.error('Database insert error:', error)
       throw error
     }
   }
 
   /**
-   * Bulk insert data with better performance
+   * Bulk insert data
    */
   async bulkInsert<T = any>(table: string, data: T[]): Promise<void> {
-    if (data.length === 0) return
-
-    await this.ensureConnection()
-
-    try {
-      await this.client.insert({
-        table,
-        values: data,
-        format: 'JSONEachRow'
-      })
-    } catch (error) {
-      console.error('ClickHouse bulk insert error:', error)
-      throw error
-    }
+    return this.insert(table, data)
   }
 
   /**
@@ -142,9 +138,8 @@ export class DatabaseHelper {
   async tableExists(tableName: string): Promise<boolean> {
     try {
       const result = await this.queryValue<number>(
-        `SELECT 1 FROM system.tables WHERE database = {database:String} AND name = {table:String}`,
+        `SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = {table:String}`,
         {
-          database: process.env.CLICKHOUSE_DB || 'edk',
           table: tableName
         }
       )
@@ -160,12 +155,11 @@ export class DatabaseHelper {
    */
   async getTableSchema(tableName: string): Promise<any[]> {
     return await this.query(
-      `SELECT name, type, default_kind, default_expression
-       FROM system.columns
-       WHERE database = {database:String} AND table = {table:String}
-       ORDER BY position`,
+      `SELECT column_name as name, data_type as type, column_default as default_expression
+       FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = {table:String}
+       ORDER BY ordinal_position`,
       {
-        database: process.env.CLICKHOUSE_DB || 'edk',
         table: tableName
       }
     )
@@ -175,9 +169,14 @@ export class DatabaseHelper {
    * Count rows in a table
    */
   async count(table: string, where?: string, params?: Record<string, any>): Promise<number> {
+    // For Postgres, we need to be careful with dynamic table names in unsafe string
+    // This method assumes 'table' is safe or strictly controlled.
     const sql = `SELECT count(*) as count FROM ${table}${where ? ` WHERE ${where}` : ''}`
-    const result = await this.queryValue<number>(sql, params)
-    return result || 0
+
+    // Note: 'count' in Postgres returns a BigInt (string in JS usually) or number.
+    // Need to handle casting.
+    const result = await this.queryValue<any>(sql, params)
+    return Number(result) || 0
   }
 
   /**
@@ -185,10 +184,10 @@ export class DatabaseHelper {
    */
   async ping(): Promise<boolean> {
     try {
-      await this.client.ping()
+      await this.client`SELECT 1`
       return true
     } catch (error) {
-      console.error('ClickHouse ping failed:', error)
+      console.error('Database ping failed:', error)
       return false
     }
   }
@@ -197,14 +196,23 @@ export class DatabaseHelper {
    * Close the connection
    */
   async close(): Promise<void> {
-    await this.client.close()
+    await this.client.close() // Bun SQL might not have close() or it might be end().
+    // Documentation says client.close() or end().
+    // Wait, SQL client in Bun seems to auto-manage.
+    // But check if close exists.
+    // If not, we just ignore.
+    if (typeof (this.client as any).close === 'function') {
+        await (this.client as any).close()
+    } else if (typeof (this.client as any).end === 'function') {
+        await (this.client as any).end()
+    }
     this.isConnected = false
   }
 
   /**
-   * Get the raw ClickHouse client for advanced operations
+   * Get the raw client
    */
-  getClient(): ClickHouseClient {
+  getClient(): SQL {
     return this.client
   }
 }

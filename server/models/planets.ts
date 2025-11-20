@@ -22,7 +22,7 @@ export interface Planet {
  */
 export async function getPlanet(planetId: number): Promise<Planet | null> {
   return await database.queryOne<Planet>(
-    'SELECT * FROM planets FINAL WHERE planetId = {id:UInt32}',
+    'SELECT * FROM planets WHERE planetId = {id:UInt32}',
     { id: planetId }
   )
 }
@@ -32,7 +32,7 @@ export async function getPlanet(planetId: number): Promise<Planet | null> {
  */
 export async function getPlanetsBySystem(solarSystemId: number): Promise<Planet[]> {
   return await database.query<Planet>(
-    'SELECT * FROM planets FINAL WHERE solarSystemId = {systemId:UInt32} ORDER BY celestialIndex',
+    'SELECT * FROM planets WHERE solarSystemId = {systemId:UInt32} ORDER BY celestialIndex',
     { systemId: solarSystemId }
   )
 }
@@ -42,7 +42,7 @@ export async function getPlanetsBySystem(solarSystemId: number): Promise<Planet[
  */
 export async function searchPlanets(namePattern: string, limit: number = 10): Promise<Planet[]> {
   return await database.query<Planet>(
-    'SELECT * FROM planets FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM planets WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -52,7 +52,7 @@ export async function searchPlanets(namePattern: string, limit: number = 10): Pr
  */
 export async function getPlanetName(planetId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM planets FINAL WHERE planetId = {id:UInt32}',
+    'SELECT name FROM planets WHERE planetId = {id:UInt32}',
     { id: planetId }
   )
   return result || null

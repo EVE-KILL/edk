@@ -8,7 +8,7 @@ import { database } from '../helpers/database'
 export class TypeQueries {
   static async getType(typeId: number) {
     const result = await database.query(
-      `SELECT * FROM types FINAL WHERE typeId = {typeId:UInt32} LIMIT 1`,
+      `SELECT * FROM types WHERE typeId = {typeId:UInt32} LIMIT 1`,
       { typeId }
     )
     return result[0] || null
@@ -16,7 +16,7 @@ export class TypeQueries {
 
   static async getTypeName(typeId: number): Promise<string | null> {
     const result = await database.query(
-      `SELECT name FROM types FINAL WHERE typeId = {typeId:UInt32} LIMIT 1`,
+      `SELECT name FROM types WHERE typeId = {typeId:UInt32} LIMIT 1`,
       { typeId }
     )
     return result[0]?.name || null
@@ -24,14 +24,14 @@ export class TypeQueries {
 
   static async getTypesByGroup(groupId: number, limit: number = 1000) {
     return await database.query(
-      `SELECT * FROM types FINAL WHERE groupId = {groupId:UInt32} ORDER BY typeId LIMIT {limit:UInt32}`,
+      `SELECT * FROM types WHERE groupId = {groupId:UInt32} ORDER BY typeId LIMIT {limit:UInt32}`,
       { groupId, limit }
     )
   }
 
   static async searchTypes(query: string, limit: number = 10) {
     return await database.query(
-      `SELECT * FROM types FINAL
+      `SELECT * FROM types
        WHERE name ILIKE {query:String}
        ORDER BY typeId
        LIMIT {limit:UInt32}`,
@@ -41,20 +41,20 @@ export class TypeQueries {
 
   static async getTypesByMarketGroup(marketGroupId: number, limit: number = 1000) {
     return await database.query(
-      `SELECT * FROM types FINAL WHERE marketGroupId = {marketGroupId:UInt32} ORDER BY typeId LIMIT {limit:UInt32}`,
+      `SELECT * FROM types WHERE marketGroupId = {marketGroupId:UInt32} ORDER BY typeId LIMIT {limit:UInt32}`,
       { marketGroupId, limit }
     )
   }
 
   static async getPublishedTypes(limit: number = 1000) {
     return await database.query(
-      `SELECT * FROM types FINAL WHERE published = 1 ORDER BY typeId LIMIT {limit:UInt32}`,
+      `SELECT * FROM types WHERE published = 1 ORDER BY typeId LIMIT {limit:UInt32}`,
       { limit }
     )
   }
 
   static async countTypes(): Promise<number> {
-    const result = await database.query(`SELECT count() FROM types`)
-    return result[0]['count()'] || 0
+    const result = await database.query(`SELECT count(*) FROM types`)
+    return result[0]['count(*)'] || 0
   }
 }

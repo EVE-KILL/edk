@@ -38,7 +38,7 @@ export interface SolarSystem {
  */
 export async function getSolarSystem(solarSystemId: number): Promise<SolarSystem | null> {
   return await database.queryOne<SolarSystem>(
-    'SELECT * FROM solarSystems FINAL WHERE solarSystemId = {id:UInt32}',
+    'SELECT * FROM solarSystems WHERE solarSystemId = {id:UInt32}',
     { id: solarSystemId }
   )
 }
@@ -48,7 +48,7 @@ export async function getSolarSystem(solarSystemId: number): Promise<SolarSystem
  */
 export async function getSolarSystemsByRegion(regionId: number): Promise<SolarSystem[]> {
   return await database.query<SolarSystem>(
-    'SELECT * FROM solarSystems FINAL WHERE regionId = {regionId:UInt32} ORDER BY name',
+    'SELECT * FROM solarSystems WHERE regionId = {regionId:UInt32} ORDER BY name',
     { regionId }
   )
 }
@@ -58,7 +58,7 @@ export async function getSolarSystemsByRegion(regionId: number): Promise<SolarSy
  */
 export async function getSolarSystemsByConstellation(constellationId: number): Promise<SolarSystem[]> {
   return await database.query<SolarSystem>(
-    'SELECT * FROM solarSystems FINAL WHERE constellationId = {constellationId:UInt32} ORDER BY name',
+    'SELECT * FROM solarSystems WHERE constellationId = {constellationId:UInt32} ORDER BY name',
     { constellationId }
   )
 }
@@ -81,7 +81,7 @@ export async function searchSolarSystems(namePattern: string, limit: number = 10
  */
 export async function getSolarSystemName(solarSystemId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM solarSystems FINAL WHERE solarSystemId = {id:UInt32}',
+    'SELECT name FROM solarSystems WHERE solarSystemId = {id:UInt32}',
     { id: solarSystemId }
   )
   return result || null
@@ -107,7 +107,7 @@ export async function getSecurityClassSystems(
  */
 export async function getHubSystems(): Promise<SolarSystem[]> {
   return await database.query<SolarSystem>(
-    'SELECT * FROM solarSystems FINAL WHERE hub = 1 ORDER BY regionId, name',
+    'SELECT * FROM solarSystems WHERE hub = 1 ORDER BY regionId, name',
   )
 }
 

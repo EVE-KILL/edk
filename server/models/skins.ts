@@ -19,7 +19,7 @@ export interface Skin {
  */
 export async function getSkin(skinId: number): Promise<Skin | null> {
   return await database.queryOne<Skin>(
-    'SELECT * FROM skins FINAL WHERE skinId = {id:UInt32}',
+    'SELECT * FROM skins WHERE skinId = {id:UInt32}',
     { id: skinId }
   )
 }
@@ -29,7 +29,7 @@ export async function getSkin(skinId: number): Promise<Skin | null> {
  */
 export async function getAllSkins(): Promise<Skin[]> {
   return await database.query<Skin>(
-    'SELECT * FROM skins FINAL ORDER BY name'
+    'SELECT * FROM skins ORDER BY name'
   )
 }
 
@@ -38,7 +38,7 @@ export async function getAllSkins(): Promise<Skin[]> {
  */
 export async function searchSkins(namePattern: string, limit: number = 10): Promise<Skin[]> {
   return await database.query<Skin>(
-    'SELECT * FROM skins FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM skins WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -48,7 +48,7 @@ export async function searchSkins(namePattern: string, limit: number = 10): Prom
  */
 export async function getSkinName(skinId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM skins FINAL WHERE skinId = {id:UInt32}',
+    'SELECT name FROM skins WHERE skinId = {id:UInt32}',
     { id: skinId }
   )
   return result || null
@@ -59,7 +59,7 @@ export async function getSkinName(skinId: number): Promise<string | null> {
  */
 export async function searchSkinsByInternalName(internalName: string): Promise<Skin[]> {
   return await database.query<Skin>(
-    'SELECT * FROM skins FINAL WHERE internalName LIKE {pattern:String}',
+    'SELECT * FROM skins WHERE internalName LIKE {pattern:String}',
     { pattern: `%${internalName}%` }
   )
 }

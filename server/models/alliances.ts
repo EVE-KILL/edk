@@ -24,7 +24,7 @@ export interface Alliance {
  */
 export async function getAlliance(allianceId: number): Promise<Alliance | null> {
   return await database.queryOne<Alliance>(
-    'SELECT * FROM alliances FINAL WHERE allianceId = {id:UInt32}',
+    'SELECT * FROM alliances WHERE allianceId = {id:UInt32}',
     { id: allianceId }
   )
 }
@@ -36,7 +36,7 @@ export async function getAlliances(allianceIds: number[]): Promise<Alliance[]> {
   if (allianceIds.length === 0) return []
 
   return await database.query<Alliance>(
-    'SELECT * FROM alliances FINAL WHERE allianceId IN ({ids:Array(UInt32)})',
+    'SELECT * FROM alliances WHERE allianceId = ANY({ids:Array(UInt32)})',
     { ids: allianceIds }
   )
 }
@@ -46,7 +46,7 @@ export async function getAlliances(allianceIds: number[]): Promise<Alliance[]> {
  */
 export async function searchAlliances(searchTerm: string, limit: number = 20): Promise<Alliance[]> {
   return await database.query<Alliance>(
-    `SELECT * FROM alliances FINAL
+    `SELECT * FROM alliances
      WHERE name ILIKE {search:String}
      ORDER BY name
      LIMIT {limit:UInt32}`,
@@ -59,7 +59,7 @@ export async function searchAlliances(searchTerm: string, limit: number = 20): P
  */
 export async function getAllianceName(allianceId: number): Promise<string | null> {
   const name = await database.queryValue<string>(
-    'SELECT name FROM alliances FINAL WHERE allianceId = {id:UInt32}',
+    'SELECT name FROM alliances WHERE allianceId = {id:UInt32}',
     { id: allianceId }
   )
   return name || null
@@ -70,7 +70,7 @@ export async function getAllianceName(allianceId: number): Promise<string | null
  */
 export async function getAllianceTicker(allianceId: number): Promise<string | null> {
   const ticker = await database.queryValue<string>(
-    'SELECT ticker FROM alliances FINAL WHERE allianceId = {id:UInt32}',
+    'SELECT ticker FROM alliances WHERE allianceId = {id:UInt32}',
     { id: allianceId }
   )
   return ticker || null
@@ -81,7 +81,7 @@ export async function getAllianceTicker(allianceId: number): Promise<string | nu
  */
 export async function getAlliancesByExecutor(corporationId: number): Promise<Alliance[]> {
   return await database.query<Alliance>(
-    'SELECT * FROM alliances FINAL WHERE executorCorporationId = {corpId:UInt32}',
+    'SELECT * FROM alliances WHERE executorCorporationId = {corpId:UInt32}',
     { corpId: corporationId }
   )
 }
@@ -91,7 +91,7 @@ export async function getAlliancesByExecutor(corporationId: number): Promise<All
  */
 export async function getAlliancesByCreator(characterId: number): Promise<Alliance[]> {
   return await database.query<Alliance>(
-    'SELECT * FROM alliances FINAL WHERE creatorId = {charId:UInt32}',
+    'SELECT * FROM alliances WHERE creatorId = {charId:UInt32}',
     { charId: characterId }
   )
 }

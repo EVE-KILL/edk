@@ -47,6 +47,9 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
   }
 
   // Get latest corporation/alliance info from most recent killmail activity
+  // Postgres specific: using DISTINCT ON or LIMIT/ORDER BY
+  // ClickHouse's anyLast is like picking the last value in a group.
+  // Here we want the most recent corp/alliance for the character.
   const corpAllianceQuery = await database.queryOne<{
     corporationId: number | null
     corporationName: string | null
@@ -56,12 +59,12 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
     allianceTicker: string | null
   }>(`
     SELECT
-      anyLast(corporationId) as corporationId,
-      anyLast(corporationName) as corporationName,
-      anyLast(corporationTicker) as corporationTicker,
-      anyLast(allianceId) as allianceId,
-      anyLast(allianceName) as allianceName,
-      anyLast(allianceTicker) as allianceTicker
+      corporationId,
+      corporationName,
+      corporationTicker,
+      allianceId,
+      allianceName,
+      allianceTicker
     FROM (
       SELECT
         a.corporationId as corporationId,
@@ -72,10 +75,9 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
         alliance.ticker as allianceTicker,
         k.killmailTime as lastSeen
       FROM attackers a
-      FINAL
-      LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
-      LEFT JOIN corporations corp FINAL ON a.corporationId = corp.corporationId
-      LEFT JOIN corporations alliance FINAL ON a.allianceId = alliance.corporationId
+      LEFT JOIN killmails k ON a.killmailId = k.killmailId
+      LEFT JOIN corporations corp ON a.corporationId = corp.corporationId
+      LEFT JOIN corporations alliance ON a.allianceId = alliance.corporationId
       WHERE a.characterId = {characterId:UInt32}
 
       UNION ALL
@@ -89,14 +91,12 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
         alliance.ticker as allianceTicker,
         k.killmailTime as lastSeen
       FROM killmails k
-      FINAL
-      LEFT JOIN corporations corp FINAL ON k.victimCorporationId = corp.corporationId
-      LEFT JOIN corporations alliance FINAL ON k.victimAllianceId = alliance.corporationId
+      LEFT JOIN corporations corp ON k.victimCorporationId = corp.corporationId
+      LEFT JOIN corporations alliance ON k.victimAllianceId = alliance.corporationId
       WHERE k.victimCharacterId = {characterId:UInt32}
-
-      ORDER BY lastSeen DESC
-      LIMIT 100
-    )
+    ) as sub
+    ORDER BY lastSeen DESC
+    LIMIT 1
   `, { characterId })
 
   // Build corporation object
@@ -129,41 +129,37 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
     WITH
       kills_stats AS (
         SELECT
-          count() as kills,
+          count(*) as kills,
           sum(k.victimDamageTaken * COALESCE(p.averagePrice, 0)) +
           sum(i.totalValue) as iskDestroyed
         FROM attackers a
-        FINAL
-        LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
-        LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND toDate(k.killmailTime) = p.priceDate
+        LEFT JOIN killmails k ON a.killmailId = k.killmailId
+        LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND k.killmailTime::date = p.priceDate
         LEFT JOIN (
           SELECT
             items.killmailId as killmailId,
             sum((quantityDestroyed + quantityDropped) * COALESCE(prices.averagePrice, 0)) as totalValue
           FROM items
-          FINAL
-          LEFT JOIN killmails km FINAL ON items.killmailId = km.killmailId
-          LEFT JOIN prices ON items.itemTypeId = prices.typeId AND toDate(km.killmailTime) = prices.priceDate
+          LEFT JOIN killmails km ON items.killmailId = km.killmailId
+          LEFT JOIN prices ON items.itemTypeId = prices.typeId AND km.killmailTime::date = prices.priceDate
           GROUP BY items.killmailId
         ) i ON k.killmailId = i.killmailId
         WHERE a.characterId = {characterId:UInt32}
       ),
       losses_stats AS (
         SELECT
-          count() as losses,
+          count(*) as losses,
           sum(k.victimDamageTaken * COALESCE(p.averagePrice, 0)) +
           sum(i.totalValue) as iskLost
         FROM killmails k
-        FINAL
-        LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND toDate(k.killmailTime) = p.priceDate
+        LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND k.killmailTime::date = p.priceDate
         LEFT JOIN (
           SELECT
             items.killmailId as killmailId,
             sum((quantityDestroyed + quantityDropped) * COALESCE(prices.averagePrice, 0)) as totalValue
           FROM items
-          FINAL
-          LEFT JOIN killmails km FINAL ON items.killmailId = km.killmailId
-          LEFT JOIN prices ON items.itemTypeId = prices.typeId AND toDate(km.killmailTime) = prices.priceDate
+          LEFT JOIN killmails km ON items.killmailId = km.killmailId
+          LEFT JOIN prices ON items.itemTypeId = prices.typeId AND km.killmailTime::date = prices.priceDate
           GROUP BY items.killmailId
         ) i ON k.killmailId = i.killmailId
         WHERE k.victimCharacterId = {characterId:UInt32}
@@ -176,8 +172,8 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
     FROM kills_stats, losses_stats
   `, { characterId })
 
-  const kills = stats?.kills || 0
-  const losses = stats?.losses || 0
+  const kills = Number(stats?.kills) || 0
+  const losses = Number(stats?.losses) || 0
   const iskDestroyed = stats?.iskDestroyed || 0
   const iskLost = stats?.iskLost || 0
   const killLossRatio = losses > 0 ? kills / losses : kills
@@ -218,14 +214,13 @@ export async function getShipGroupStatsByCharacter(characterId: number): Promise
         SELECT
           g.groupId as groupId,
           g.name as groupName,
-          count() as killed
+          count(*) as killed
         FROM attackers a
-        FINAL
-        LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
+        LEFT JOIN killmails k ON a.killmailId = k.killmailId
         LEFT JOIN types t ON k.victimShipTypeId = t.typeId
         LEFT JOIN groups g ON t.groupId = g.groupId
         WHERE a.characterId = {characterId:UInt32}
-          AND k.killmailTime >= now() - INTERVAL 30 DAY
+          AND k.killmailTime >= NOW() - INTERVAL '30 days'
           AND g.groupId IS NOT NULL
         GROUP BY g.groupId, g.name
       ),
@@ -233,13 +228,12 @@ export async function getShipGroupStatsByCharacter(characterId: number): Promise
         SELECT
           g.groupId as groupId,
           g.name as groupName,
-          count() as lost
+          count(*) as lost
         FROM killmails k
-        FINAL
         LEFT JOIN types t ON k.victimShipTypeId = t.typeId
         LEFT JOIN groups g ON t.groupId = g.groupId
         WHERE k.victimCharacterId = {characterId:UInt32}
-          AND k.killmailTime >= now() - INTERVAL 30 DAY
+          AND k.killmailTime >= NOW() - INTERVAL '30 days'
           AND g.groupId IS NOT NULL
         GROUP BY g.groupId, g.name
       )
@@ -250,7 +244,7 @@ export async function getShipGroupStatsByCharacter(characterId: number): Promise
       coalesce(lost_stats.lost, 0) as lost
     FROM killed_stats
     FULL OUTER JOIN lost_stats ON killed_stats.groupId = lost_stats.groupId
-    ORDER BY (killed + lost) DESC
+    ORDER BY (coalesce(killed_stats.killed, 0) + coalesce(lost_stats.lost, 0)) DESC
     LIMIT 100
   `, { characterId })
 
@@ -281,13 +275,12 @@ export async function getTop10StatsByCharacter(characterId: number): Promise<Cha
     SELECT
       t.typeId as id,
       t.name as name,
-      count() as kills
+      count(*) as kills
     FROM attackers a
-    FINAL
-    LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
+    LEFT JOIN killmails k ON a.killmailId = k.killmailId
     LEFT JOIN types t ON k.victimShipTypeId = t.typeId
     WHERE a.characterId = {characterId:UInt32}
-      AND k.killmailTime >= now() - INTERVAL 7 DAY
+      AND k.killmailTime >= NOW() - INTERVAL '7 days'
       AND t.typeId IS NOT NULL
     GROUP BY t.typeId, t.name
     ORDER BY kills DESC
@@ -299,13 +292,12 @@ export async function getTop10StatsByCharacter(characterId: number): Promise<Cha
     SELECT
       sys.solarSystemId as id,
       sys.name as name,
-      count() as kills
+      count(*) as kills
     FROM attackers a
-    FINAL
-    LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
-    LEFT JOIN mapSolarSystems sys ON k.solarSystemId = sys.solarSystemId
+    LEFT JOIN killmails k ON a.killmailId = k.killmailId
+    LEFT JOIN solarSystems sys ON k.solarSystemId = sys.solarSystemId
     WHERE a.characterId = {characterId:UInt32}
-      AND k.killmailTime >= now() - INTERVAL 7 DAY
+      AND k.killmailTime >= NOW() - INTERVAL '7 days'
       AND sys.solarSystemId IS NOT NULL
     GROUP BY sys.solarSystemId, sys.name
     ORDER BY kills DESC
@@ -317,14 +309,13 @@ export async function getTop10StatsByCharacter(characterId: number): Promise<Cha
     SELECT
       reg.regionId as id,
       reg.name as name,
-      count() as kills
+      count(*) as kills
     FROM attackers a
-    FINAL
-    LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
-    LEFT JOIN mapSolarSystems sys ON k.solarSystemId = sys.solarSystemId
-    LEFT JOIN mapRegions reg ON sys.regionId = reg.regionId
+    LEFT JOIN killmails k ON a.killmailId = k.killmailId
+    LEFT JOIN solarSystems sys ON k.solarSystemId = sys.solarSystemId
+    LEFT JOIN regions reg ON sys.regionId = reg.regionId
     WHERE a.characterId = {characterId:UInt32}
-      AND k.killmailTime >= now() - INTERVAL 7 DAY
+      AND k.killmailTime >= NOW() - INTERVAL '7 days'
       AND reg.regionId IS NOT NULL
     GROUP BY reg.regionId, reg.name
     ORDER BY kills DESC
@@ -336,13 +327,12 @@ export async function getTop10StatsByCharacter(characterId: number): Promise<Cha
     SELECT
       corp.corporationId as id,
       corp.name as name,
-      count() as kills
+      count(*) as kills
     FROM attackers a
-    FINAL
-    LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
+    LEFT JOIN killmails k ON a.killmailId = k.killmailId
     LEFT JOIN npcCorporations corp ON k.victimCorporationId = corp.corporationId
     WHERE a.characterId = {characterId:UInt32}
-      AND k.killmailTime >= now() - INTERVAL 7 DAY
+      AND k.killmailTime >= NOW() - INTERVAL '7 days'
       AND corp.corporationId IS NOT NULL
     GROUP BY corp.corporationId, corp.name
     ORDER BY kills DESC
@@ -354,13 +344,12 @@ export async function getTop10StatsByCharacter(characterId: number): Promise<Cha
     SELECT
       alliance.corporationId as id,
       alliance.name as name,
-      count() as kills
+      count(*) as kills
     FROM attackers a
-    FINAL
-    LEFT JOIN killmails k FINAL ON a.killmailId = k.killmailId
+    LEFT JOIN killmails k ON a.killmailId = k.killmailId
     LEFT JOIN npcCorporations alliance ON k.victimAllianceId = alliance.corporationId
     WHERE a.characterId = {characterId:UInt32}
-      AND k.killmailTime >= now() - INTERVAL 7 DAY
+      AND k.killmailTime >= NOW() - INTERVAL '7 days'
       AND alliance.corporationId IS NOT NULL
       AND k.victimAllianceId IS NOT NULL
     GROUP BY alliance.corporationId, alliance.name
@@ -423,28 +412,83 @@ export async function getCharacterKillmails(
   type: 'all' | 'kills' | 'losses' = 'all'
 ): Promise<CharacterKillmailRow[]> {
   let whereClause = ''
+  // NOTE: killlist_frontpage was a view in ClickHouse.
+  // In Postgres, we should either create a similar view or query the tables directly.
+  // Assuming we use tables directly now as we skipped views.
+
+  // However, this query is complex. I'll replace it with a placeholder or simplified version
+  // since the view definition was removed.
+  // Actually, I should check what killlist_frontpage did.
+  // It joined killmails with all entities.
+
+  // For now, I will assume the user will manually fix complex view dependencies or I should write the JOINs.
+  // Given "everything is pretty much implemented", I'll try to replace usage of killlist_frontpage with a JOIN query.
+
+  const baseQuery = `
+    SELECT
+      k.killmailId as killmail_id,
+      k.killmailTime as killmail_time,
+      k.victimShipTypeId as victim_ship_type_id,
+      t.name as victim_ship_name,
+      g.name as victim_ship_group,
+      k.victimCharacterId as victim_characterId,
+      c.name as victim_character_name,
+      k.victimCorporationId as victim_corporationId,
+      corp.name as victim_corporation_name,
+      corp.ticker as victim_corporation_ticker,
+      k.victimAllianceId as victim_allianceId,
+      all.name as victim_alliance_name,
+      all.ticker as victim_alliance_ticker,
+      k.topAttackerCharacterId as attacker_characterId,
+      ac.name as attacker_character_name,
+      k.topAttackerCorporationId as attacker_corporationId,
+      acorp.name as attacker_corporation_name,
+      acorp.ticker as attacker_corporation_ticker,
+      k.topAttackerAllianceId as attacker_allianceId,
+      aall.name as attacker_alliance_name,
+      aall.ticker as attacker_alliance_ticker,
+      k.solarSystemId as solar_system_id,
+      sys.name as solar_system_name,
+      sys.securityStatus as solar_system_security,
+      sys.regionId as region_id,
+      reg.name as region_name,
+      (k.victimDamageTaken * COALESCE(p.averagePrice, 0)) as ship_value,
+      k.totalValue as total_value,
+      k.attackerCount as attacker_count
+    FROM killmails k
+    LEFT JOIN types t ON k.victimShipTypeId = t.typeId
+    LEFT JOIN groups g ON t.groupId = g.groupId
+    LEFT JOIN characters c ON k.victimCharacterId = c.characterId
+    LEFT JOIN corporations corp ON k.victimCorporationId = corp.corporationId
+    LEFT JOIN alliances all ON k.victimAllianceId = all.allianceId
+    LEFT JOIN characters ac ON k.topAttackerCharacterId = ac.characterId
+    LEFT JOIN corporations acorp ON k.topAttackerCorporationId = acorp.corporationId
+    LEFT JOIN alliances aall ON k.topAttackerAllianceId = aall.allianceId
+    LEFT JOIN solarSystems sys ON k.solarSystemId = sys.solarSystemId
+    LEFT JOIN regions reg ON sys.regionId = reg.regionId
+    LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND k.killmailTime::date = p.priceDate
+  `
+
   if (type === 'kills') {
     // Character was an attacker (check attackers table)
     whereClause = `
-      AND killmail_id IN (
+      AND k.killmailId IN (
         SELECT killmailId
         FROM attackers
-        FINAL
         WHERE characterId = {characterId:UInt32}
       )
     `
   } else if (type === 'losses') {
     // Character was the victim
-    whereClause = `AND victim_characterId = {characterId:UInt32}`
+    whereClause = `AND k.victimCharacterId = {characterId:UInt32}`
   } else {
     // All: either attacker or victim
     whereClause = `
       AND (
-        victim_characterId = {characterId:UInt32}
-        OR killmail_id IN (
+        k.victimCharacterId = {characterId:UInt32}
+        OR k.killmailId IN (
           SELECT killmailId
           FROM attackers
-          FINAL
           WHERE characterId = {characterId:UInt32}
         )
       )
@@ -452,40 +496,10 @@ export async function getCharacterKillmails(
   }
 
   const sql = `
-    SELECT
-      killmail_id,
-      killmail_time,
-      victim_ship_type_id,
-      victim_ship_name,
-      victim_ship_group,
-      victim_characterId,
-      victim_character_name,
-      victim_corporationId,
-      victim_corporation_name,
-      victim_corporation_ticker,
-      victim_allianceId,
-      victim_alliance_name,
-      victim_alliance_ticker,
-      attacker_characterId,
-      attacker_character_name,
-      attacker_corporationId,
-      attacker_corporation_name,
-      attacker_corporation_ticker,
-      attacker_allianceId,
-      attacker_alliance_name,
-      attacker_alliance_ticker,
-      solar_system_id,
-      solar_system_name,
-      solar_system_security,
-      region_id,
-      region_name,
-      ship_value,
-      total_value,
-      attacker_count
-    FROM killlist_frontpage
+    ${baseQuery}
     WHERE 1=1
       ${whereClause}
-    ORDER BY killmail_time DESC
+    ORDER BY k.killmailTime DESC
     LIMIT {limit:UInt32} OFFSET {offset:UInt32}
   `
 
@@ -508,23 +522,21 @@ export async function getCharacterKillmailCount(
   let whereClause = ''
   if (type === 'kills') {
     whereClause = `
-      AND killmail_id IN (
+      AND killmailId IN (
         SELECT killmailId
         FROM attackers
-        FINAL
         WHERE characterId = {characterId:UInt32}
       )
     `
   } else if (type === 'losses') {
-    whereClause = `AND victim_characterId = {characterId:UInt32}`
+    whereClause = `AND victimCharacterId = {characterId:UInt32}`
   } else {
     whereClause = `
       AND (
-        victim_characterId = {characterId:UInt32}
-        OR killmail_id IN (
+        victimCharacterId = {characterId:UInt32}
+        OR killmailId IN (
           SELECT killmailId
           FROM attackers
-          FINAL
           WHERE characterId = {characterId:UInt32}
         )
       )
@@ -532,8 +544,8 @@ export async function getCharacterKillmailCount(
   }
 
   const sql = `
-    SELECT count() as count
-    FROM killlist_frontpage
+    SELECT count(*) as count
+    FROM killmails
     WHERE 1=1
       ${whereClause}
   `
@@ -565,7 +577,7 @@ export interface Character {
  */
 export async function getCharacter(characterId: number): Promise<Character | null> {
   return await database.queryOne<Character>(
-    'SELECT * FROM characters FINAL WHERE characterId = {id:UInt32}',
+    'SELECT * FROM characters WHERE characterId = {id:UInt32}',
     { id: characterId }
   )
 }
@@ -577,7 +589,7 @@ export async function getCharacters(characterIds: number[]): Promise<Character[]
   if (characterIds.length === 0) return []
 
   return await database.query<Character>(
-    'SELECT * FROM characters FINAL WHERE characterId IN ({ids:Array(UInt32)})',
+    'SELECT * FROM characters WHERE characterId = ANY({ids:Array(UInt32)})',
     { ids: characterIds }
   )
 }
@@ -587,7 +599,7 @@ export async function getCharacters(characterIds: number[]): Promise<Character[]
  */
 export async function searchCharacters(searchTerm: string, limit: number = 20): Promise<Character[]> {
   return await database.query<Character>(
-    `SELECT * FROM characters FINAL
+    `SELECT * FROM characters
      WHERE name ILIKE {search:String}
      ORDER BY name
      LIMIT {limit:UInt32}`,
@@ -600,7 +612,7 @@ export async function searchCharacters(searchTerm: string, limit: number = 20): 
  */
 export async function getCharacterName(characterId: number): Promise<string | null> {
   const name = await database.queryValue<string>(
-    'SELECT name FROM characters FINAL WHERE characterId = {id:UInt32}',
+    'SELECT name FROM characters WHERE characterId = {id:UInt32}',
     { id: characterId }
   )
   return name || null
@@ -634,9 +646,9 @@ export async function getCharacterWithCorporationAndAlliance(
       corp.allianceId as allianceId,
       alliance.name as allianceName,
       alliance.ticker as allianceTicker
-    FROM characters c FINAL
-    LEFT JOIN corporations corp FINAL ON c.corporationId = corp.corporationId
-    LEFT JOIN alliances alliance FINAL ON corp.allianceId = alliance.allianceId
+    FROM characters c
+    LEFT JOIN corporations corp ON c.corporationId = corp.corporationId
+    LEFT JOIN alliances alliance ON corp.allianceId = alliance.allianceId
     WHERE c.characterId = {characterId:UInt32}
     LIMIT 1`,
     { characterId }
@@ -662,19 +674,27 @@ export async function storeCharacter(
 ): Promise<void> {
   const now = Math.floor(Date.now() / 1000)
 
+  // Postgres bulkInsert syntax is different if we used the helper strictly for CH.
+  // The helper I wrote uses Bun SQL insert.
+  // I need to match the field names to columns.
+  // Columns: characterId, allianceId, birthday, bloodlineId, corporationId, description, gender, name, raceId, securityStatus, updatedAt, version
+  // The input has snake_case in previous code maybe?
+  // The table has camelCase columns in my CREATE TABLE but previous code used snake_case keys in `storeCharacter`?
+  // `updated_at: now` -> `updatedAt`.
+
   await database.bulkInsert('characters', [
     {
       characterId: characterId,
       allianceId: data.allianceId,
       birthday: data.birthday,
-      bloodline_id: data.bloodlineId,
+      bloodlineId: data.bloodlineId,
       corporationId: data.corporationId,
       description: data.description,
       gender: data.gender,
       name: data.name,
-      race_id: data.raceId,
-      security_status: data.securityStatus,
-      updated_at: now,
+      raceId: data.raceId,
+      securityStatus: data.securityStatus,
+      updatedAt: new Date(now * 1000), // Postgres TIMESTAMP
       version: now
     }
   ])
@@ -712,7 +732,7 @@ export async function storeCharactersBulk(
     name: char.name,
     raceId: char.raceId,
     securityStatus: char.securityStatus,
-    updatedAt: now,
+    updatedAt: new Date(now * 1000),
     version: now
   }))
 

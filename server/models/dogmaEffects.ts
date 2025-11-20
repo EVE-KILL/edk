@@ -37,7 +37,7 @@ export interface DogmaEffect {
  */
 export async function getDogmaEffect(effectId: number): Promise<DogmaEffect | null> {
   return await database.queryOne<DogmaEffect>(
-    'SELECT * FROM dogmaEffects FINAL WHERE effectId = {id:UInt32}',
+    'SELECT * FROM dogmaEffects WHERE effectId = {id:UInt32}',
     { id: effectId }
   )
 }
@@ -47,7 +47,7 @@ export async function getDogmaEffect(effectId: number): Promise<DogmaEffect | nu
  */
 export async function getPublishedDogmaEffects(): Promise<DogmaEffect[]> {
   return await database.query<DogmaEffect>(
-    'SELECT * FROM dogmaEffects FINAL WHERE published = 1 ORDER BY name'
+    'SELECT * FROM dogmaEffects WHERE published = 1 ORDER BY name'
   )
 }
 
@@ -56,7 +56,7 @@ export async function getPublishedDogmaEffects(): Promise<DogmaEffect[]> {
  */
 export async function getOffensiveDogmaEffects(): Promise<DogmaEffect[]> {
   return await database.query<DogmaEffect>(
-    'SELECT * FROM dogmaEffects FINAL WHERE isOffensive = 1 ORDER BY name'
+    'SELECT * FROM dogmaEffects WHERE isOffensive = 1 ORDER BY name'
   )
 }
 
@@ -65,7 +65,7 @@ export async function getOffensiveDogmaEffects(): Promise<DogmaEffect[]> {
  */
 export async function getAssistanceDogmaEffects(): Promise<DogmaEffect[]> {
   return await database.query<DogmaEffect>(
-    'SELECT * FROM dogmaEffects FINAL WHERE isAssistance = 1 ORDER BY name'
+    'SELECT * FROM dogmaEffects WHERE isAssistance = 1 ORDER BY name'
   )
 }
 
@@ -74,7 +74,7 @@ export async function getAssistanceDogmaEffects(): Promise<DogmaEffect[]> {
  */
 export async function getWarpSafeDogmaEffects(): Promise<DogmaEffect[]> {
   return await database.query<DogmaEffect>(
-    'SELECT * FROM dogmaEffects FINAL WHERE isWarpSafe = 1 ORDER BY name'
+    'SELECT * FROM dogmaEffects WHERE isWarpSafe = 1 ORDER BY name'
   )
 }
 
@@ -83,7 +83,7 @@ export async function getWarpSafeDogmaEffects(): Promise<DogmaEffect[]> {
  */
 export async function searchDogmaEffects(namePattern: string, limit: number = 10): Promise<DogmaEffect[]> {
   return await database.query<DogmaEffect>(
-    'SELECT * FROM dogmaEffects FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM dogmaEffects WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -93,7 +93,7 @@ export async function searchDogmaEffects(namePattern: string, limit: number = 10
  */
 export async function getDogmaEffectName(effectId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM dogmaEffects FINAL WHERE effectId = {id:UInt32}',
+    'SELECT name FROM dogmaEffects WHERE effectId = {id:UInt32}',
     { id: effectId }
   )
   return result || null

@@ -5,7 +5,7 @@ import { database } from '../helpers/database'
 import chalk from 'chalk'
 
 /**
- * Schema Migration Plugin for ClickHouse
+ * Schema Migration Plugin for Postgres
  *
  * This plugin handles idempotent database schema application by:
  * 1. Reading all SQL files from the db/ directory (ordered by filename)
@@ -173,10 +173,11 @@ export default async (nitroApp: any) => {
         const connected = await database.ping()
         if (connected) {
           const tables = await database.query(`
-            SELECT name FROM system.tables
-            WHERE database = {database:String}
-            ORDER BY name
-          `, { database: process.env.CLICKHOUSE_DB || 'edk' })
+            SELECT table_name as name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+            ORDER BY table_name
+          `)
 
           console.log(chalk.gray(`📊 Database contains ${tables.length} tables`))
         }
@@ -188,7 +189,7 @@ export default async (nitroApp: any) => {
       // Ensure we have a database connection
       const connected = await database.ping()
       if (!connected) {
-        console.error(chalk.red('❌ ClickHouse not connected, skipping schema migration'))
+        console.error(chalk.red('❌ Postgres not connected, skipping schema migration'))
         return
       }
 
@@ -205,7 +206,6 @@ export default async (nitroApp: any) => {
 
         try {
           // Split the file into individual SQL statements
-          // ClickHouse HTTP interface doesn't support multi-statement queries
           const statements = splitSqlStatements(content)
 
           if (statements.length === 0) {
@@ -217,6 +217,10 @@ export default async (nitroApp: any) => {
 
           // Execute each statement individually
           for (const statement of statements) {
+            // Skip CREATE DATABASE statements as we are already connected to a DB
+            if (statement.toUpperCase().startsWith('CREATE DATABASE') || statement.toUpperCase().includes('CREATE DATABASE')) {
+                 continue;
+            }
             await database.execute(statement)
           }
 
@@ -238,9 +242,7 @@ export default async (nitroApp: any) => {
             : `${(fileElapsedTime / 1000).toFixed(2)}s`
 
           // For non-critical errors (like table already exists), treat as success
-          if (errorMessage.includes('already exists') ||
-              errorMessage.includes('Code: 57') || // Table already exists
-              errorMessage.includes('Code: 82')) { // Database already exists
+          if (errorMessage.includes('already exists')) {
             console.log(chalk.green(`✓ ${file}`) + chalk.gray(` (${timeStr}, already exists)`))
             storedChecksums[file] = currentChecksums[file]
             totalSuccessCount++
@@ -269,10 +271,11 @@ export default async (nitroApp: any) => {
 
       // Verify some key tables exist
       const tables = await database.query(`
-        SELECT name FROM system.tables
-        WHERE database = {database:String}
-        ORDER BY name
-      `, { database: process.env.CLICKHOUSE_DB || 'edk' })
+        SELECT table_name as name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `)
 
       console.log(chalk.gray(`📊 Database contains ${tables.length} tables\n`))
 

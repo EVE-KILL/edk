@@ -273,11 +273,11 @@ export default defineEventHandler(async (event: H3Event) => {
 
   // Get Top Boxes data using model functions with whereClause
   const [topSystems, topRegions, topCharacters, topCorporations, topAlliances] = await Promise.all([
-    getTopSystemsFiltered(whereClause.clause, whereClause.params, 10, whereClause.prewhereClause, whereClause.basePrewhereClause),
-    getTopRegionsFiltered(whereClause.clause, whereClause.params, 10, whereClause.prewhereClause, whereClause.basePrewhereClause),
-    getTopCharactersFiltered(whereClause.clause, whereClause.params, 10, whereClause.prewhereClause, whereClause.basePrewhereClause),
-    getTopCorporationsFiltered(whereClause.clause, whereClause.params, 10, whereClause.prewhereClause, whereClause.basePrewhereClause),
-    getTopAlliancesFiltered(whereClause.clause, whereClause.params, 10, whereClause.prewhereClause, whereClause.basePrewhereClause)
+    getTopSystemsFiltered(whereClause.clause, whereClause.params, 10),
+    getTopRegionsFiltered(whereClause.clause, whereClause.params, 10),
+    getTopCharactersFiltered(whereClause.clause, whereClause.params, 10),
+    getTopCorporationsFiltered(whereClause.clause, whereClause.params, 10),
+    getTopAlliancesFiltered(whereClause.clause, whereClause.params, 10)
   ])
 
   // Get Most Valuable Kills for this filter

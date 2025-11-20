@@ -1,17 +1,15 @@
 services:
-  clickhouse:
-    image: clickhouse/clickhouse-server:latest
-    container_name: edk_clickhouse
+  postgres:
+    image: postgres:16
+    container_name: edk_postgres
     ports:
-      - "8123:8123"  # HTTP interface
-      - "9000:9000"  # Native client port
+      - "5432:5432"
     environment:
-      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-edk}
-      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-edk_user}
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-edk_password}
+      POSTGRES_DB: ${POSTGRES_DB:-edk}
+      POSTGRES_USER: ${POSTGRES_USER:-edk_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-edk_password}
     volumes:
-      - ./.data/clickhouse:/var/lib/clickhouse
+      - ./.data/postgres:/var/lib/postgresql/data
     networks:
       - edk_network
     restart: unless-stopped

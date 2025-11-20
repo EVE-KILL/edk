@@ -23,7 +23,7 @@ export interface Star {
  */
 export async function getStar(starId: number): Promise<Star | null> {
   return await database.queryOne<Star>(
-    'SELECT * FROM stars FINAL WHERE starId = {id:UInt32}',
+    'SELECT * FROM stars WHERE starId = {id:UInt32}',
     { id: starId }
   )
 }
@@ -33,7 +33,7 @@ export async function getStar(starId: number): Promise<Star | null> {
  */
 export async function getStarBySystem(solarSystemId: number): Promise<Star | null> {
   return await database.queryOne<Star>(
-    'SELECT * FROM stars FINAL WHERE solarSystemId = {systemId:UInt32}',
+    'SELECT * FROM stars WHERE solarSystemId = {systemId:UInt32}',
     { systemId: solarSystemId }
   )
 }
@@ -43,7 +43,7 @@ export async function getStarBySystem(solarSystemId: number): Promise<Star | nul
  */
 export async function getStarsBySpectralClass(spectralClass: string): Promise<Star[]> {
   return await database.query<Star>(
-    'SELECT * FROM stars FINAL WHERE spectralClass = {class:String} ORDER BY temperature DESC',
+    'SELECT * FROM stars WHERE spectralClass = {class:String} ORDER BY temperature DESC',
     { class: spectralClass }
   )
 }
@@ -53,7 +53,7 @@ export async function getStarsBySpectralClass(spectralClass: string): Promise<St
  */
 export async function searchStars(namePattern: string, limit: number = 10): Promise<Star[]> {
   return await database.query<Star>(
-    'SELECT * FROM stars FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM stars WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -63,7 +63,7 @@ export async function searchStars(namePattern: string, limit: number = 10): Prom
  */
 export async function getHottestStars(limit: number = 10): Promise<Star[]> {
   return await database.query<Star>(
-    'SELECT * FROM stars FINAL ORDER BY temperature DESC LIMIT {limit:UInt32}',
+    'SELECT * FROM stars ORDER BY temperature DESC LIMIT {limit:UInt32}',
     { limit }
   )
 }

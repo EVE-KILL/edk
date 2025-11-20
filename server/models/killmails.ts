@@ -615,25 +615,25 @@ export async function getKillmailDetails(
       coalesce(reg.name, 'Unknown') as regionName,
       coalesce(sys.securityStatus, 0.0) as solarSystemSecurity
     FROM killmails k
-    FINAL
 
-    LEFT JOIN characters vc FINAL ON k.victimCharacterId = vc.characterId
-    LEFT JOIN npcCharacters vnpc FINAL ON k.victimCharacterId = vnpc.characterId
 
-    LEFT JOIN corporations vcorp FINAL ON k.victimCorporationId = vcorp.corporationId
-    LEFT JOIN npcCorporations vnpc_corp FINAL ON k.victimCorporationId = vnpc_corp.corporationId
+    LEFT JOIN characters vc ON k.victimCharacterId = vc.characterId
+    LEFT JOIN npcCharacters vnpc ON k.victimCharacterId = vnpc.characterId
 
-    LEFT JOIN alliances valliance FINAL ON k.victimAllianceId = valliance.allianceId
+    LEFT JOIN corporations vcorp ON k.victimCorporationId = vcorp.corporationId
+    LEFT JOIN npcCorporations vnpc_corp ON k.victimCorporationId = vnpc_corp.corporationId
 
-    LEFT JOIN types vship FINAL ON k.victimShipTypeId = vship.typeId
-    LEFT JOIN groups vship_group FINAL ON vship.groupId = vship_group.groupId
+    LEFT JOIN alliances valliance ON k.victimAllianceId = valliance.allianceId
+
+    LEFT JOIN types vship ON k.victimShipTypeId = vship.typeId
+    LEFT JOIN groups vship_group ON vship.groupId = vship_group.groupId
 
     LEFT JOIN (
       SELECT
         typeId,
         argMax(averagePrice, version) as averagePrice
       FROM prices
-      FINAL
+
       WHERE regionId = 10000002
         AND priceDate = (
           SELECT max(priceDate) FROM prices WHERE regionId = 10000002
@@ -641,8 +641,8 @@ export async function getKillmailDetails(
       GROUP BY typeId
     ) vship_price ON k.victimShipTypeId = vship_price.typeId
 
-    LEFT JOIN solarSystems sys FINAL ON k.solarSystemId = sys.solarSystemId
-    LEFT JOIN regions reg FINAL ON sys.regionId = reg.regionId
+    LEFT JOIN solarSystems sys ON k.solarSystemId = sys.solarSystemId
+    LEFT JOIN regions reg ON sys.regionId = reg.regionId
 
     WHERE k.killmailId = {id:UInt32}
     LIMIT 1`,
@@ -665,14 +665,14 @@ export async function getKillmailItems(
       i.flag,
       coalesce(p.averagePrice, 0) as price
     FROM items i
-    FINAL
+
     LEFT JOIN types t ON i.itemTypeId = t.typeId
     LEFT JOIN (
       SELECT
         typeId,
         argMax(averagePrice, version) as averagePrice
       FROM prices
-      FINAL
+
       WHERE regionId = 10000002
       AND priceDate = (SELECT max(priceDate) FROM prices WHERE regionId = 10000002)
       GROUP BY typeId
@@ -707,14 +707,14 @@ export async function getKillmailAttackers(
       a.weaponTypeId,
       coalesce(w.name, 'Unknown') as weaponName
     FROM attackers a
-    FINAL
-    LEFT JOIN characters c FINAL ON a.characterId = c.characterId
-    LEFT JOIN npcCharacters nc FINAL ON a.characterId = nc.characterId
-    LEFT JOIN corporations corp FINAL ON a.corporationId = corp.corporationId
-    LEFT JOIN npcCorporations npc_corp FINAL ON a.corporationId = npc_corp.corporationId
-    LEFT JOIN alliances a_alliance FINAL ON a.allianceId = a_alliance.allianceId
-    LEFT JOIN types t FINAL ON a.shipTypeId = t.typeId
-    LEFT JOIN types w FINAL ON a.weaponTypeId = w.typeId
+
+    LEFT JOIN characters c ON a.characterId = c.characterId
+    LEFT JOIN npcCharacters nc ON a.characterId = nc.characterId
+    LEFT JOIN corporations corp ON a.corporationId = corp.corporationId
+    LEFT JOIN npcCorporations npc_corp ON a.corporationId = npc_corp.corporationId
+    LEFT JOIN alliances a_alliance ON a.allianceId = a_alliance.allianceId
+    LEFT JOIN types t ON a.shipTypeId = t.typeId
+    LEFT JOIN types w ON a.weaponTypeId = w.typeId
     WHERE a.killmailId = {id:UInt32}
     ORDER BY a.damageDone DESC`,
     { id: killmailId }
@@ -745,10 +745,10 @@ export async function getSiblingKillmails(
       k.victimShipTypeId as victimShipTypeId,
       k.totalValue as totalValue
     FROM killmails k
-    FINAL
-    LEFT JOIN characters vc FINAL ON k.victimCharacterId = vc.characterId
-    LEFT JOIN npcCharacters vnpc FINAL ON k.victimCharacterId = vnpc.characterId
-    LEFT JOIN types vship FINAL ON k.victimShipTypeId = vship.typeId
+
+    LEFT JOIN characters vc ON k.victimCharacterId = vc.characterId
+    LEFT JOIN npcCharacters vnpc ON k.victimCharacterId = vnpc.characterId
+    LEFT JOIN types vship ON k.victimShipTypeId = vship.typeId
     WHERE k.victimCharacterId = {victimCharId:UInt32}
       AND k.killmailTime >= {startTime:DateTime}
       AND k.killmailTime <= {endTime:DateTime}

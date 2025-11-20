@@ -130,9 +130,9 @@ export default defineEventHandler(async (event: H3Event) => {
  */
 async function getTotalKillmailCount(): Promise<number> {
   const result = await database.queryValue<number>(
-    'SELECT count() FROM killmails'
+    'SELECT count(*) FROM killmails'
   )
-  return result || 0
+  return Number(result) || 0
 }
 
 /**
@@ -160,7 +160,7 @@ async function getUniqueEntityCount(type: 'character' | 'corporation' | 'allianc
   }
 
   const result = await database.queryValue<number>(sql)
-  return result || 0
+  return Number(result) || 0
 }
 
 /**
@@ -168,9 +168,9 @@ async function getUniqueEntityCount(type: 'character' | 'corporation' | 'allianc
  */
 async function getSoloKillsCount(): Promise<number> {
   const result = await database.queryValue<number>(
-    'SELECT countIf(solo) FROM killmails'
+    'SELECT count(*) FROM killmails WHERE solo = true'
   )
-  return result || 0
+  return Number(result) || 0
 }
 
 /**
@@ -187,24 +187,23 @@ async function getAverageAttackersPerKill(): Promise<number> {
  * Get activity statistics for a given time period (in hours)
  */
 async function getActivityStats(hours: number): Promise<{ pilots: number, kills: number }> {
-  const cutoffTime = Math.floor(Date.now() / 1000) - (hours * 3600)
+  // Postgres syntax for date arithmetic: NOW() - INTERVAL 'x hours'
+  const interval = `${hours} hours`;
 
   const [pilotsResult, killsResult] = await Promise.all([
     database.queryValue<number>(
       `SELECT count(DISTINCT victimCharacterId) FROM killmails
-       WHERE toUnixTimestamp(killmailTime) >= {cutoff:UInt32}`,
-      { cutoff: cutoffTime }
+       WHERE killmailTime >= NOW() - INTERVAL '${interval}'`
     ),
     database.queryValue<number>(
-      `SELECT count() FROM killmails
-       WHERE toUnixTimestamp(killmailTime) >= {cutoff:UInt32}`,
-      { cutoff: cutoffTime }
+      `SELECT count(*) FROM killmails
+       WHERE killmailTime >= NOW() - INTERVAL '${interval}'`
     )
   ])
 
   return {
-    pilots: pilotsResult || 0,
-    kills: killsResult || 0
+    pilots: Number(pilotsResult) || 0,
+    kills: Number(killsResult) || 0
   }
 }
 
@@ -216,10 +215,10 @@ async function getTopCharactersByKills(limit: number = 5): Promise<Array<{id: nu
     `SELECT
       km.topAttackerCharacterId as id,
       COALESCE(c.name, nc.name, 'Unknown') as name,
-      count() as kills
+      count(*) as kills
     FROM killmails km
-    LEFT JOIN characters c FINAL ON km.topAttackerCharacterId = c.characterId
-    LEFT JOIN npcCharacters nc FINAL ON km.topAttackerCharacterId = nc.characterId
+    LEFT JOIN characters c ON km.topAttackerCharacterId = c.characterId
+    LEFT JOIN npcCharacters nc ON km.topAttackerCharacterId = nc.characterId
     WHERE km.topAttackerCharacterId > 0
     GROUP BY km.topAttackerCharacterId, c.name, nc.name
     ORDER BY kills DESC
@@ -237,10 +236,10 @@ async function getTopCorporationsByKills(limit: number = 5): Promise<Array<{id: 
     `SELECT
       km.topAttackerCorporationId as id,
       COALESCE(c.name, nc.name, 'Unknown') as name,
-      count() as kills
+      count(*) as kills
     FROM killmails km
-    LEFT JOIN corporations c FINAL ON km.topAttackerCorporationId = c.corporationId
-    LEFT JOIN npcCorporations nc FINAL ON km.topAttackerCorporationId = nc.corporationId
+    LEFT JOIN corporations c ON km.topAttackerCorporationId = c.corporationId
+    LEFT JOIN npcCorporations nc ON km.topAttackerCorporationId = nc.corporationId
     WHERE km.topAttackerCorporationId > 0
     GROUP BY km.topAttackerCorporationId, c.name, nc.name
     ORDER BY kills DESC
@@ -258,9 +257,9 @@ async function getTopAlliancesByKills(limit: number = 5): Promise<Array<{id: num
     `SELECT
       km.topAttackerAllianceId as id,
       COALESCE(a.name, 'Unknown') as name,
-      count() as kills
+      count(*) as kills
     FROM killmails km
-    LEFT JOIN alliances a FINAL ON km.topAttackerAllianceId = a.allianceId
+    LEFT JOIN alliances a ON km.topAttackerAllianceId = a.allianceId
     WHERE km.topAttackerAllianceId > 0
     GROUP BY km.topAttackerAllianceId, a.name
     ORDER BY kills DESC
@@ -278,9 +277,9 @@ async function getMostDestroyedShips(limit: number = 5): Promise<Array<{id: numb
     `SELECT
       km.victimShipTypeId as id,
       COALESCE(t.name, 'Unknown Ship') as name,
-      count() as count
+      count(*) as count
     FROM killmails km
-    LEFT JOIN types t FINAL ON km.victimShipTypeId = t.typeId
+    LEFT JOIN types t ON km.victimShipTypeId = t.typeId
     WHERE km.victimShipTypeId > 0
     GROUP BY km.victimShipTypeId, t.name
     ORDER BY count DESC
@@ -298,9 +297,9 @@ async function getMostDangerousSystems(limit: number = 5): Promise<Array<{id: nu
     `SELECT
       km.solarSystemId as id,
       COALESCE(sys.name, 'Unknown') as name,
-      count() as count
+      count(*) as count
     FROM killmails km
-    LEFT JOIN solarSystems sys FINAL ON km.solarSystemId = sys.solarSystemId
+    LEFT JOIN solarSystems sys ON km.solarSystemId = sys.solarSystemId
     WHERE km.solarSystemId > 0
     GROUP BY km.solarSystemId, sys.name
     ORDER BY count DESC
