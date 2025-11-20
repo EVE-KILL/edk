@@ -107,7 +107,7 @@ export async function getMostValuableKillsByPeriod(
       topAttackerAllianceTicker as attackerAllianceTicker,
       regionName
     FROM most_valuable_kills_latest
-    WHERE killmailTime >= now() - INTERVAL {hoursAgo:UInt32} HOUR
+    WHERE killmailTime >= now() - INTERVAL '1 hour' * {hoursAgo:UInt32}
       AND attackerCount > 0
     ORDER BY totalValue DESC, killmailTime DESC, killmailId
     LIMIT {limit:UInt32}`,
@@ -146,7 +146,7 @@ export async function getMostValuableKillsByCharacter(
   return await database.query<MostValuableKill>(
     `SELECT {periodType:String} as periodType, * FROM most_valuable_kills_latest
      WHERE victimCharacterId = {characterId:UInt32}
-       AND killmailTime >= now() - INTERVAL {hoursAgo:UInt32} HOUR
+       AND killmailTime >= now() - INTERVAL '1 hour' * {hoursAgo:UInt32}
      ORDER BY totalValue DESC, killmailTime DESC, killmailId
      LIMIT {limit:UInt32}`,
     { periodType, characterId, hoursAgo, limit }
@@ -184,7 +184,7 @@ export async function getMostValuableKillsByCorporation(
   return await database.query<MostValuableKill>(
     `SELECT {periodType:String} as periodType, * FROM most_valuable_kills_latest
      WHERE victimCorporationId = {corporationId:UInt32}
-       AND killmailTime >= now() - INTERVAL {hoursAgo:UInt32} HOUR
+       AND killmailTime >= now() - INTERVAL '1 hour' * {hoursAgo:UInt32}
      ORDER BY totalValue DESC, killmailTime DESC, killmailId
      LIMIT {limit:UInt32}`,
     { periodType, corporationId, hoursAgo, limit }
@@ -222,7 +222,7 @@ export async function getMostValuableKillsByAlliance(
   return await database.query<MostValuableKill>(
     `SELECT {periodType:String} as periodType, * FROM most_valuable_kills_latest
      WHERE victimAllianceId = {allianceId:UInt32}
-       AND killmailTime >= now() - INTERVAL {hoursAgo:UInt32} HOUR
+       AND killmailTime >= now() - INTERVAL '1 hour' * {hoursAgo:UInt32}
      ORDER BY totalValue DESC, killmailTime DESC, killmailId
      LIMIT {limit:UInt32}`,
     { periodType, allianceId, hoursAgo, limit }
@@ -259,7 +259,7 @@ export async function getMostValuableSoloKills(
   return await database.query<MostValuableKill>(
     `SELECT {periodType:String} as periodType, * FROM most_valuable_kills_latest
      WHERE solo = true
-       AND killmailTime >= now() - INTERVAL {hoursAgo:UInt32} HOUR
+       AND killmailTime >= now() - INTERVAL '1 hour' * {hoursAgo:UInt32}
      ORDER BY totalValue DESC, killmailTime DESC, killmailId
      LIMIT {limit:UInt32}`,
     { periodType, hoursAgo, limit }
