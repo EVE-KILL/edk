@@ -10,6 +10,7 @@ import { extractLanguageField } from './parser'
 export const mapStargatesConfig: TableConfig = {
   name: 'stargates',
   sourceName: 'mapStargates',
+  primaryKey: 'stargateId',
   mappings: [
     { source: '_key', target: 'stargateId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string' },
@@ -26,6 +27,7 @@ export const mapStargatesConfig: TableConfig = {
 export const mapStarsConfig: TableConfig = {
   name: 'stars',
   sourceName: 'mapStars',
+  primaryKey: 'starId',
   mappings: [
     { source: '_key', target: 'starId', type: 'number', required: true },
     { source: 'age', target: 'age', type: 'number' },
@@ -42,6 +44,7 @@ export const mapStarsConfig: TableConfig = {
 export const mapPlanetsConfig: TableConfig = {
   name: 'planets',
   sourceName: 'mapPlanets',
+  primaryKey: 'planetId',
   mappings: [
     { source: '_key', target: 'planetId', type: 'number', required: true },
     { source: 'celestialIndex', target: 'celestialIndex', type: 'number' },
@@ -57,6 +60,7 @@ export const mapPlanetsConfig: TableConfig = {
 export const mapMoonsConfig: TableConfig = {
   name: 'moons',
   sourceName: 'mapMoons',
+  primaryKey: 'moonId',
   mappings: [
     { source: '_key', target: 'moonId', type: 'number', required: true },
     { source: 'celestialIndex', target: 'celestialIndex', type: 'number' },
@@ -73,6 +77,7 @@ export const mapMoonsConfig: TableConfig = {
 export const mapAsteroidBeltsConfig: TableConfig = {
   name: 'asteroidBelts',
   sourceName: 'mapAsteroidBelts',
+  primaryKey: 'asteroidBeltId',
   mappings: [
     { source: '_key', target: 'asteroidBeltId', type: 'number', required: true },
     { source: 'celestialIndex', target: 'celestialIndex', type: 'number' },
@@ -88,6 +93,7 @@ export const mapAsteroidBeltsConfig: TableConfig = {
 // Item/Type Tables
 export const typesConfig: TableConfig = {
   name: 'types',
+  primaryKey: 'typeId',
   mappings: [
     { source: '_key', target: 'typeId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -111,6 +117,7 @@ export const typesConfig: TableConfig = {
 
 export const groupsConfig: TableConfig = {
   name: 'groups',
+  primaryKey: 'groupId',
   mappings: [
     { source: '_key', target: 'groupId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -122,6 +129,7 @@ export const groupsConfig: TableConfig = {
 
 export const categoriesConfig: TableConfig = {
   name: 'categories',
+  primaryKey: 'categoryId',
   mappings: [
     { source: '_key', target: 'categoryId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -133,6 +141,7 @@ export const categoriesConfig: TableConfig = {
 // NPC Tables
 export const npcCorporationsConfig: TableConfig = {
   name: 'npcCorporations',
+  primaryKey: 'corporationId',
   mappings: [
     { source: '_key', target: 'corporationId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -149,6 +158,7 @@ export const npcCorporationsConfig: TableConfig = {
 
 export const npcStationsConfig: TableConfig = {
   name: 'npcStations',
+  primaryKey: 'stationId',
   mappings: [
     { source: '_key', target: 'stationId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -170,6 +180,7 @@ export const npcStationsConfig: TableConfig = {
 
 export const stationOperationsConfig: TableConfig = {
   name: 'stationOperations',
+  primaryKey: 'operationId',
   mappings: [
     { source: '_key', target: 'operationId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -188,6 +199,7 @@ export const stationOperationsConfig: TableConfig = {
 
 export const npcCharactersConfig: TableConfig = {
   name: 'npcCharacters',
+  primaryKey: 'characterId',
   mappings: [
     { source: '_key', target: 'characterId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -203,6 +215,7 @@ export const npcCharactersConfig: TableConfig = {
 // Character Attributes
 export const factionsConfig: TableConfig = {
   name: 'factions',
+  primaryKey: 'factionId',
   mappings: [
     { source: '_key', target: 'factionId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -216,6 +229,7 @@ export const factionsConfig: TableConfig = {
 
 export const racesConfig: TableConfig = {
   name: 'races',
+  primaryKey: 'raceId',
   mappings: [
     { source: '_key', target: 'raceId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -226,6 +240,7 @@ export const racesConfig: TableConfig = {
 
 export const bloodlinesConfig: TableConfig = {
   name: 'bloodlines',
+  primaryKey: 'bloodlineId',
   mappings: [
     { source: '_key', target: 'bloodlineId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -244,6 +259,7 @@ export const bloodlinesConfig: TableConfig = {
 
 export const ancestriesConfig: TableConfig = {
   name: 'ancestries',
+  primaryKey: 'ancestryId',
   mappings: [
     { source: '_key', target: 'ancestryId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -257,6 +273,7 @@ export const ancestriesConfig: TableConfig = {
 // Market/Meta Tables
 export const marketGroupsConfig: TableConfig = {
   name: 'marketGroups',
+  primaryKey: 'marketGroupId',
   mappings: [
     { source: '_key', target: 'marketGroupId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -269,6 +286,7 @@ export const marketGroupsConfig: TableConfig = {
 
 export const metaGroupsConfig: TableConfig = {
   name: 'metaGroups',
+  primaryKey: 'metaGroupId',
   mappings: [
     { source: '_key', target: 'metaGroupId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -279,6 +297,7 @@ export const metaGroupsConfig: TableConfig = {
 
 export const skinsConfig: TableConfig = {
   name: 'skins',
+  primaryKey: 'skinId',
   mappings: [
     { source: '_key', target: 'skinId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string' },
@@ -291,6 +310,7 @@ export const skinsConfig: TableConfig = {
 // Dogma Tables
 export const dogmaAttributesConfig: TableConfig = {
   name: 'dogmaAttributes',
+  primaryKey: 'attributeId',
   mappings: [
     { source: '_key', target: 'attributeId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string' },
@@ -310,6 +330,7 @@ export const dogmaAttributesConfig: TableConfig = {
 
 export const dogmaEffectsConfig: TableConfig = {
   name: 'dogmaEffects',
+  primaryKey: 'effectId',
   mappings: [
     { source: '_key', target: 'effectId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string' },
@@ -340,6 +361,7 @@ export const dogmaEffectsConfig: TableConfig = {
 // Additional SDE Tables with language fields
 export const npcCorporationDivisionsConfig: TableConfig = {
   name: 'npcCorporationDivisions',
+  primaryKey: 'divisionId',
   mappings: [
     { source: '_key', target: 'divisionId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -352,6 +374,7 @@ export const npcCorporationDivisionsConfig: TableConfig = {
 
 export const landmarksConfig: TableConfig = {
   name: 'landmarks',
+  primaryKey: 'landmarkId',
   mappings: [
     { source: '_key', target: 'landmarkId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -366,6 +389,7 @@ export const landmarksConfig: TableConfig = {
 export const mapRegionsConfig: TableConfig = {
   name: 'regions',
   sourceName: 'mapRegions',
+  primaryKey: 'regionId',
   mappings: [
     { source: '_key', target: 'regionId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -375,6 +399,7 @@ export const mapRegionsConfig: TableConfig = {
 
 export const certificatesConfig: TableConfig = {
   name: 'certificates',
+  primaryKey: 'certificateId',
   mappings: [
     { source: '_key', target: 'certificateId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -388,6 +413,7 @@ export const certificatesConfig: TableConfig = {
 
 export const skinMaterialsConfig: TableConfig = {
   name: 'skinMaterials',
+  primaryKey: 'skinMaterialId',
   mappings: [
     { source: '_key', target: 'skinMaterialId', type: 'number', required: true },
     { source: 'displayName', target: 'displayName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -398,6 +424,7 @@ export const skinMaterialsConfig: TableConfig = {
 export const mapConstellationsConfig: TableConfig = {
   name: 'constellations',
   sourceName: 'mapConstellations',
+  primaryKey: 'constellationId',
   mappings: [
     { source: '_key', target: 'constellationId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -407,6 +434,7 @@ export const mapConstellationsConfig: TableConfig = {
 
 export const planetSchematicsConfig: TableConfig = {
   name: 'planetSchematics',
+  primaryKey: 'schematicId',
   mappings: [
     { source: '_key', target: 'schematicId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -416,6 +444,7 @@ export const planetSchematicsConfig: TableConfig = {
 
 export const stationServicesConfig: TableConfig = {
   name: 'stationServices',
+  primaryKey: 'serviceId',
   mappings: [
     { source: '_key', target: 'serviceId', type: 'number', required: true },
     { source: 'serviceName', target: 'serviceName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -425,6 +454,7 @@ export const stationServicesConfig: TableConfig = {
 
 export const dogmaUnitsConfig: TableConfig = {
   name: 'dogmaUnits',
+  primaryKey: 'unitId',
   mappings: [
     { source: '_key', target: 'unitId', type: 'number', required: true },
     { source: 'displayName', target: 'displayName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -434,6 +464,7 @@ export const dogmaUnitsConfig: TableConfig = {
 
 export const characterAttributesConfig: TableConfig = {
   name: 'characterAttributes',
+  primaryKey: 'attributeId',
   mappings: [
     { source: '_key', target: 'attributeId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') },
@@ -446,6 +477,7 @@ export const characterAttributesConfig: TableConfig = {
 
 export const corporationActivitiesConfig: TableConfig = {
   name: 'corporationActivities',
+  primaryKey: 'activityId',
   mappings: [
     { source: '_key', target: 'activityId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string', transform: (v) => extractLanguageField(v, 'en') }
@@ -454,6 +486,7 @@ export const corporationActivitiesConfig: TableConfig = {
 
 export const dbuffCollectionsConfig: TableConfig = {
   name: 'dbuffCollections',
+  primaryKey: 'collectionId',
   mappings: [
     { source: '_key', target: 'collectionId', type: 'number', required: true },
     { source: 'displayName', target: 'displayName', type: 'string', transform: (v) => extractLanguageField(v, 'en') },

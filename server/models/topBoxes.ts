@@ -66,29 +66,29 @@ export async function getTopByKills(
   let joinClause = ''
 
   if (entityType === 'character') {
-    groupCol = 'k.topAttackerCharacterId';
+    groupCol = 'k."topAttackerCharacterId"';
     nameCol = 'c.name';
-    joinClause = 'LEFT JOIN characters c ON k.topAttackerCharacterId = c.characterId';
+    joinClause = 'LEFT JOIN characters c ON k."topAttackerCharacterId" = c."characterId"';
   } else if (entityType === 'corporation') {
-    groupCol = 'k.topAttackerCorporationId';
+    groupCol = 'k."topAttackerCorporationId"';
     nameCol = 'c.name';
-    joinClause = 'LEFT JOIN corporations c ON k.topAttackerCorporationId = c.corporationId';
+    joinClause = 'LEFT JOIN corporations c ON k."topAttackerCorporationId" = c."corporationId"';
   } else if (entityType === 'alliance') {
-    groupCol = 'k.topAttackerAllianceId';
+    groupCol = 'k."topAttackerAllianceId"';
     nameCol = 'a.name';
-    joinClause = 'LEFT JOIN alliances a ON k.topAttackerAllianceId = a.allianceId';
+    joinClause = 'LEFT JOIN alliances a ON k."topAttackerAllianceId" = a."allianceId"';
   } else if (entityType === 'ship') {
-    groupCol = 'k.victimShipTypeId';
+    groupCol = 'k."victimShipTypeId"';
     nameCol = 't.name';
-    joinClause = 'LEFT JOIN types t ON k.victimShipTypeId = t.typeId';
+    joinClause = 'LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"';
   } else if (entityType === 'system') {
-    groupCol = 'k.solarSystemId';
+    groupCol = 'k."solarSystemId"';
     nameCol = 'ss.name';
-    joinClause = 'LEFT JOIN solarSystems ss ON k.solarSystemId = ss.solarSystemId';
+    joinClause = 'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"';
   } else if (entityType === 'region') {
-    groupCol = 'ss.regionId';
+    groupCol = 'ss."regionId"';
     nameCol = 'r.name';
-    joinClause = 'LEFT JOIN solarSystems ss ON k.solarSystemId = ss.solarSystemId LEFT JOIN regions r ON ss.regionId = r.regionId';
+    joinClause = 'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId" LEFT JOIN regions r ON ss."regionId" = r."regionId"';
   }
 
   return await database.query<TopBoxWithName>(
@@ -97,16 +97,16 @@ export async function getTopByKills(
        COALESCE(${nameCol}, 'Unknown') as name,
        count(*) as kills,
        0 as losses,
-       SUM(k.totalValue) as iskDestroyed,
-       0 as iskLost,
+       SUM(k."totalValue") as "iskDestroyed",
+       0 as "iskLost",
        0 as points
      FROM killmails k
      ${joinClause}
-     WHERE k.killmailTime >= {start:String}::timestamp
-       AND k.killmailTime <= {end:String}::timestamp
+     WHERE k."killmailTime" >= {start:String}::timestamp
+       AND k."killmailTime" <= {end:String}::timestamp
        AND ${groupCol} > 0
      GROUP BY ${groupCol}, ${nameCol}
-     ORDER BY kills DESC, iskDestroyed DESC
+     ORDER BY kills DESC, "iskDestroyed" DESC
      LIMIT {limit:UInt32}`,
     { start, end, limit }
   )

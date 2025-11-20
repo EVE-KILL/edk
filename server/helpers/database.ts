@@ -133,6 +133,54 @@ export class DatabaseHelper {
   }
 
   /**
+   * Bulk upsert data (Insert on conflict update)
+   */
+  async bulkUpsert<T = any>(table: string, data: T[], conflictKey: string): Promise<void> {
+    const items = Array.isArray(data) ? data : [data]
+    if (items.length === 0) return
+
+    try {
+      const columns = Object.keys(items[0])
+      const updateColumns = columns.filter(c => c !== conflictKey)
+
+      const columnsSql = columns.map(c => `"${c}"`).join(', ')
+
+      const values: any[] = []
+      const valuePlaceholders: string[] = []
+
+      let paramIndex = 1
+      for (const item of items) {
+        const placeholders: string[] = []
+        for (const col of columns) {
+          let val = (item as any)[col]
+
+          // Handle arrays for Postgres
+          if (Array.isArray(val)) {
+             val = `{${val.join(',')}}`
+          }
+
+          values.push(val)
+          placeholders.push(`$${paramIndex++}`)
+        }
+        valuePlaceholders.push(`(${placeholders.join(', ')})`)
+      }
+
+      const valuesSql = valuePlaceholders.join(', ')
+      const setClause = updateColumns.map(c => `"${c}" = EXCLUDED."${c}"`).join(', ')
+
+      await this.client.unsafe(`
+        INSERT INTO "${table}" (${columnsSql})
+        VALUES ${valuesSql}
+        ON CONFLICT ("${conflictKey}")
+        DO UPDATE SET ${setClause}
+      `, values)
+    } catch (error) {
+      console.error('Database upsert error:', error)
+      throw error
+    }
+  }
+
+  /**
    * Check if a table exists
    */
   async tableExists(tableName: string): Promise<boolean> {

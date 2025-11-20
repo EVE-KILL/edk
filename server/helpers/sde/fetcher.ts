@@ -299,9 +299,9 @@ export class SDEFetcher {
   private async isTableAlreadyImported(tableName: string, buildNumber: number): Promise<boolean> {
     try {
       const result = await database.queryOne<any>(
-        `SELECT configValue FROM config
-         WHERE configKey = {key:String} AND buildNumber = {build:UInt32}
-         ORDER BY version DESC LIMIT 1`,
+        `SELECT "configValue" FROM config
+         WHERE "configKey" = {key:String} AND "buildNumber" = {build:UInt32}
+         ORDER BY "version" DESC LIMIT 1`,
         { key: `sde_imported_${tableName}`, build: buildNumber }
       )
       return result !== null
@@ -317,24 +317,15 @@ export class SDEFetcher {
       const now = new Date()
       const version = Math.floor(now.getTime() / 1000)
 
-      // Format datetime as "YYYY-MM-DD HH:MM:SS" for ClickHouse
-      const year = now.getFullYear()
-      const month = String(now.getMonth() + 1).padStart(2, '0')
-      const day = String(now.getDate()).padStart(2, '0')
-      const hours = String(now.getHours()).padStart(2, '0')
-      const minutes = String(now.getMinutes()).padStart(2, '0')
-      const seconds = String(now.getSeconds()).padStart(2, '0')
-      const formattedDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-
-      await database.bulkInsert('config', [{
+      await database.bulkUpsert('config', [{
         configKey: `sde_imported_${tableName}`,
         configValue: 'imported',
         buildNumber,
         tableName,
         rowCount,
-        updatedAt: formattedDateTime,
+        updatedAt: now,
         version
-      }])
+      }], 'configKey')
     } catch (error) {
       console.error(`⚠️  Failed to mark ${tableName} as imported:`, error)
       // Don't throw - import succeeded even if we can't mark it
@@ -361,7 +352,8 @@ export class SDEFetcher {
       ]
 
       for (const table of tables) {
-        await database.query(`OPTIMIZE TABLE ${table}`)
+        // Use VACUUM ANALYZE for Postgres
+        await database.query(`VACUUM ANALYZE "${table.toLowerCase()}"`)
       }
       console.log(`   ✓ Optimized ${tables.length} SDE tables`)
     } catch (error) {
@@ -371,7 +363,26 @@ export class SDEFetcher {
   }  /**
    * Import mapSolarSystems table into ClickHouse
    */
-  async importMapSolarSystems(): Promise<void> {
+  async importMapSolarSystems(buildNumber?: number): Promise<void> {
+    // Get buildNumber if not provided
+    if (!buildNumber) {
+      const metadata = await this.getMetadata()
+      if (!metadata) {
+        console.error('❌ No build number available for mapSolarSystems')
+        return
+      }
+      buildNumber = metadata.buildNumber
+    }
+
+    // Check if already imported (skip if force reimport is enabled)
+    if (!this.forceReimport) {
+      const alreadyImported = await this.isTableAlreadyImported('mapSolarSystems', buildNumber)
+      if (alreadyImported) {
+        console.log(`⏭️  Skipping mapSolarSystems (already imported for build ${buildNumber})`)
+        return
+      }
+    }
+
     console.log('📥 Importing mapSolarSystems...')
 
     const filepath = this.getTablePath('mapSolarSystems')
@@ -397,7 +408,7 @@ export class SDEFetcher {
           international: toBoolean(row.international),
           luminosity: parseNumber(row.luminosity),
           name: extractLanguageField(row.name, 'en'),
-          planetIds: row.planetIDs || [],
+          planetIds: (row.planetIDs && row.planetIDs.length > 0) ? row.planetIDs.map((id: any) => Number(id)) : null,
           positionX: parseNumber(row.position?.x),
           positionY: parseNumber(row.position?.y),
           positionZ: parseNumber(row.position?.z),
@@ -406,11 +417,11 @@ export class SDEFetcher {
           regionId: row.regionID,
           securityClass: row.securityClass || 'B',
           securityStatus: parseNumber(row.securityStatus),
-          stargateIds: row.stargateIDs || [],
+          stargateIds: (row.stargateIDs && row.stargateIDs.length > 0) ? row.stargateIDs.map((id: any) => Number(id)) : null,
           starId: row.starID,
           visualEffect: row.visualEffect || '',
           wormholeClassId: row.wormholeClassID || null,
-          updatedAt: Math.floor(Date.now() / 1000),
+          updatedAt: new Date(),
           version: Math.floor(Date.now() / 1000)
         }
 
@@ -419,7 +430,7 @@ export class SDEFetcher {
 
         // Batch insert
         if (records.length >= BATCH_SIZE) {
-          await database.bulkInsert('solarSystems', records)
+          await database.bulkUpsert('solarsystems', records, 'solarSystemId')
           console.log(`   Inserted ${imported} rows...`)
           records.length = 0
         }
@@ -427,8 +438,11 @@ export class SDEFetcher {
 
       // Insert remaining
       if (records.length > 0) {
-        await database.bulkInsert('solarSystems', records)
+        await database.bulkUpsert('solarsystems', records, 'solarSystemId')
       }
+
+      // Mark as imported
+      await this.markTableAsImported('mapSolarSystems', buildNumber, imported)
 
       console.log(`✅ Imported ${imported} solar systems`)
     } catch (error) {
@@ -440,7 +454,26 @@ export class SDEFetcher {
   /**
    * Import mapRegions table into ClickHouse
    */
-  async importMapRegions(): Promise<void> {
+  async importMapRegions(buildNumber?: number): Promise<void> {
+    // Get buildNumber if not provided
+    if (!buildNumber) {
+      const metadata = await this.getMetadata()
+      if (!metadata) {
+        console.error('❌ No build number available for mapRegions')
+        return
+      }
+      buildNumber = metadata.buildNumber
+    }
+
+    // Check if already imported (skip if force reimport is enabled)
+    if (!this.forceReimport) {
+      const alreadyImported = await this.isTableAlreadyImported('mapRegions', buildNumber)
+      if (alreadyImported) {
+        console.log(`⏭️  Skipping mapRegions (already imported for build ${buildNumber})`)
+        return
+      }
+    }
+
     console.log('📥 Importing mapRegions...')
 
     const filepath = this.getTablePath('mapRegions')
@@ -457,7 +490,7 @@ export class SDEFetcher {
       for await (const row of streamParseJSONLines(filepath)) {
         const record = {
           regionId: row._key || row.id,
-          constellationIds: row.constellationIDs || [],
+          // constellationIds: (row.constellationIDs && row.constellationIDs.length > 0) ? sql.array(row.constellationIDs.map((id: any) => Number(id))) : null,
           description: extractLanguageField(row.description, 'en'),
           factionId: row.factionID || null,
           name: extractLanguageField(row.name, 'en'),
@@ -466,7 +499,7 @@ export class SDEFetcher {
           positionY: parseNumber(row.position?.y),
           positionZ: parseNumber(row.position?.z),
           wormholeClassId: row.wormholeClassID || null,
-          updatedAt: Math.floor(Date.now() / 1000),
+          updatedAt: new Date(),
           version: Math.floor(Date.now() / 1000)
         }
 
@@ -475,7 +508,7 @@ export class SDEFetcher {
 
         // Batch insert
         if (records.length >= BATCH_SIZE) {
-          await database.bulkInsert('regions', records)
+          await database.bulkUpsert('regions', records, 'regionId')
           console.log(`   Inserted ${imported} rows...`)
           records.length = 0
         }
@@ -483,8 +516,11 @@ export class SDEFetcher {
 
       // Insert remaining
       if (records.length > 0) {
-        await database.bulkInsert('regions', records)
+        await database.bulkUpsert('regions', records, 'regionId')
       }
+
+      // Mark as imported
+      await this.markTableAsImported('mapRegions', buildNumber, imported)
 
       console.log(`✅ Imported ${imported} regions`)
     } catch (error) {
@@ -496,7 +532,23 @@ export class SDEFetcher {
   /**
    * Import mapConstellations table into ClickHouse
    */
-  async importMapConstellations(): Promise<void> {
+  async importMapConstellations(buildNumber?: number): Promise<void> {
+    // Get buildNumber if not provided
+    if (!buildNumber) {
+      const metadata = await this.getMetadata()
+      if (!metadata) {
+        console.error('❌ No build number available for mapConstellations')
+        return
+      }
+      buildNumber = metadata.buildNumber
+    }
+
+    // Check if already imported
+    if (await this.isTableAlreadyImported('mapConstellations', buildNumber)) {
+      console.log('⏭️  mapConstellations already imported for this build, skipping')
+      return
+    }
+
     console.log('📥 Importing mapConstellations...')
 
     const filepath = this.getTablePath('mapConstellations')
@@ -521,7 +573,7 @@ export class SDEFetcher {
           regionId: row.regionID,
           solarSystemIds: row.solarSystemIDs || [],
           wormholeClassId: row.wormholeClassID || null,
-          updatedAt: Math.floor(Date.now() / 1000),
+          updatedAt: new Date(),
           version: Math.floor(Date.now() / 1000)
         }
 
@@ -530,7 +582,7 @@ export class SDEFetcher {
 
         // Batch insert
         if (records.length >= BATCH_SIZE) {
-          await database.bulkInsert('constellations', records)
+          await database.bulkUpsert('constellations', records, 'constellationId')
           console.log(`   Inserted ${imported} rows...`)
           records.length = 0
         }
@@ -538,8 +590,11 @@ export class SDEFetcher {
 
       // Insert remaining
       if (records.length > 0) {
-        await database.bulkInsert('constellations', records)
+        await database.bulkUpsert('constellations', records, 'constellationId')
       }
+
+      // Mark as imported
+      await this.markTableAsImported('mapConstellations', buildNumber, imported)
 
       console.log(`✅ Imported ${imported} constellations`)
     } catch (error) {
@@ -562,7 +617,8 @@ export class SDEFetcher {
     }>,
     buildNumber?: number,
     forceReimport?: boolean,
-    sourceTableName?: string
+    sourceTableName?: string,
+    primaryKey?: string
   ): Promise<number> {
     // Get buildNumber if not provided
     if (!buildNumber) {
@@ -617,14 +673,22 @@ export class SDEFetcher {
         imported++
 
         if (records.length >= BATCH_SIZE) {
-          await database.bulkInsert(`${tableName}`, records)
+          if (primaryKey) {
+            await database.bulkUpsert(`${tableName.toLowerCase()}`, records, primaryKey)
+          } else {
+            await database.bulkInsert(`${tableName.toLowerCase()}`, records)
+          }
           console.log(`   Inserted ${imported} rows...`)
           records.length = 0
         }
       }
 
       if (records.length > 0) {
-        await database.bulkInsert(`${tableName}`, records)
+        if (primaryKey) {
+          await database.bulkUpsert(`${tableName.toLowerCase()}`, records, primaryKey)
+        } else {
+          await database.bulkInsert(`${tableName.toLowerCase()}`, records)
+        }
       }
 
       // Mark as imported
@@ -644,7 +708,8 @@ export class SDEFetcher {
       config.mappings,
       buildNumber,
       undefined,
-      config.sourceName
+      config.sourceName,
+      config.primaryKey
     )
   }
 
@@ -676,7 +741,7 @@ export class SDEFetcher {
       case 'number':
         return parseNumber(value)
       case 'boolean':
-        return toBoolean(value) ? 1 : 0
+        return toBoolean(value)
       case 'array':
         return Array.isArray(value) ? value : [value]
       case 'json':

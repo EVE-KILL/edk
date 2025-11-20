@@ -11,4 +11,5 @@ export interface TableConfig {
   mappings: FieldMapping[]
   batchSize?: number
   sourceName?: string
+  primaryKey?: string
 }

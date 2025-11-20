@@ -39,49 +39,49 @@ export interface MostValuableKill {
 }
 
 const SELECT_CLAUSE = `
-  {periodType:String} as periodType,
-  k.killmailId,
-  k.killmailTime,
-  k.solarSystemId,
-  ss.name as solarSystemName,
-  k.victimCharacterId,
-  vc.name as victimCharacterName,
-  k.victimCorporationId,
-  vcorp.name as victimCorporationName,
-  vcorp.ticker as victimCorporationTicker,
-  k.victimAllianceId,
-  valliance.name as victimAllianceName,
-  valliance.ticker as victimAllianceTicker,
-  k.victimShipTypeId,
-  vship.name as victimShipName,
-  vshipgroup.name as victimShipGroup,
-  k.totalValue,
-  k.attackerCount,
+  {periodType:String} as "periodType",
+  k."killmailId",
+  k."killmailTime",
+  k."solarSystemId",
+  ss.name as "solarSystemName",
+  k."victimCharacterId",
+  vc.name as "victimCharacterName",
+  k."victimCorporationId",
+  vcorp.name as "victimCorporationName",
+  vcorp.ticker as "victimCorporationTicker",
+  k."victimAllianceId",
+  valliance.name as "victimAllianceName",
+  valliance.ticker as "victimAllianceTicker",
+  k."victimShipTypeId",
+  vship.name as "victimShipName",
+  vshipgroup.name as "victimShipGroup",
+  k."totalValue",
+  k."attackerCount",
   k.npc,
   k.solo,
-  k.topAttackerCharacterId as attackerCharacterId,
-  ac.name as attackerCharacterName,
-  k.topAttackerCorporationId as attackerCorporationId,
-  acorp.name as attackerCorporationName,
-  acorp.ticker as attackerCorporationTicker,
-  k.topAttackerAllianceId as attackerAllianceId,
-  aalliance.name as attackerAllianceName,
-  aalliance.ticker as attackerAllianceTicker,
-  reg.name as regionName
+  k."topAttackerCharacterId" as "attackerCharacterId",
+  ac.name as "attackerCharacterName",
+  k."topAttackerCorporationId" as "attackerCorporationId",
+  acorp.name as "attackerCorporationName",
+  acorp.ticker as "attackerCorporationTicker",
+  k."topAttackerAllianceId" as "attackerAllianceId",
+  aalliance.name as "attackerAllianceName",
+  aalliance.ticker as "attackerAllianceTicker",
+  reg.name as "regionName"
 `
 
 const JOIN_CLAUSE = `
   FROM killmails k
-  LEFT JOIN solarSystems ss ON k.solarSystemId = ss.solarSystemId
-  LEFT JOIN regions reg ON ss.regionId = reg.regionId
-  LEFT JOIN characters vc ON k.victimCharacterId = vc.characterId
-  LEFT JOIN corporations vcorp ON k.victimCorporationId = vcorp.corporationId
-  LEFT JOIN alliances valliance ON k.victimAllianceId = valliance.allianceId
-  LEFT JOIN types vship ON k.victimShipTypeId = vship.typeId
-  LEFT JOIN groups vshipgroup ON vship.groupId = vshipgroup.groupId
-  LEFT JOIN characters ac ON k.topAttackerCharacterId = ac.characterId
-  LEFT JOIN corporations acorp ON k.topAttackerCorporationId = acorp.corporationId
-  LEFT JOIN alliances aalliance ON k.topAttackerAllianceId = aalliance.allianceId
+  LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
+  LEFT JOIN regions reg ON ss."regionId" = reg."regionId"
+  LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
+  LEFT JOIN corporations vcorp ON k."victimCorporationId" = vcorp."corporationId"
+  LEFT JOIN alliances valliance ON k."victimAllianceId" = valliance."allianceId"
+  LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
+  LEFT JOIN groups vshipgroup ON vship."groupId" = vshipgroup."groupId"
+  LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
+  LEFT JOIN corporations acorp ON k."topAttackerCorporationId" = acorp."corporationId"
+  LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
 `
 
 /**
@@ -115,9 +115,9 @@ export async function getMostValuableKillsByPeriod(
     `SELECT
       ${SELECT_CLAUSE}
     ${JOIN_CLAUSE}
-    WHERE k.killmailTime >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
-      AND k.attackerCount > 0
-    ORDER BY k.totalValue DESC, k.killmailTime DESC, k.killmailId
+    WHERE k."killmailTime" >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
+      AND k."attackerCount" > 0
+    ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
     LIMIT {limit:UInt32}`,
     { periodType, hoursAgo, limit }
   )
@@ -154,9 +154,9 @@ export async function getMostValuableKillsByCharacter(
   return await database.query<MostValuableKill>(
     `SELECT ${SELECT_CLAUSE}
      ${JOIN_CLAUSE}
-     WHERE k.victimCharacterId = {characterId:UInt32}
-       AND k.killmailTime >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
-     ORDER BY k.totalValue DESC, k.killmailTime DESC, k.killmailId
+     WHERE k."victimCharacterId" = {characterId:UInt32}
+       AND k."killmailTime" >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
+     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT {limit:UInt32}`,
     { periodType, characterId, hoursAgo, limit }
   )
@@ -193,9 +193,9 @@ export async function getMostValuableKillsByCorporation(
   return await database.query<MostValuableKill>(
     `SELECT ${SELECT_CLAUSE}
      ${JOIN_CLAUSE}
-     WHERE k.victimCorporationId = {corporationId:UInt32}
-       AND k.killmailTime >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
-     ORDER BY k.totalValue DESC, k.killmailTime DESC, k.killmailId
+     WHERE k."victimCorporationId" = {corporationId:UInt32}
+       AND k."killmailTime" >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
+     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT {limit:UInt32}`,
     { periodType, corporationId, hoursAgo, limit }
   )
@@ -232,9 +232,9 @@ export async function getMostValuableKillsByAlliance(
   return await database.query<MostValuableKill>(
     `SELECT ${SELECT_CLAUSE}
      ${JOIN_CLAUSE}
-     WHERE k.victimAllianceId = {allianceId:UInt32}
-       AND k.killmailTime >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
-     ORDER BY k.totalValue DESC, k.killmailTime DESC, k.killmailId
+     WHERE k."victimAllianceId" = {allianceId:UInt32}
+       AND k."killmailTime" >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
+     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT {limit:UInt32}`,
     { periodType, allianceId, hoursAgo, limit }
   )
@@ -271,8 +271,8 @@ export async function getMostValuableSoloKills(
     `SELECT ${SELECT_CLAUSE}
      ${JOIN_CLAUSE}
      WHERE k.solo = true
-       AND k.killmailTime >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
-     ORDER BY k.totalValue DESC, k.killmailTime DESC, k.killmailId
+       AND k."killmailTime" >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
+     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT {limit:UInt32}`,
     { periodType, hoursAgo, limit }
   )

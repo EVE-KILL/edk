@@ -37,45 +37,45 @@ export interface KillmailESI {
 // Helper to construct JSON objects in Postgres
 const QUERY_ESI_FORMAT = `
 SELECT
-  k.killmailId,
-  k.killmailTime,
-  k.solarSystemId,
-  k.victimCharacterId,
-  k.victimCorporationId,
-  k.victimAllianceId,
-  k.victimShipTypeId,
-  k.victimDamageTaken,
-  json_build_object('x', k.positionX, 'y', k.positionY, 'z', k.positionZ) as victimPosition,
+  k."killmailId",
+  k."killmailTime",
+  k."solarSystemId",
+  k."victimCharacterId",
+  k."victimCorporationId",
+  k."victimAllianceId",
+  k."victimShipTypeId",
+  k."victimDamageTaken",
+  json_build_object('x', k."positionX", 'y', k."positionY", 'z', k."positionZ") as "victimPosition",
 
   COALESCE((
     SELECT json_agg(json_build_object(
-      'character_id', a.characterId,
-      'corporation_id', a.corporationId,
-      'alliance_id', a.allianceId,
-      'damage_done', a.damageDone,
-      'final_blow', a.finalBlow,
-      'security_status', a.securityStatus,
-      'ship_type_id', a.shipTypeId,
-      'weapon_type_id', a.weaponTypeId
+      'character_id', a."characterId",
+      'corporation_id', a."corporationId",
+      'alliance_id', a."allianceId",
+      'damage_done', a."damageDone",
+      'final_blow', a."finalBlow",
+      'security_status', a."securityStatus",
+      'ship_type_id', a."shipTypeId",
+      'weapon_type_id', a."weaponTypeId"
     ))
     FROM attackers a
-    WHERE a.killmailId = k.killmailId
+    WHERE a."killmailId" = k."killmailId"
   ), '[]'::json) as attackers,
 
   COALESCE((
     SELECT json_agg(json_build_object(
-      'item_type_id', i.itemTypeId,
+      'item_type_id', i."itemTypeId",
       'flag', i.flag,
-      'quantity_dropped', i.quantityDropped,
-      'quantity_destroyed', i.quantityDestroyed,
+      'quantity_dropped', i."quantityDropped",
+      'quantity_destroyed', i."quantityDestroyed",
       'singleton', i.singleton
     ))
     FROM items i
-    WHERE i.killmailId = k.killmailId
+    WHERE i."killmailId" = k."killmailId"
   ), '[]'::json) as items,
 
-  k.totalValue,
-  k.attackerCount,
+  k."totalValue",
+  k."attackerCount",
   k.npc,
   k.solo,
   k.awox,
@@ -88,7 +88,7 @@ FROM killmails k
  */
 export async function getKillmailESI(killmailId: number): Promise<KillmailESI | null> {
   return await database.queryOne<KillmailESI>(
-    `${QUERY_ESI_FORMAT} WHERE k.killmailId = {id:UInt32}`,
+    `${QUERY_ESI_FORMAT} WHERE k."killmailId" = {id:UInt32}`,
     { id: killmailId }
   )
 }

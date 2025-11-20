@@ -84,28 +84,28 @@ export async function getEntityActivityRange(
     // Attempting a simplified aggregation for kills only (ignoring hours/unique opponents for perf)
 
     let entityCol = ''
-    if (entityType === 'character') entityCol = 'topAttackerCharacterId';
-    else if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
-    else entityCol = 'topAttackerAllianceId';
+    if (entityType === 'character') entityCol = '"topAttackerCharacterId"';
+    else if (entityType === 'corporation') entityCol = '"topAttackerCorporationId"';
+    else entityCol = '"topAttackerAllianceId"';
 
     // Use Postgres date_trunc
     const sql = `
         SELECT
-          ${entityId} as entityId,
-          '${entityType}' as entityType,
-          date_trunc('day', killmailTime) as activityDate,
+          ${entityId} as "entityId",
+          '${entityType}' as "entityType",
+          date_trunc('day', "killmailTime") as "activityDate",
           count(*) as kills,
           0 as losses,
-          sum(totalValue) as iskDestroyed,
-          0 as iskLost,
-          0 as activeHours,
-          0 as uniqueVictims,
-          0 as uniqueAttackers,
-          sum(case when solo then 1 else 0 end) as soloKills,
-          0 as gangKills
+          sum("totalValue") as "iskDestroyed",
+          0 as "iskLost",
+          0 as "activeHours",
+          0 as "uniqueVictims",
+          0 as "uniqueAttackers",
+          sum(case when solo then 1 else 0 end) as "soloKills",
+          0 as "gangKills"
         FROM killmails
         WHERE ${entityCol} = {entityId:UInt32}
-          AND killmailTime >= {startDate:Date} AND killmailTime <= {endDate:Date}
+          AND "killmailTime" >= {startDate:String}::timestamp AND "killmailTime" <= {endDate:String}::timestamp
         GROUP BY 3
         ORDER BY 3 ASC
     `

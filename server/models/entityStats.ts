@@ -119,14 +119,14 @@ export async function getEntityStats(
   let lossesWhere = ''
 
   if (entityType === 'character') {
-    killsWhere = `topAttackerCharacterId = {entityId:UInt32}`;
-    lossesWhere = `victimCharacterId = {entityId:UInt32}`;
+    killsWhere = `"topAttackerCharacterId" = {entityId:UInt32}`;
+    lossesWhere = `"victimCharacterId" = {entityId:UInt32}`;
   } else if (entityType === 'corporation') {
-    killsWhere = `topAttackerCorporationId = {entityId:UInt32}`;
-    lossesWhere = `victimCorporationId = {entityId:UInt32}`;
+    killsWhere = `"topAttackerCorporationId" = {entityId:UInt32}`;
+    lossesWhere = `"victimCorporationId" = {entityId:UInt32}`;
   } else if (entityType === 'alliance') {
-    killsWhere = `topAttackerAllianceId = {entityId:UInt32}`;
-    lossesWhere = `victimAllianceId = {entityId:UInt32}`;
+    killsWhere = `"topAttackerAllianceId" = {entityId:UInt32}`;
+    lossesWhere = `"victimAllianceId" = {entityId:UInt32}`;
   }
 
   // Combine Kills and Losses stats in one go using CTEs
@@ -134,44 +134,44 @@ export async function getEntityStats(
     WITH kills_data AS (
       SELECT
         count(*) as kills,
-        sum(totalValue) as iskDestroyed,
+        sum("totalValue") as iskDestroyed,
         sum(case when solo then 1 else 0 end) as soloKills,
         sum(case when npc then 1 else 0 end) as npcKills,
-        max(killmailTime) as lastKillTime
+        max("killmailTime") as lastKillTime
       FROM killmails
       WHERE ${killsWhere}
-      AND killmailTime >= {start:String}::timestamp AND killmailTime <= {end:String}::timestamp
+      AND "killmailTime" >= {start:String}::timestamp AND "killmailTime" <= {end:String}::timestamp
     ),
     losses_data AS (
       SELECT
         count(*) as losses,
-        sum(totalValue) as iskLost,
+        sum("totalValue") as iskLost,
         sum(case when solo then 1 else 0 end) as soloLosses,
         sum(case when npc then 1 else 0 end) as npcLosses,
-        max(killmailTime) as lastLossTime
+        max("killmailTime") as lastLossTime
       FROM killmails
       WHERE ${lossesWhere}
-      AND killmailTime >= {start:String}::timestamp AND killmailTime <= {end:String}::timestamp
+      AND "killmailTime" >= {start:String}::timestamp AND "killmailTime" <= {end:String}::timestamp
     )
     SELECT
-      {entityId:UInt32} as entityId,
-      '{entityType:String}' as entityType,
-      '{periodType:String}' as periodType,
+      {entityId:UInt32} as "entityId",
+      '{entityType:String}' as "entityType",
+      '{periodType:String}' as "periodType",
       COALESCE(k.kills, 0) as kills,
       COALESCE(l.losses, 0) as losses,
-      COALESCE(k.iskDestroyed, 0) as iskDestroyed,
-      COALESCE(l.iskLost, 0) as iskLost,
+      COALESCE(k.iskDestroyed, 0) as "iskDestroyed",
+      COALESCE(l.iskLost, 0) as "iskLost",
       0 as points, -- TODO: Implement point calculation logic
-      COALESCE(k.soloKills, 0) as soloKills,
-      COALESCE(l.soloLosses, 0) as soloLosses,
-      COALESCE(k.npcKills, 0) as npcKills,
-      COALESCE(l.npcLosses, 0) as npcLosses,
-      0 as topShipTypeId, -- Placeholder
-      0 as topShipKills,
-      0 as topSystemId,
-      0 as topSystemKills,
-      k.lastKillTime,
-      l.lastLossTime
+      COALESCE(k.soloKills, 0) as "soloKills",
+      COALESCE(l.soloLosses, 0) as "soloLosses",
+      COALESCE(k.npcKills, 0) as "npcKills",
+      COALESCE(l.npcLosses, 0) as "npcLosses",
+      0 as "topShipTypeId", -- Placeholder
+      0 as "topShipKills",
+      0 as "topSystemId",
+      0 as "topSystemKills",
+      k.lastKillTime as "lastKillTime",
+      l.lastLossTime as "lastLossTime"
     FROM kills_data k, losses_data l
   `;
 
