@@ -1,9 +1,10 @@
-import { SQL } from 'bun';
+import { SQL } from 'bun'
 
 let postgresClient: SQL | null = null
 
 export default async (nitroApp: any) => {
-  const url = process.env.DATABASE_URL || 'postgres://edk_user:edk_password@localhost:5432/edk'
+  // Initialize Postgres client
+  const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
 
   try {
     postgresClient = new SQL(url)

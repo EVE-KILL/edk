@@ -1,4 +1,4 @@
-import { SQL } from 'bun';
+import { SQL } from 'bun'
 
 /**
  * Postgres Database Helper (using Bun native driver)
@@ -12,7 +12,7 @@ export class DatabaseHelper {
 
   constructor() {
     // Initialize Bun SQL client for Postgres
-    const url = process.env.DATABASE_URL || 'postgres://edk_user:edk_password@localhost:5432/edk'
+    const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
     this.client = new SQL(url)
     // In Bun SQL, connection is lazy, so we consider it connected once initialized.
     // The driver handles reconnection.
