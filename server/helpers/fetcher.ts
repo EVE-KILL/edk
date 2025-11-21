@@ -120,10 +120,6 @@ export async function fetcher<T = any>(
       // Retry if we haven't exhausted retries
       if (attempt < retries) {
         const delay = getBackoffDelay(attempt)
-        console.warn(
-          `⚠️  Fetch attempt ${attempt + 1} failed for ${url}, retrying in ${delay}ms...`,
-          lastError.message
-        )
         await sleep(delay)
         continue
       }
@@ -132,40 +128,4 @@ export async function fetcher<T = any>(
 
   // If we got here, all retries failed
   throw lastError || new Error('Fetch failed after retries')
-}
-
-/**
- * Specialized fetcher for ESI API
- */
-export async function fetchESI<T = any>(
-  path: string,
-  options: Omit<FetcherOptions, 'headers'> & { headers?: Record<string, string> } = {}
-): Promise<FetcherResponse<T>> {
-  const url = `https://esi.evetech.net/latest${path.startsWith('/') ? path : '/' + path}`
-
-  return fetcher<T>(url, {
-    ...options,
-    headers: {
-      'Accept': 'application/json',
-      ...options.headers
-    }
-  })
-}
-
-/**
- * Specialized fetcher for EVE-KILL API
- */
-export async function fetchEveKill<T = any>(
-  path: string,
-  options: Omit<FetcherOptions, 'headers'> & { headers?: Record<string, string> } = {}
-): Promise<FetcherResponse<T>> {
-  const url = `https://eve-kill.com/api${path.startsWith('/') ? path : '/' + path}`
-
-  return fetcher<T>(url, {
-    ...options,
-    headers: {
-      'Accept': 'application/json',
-      ...options.headers
-    }
-  })
 }

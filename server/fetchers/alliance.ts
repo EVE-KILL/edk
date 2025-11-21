@@ -1,4 +1,4 @@
-import { fetchEveKill, fetchESI } from '../helpers/fetcher'
+import { fetchESI } from '../helpers/esi'
 import { storeAlliance as storeAllianceInDB, getAlliance } from '../models/alliances'
 
 /**
@@ -15,22 +15,14 @@ export interface ESIAlliance {
 }
 
 /**
- * Fetch alliance data from EVE-KILL with fallback to ESI
+ * Fetch alliance data from ESI
  * Stores only ESI-compatible fields in the database
  */
 export async function fetchAndStoreAlliance(allianceId: number): Promise<ESIAlliance | null> {
   try {
-    // Try EVE-KILL first
-    let allianceData = await fetchFromEveKill(allianceId)
-
-    // Fallback to ESI if EVE-KILL fails
-    if (!allianceData) {
-      console.log(`⚠️  EVE-KILL failed for alliance ${allianceId}, falling back to ESI`)
-      allianceData = await fetchFromESI(allianceId)
-    }
+    const allianceData = await fetchFromESI(allianceId)
 
     if (!allianceData) {
-      console.error(`❌ Failed to fetch alliance ${allianceId} from both sources`)
       return null
     }
 
@@ -42,28 +34,7 @@ export async function fetchAndStoreAlliance(allianceId: number): Promise<ESIAlli
 
     return esiAlliance
   } catch (error) {
-    console.error(`❌ Error fetching alliance ${allianceId}:`, error)
-    return null
-  }
-}
-
-/**
- * Fetch alliance data from EVE-KILL API
- */
-async function fetchFromEveKill(allianceId: number): Promise<any | null> {
-  try {
-    const response = await fetchEveKill(`/alliances/${allianceId}`)
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null
-      }
-      throw new Error(`EVE-KILL API error: ${response.statusText}`)
-    }
-
-    return response.data
-  } catch (error) {
-    console.warn(`⚠️  EVE-KILL fetch failed for alliance ${allianceId}:`, error)
+    console.error(`ESI fetch failed for alliance ${allianceId}:`, error)
     return null
   }
 }
@@ -84,7 +55,7 @@ async function fetchFromESI(allianceId: number): Promise<any | null> {
 
     return response.data
   } catch (error) {
-    console.warn(`⚠️  ESI fetch failed for alliance ${allianceId}:`, error)
+    console.error(`ESI fetch failed for alliance ${allianceId}:`, error)
     return null
   }
 }
@@ -137,7 +108,6 @@ export async function getCachedAlliance(allianceId: number): Promise<ESIAlliance
       ticker: result.ticker
     }
   } catch (error) {
-    console.warn(`⚠️  Failed to get cached alliance ${allianceId}:`, error)
     return null
   }
 }

@@ -1,4 +1,4 @@
-import { fetchEveKill, fetchESI } from '../helpers/fetcher'
+import { fetchESI } from '../helpers/esi'
 import { storeCorporation as storeCorporationInDB, getCorporation } from '../models/corporations'
 
 /**
@@ -21,22 +21,14 @@ export interface ESICorporation {
 }
 
 /**
- * Fetch corporation data from EVE-KILL with fallback to ESI
+ * Fetch corporation data from ESI
  * Stores only ESI-compatible fields in the database
  */
 export async function fetchAndStoreCorporation(corporationId: number): Promise<ESICorporation | null> {
   try {
-    // Try EVE-KILL first
-    let corporationData = await fetchFromEveKill(corporationId)
-
-    // Fallback to ESI if EVE-KILL fails
-    if (!corporationData) {
-      console.log(`⚠️  EVE-KILL failed for corporation ${corporationId}, falling back to ESI`)
-      corporationData = await fetchFromESI(corporationId)
-    }
+    const corporationData = await fetchFromESI(corporationId)
 
     if (!corporationData) {
-      console.error(`❌ Failed to fetch corporation ${corporationId} from both sources`)
       return null
     }
 
@@ -48,28 +40,7 @@ export async function fetchAndStoreCorporation(corporationId: number): Promise<E
 
     return esiCorporation
   } catch (error) {
-    console.error(`❌ Error fetching corporation ${corporationId}:`, error)
-    return null
-  }
-}
-
-/**
- * Fetch corporation data from EVE-KILL API
- */
-async function fetchFromEveKill(corporationId: number): Promise<any | null> {
-  try {
-    const response = await fetchEveKill(`/corporations/${corporationId}`)
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null
-      }
-      throw new Error(`EVE-KILL API error: ${response.statusText}`)
-    }
-
-    return response.data
-  } catch (error) {
-    console.warn(`⚠️  EVE-KILL fetch failed for corporation ${corporationId}:`, error)
+    console.error(`ESI fetch failed for corporation ${corporationId}:`, error)
     return null
   }
 }
@@ -90,7 +61,7 @@ async function fetchFromESI(corporationId: number): Promise<any | null> {
 
     return response.data
   } catch (error) {
-    console.warn(`⚠️  ESI fetch failed for corporation ${corporationId}:`, error)
+    console.error(`ESI fetch failed for corporation ${corporationId}:`, error)
     return null
   }
 }
@@ -161,7 +132,6 @@ export async function getCachedCorporation(corporationId: number): Promise<ESICo
       url: result.url
     }
   } catch (error) {
-    console.warn(`⚠️  Failed to get cached corporation ${corporationId}:`, error)
     return null
   }
 }
