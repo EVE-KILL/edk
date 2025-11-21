@@ -4,12 +4,12 @@
 
 setup:
 	@echo "Setting up the development environment..."
-	@docker-compose up -d
+	@docker-compose up -d || (echo "Failed to start Docker services"; exit 1)
 	@echo "Waiting for services to be ready..."
 	@sleep 5
-	@bun install
-	@bun cli db:migrate
-	@bun cli sde:import
+	@bun install || (echo "Failed to install dependencies"; exit 1)
+	@bun cli db:migrate || (echo "Failed to run migrations"; exit 1)
+	@bun cli sde:import || (echo "Failed to import SDE"; exit 1)
 	@echo "Setup complete!"
 
 reset:
