@@ -28,5 +28,6 @@
      // Libs & paths
     "lib": ["ESNext", "DOM"],
     "baseUrl": ".",
+    "types": ["bun"]
   }
 }

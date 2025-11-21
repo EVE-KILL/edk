@@ -252,19 +252,6 @@ export default defineEventHandler(async (event: H3Event) => {
 
   // Build filters based on the type
   const filters = buildFiltersForType(killType)
-  const whereConditions = buildKilllistConditions(filters, 'kl') // Alias 'kl' must match the alias used in TopBoxes model if it uses an alias?
-  // In topBoxes.ts, the base query aliases killmails as 'k', and it joins solarSystems ss, etc.
-  // Wait, buildKilllistConditions logic uses `alias`. If I pass 'kl', it generates 'kl.solo'.
-  // But TopBoxes query uses `FROM killmails k`. So I should pass 'k' here if I pass these conditions to TopBoxes query!
-  // But `getFilteredKillsWithNames` uses `k` inside its query.
-  // So `alias` should be 'k'.
-
-  // Wait, `getFilteredKillsWithNames` uses `buildKilllistConditions(filters, 'k')` inside it.
-  // So I don't need to pass `whereConditions` to `getFilteredKillsWithNames`.
-
-  // But I DO need to pass it to `getTopSystemsFiltered`.
-  // In `topBoxes.ts`, the query aliases killmails as `k`.
-  // So I should build conditions with alias 'k'.
 
   const conditionsForTopBoxes = buildKilllistConditions(filters, 'k')
 

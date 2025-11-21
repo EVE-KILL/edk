@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
+import { describe, it, expect, beforeAll } from 'bun:test'
 import { database } from '../server/helpers/database'
 
 describe('DatabaseHelper', () => {

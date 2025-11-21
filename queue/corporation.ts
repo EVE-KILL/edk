@@ -37,12 +37,9 @@ export function createWorker(connection: any) {
   return new Worker(name, processor, {
     connection,
     concurrency: 5,
-    settings: {
-      lockDuration: 30000,
-      lockRenewTime: 15000,
-      maxStalledCount: 2,
-      stalledInterval: 5000,
-      maxStalledInterval: 60000
-    }
+    lockDuration: 30000,
+    lockRenewTime: 15000,
+    maxStalledCount: 2,
+    stalledInterval: 5000
   })
 }

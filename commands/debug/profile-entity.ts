@@ -193,7 +193,7 @@ function createTasks(params: {
   entityType: 'character' | 'corporation' | 'alliance'
   entityId: number
   page: number
-}): PerfTask[] {
+}): PerfTask<any>[] {
   const { entityType, entityId, page } = params
   const perPage = 30
 
