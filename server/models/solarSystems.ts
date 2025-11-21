@@ -112,70 +112,11 @@ export async function getTradeHubs(): Promise<SolarSystem[]> {
 }
 
 /**
- * Get all solar systems in a region
- */
-export async function getSolarSystemsByRegion(regionId: number): Promise<SolarSystem[]> {
-  return await database.query<SolarSystem>(
-    'SELECT * FROM solarSystems WHERE regionId = {regionId:UInt32} ORDER BY name',
-    { regionId }
-  )
-}
-
-/**
- * Get all solar systems in a constellation
- */
-export async function getSolarSystemsByConstellation(constellationId: number): Promise<SolarSystem[]> {
-  return await database.query<SolarSystem>(
-    'SELECT * FROM solarSystems WHERE constellationId = {constellationId:UInt32} ORDER BY name',
-    { constellationId }
-  )
-}
-
-/**
- * Search solar systems by name
- */
-export async function searchSolarSystems(namePattern: string, limit: number = 10): Promise<SolarSystem[]> {
-  return await database.query<SolarSystem>(
-    `SELECT * FROM solarSystems
-     WHERE name LIKE {pattern:String}
-     ORDER BY name
-     LIMIT {limit:UInt32}`,
-    { pattern: `%${namePattern}%`, limit }
-  )
-}
-
-/**
- * Get solar system name by ID
- */
-export async function getSolarSystemName(solarSystemId: number): Promise<string | null> {
-  const result = await database.queryValue<string>(
-    'SELECT name FROM solarSystems WHERE solarSystemId = {id:UInt32}',
-    { id: solarSystemId }
-  )
-  return result || null
-}
-
-/**
- * Get high/low/null security systems in a region
- */
-export async function getSecurityClassSystems(
-  regionId: number,
-  securityClass: 'A' | 'B' | 'C',
-): Promise<SolarSystem[]> {
-  return await database.query<SolarSystem>(
-    `SELECT * FROM solarSystems
-     WHERE regionId = {regionId:UInt32} AND securityClass = {class:String}
-     ORDER BY securityStatus DESC`,
-    { regionId, class: securityClass }
-  )
-}
-
-/**
  * Get hub systems
  */
 export async function getHubSystems(): Promise<SolarSystem[]> {
   return await database.query<SolarSystem>(
-    'SELECT * FROM solarSystems WHERE hub = 1 ORDER BY regionId, name',
+    'SELECT * FROM solarSystems WHERE hub = 1 ORDER BY "regionId", name',
   )
 }
 
@@ -184,4 +125,28 @@ export async function getHubSystems(): Promise<SolarSystem[]> {
  */
 export async function countSolarSystems(): Promise<number> {
   return await database.count('solarSystems')
+}
+
+/**
+ * Get stats for a solar system
+ */
+export async function getSystemStats(solarSystemId: number): Promise<any> {
+  const sql = `
+    SELECT
+      count(*) as kills,
+      sum("totalValue") as iskDestroyed
+    FROM killmails
+    WHERE "solarSystemId" = {id:UInt32}
+  `
+  const result = await database.queryOne<any>(sql, { id: solarSystemId })
+
+  return {
+    kills: Number(result?.kills ?? 0),
+    losses: 0,
+    iskDestroyed: Number(result?.iskDestroyed ?? 0),
+    iskLost: 0,
+    efficiency: 100,
+    iskEfficiency: 100,
+    killLossRatio: 0
+  }
 }

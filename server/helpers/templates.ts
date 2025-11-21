@@ -817,6 +817,7 @@ export async function render(
     const context: any = {
       page,
       data,
+      ...data,
       default: getDefaultData(),
       config: {
         title: process.env.SITE_TITLE || "EVE-KILL",

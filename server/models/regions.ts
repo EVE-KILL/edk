@@ -26,7 +26,7 @@ export interface Region {
  */
 export async function getRegion(regionId: number): Promise<Region | null> {
   return await database.queryOne<Region>(
-    'SELECT * FROM regions WHERE regionId = {id:UInt32}',
+    'SELECT * FROM regions WHERE "regionId" = {id:UInt32}',
     { id: regionId }
   )
 }
@@ -58,7 +58,7 @@ export async function searchRegions(namePattern: string, limit: number = 10): Pr
  */
 export async function getRegionName(regionId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM regions WHERE regionId = {id:UInt32}',
+    'SELECT name FROM regions WHERE "regionId" = {id:UInt32}',
     { id: regionId }
   )
   return result || null
@@ -69,7 +69,7 @@ export async function getRegionName(regionId: number): Promise<string | null> {
  */
 export async function getRegionsByFaction(factionId: number): Promise<Region[]> {
   return await database.query<Region>(
-    'SELECT * FROM regions WHERE factionId = {factionId:UInt32} ORDER BY name',
+    'SELECT * FROM regions WHERE "factionId" = {factionId:UInt32} ORDER BY name',
     { factionId }
   )
 }
@@ -79,4 +79,30 @@ export async function getRegionsByFaction(factionId: number): Promise<Region[]> 
  */
 export async function countRegions(): Promise<number> {
   return await database.count('regions')
+}
+
+/**
+ * Get stats for a region
+ */
+export async function getRegionStats(regionId: number): Promise<any> {
+  const sql = `
+    SELECT
+      count(k."killmailId") as kills,
+      sum(k."totalValue") as iskDestroyed
+    FROM killmails k
+    INNER JOIN solarSystems s ON k."solarSystemId" = s."solarSystemId"
+    WHERE s."regionId" = {id:UInt32}
+  `
+
+  const result = await database.queryOne<any>(sql, { id: regionId })
+
+  return {
+    kills: Number(result?.kills ?? 0),
+    losses: 0,
+    iskDestroyed: Number(result?.iskDestroyed ?? 0),
+    iskLost: 0,
+    efficiency: 100,
+    iskEfficiency: 100,
+    killLossRatio: 0
+  }
 }
