@@ -7,11 +7,6 @@ describe('DatabaseHelper', () => {
     await database.ping()
   })
 
-  // Do not close the connection as it is shared with other tests
-  // afterAll(async () => {
-  //   await database.close()
-  // })
-
   it('should be connected', async () => {
     const connected = await database.ping()
     expect(connected).toBe(true)
