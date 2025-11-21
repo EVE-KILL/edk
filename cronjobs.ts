@@ -5,12 +5,13 @@
  * Automatically discovers and runs cron jobs from the /cronjobs directory
  * Usage:
  *   bun cronjobs              - Run all cron jobs on their schedule
+ *   bun cronjobs --now        - Run all jobs that are due right now (UTC) and exit
  *   bun cronjobs <job-name>   - Run a specific job immediately
  */
 
 import { readdirSync, statSync } from 'fs'
 import { join, parse } from 'path'
-import { CronJob } from 'cron'
+import { CronJob, CronTime } from 'cron'
 
 interface CronJobModule {
   name: string
@@ -105,6 +106,74 @@ async function runJobImmediately(jobName: string, jobs: Map<string, string>) {
 }
 
 /**
+ * Check if a job should run right now (in UTC)
+ */
+function shouldRunNow(schedule: string): boolean {
+  try {
+    const time = new CronTime(schedule)
+    const now = new Date()
+
+    // Check if current time matches the schedule (using UTC)
+    // Note: CronTime properties are objects where keys are valid values
+
+    // @ts-ignore - CronTime types might not expose these internal maps but they exist
+    if (!time.second[now.getUTCSeconds()]) return false
+    // @ts-ignore
+    if (!time.minute[now.getUTCMinutes()]) return false
+    // @ts-ignore
+    if (!time.hour[now.getUTCHours()]) return false
+    // @ts-ignore
+    if (!time.dayOfMonth[now.getUTCDate()]) return false
+    // @ts-ignore
+    if (!time.month[now.getUTCMonth() + 1]) return false // Month is 0-11 in JS, 1-12 in Cron
+    // @ts-ignore
+    if (!time.dayOfWeek[now.getUTCDay()]) return false
+
+    return true
+  } catch (error) {
+    console.error(`Error checking schedule ${schedule}:`, error)
+    return false
+  }
+}
+
+/**
+ * Run all jobs that are due right now
+ */
+async function runDueJobs(jobs: Map<string, string>) {
+  console.log(`Checking ${jobs.size} jobs for immediate execution (UTC)...`)
+  let ranCount = 0
+
+  for (const [name, path] of jobs) {
+    try {
+      const job = await loadCronJob(path)
+
+      if (shouldRunNow(job.schedule)) {
+        console.log(`\n🚀 Running due job: ${name}`)
+        console.log(`   Schedule: ${job.schedule}`)
+
+        try {
+          await job.action()
+          console.log(`✅ Job "${name}" completed successfully`)
+          ranCount++
+        } catch (error) {
+          console.error(`❌ Job "${name}" failed:`, error)
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Failed to load job "${name}":`, error)
+    }
+  }
+
+  if (ranCount === 0) {
+    console.log('\nNo jobs due at this time.')
+  } else {
+    console.log(`\n✅ Completed ${ranCount} job(s).`)
+  }
+
+  process.exit(0)
+}
+
+/**
  * Start all cron jobs on their schedules
  */
 async function startAllCronJobs(jobs: Map<string, string>) {
@@ -187,7 +256,10 @@ async function main() {
     process.exit(1)
   }
 
-  if (specificJob) {
+  if (specificJob === '--now') {
+    // Run all jobs that are due right now
+    await runDueJobs(jobs)
+  } else if (specificJob) {
     // Run specific job immediately
     await runJobImmediately(specificJob, jobs)
   } else {

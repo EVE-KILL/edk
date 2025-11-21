@@ -15,7 +15,6 @@ export class DatabaseHelper {
     if (!this._sql) {
       // Initialize postgres client
       const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
-      console.log('DatabaseHelper initialized with DB:', url.split('@')[1] || url); // Log DB part
 
       // postgres.js manages the connection pool automatically
       this._sql = postgres(url, {
