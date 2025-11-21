@@ -88,11 +88,11 @@ export class CronParser {
     }
 
     return {
-      minute: CronParser.parseField(fields[0], 0, 59),
-      hour: CronParser.parseField(fields[1], 0, 23),
-      day: CronParser.parseField(fields[2], 1, 31),
-      month: CronParser.parseField(fields[3], 1, 12),
-      dayOfWeek: CronParser.parseField(fields[4], 0, 6),
+      minute: CronParser.parseField(fields[0]!, 0, 59),
+      hour: CronParser.parseField(fields[1]!, 0, 23),
+      day: CronParser.parseField(fields[2]!, 1, 31),
+      month: CronParser.parseField(fields[3]!, 1, 12),
+      dayOfWeek: CronParser.parseField(fields[4]!, 0, 6),
     };
   }
 
@@ -119,6 +119,9 @@ export class CronParser {
       // Handle ranges with step (e.g., "*/5", "1-30/2")
       if (part.includes("/")) {
         const [rangePart, step] = part.split("/");
+        if (!rangePart || !step) {
+          throw new Error(`Invalid range/step format: ${part}`);
+        }
         const stepNum = parseInt(step);
 
         if (isNaN(stepNum) || stepNum <= 0) {
@@ -167,7 +170,14 @@ export class CronParser {
    * Parse a range (e.g., "1-5")
    */
   private static parseRange(range: string, min: number, max: number): [number, number] {
-    const [startStr, endStr] = range.split("-");
+    const parts = range.split("-");
+    if (parts.length < 2) throw new Error(`Invalid range: ${range}`);
+    const startStr = parts[0];
+    const endStr = parts[1];
+    if (startStr === undefined || endStr === undefined) {
+       throw new Error(`Invalid range: ${range}`);
+    }
+
     const start = parseInt(startStr);
     const end = parseInt(endStr);
 

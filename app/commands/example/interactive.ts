@@ -14,7 +14,7 @@ export default class InteractiveExampleCommand extends BaseCommand {
     "bun cli example:interactive --name=Bob   # Provide name via flag",
   ];
 
-  async execute(args: string[]): Promise<void> {
+  override async execute(args: string[]): Promise<void> {
     const { flags, options, positional } = this.parseArgs(args);
 
     this.info("Welcome to the interactive CLI demo!");

@@ -20,8 +20,8 @@ import { logger } from "../../src/utils/logger";
  * - Silently fails if page no longer in cache (already evicted)
  */
 export class CacheWarmer extends BaseWorker {
-  queueName = "cache-refresh";
-  concurrency = 1; // One at a time to avoid overwhelming
+  override queueName = "cache-refresh";
+  override concurrency = 1; // One at a time to avoid overwhelming
   pollInterval = 5000; // Check every 5 seconds
 
   async handle(

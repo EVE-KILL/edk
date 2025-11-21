@@ -121,8 +121,8 @@ export class Controller extends WebController {
     const match = input.match(esiUrlPattern);
 
     if (match) {
-      const killmailId = parseInt(match[1]);
-      const hash = match[2].toLowerCase();
+      const killmailId = parseInt(match[1]!);
+      const hash = match[2]!.toLowerCase();
 
       // Additional validation
       if (killmailId > 0 && hash.length === 40) {

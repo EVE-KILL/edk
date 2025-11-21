@@ -63,7 +63,7 @@ function showHelp(commands: Map<string, any>): void {
 
   for (const [name, CommandClass] of commands) {
     const instance = new CommandClass();
-    const category = name.includes(":") ? name.split(":")[0] : "general";
+    const category = name.includes(":") ? name.split(":")[0]! : "general";
 
     if (!grouped.has(category)) {
       grouped.set(category, []);

@@ -19,9 +19,10 @@
     "drizzle-kit": "^0.31.5"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "5.4.5"
   },
   "dependencies": {
+    "commander": "^14.0.2",
     "drizzle-orm": "^0.44.6",
     "handlebars": "^4.7.8",
     "lru-cache": "^10.4.3"

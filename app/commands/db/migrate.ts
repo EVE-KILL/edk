@@ -14,7 +14,7 @@ export default class MigrateCommand extends BaseCommand {
     "bun cli db:migrate --seed    # Run migrations and seed data",
   ];
 
-  async execute(args: string[]): Promise<void> {
+  override async execute(args: string[]): Promise<void> {
     const { flags } = this.parseArgs(args);
 
     if (flags.fresh) {
