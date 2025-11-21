@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS corporations (
   "name" VARCHAR(255),
   "shares" BIGINT,
   "taxRate" REAL,
-  "ticker" VARCHAR(10),
+  "ticker" VARCHAR(50),
   "url" TEXT,
   "updatedAt" TIMESTAMP DEFAULT NOW(),
   "version" INTEGER
