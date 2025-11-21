@@ -1,21 +1,15 @@
 {{~#if (eq type "character")~}}
-{{@root.config.imageServerUrl}}/characters/{{id}}/{{default variant 'portrait'}}?size={{roundImageSize (default size 64) type}}
+{{@root.config.imageServerUrl}}/characters/{{id}}/portrait?size={{roundImageSize (fallback size 64) type}}
 {{~else if (eq type "corporation")~}}
-{{@root.config.imageServerUrl}}/corporations/{{id}}/{{default variant 'logo'}}?size={{roundImageSize (default size 64) type}}
+{{@root.config.imageServerUrl}}/corporations/{{id}}/logo?size={{roundImageSize (fallback size 64) type}}
 {{~else if (eq type "alliance")~}}
-{{@root.config.imageServerUrl}}/alliances/{{id}}/{{default variant 'logo'}}?size={{roundImageSize (default size 64) type}}
+{{@root.config.imageServerUrl}}/alliances/{{id}}/logo?size={{roundImageSize (fallback size 64) type}}
 {{~else if (eq type "ship")~}}
-{{@root.config.imageServerUrl}}/types/{{id}}/{{default variant 'overlayrender'}}?size={{roundImageSize (default size 64) type}}
+{{@root.config.imageServerUrl}}/types/{{id}}/render?size={{roundImageSize (fallback size 64) type}}
 {{~else if (eq type "item")~}}
-{{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize (default size 64) type}}
+{{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize (fallback size 64) type}}
 {{~else if (eq type "type")~}}
-{{@root.config.imageServerUrl}}/types/{{id}}/{{default variant 'icon'}}?size={{roundImageSize (default size 64) type}}
-{{~else if (eq type "system")~}}
-{{@root.config.imageServerUrl}}/systems/{{id}}?size={{roundImageSize (default size 64) type}}
-{{~else if (eq type "constellation")~}}
-{{@root.config.imageServerUrl}}/constellations/{{id}}?size={{roundImageSize (default size 64) type}}
-{{~else if (eq type "region")~}}
-{{@root.config.imageServerUrl}}/regions/{{id}}?size={{roundImageSize (default size 64) type}}
+{{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize (fallback size 64) type}}
 {{~else~}}
-{{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize (default size 64) type}}
+{{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize (fallback size 64) type}}
 {{~/if~}}

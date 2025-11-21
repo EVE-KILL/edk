@@ -445,7 +445,7 @@ function registerHelpers() {
 
   // Utility helpers
   Handlebars.registerHelper(
-    "default",
+    "fallback",
     function (value: any, defaultValue: any) {
       return value !== undefined && value !== null ? value : defaultValue;
     }
@@ -609,7 +609,7 @@ function registerHelpers() {
     }
   );
 
-  Handlebars.registerHelper("default", function (this: any, options: any) {
+  Handlebars.registerHelper("defaultCase", function (this: any, options: any) {
     if (this._switch_value_ === undefined) {
       return options.fn(this);
     }
@@ -824,7 +824,7 @@ export async function render(
         subtitle: process.env.SITE_SUBTITLE || "Real-time Killmail Tracking",
         copyright: `© ${new Date().getFullYear()}`,
         showVersion: process.env.NODE_ENV === "development",
-        imageServerUrl: process.env.IMAGE_SERVER_URL || "https://images.esitech.net",
+        imageServerUrl: process.env.IMAGE_SERVER_URL || "https://images.evetech.net",
       },
     };
 

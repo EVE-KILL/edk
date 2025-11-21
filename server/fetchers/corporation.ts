@@ -48,7 +48,7 @@ export async function fetchAndStoreCorporation(corporationId: number): Promise<E
           ticker: npcCorp.tickerName ?? '',
           url: ''
         }
-        
+
         // Store in corporations table for consistency
         await storeCorporation(corporationId, esiCorporation)
         return esiCorporation

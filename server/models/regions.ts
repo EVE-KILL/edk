@@ -26,7 +26,7 @@ export interface Region {
  */
 export async function getRegion(regionId: number): Promise<Region | null> {
   const [row] = await database.sql<Region[]>`
-    SELECT * FROM regions WHERE regionId = ${regionId}
+    SELECT * FROM regions WHERE "regionId" = ${regionId}
   `
   return row || null
 }
@@ -56,10 +56,10 @@ export async function searchRegions(namePattern: string, limit: number = 10): Pr
  * Get region name by ID
  */
 export async function getRegionName(regionId: number): Promise<string | null> {
-  const [result] = await database.sql<{name: string}[]>`
-    SELECT name FROM regions WHERE regionId = ${regionId}
+  const [row] = await database.sql<{ name: string }[]>`
+    SELECT name FROM regions WHERE "regionId" = ${regionId}
   `
-  return result?.name || null
+  return row?.name || null
 }
 
 /**

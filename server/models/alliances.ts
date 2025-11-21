@@ -24,7 +24,7 @@ export interface Alliance {
  */
 export async function getAlliance(allianceId: number): Promise<Alliance | null> {
   const [row] = await database.sql<Alliance[]>`
-    SELECT * FROM alliances WHERE allianceId = ${allianceId}
+    SELECT * FROM alliances WHERE "allianceId" = ${allianceId}
   `
   return row || null
 }
@@ -36,7 +36,7 @@ export async function getAlliances(allianceIds: number[]): Promise<Alliance[]> {
   if (allianceIds.length === 0) return []
 
   return await database.sql<Alliance[]>`
-    SELECT * FROM alliances WHERE allianceId = ANY(${allianceIds})
+    SELECT * FROM alliances WHERE "allianceId" = ANY(${allianceIds})
   `
 }
 
@@ -56,28 +56,28 @@ export async function searchAlliances(searchTerm: string, limit: number = 20): P
  * Get alliance name by ID
  */
 export async function getAllianceName(allianceId: number): Promise<string | null> {
-  const [result] = await database.sql<{name: string}[]>`
-    SELECT name FROM alliances WHERE allianceId = ${allianceId}
+  const [row] = await database.sql<{ name: string }[]>`
+    SELECT name FROM alliances WHERE "allianceId" = ${allianceId}
   `
-  return result?.name || null
+  return row?.name || null
 }
 
 /**
  * Get alliance ticker by ID
  */
 export async function getAllianceTicker(allianceId: number): Promise<string | null> {
-  const [result] = await database.sql<{ticker: string}[]>`
-    SELECT ticker FROM alliances WHERE allianceId = ${allianceId}
+  const [row] = await database.sql<{ ticker: string }[]>`
+    SELECT ticker FROM alliances WHERE "allianceId" = ${allianceId}
   `
-  return result?.ticker || null
+  return row?.ticker || null
 }
 
 /**
  * Get alliances by executor corporation
  */
-export async function getAlliancesByExecutor(corporationId: number): Promise<Alliance[]> {
+export async function getAlliancesByExecutorCorporation(corporationId: number): Promise<Alliance[]> {
   return await database.sql<Alliance[]>`
-    SELECT * FROM alliances WHERE executorCorporationId = ${corporationId}
+    SELECT * FROM alliances WHERE "executorCorporationId" = ${corporationId}
   `
 }
 
@@ -86,7 +86,7 @@ export async function getAlliancesByExecutor(corporationId: number): Promise<All
  */
 export async function getAlliancesByCreator(characterId: number): Promise<Alliance[]> {
   return await database.sql<Alliance[]>`
-    SELECT * FROM alliances WHERE creatorId = ${characterId}
+    SELECT * FROM alliances WHERE "creatorId" = ${characterId}
   `
 }
 
@@ -168,8 +168,8 @@ export async function storeAlliancesBulk(
  * Check if alliance exists
  */
 export async function allianceExists(allianceId: number): Promise<boolean> {
-  const [result] = await database.sql<{count: number}[]>`
-    SELECT count(*) as count FROM alliances WHERE allianceId = ${allianceId}
+  const [result] = await database.sql<{ count: number }[]>`
+    SELECT count(*) as count FROM alliances WHERE "allianceId" = ${allianceId}
   `
   return Number(result?.count) > 0
 }

@@ -3,62 +3,93 @@ import { Readable } from 'node:stream'
 import bz2 from 'unbzip2-stream'
 import { database } from '../../server/helpers/database'
 import { logger } from '../../server/helpers/logger'
+import { getConfig, setConfig } from '../../server/models/config'
+
+const CONFIG_KEY = 'prices_backfill_last_date'
+const EARLIEST_DATE = '2007-12-05'
 
 export default {
-  description: 'Backfill all prices from EVERef',
+  description: 'Backfill prices from EVERef (newest to oldest, tracks progress)',
   options: [
     {
       flags: '--start-date <date>',
-      description: 'Start date in YYYY-MM-DD format (defaults to 2007-12-05)',
+      description: 'Start date in YYYY-MM-DD format (defaults to where we left off or today)',
     },
     {
       flags: '--end-date <date>',
-      description: 'End date in YYYY-MM-DD format (defaults to today)',
+      description: 'End date in YYYY-MM-DD format (defaults to 2007-12-05)',
     },
     {
       flags: '--limit <days>',
-      description: 'Limit the number of days to process from the end date',
+      description: 'Limit the number of days to process',
+    },
+    {
+      flags: '--reset',
+      description: 'Reset progress and start from today',
     }
   ],
-  action: async (options: { startDate?: string; endDate?: string, limit?: string }) => {
-    logger.info('Starting price backfill...')
+  action: async (options: { startDate?: string; endDate?: string; limit?: string; reset?: boolean }) => {
+    logger.info('Starting price backfill (newest to oldest)...')
 
-    let endDate = options.endDate ? new Date(options.endDate) : new Date()
-    let startDate: Date;
+    // Handle reset
+    if (options.reset) {
+      await setConfig(CONFIG_KEY, new Date().toISOString().split('T')[0])
+      logger.info('Reset progress to today')
+    }
 
-    // If a start date is provided, it takes precedence for setting the start.
+    // Get last processed date from config
+    const lastProcessedDate = await getConfig(CONFIG_KEY)
+
+    // Determine start date (newest)
+    let startDate: Date
     if (options.startDate) {
-        startDate = new Date(options.startDate);
-        // If a limit is ALSO provided, the endDate should be adjusted from the startDate.
-        if (options.limit) {
-            const limitDays = parseInt(options.limit, 10);
-            endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + (limitDays - 1));
-        }
-    } else if (options.limit) {
-        // If only a limit is provided, calculate startDate from endDate.
-        const limitDays = parseInt(options.limit, 10);
-        startDate = new Date(endDate);
-        startDate.setDate(endDate.getDate() - (limitDays - 1));
+      startDate = new Date(options.startDate)
+    } else if (lastProcessedDate) {
+      // Continue from where we left off (one day before last processed)
+      startDate = new Date(lastProcessedDate)
+      startDate.setDate(startDate.getDate() - 1)
+      logger.info(`Resuming from ${startDate.toISOString().split('T')[0]} (last processed: ${lastProcessedDate})`)
     } else {
-        // Default start date if nothing else is specified.
-        startDate = new Date('2007-12-05');
+      // First run - start from today
+      startDate = new Date()
+      logger.info('First run - starting from today')
+    }
+
+    // Determine end date (oldest)
+    const endDate = options.endDate ? new Date(options.endDate) : new Date(EARLIEST_DATE)
+
+    // Apply limit if specified
+    let actualEndDate = endDate
+    if (options.limit) {
+      const limitDays = parseInt(options.limit, 10)
+      actualEndDate = new Date(startDate)
+      actualEndDate.setDate(startDate.getDate() - (limitDays - 1))
+
+      // Don't go before the earliest date
+      if (actualEndDate < endDate) {
+        actualEndDate = endDate
+      }
     }
 
     const daysDifference = Math.floor(
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      (startDate.getTime() - actualEndDate.getTime()) / (1000 * 60 * 60 * 24)
     )
 
-    logger.info(`Processing prices from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]} (${daysDifference + 1} days).`);
+    logger.info(`Processing prices from ${startDate.toISOString().split('T')[0]} to ${actualEndDate.toISOString().split('T')[0]} (${daysDifference + 1} days).`)
 
+    // Process from newest to oldest
     for (let i = 0; i <= daysDifference; i++) {
       const date = new Date(startDate)
-      date.setDate(startDate.getDate() + i)
+      date.setDate(startDate.getDate() - i)
       const dateString = date.toISOString().split('T')[0]
+
       await processDate(dateString)
+
+      // Update progress after each successful day
+      await setConfig(CONFIG_KEY, dateString)
     }
 
-    logger.info('Price backfill complete.')
+    logger.success('Price backfill complete.')
   },
 }
 

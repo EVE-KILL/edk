@@ -721,7 +721,7 @@ export async function getEntityKillmails(
     LEFT JOIN corporations vcorp ON k."victimCorporationId" = vcorp."corporationId"
     LEFT JOIN npcCorporations vnpc_corp ON k."victimCorporationId" = vnpc_corp."corporationId"
     LEFT JOIN alliances valliance ON k."victimAllianceId" = valliance."allianceId"
-    LEFT JOIN types vship ON k."victimShipTypeId" = vship.typeId
+    LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
     LEFT JOIN groups vshipgroup ON vship."groupId" = vshipgroup."groupId"
 
     -- Attacker JOINs
