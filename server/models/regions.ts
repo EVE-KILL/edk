@@ -85,16 +85,14 @@ export async function countRegions(): Promise<number> {
  * Get stats for a region
  */
 export async function getRegionStats(regionId: number): Promise<any> {
-  const sql = `
+  const [result] = await database.sql<any[]>`
     SELECT
       count(k."killmailId") as kills,
       sum(k."totalValue") as iskDestroyed
     FROM killmails k
     INNER JOIN solarSystems s ON k."solarSystemId" = s."solarSystemId"
-    WHERE s."regionId" = {id:UInt32}
+    WHERE s."regionId" = ${regionId}
   `
-
-  const result = await database.queryOne<any>(sql, { id: regionId })
 
   return {
     kills: Number(result?.kills ?? 0),
