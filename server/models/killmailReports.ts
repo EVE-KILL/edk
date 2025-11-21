@@ -66,13 +66,13 @@ export async function getEntityReport(
   entityType: 'character' | 'corporation' | 'alliance',
   reportDate: Date
 ): Promise<KillmailReport | null> {
-  return await database.queryOne<KillmailReport>(
-    `SELECT * FROM killmail_reports
-     WHERE entityId = {entityId:UInt32}
-       AND entityType = {entityType:String}
-       AND reportDate = {reportDate:Date}`,
-    { entityId, entityType, reportDate: reportDate.toISOString().split('T')[0] }
-  )
+  const [row] = await database.sql<KillmailReport[]>`
+    SELECT * FROM killmail_reports
+     WHERE "entityId" = ${entityId}
+       AND "entityType" = ${entityType}
+       AND "reportDate" = ${reportDate.toISOString().split('T')[0]}
+  `
+  return row || null
 }
 
 /**
@@ -84,19 +84,13 @@ export async function getEntityReportRange(
   startDate: Date,
   endDate: Date
 ): Promise<KillmailReport[]> {
-  return await database.query<KillmailReport>(
-    `SELECT * FROM killmail_reports
-     WHERE entityId = {entityId:UInt32}
-       AND entityType = {entityType:String}
-       AND reportDate BETWEEN {startDate:Date} AND {endDate:Date}
-     ORDER BY reportDate DESC`,
-    {
-      entityId,
-      entityType,
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0]
-    }
-  )
+  return await database.sql<KillmailReport[]>`
+    SELECT * FROM killmail_reports
+     WHERE "entityId" = ${entityId}
+       AND "entityType" = ${entityType}
+       AND "reportDate" BETWEEN ${startDate.toISOString().split('T')[0]} AND ${endDate.toISOString().split('T')[0]}
+     ORDER BY "reportDate" DESC
+  `
 }
 
 /**
@@ -107,14 +101,13 @@ export async function getRecentEntityReports(
   entityType: 'character' | 'corporation' | 'alliance',
   days: number = 7
 ): Promise<KillmailReport[]> {
-  return await database.query<KillmailReport>(
-    `SELECT * FROM killmail_reports
-     WHERE entityId = {entityId:UInt32}
-       AND entityType = {entityType:String}
-       AND reportDate >= today() - {days:UInt32}
-     ORDER BY reportDate DESC`,
-    { entityId, entityType, days }
-  )
+  return await database.sql<KillmailReport[]>`
+    SELECT * FROM killmail_reports
+     WHERE "entityId" = ${entityId}
+       AND "entityType" = ${entityType}
+       AND "reportDate" >= CURRENT_DATE - (${days} || ' days')::interval
+     ORDER BY "reportDate" DESC
+  `
 }
 
 /**
@@ -130,14 +123,13 @@ export async function getEntityMonthlyReports(
   const endOfMonth = new Date(year, month, 0) // Day 0 = last day of previous month
   const endDate = `${year}-${String(month).padStart(2, '0')}-${endOfMonth.getDate()}`
 
-  return await database.query<KillmailReport>(
-    `SELECT * FROM killmail_reports
-     WHERE entityId = {entityId:UInt32}
-       AND entityType = {entityType:String}
-       AND reportDate BETWEEN {startDate:Date} AND {endDate:Date}
-     ORDER BY reportDate ASC`,
-    { entityId, entityType, startDate, endDate }
-  )
+  return await database.sql<KillmailReport[]>`
+    SELECT * FROM killmail_reports
+     WHERE "entityId" = ${entityId}
+       AND "entityType" = ${entityType}
+       AND "reportDate" BETWEEN ${startDate} AND ${endDate}
+     ORDER BY "reportDate" ASC
+  `
 }
 
 /**
@@ -149,7 +141,7 @@ export async function getEntityAggregatedStats(
   startDate: Date,
   endDate: Date
 ) {
-  return await database.queryOne<{
+  const [result] = await database.sql<{
     kills: number
     losses: number
     iskDestroyed: number
@@ -157,26 +149,21 @@ export async function getEntityAggregatedStats(
     efficiency: number
     soloKills: number
     soloLosses: number
-  }>(
-    `SELECT
+  }[]>`
+    SELECT
        sum(kills) as kills,
        sum(losses) as losses,
-       sum(iskDestroyed) as iskDestroyed,
-       sum(iskLost) as iskLost,
-       (sum(iskDestroyed) / (sum(iskDestroyed) + sum(iskLost))) * 100 as efficiency,
-       sum(soloKills) as soloKills,
-       sum(soloLosses) as soloLosses
+       sum("iskDestroyed") as "iskDestroyed",
+       sum("iskLost") as "iskLost",
+       (sum("iskDestroyed") / (sum("iskDestroyed") + sum("iskLost"))) * 100 as efficiency,
+       sum("soloKills") as "soloKills",
+       sum("soloLosses") as "soloLosses"
      FROM killmail_reports
-     WHERE entityId = {entityId:UInt32}
-       AND entityType = {entityType:String}
-       AND reportDate BETWEEN {startDate:Date} AND {endDate:Date}`,
-    {
-      entityId,
-      entityType,
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0]
-    }
-  )
+     WHERE "entityId" = ${entityId}
+       AND "entityType" = ${entityType}
+       AND "reportDate" BETWEEN ${startDate.toISOString().split('T')[0]} AND ${endDate.toISOString().split('T')[0]}
+  `
+  return result
 }
 
 /**

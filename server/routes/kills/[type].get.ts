@@ -4,7 +4,7 @@
 import type { H3Event } from 'h3'
 import { timeAgo } from '../../helpers/time'
 import { render, normalizeKillRow } from '../../helpers/templates'
-import { getFilteredKillsWithNames, countFilteredKills, buildKilllistWhereClause, type KilllistFilters } from '../../models/killlist'
+import { getFilteredKillsWithNames, countFilteredKills, buildKilllistConditions, type KilllistFilters } from '../../models/killlist'
 import {
   getTopSystemsFiltered,
   getTopRegionsFiltered,
@@ -252,7 +252,21 @@ export default defineEventHandler(async (event: H3Event) => {
 
   // Build filters based on the type
   const filters = buildFiltersForType(killType)
-  const whereClause = buildKilllistWhereClause(filters, 'kl')
+  const whereConditions = buildKilllistConditions(filters, 'kl') // Alias 'kl' must match the alias used in TopBoxes model if it uses an alias?
+  // In topBoxes.ts, the base query aliases killmails as 'k', and it joins solarSystems ss, etc.
+  // Wait, buildKilllistConditions logic uses `alias`. If I pass 'kl', it generates 'kl.solo'.
+  // But TopBoxes query uses `FROM killmails k`. So I should pass 'k' here if I pass these conditions to TopBoxes query!
+  // But `getFilteredKillsWithNames` uses `k` inside its query.
+  // So `alias` should be 'k'.
+
+  // Wait, `getFilteredKillsWithNames` uses `buildKilllistConditions(filters, 'k')` inside it.
+  // So I don't need to pass `whereConditions` to `getFilteredKillsWithNames`.
+
+  // But I DO need to pass it to `getTopSystemsFiltered`.
+  // In `topBoxes.ts`, the query aliases killmails as `k`.
+  // So I should build conditions with alias 'k'.
+
+  const conditionsForTopBoxes = buildKilllistConditions(filters, 'k')
 
   // Fetch killmails and count in parallel using model functions
   const [killmailsData, totalKillmails] = await Promise.all([
@@ -271,13 +285,13 @@ export default defineEventHandler(async (event: H3Event) => {
     }
   })
 
-  // Get Top Boxes data using model functions with whereClause
+  // Get Top Boxes data using model functions with conditions
   const [topSystems, topRegions, topCharacters, topCorporations, topAlliances] = await Promise.all([
-    getTopSystemsFiltered(whereClause.clause, whereClause.params, 10),
-    getTopRegionsFiltered(whereClause.clause, whereClause.params, 10),
-    getTopCharactersFiltered(whereClause.clause, whereClause.params, 10),
-    getTopCorporationsFiltered(whereClause.clause, whereClause.params, 10),
-    getTopAlliancesFiltered(whereClause.clause, whereClause.params, 10)
+    getTopSystemsFiltered(conditionsForTopBoxes, 10),
+    getTopRegionsFiltered(conditionsForTopBoxes, 10),
+    getTopCharactersFiltered(conditionsForTopBoxes, 10),
+    getTopCorporationsFiltered(conditionsForTopBoxes, 10),
+    getTopAlliancesFiltered(conditionsForTopBoxes, 10)
   ])
 
   // Get Most Valuable Kills for this filter

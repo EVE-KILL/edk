@@ -18,55 +18,58 @@ export interface Group {
  * Get a single group by ID
  */
 export async function getGroup(groupId: number): Promise<Group | null> {
-  return await database.queryOne<Group>(
-    'SELECT * FROM groups WHERE groupId = {id:UInt32}',
-    { id: groupId }
-  )
+  const [row] = await database.sql<Group[]>`
+    SELECT * FROM groups WHERE "groupId" = ${groupId}
+  `
+  return row || null
 }
 
 /**
  * Get all groups in a category
  */
 export async function getGroupsByCategory(categoryId: number): Promise<Group[]> {
-  return await database.query<Group>(
-    'SELECT * FROM groups WHERE categoryId = {categoryId:UInt32} ORDER BY name',
-    { categoryId }
-  )
+  return await database.sql<Group[]>`
+    SELECT * FROM groups WHERE "categoryId" = ${categoryId} ORDER BY name
+  `
 }
 
 /**
  * Get published groups only
  */
 export async function getPublishedGroups(): Promise<Group[]> {
-  return await database.query<Group>(
-    'SELECT * FROM groups WHERE published = 1 ORDER BY categoryId, name'
-  )
+  return await database.sql<Group[]>`
+    SELECT * FROM groups WHERE published = 1 ORDER BY "categoryId", name
+  `
 }
 
 /**
  * Search groups by name
  */
 export async function searchGroups(namePattern: string, limit: number = 10): Promise<Group[]> {
-  return await database.query<Group>(
-    'SELECT * FROM groups WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
-    { pattern: `%${namePattern}%`, limit }
-  )
+  return await database.sql<Group[]>`
+    SELECT * FROM groups
+    WHERE name ILIKE ${`%${namePattern}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }
 
 /**
  * Get group name by ID
  */
 export async function getGroupName(groupId: number): Promise<string | null> {
-  const result = await database.queryValue<string>(
-    'SELECT name FROM groups WHERE groupId = {id:UInt32}',
-    { id: groupId }
-  )
-  return result || null
+  const [result] = await database.sql<{name: string}[]>`
+    SELECT name FROM groups WHERE "groupId" = ${groupId}
+  `
+  return result?.name || null
 }
 
 /**
  * Count total groups
  */
 export async function countGroups(): Promise<number> {
-  return await database.count('groups')
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM groups
+  `
+  return Number(result?.count || 0)
 }

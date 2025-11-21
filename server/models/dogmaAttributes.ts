@@ -24,55 +24,58 @@ export interface DogmaAttribute {
  * Get a single dogma attribute by ID
  */
 export async function getDogmaAttribute(attributeId: number): Promise<DogmaAttribute | null> {
-  return await database.queryOne<DogmaAttribute>(
-    'SELECT * FROM dogmaAttributes WHERE attributeId = {id:UInt32}',
-    { id: attributeId }
-  )
+  const [row] = await database.sql<DogmaAttribute[]>`
+    SELECT * FROM dogmaAttributes WHERE attributeId = ${attributeId}
+  `
+  return row || null
 }
 
 /**
  * Get all published dogma attributes
  */
 export async function getPublishedDogmaAttributes(): Promise<DogmaAttribute[]> {
-  return await database.query<DogmaAttribute>(
-    'SELECT * FROM dogmaAttributes WHERE published = 1 ORDER BY name'
-  )
+  return await database.sql<DogmaAttribute[]>`
+    SELECT * FROM dogmaAttributes WHERE published = 1 ORDER BY name
+  `
 }
 
 /**
  * Get dogma attributes by category
  */
 export async function getDogmaAttributesByCategory(categoryId: number): Promise<DogmaAttribute[]> {
-  return await database.query<DogmaAttribute>(
-    'SELECT * FROM dogmaAttributes WHERE categoryId = {categoryId:UInt32} ORDER BY name',
-    { categoryId }
-  )
+  return await database.sql<DogmaAttribute[]>`
+    SELECT * FROM dogmaAttributes WHERE categoryId = ${categoryId} ORDER BY name
+  `
 }
 
 /**
  * Search dogma attributes by name
  */
 export async function searchDogmaAttributes(namePattern: string, limit: number = 10): Promise<DogmaAttribute[]> {
-  return await database.query<DogmaAttribute>(
-    'SELECT * FROM dogmaAttributes WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
-    { pattern: `%${namePattern}%`, limit }
-  )
+  return await database.sql<DogmaAttribute[]>`
+    SELECT * FROM dogmaAttributes
+    WHERE name ILIKE ${`%${namePattern}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }
 
 /**
  * Get dogma attribute name by ID
  */
 export async function getDogmaAttributeName(attributeId: number): Promise<string | null> {
-  const result = await database.queryValue<string>(
-    'SELECT name FROM dogmaAttributes WHERE attributeId = {id:UInt32}',
-    { id: attributeId }
-  )
-  return result || null
+  const [result] = await database.sql<{name: string}[]>`
+    SELECT name FROM dogmaAttributes WHERE attributeId = ${attributeId}
+  `
+  return result?.name || null
 }
 
 /**
  * Count total dogma attributes
  */
 export async function countDogmaAttributes(): Promise<number> {
-  return await database.count('dogmaAttributes')
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM dogmaAttributes
+  `
+  return Number(result?.count || 0)
 }
