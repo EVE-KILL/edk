@@ -1,39 +1,47 @@
-import { SQL } from 'bun'
+import postgres from 'postgres'
 
 /**
- * Postgres Database Helper (using Bun native driver)
+ * Postgres Database Helper (using postgres.js)
  *
  * Provides a convenient interface for database operations.
  * Handles connection management and provides common query patterns.
  */
 export class DatabaseHelper {
-  private client: SQL
+  private sql: postgres.Sql
   private isConnected: boolean = false
 
   constructor() {
-    // Initialize Bun SQL client for Postgres
+    // Initialize postgres client
     const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
-    this.client = new SQL(url)
-    // In Bun SQL, connection is lazy, so we consider it connected once initialized.
-    // The driver handles reconnection.
+
+    // postgres.js manages the connection pool automatically
+    this.sql = postgres(url, {
+      max: 10, // Max connections
+      idle_timeout: 20, // Idle connection timeout in seconds
+      connect_timeout: 10, // Connection timeout
+      transform: {
+        // Optional: convert row keys to camelCase if needed, but we stick to schema for now
+        // undefined
+      }
+    })
     this.isConnected = true
   }
 
   /**
-   * Ensure connection is established
-   */
-  private async ensureConnection(): Promise<void> {
-    // Bun SQL handles connections automatically
-    return Promise.resolve()
-  }
-
-  /**
-   * Helper to convert ClickHouse-style parameterized queries to Bun SQL compatible ones.
+   * Helper to convert ClickHouse-style parameterized queries to postgres.js template strings.
    *
    * ClickHouse: SELECT * FROM table WHERE id = {id:UInt32}
-   * Postgres/Bun: SELECT * FROM table WHERE id = $1
+   * postgres.js: sql`SELECT * FROM table WHERE id = ${id}`
    *
-   * This function parses the SQL, replaces placeholders with $n, and constructs the values array.
+   * Since postgres.js uses tagged templates for security, we can't easily just replace strings.
+   * We have to parse the SQL and rebuild it as a template literal call or use the unsafe helper with parameters carefully.
+   *
+   * However, postgres.js doesn't support named parameters in raw text like `$name`.
+   * It supports `${ sql(value) }`.
+   *
+   * To maintain compatibility with the existing `{param:Type}` syntax used everywhere in the codebase,
+   * we will parse the SQL string, replace `{key}` with `$1`, `$2`, etc., and construct the values array.
+   * Then we use `sql.unsafe(text, values)`.
    */
   private prepareQuery(sql: string, params?: Record<string, any>): { text: string, values: any[] } {
     if (!params) return { text: sql, values: [] }
@@ -44,10 +52,9 @@ export class DatabaseHelper {
 
     // Regex to match {key:Type} or {key}
     // Handles: {id:UInt32}, {ids:Array(UInt32)}, {name:String}, {name}
-    const paramRegex = /{([a-zA-Z0-9_]+)(?::[a-zA-Z0-9_()]+)?}/g
+    const paramRegex = /{([a-zA-Z0-9_]+)(?::[a-zA-Z0-9_()\[\]]+)?}/g
 
     const text = sql.replace(paramRegex, (match, name) => {
-      // If the param is not in the map yet, add it
       if (!paramMap.has(name)) {
         paramMap.set(name, nextIndex++)
         values.push(params[name])
@@ -64,15 +71,12 @@ export class DatabaseHelper {
   async query<T = any>(sql: string, params?: Record<string, any>): Promise<T[]> {
     try {
       const { text, values } = this.prepareQuery(sql, params)
-
-      // Use unsafe for dynamic queries with parameters
-      // Bun SQL supports parsing parameters in unsafe() if the driver supports it.
-      // For Postgres, passing args to unsafe maps to $1, $2 etc.
-      const results = await this.client.unsafe(text, values) as T[]
-      return results
+      // Use unsafe to execute raw SQL with parameterized values
+      // postgres.js unsafe(query, parameters)
+      const result = await this.sql.unsafe(text, values)
+      return result as unknown as T[]
     } catch (error) {
       console.error('Database query error:', error)
-      // Log the failed query for debugging
       console.error('Query:', sql)
       console.error('Params:', params)
       throw error
@@ -108,17 +112,13 @@ export class DatabaseHelper {
   /**
    * Insert data into a table
    */
-  async insert<T = any>(table: string, data: T | T[]): Promise<void> {
+  async insert<T extends object = any>(table: string, data: T | T[]): Promise<void> {
     const items = Array.isArray(data) ? data : [data]
     if (items.length === 0) return
 
     try {
-      // Bun SQL supports insert helper: sql(table).insert(items)
-      // But the table name is dynamic.
-      // We can construct the query manually or use sql`INSERT INTO ${sql(table)} ...`
-
-      // However, Bun SQL insert helper is: sql`INSERT INTO ${sql(table)} ${sql(items)}`
-      await this.client`INSERT INTO ${this.client(table)} ${this.client(items)}`
+      // postgres.js has a nice helper for inserts: sql(items)
+      await this.sql`INSERT INTO ${this.sql(table)} ${this.sql(items)}`
     } catch (error) {
       console.error('Database insert error:', error)
       throw error
@@ -128,52 +128,25 @@ export class DatabaseHelper {
   /**
    * Bulk insert data
    */
-  async bulkInsert<T = any>(table: string, data: T[]): Promise<void> {
+  async bulkInsert<T extends object = any>(table: string, data: T[]): Promise<void> {
     return this.insert(table, data)
   }
 
   /**
-   * Bulk upsert data (Insert on conflict update)
+   * Bulk upsert data
    */
-  async bulkUpsert<T = any>(table: string, data: T[], conflictKey: string): Promise<void> {
+  async bulkUpsert<T extends object = any>(table: string, data: T[], conflictKey: string): Promise<void> {
     const items = Array.isArray(data) ? data : [data]
     if (items.length === 0) return
 
     try {
-      const columns = Object.keys(items[0])
-      const updateColumns = columns.filter(c => c !== conflictKey)
+        const columns = Object.keys(items[0])
 
-      const columnsSql = columns.map(c => `"${c}"`).join(', ')
-
-      const values: any[] = []
-      const valuePlaceholders: string[] = []
-
-      let paramIndex = 1
-      for (const item of items) {
-        const placeholders: string[] = []
-        for (const col of columns) {
-          let val = (item as any)[col]
-
-          // Handle arrays for Postgres
-          if (Array.isArray(val)) {
-             val = `{${val.join(',')}}`
-          }
-
-          values.push(val)
-          placeholders.push(`$${paramIndex++}`)
-        }
-        valuePlaceholders.push(`(${placeholders.join(', ')})`)
-      }
-
-      const valuesSql = valuePlaceholders.join(', ')
-      const setClause = updateColumns.map(c => `"${c}" = EXCLUDED."${c}"`).join(', ')
-
-      await this.client.unsafe(`
-        INSERT INTO "${table}" (${columnsSql})
-        VALUES ${valuesSql}
-        ON CONFLICT ("${conflictKey}")
-        DO UPDATE SET ${setClause}
-      `, values)
+        await this.sql`
+            INSERT INTO ${this.sql(table)} ${this.sql(items)}
+            ON CONFLICT (${this.sql(conflictKey)})
+            DO UPDATE SET ${this.sql(items[0], columns.filter(c => c !== conflictKey))}
+        `
     } catch (error) {
       console.error('Database upsert error:', error)
       throw error
@@ -191,7 +164,7 @@ export class DatabaseHelper {
           table: tableName
         }
       )
-      return result === 1
+      return Number(result) === 1
     } catch (error) {
       console.error('Error checking table existence:', error)
       return false
@@ -217,13 +190,17 @@ export class DatabaseHelper {
    * Count rows in a table
    */
   async count(table: string, where?: string, params?: Record<string, any>): Promise<number> {
-    // For Postgres, we need to be careful with dynamic table names in unsafe string
-    // This method assumes 'table' is safe or strictly controlled.
-    const sql = `SELECT count(*) as count FROM ${table}${where ? ` WHERE ${where}` : ''}`
+    // Need to use unsafe for table name injection if it's dynamic string,
+    // but unsafe doesn't support tagged template logic for table identifiers easily mixed with raw strings.
+    // Safest is to query: SELECT count(*) FROM "table" ...
 
-    // Note: 'count' in Postgres returns a BigInt (string in JS usually) or number.
-    // Need to handle casting.
-    const result = await this.queryValue<any>(sql, params)
+    // Construct WHERE clause manually with placeholders
+    let queryText = `SELECT count(*) as count FROM "${table}"`
+    if (where) {
+        queryText += ` WHERE ${where}`
+    }
+
+    const result = await this.queryValue<any>(queryText, params)
     return Number(result) || 0
   }
 
@@ -232,7 +209,7 @@ export class DatabaseHelper {
    */
   async ping(): Promise<boolean> {
     try {
-      await this.client`SELECT 1`
+      await this.sql`SELECT 1`
       return true
     } catch (error) {
       console.error('Database ping failed:', error)
@@ -244,24 +221,15 @@ export class DatabaseHelper {
    * Close the connection
    */
   async close(): Promise<void> {
-    await this.client.close() // Bun SQL might not have close() or it might be end().
-    // Documentation says client.close() or end().
-    // Wait, SQL client in Bun seems to auto-manage.
-    // But check if close exists.
-    // If not, we just ignore.
-    if (typeof (this.client as any).close === 'function') {
-        await (this.client as any).close()
-    } else if (typeof (this.client as any).end === 'function') {
-        await (this.client as any).end()
-    }
+    await this.sql.end()
     this.isConnected = false
   }
 
   /**
    * Get the raw client
    */
-  getClient(): SQL {
-    return this.client
+  getClient(): postgres.Sql {
+    return this.sql
   }
 }
 

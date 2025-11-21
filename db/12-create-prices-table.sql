@@ -18,5 +18,5 @@ CREATE TABLE IF NOT EXISTS prices (
 );
 
 CREATE INDEX IF NOT EXISTS "idx_prices_type" ON prices ("typeId");
-CREATE INDEX IF NOT EXISTS "idx_prices_region" ON "prices" ("regionId");
-CREATE INDEX IF NOT EXISTS "idx_prices_date" ON "prices" ("priceDate");
+CREATE INDEX IF NOT EXISTS "idx_prices_region" ON prices ("regionId");
+CREATE INDEX IF NOT EXISTS "idx_prices_date" ON prices ("priceDate");
