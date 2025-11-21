@@ -62,11 +62,11 @@ CREATE TABLE IF NOT EXISTS attackers (
   "characterId" INTEGER,
   "damageDone" INTEGER,
   "finalBlow" BOOLEAN,
-  "securityStatus" NUMERIC(3, 1),
+  "securityStatus" REAL,
   "shipTypeId" INTEGER,
   "weaponTypeId" INTEGER,
   "createdAt" TIMESTAMP DEFAULT NOW(),
-  "version" INTEGER
+  "version" BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS "idx_attackers_killmail_id" ON attackers ("killmailId");
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS items (
   "quantityDestroyed" INTEGER,
   "singleton" BOOLEAN,
   "createdAt" TIMESTAMP DEFAULT NOW(),
-  "version" INTEGER
+  "version" BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS "idx_items_killmail_id" ON items ("killmailId");

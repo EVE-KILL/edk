@@ -6,14 +6,14 @@
 CREATE TABLE IF NOT EXISTS characters (
   "characterId" INTEGER PRIMARY KEY,
   "allianceId" INTEGER,
-  "birthday" TIMESTAMP,
+  "birthday" DATE,
   "bloodlineId" INTEGER,
   "corporationId" INTEGER,
   "description" TEXT,
   "gender" VARCHAR(30),
   "name" VARCHAR(255),
   "raceId" INTEGER,
-  "securityStatus" REAL,
+  "securityStatus" NUMERIC(4, 2),
   "updatedAt" TIMESTAMP DEFAULT NOW(),
   "version" INTEGER
 );
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS corporations (
   "name" VARCHAR(255),
   "shares" BIGINT,
   "taxRate" REAL,
-  "ticker" VARCHAR(50),
+  "ticker" VARCHAR(10),
   "url" TEXT,
   "updatedAt" TIMESTAMP DEFAULT NOW(),
   "version" INTEGER
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS alliances (
   "allianceId" INTEGER PRIMARY KEY,
   "creatorCorporationId" INTEGER,
   "creatorId" INTEGER,
-  "dateFounded" TIMESTAMP,
+  "dateFounded" DATE,
   "executorCorporationId" INTEGER,
   "name" VARCHAR(255),
   "ticker" VARCHAR(10),

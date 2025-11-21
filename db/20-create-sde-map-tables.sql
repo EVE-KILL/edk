@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS regions (
     "description" TEXT,
     "factionId" INTEGER,
     "nebulaId" INTEGER,
-    "positionX" REAL,
-    "positionY" REAL,
-    "positionZ" REAL,
+    "positionX" DOUBLE PRECISION,
+    "positionY" DOUBLE PRECISION,
+    "positionZ" DOUBLE PRECISION,
     "wormholeClassId" INTEGER,
     "updatedAt" TIMESTAMP DEFAULT NOW(),
     "version" INTEGER
@@ -23,9 +23,9 @@ CREATE TABLE IF NOT EXISTS constellations (
     "name" VARCHAR(255),
     "regionId" INTEGER,
     "factionId" INTEGER,
-    "positionX" REAL,
-    "positionY" REAL,
-    "positionZ" REAL,
+    "positionX" DOUBLE PRECISION,
+    "positionY" DOUBLE PRECISION,
+    "positionZ" DOUBLE PRECISION,
     "solarSystemIds" INTEGER[],
     "wormholeClassId" INTEGER,
     "updatedAt" TIMESTAMP DEFAULT NOW(),
@@ -46,9 +46,9 @@ CREATE TABLE IF NOT EXISTS solarSystems (
     "international" BOOLEAN,
     "luminosity" REAL,
     "planetIds" INTEGER[],
-    "positionX" REAL,
-    "positionY" REAL,
-    "positionZ" REAL,
+    "positionX" DOUBLE PRECISION,
+    "positionY" DOUBLE PRECISION,
+    "positionZ" DOUBLE PRECISION,
     "radius" DOUBLE PRECISION,
     "regional" BOOLEAN,
     "securityClass" VARCHAR(255),
@@ -68,9 +68,9 @@ CREATE TABLE IF NOT EXISTS stargates (
     "solarSystemId" INTEGER,
     "destinationGateId" BIGINT,
     "destinationSolarSystemId" INTEGER,
-    "positionX" REAL,
-    "positionY" REAL,
-    "positionZ" REAL,
+    "positionX" DOUBLE PRECISION,
+    "positionY" DOUBLE PRECISION,
+    "positionZ" DOUBLE PRECISION,
     "typeId" INTEGER,
     "version" INTEGER
 );
@@ -96,9 +96,9 @@ CREATE TABLE IF NOT EXISTS planets (
     "solarSystemId" INTEGER,
     "typeId" INTEGER,
     "celestialIndex" INTEGER,
-    "positionX" REAL,
-    "positionY" REAL,
-    "positionZ" REAL,
+    "positionX" DOUBLE PRECISION,
+    "positionY" DOUBLE PRECISION,
+    "positionZ" DOUBLE PRECISION,
     "version" INTEGER
 );
 
@@ -110,9 +110,9 @@ CREATE TABLE IF NOT EXISTS moons (
     "planetId" INTEGER,
     "typeId" INTEGER,
     "celestialIndex" INTEGER,
-    "positionX" REAL,
-    "positionY" REAL,
-    "positionZ" REAL,
+    "positionX" DOUBLE PRECISION,
+    "positionY" DOUBLE PRECISION,
+    "positionZ" DOUBLE PRECISION,
     "version" INTEGER
 );
 
@@ -123,8 +123,8 @@ CREATE TABLE IF NOT EXISTS asteroidBelts (
     "solarSystemId" INTEGER,
     "typeId" INTEGER,
     "celestialIndex" INTEGER,
-    "positionX" REAL,
-    "positionY" REAL,
-    "positionZ" REAL,
+    "positionX" DOUBLE PRECISION,
+    "positionY" DOUBLE PRECISION,
+    "positionZ" DOUBLE PRECISION,
     "version" INTEGER
 );
