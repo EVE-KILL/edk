@@ -6,5 +6,5 @@ CREATE TABLE IF NOT EXISTS config (
   "tableName" VARCHAR(255),
   "rowCount" INTEGER,
   "updatedAt" TIMESTAMP,
-  "version" INTEGER
+  "version" BIGINT
 );
