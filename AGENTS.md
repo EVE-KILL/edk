@@ -24,7 +24,6 @@ This file contains instructions and context for AI agents working on this codeba
 ### Connection & Driver
 - The project uses `postgres.js`.
 - **Helper:** Use `server/helpers/database.ts` (`DatabaseHelper`) for interactions. It exposes `sql` for raw queries if needed.
-- **Materialized Views:** Materialized views are **intentionally removed** in favor of direct complex queries against base tables. Do not create them.
 
 ### Case Sensitivity & Quoting
 - **Important:** Many tables use mixed-case column names (e.g., `killmailId`, `solarSystemId`).
