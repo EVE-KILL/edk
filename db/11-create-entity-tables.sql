@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS alliances (
   "allianceId" INTEGER PRIMARY KEY,
   "creatorCorporationId" INTEGER,
   "creatorId" INTEGER,
-  "dateFounded" DATE,
+  "dateFounded" TIMESTAMP,
   "executorCorporationId" INTEGER,
   "name" VARCHAR(255),
   "ticker" VARCHAR(10),
