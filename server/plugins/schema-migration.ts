@@ -390,6 +390,11 @@ async function syncTableSchema(statement: string) {
           const type2 = aliases[normDbType] || normDbType
 
           if (type1 !== type2 && !type2.includes(type1) && !type1.includes(type2)) {
+              // Ignore array type mismatches (Postgres reports ARRAY for any array type)
+              if (type2 === 'array' && type1.endsWith('[]')) {
+                  continue
+              }
+
               console.warn(chalk.yellow(`⚠️  Column '${col.name}' in table '${tableName}' has type mismatch.`))
               console.warn(chalk.gray(`   Defined: ${col.type}, Database: ${existingCol.type}`))
               console.warn(chalk.gray(`   Automatic type migration is skipped for safety.`))
