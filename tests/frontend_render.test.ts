@@ -32,32 +32,23 @@ describe('Frontend Rendering & Helpers', () => {
     });
 
     describe('Template Rendering', () => {
-        // This test assumes templates/default/pages/home.hbs and layouts/main.hbs exist.
-        // If they don't, this might fail.
-        // We'll skip if file not found in a real scenario, but here we want to ensure they work if present.
-
+        /**
+         * Prerequisite: The template file 'templates/default/pages/home.hbs' must exist for this test to run.
+         * If the template is missing, the test will be skipped.
+         */
         it('should render a template if it exists', async () => {
-            // We'll try to render a simple page or just check if render function throws 'Template not found'
-            // which confirms it tries to look up templates.
-
-            try {
-                // Passing useLayout=false to avoid dependency on layout file if possible.
-                // 
-                // Let's assume 'pages/home.hbs' exists as seen in routes/index.ts
-                const html = await render('pages/home.hbs', { title: 'Test' }, { killmails: [] }, undefined, false);
-
-                expect(html).toBeDefined();
-                expect(typeof html).toBe('string');
-                // We expect some HTML content
-            } catch (e: any) {
-                // If template is missing, we accept that as "test environment doesn't have templates"
-                // but in this repo they seem to be there.
-                if (e.message && e.message.includes('Template not found')) {
-                    console.warn('Skipping render test: Template not found');
-                } else {
-                    throw e;
-                }
+            // Check if the required template file exists before running the test
+            const templatePath = 'templates/default/pages/home.hbs';
+            if (!(await Bun.file(templatePath).exists())) {
+                // Skip the test if the template is missing
+                console.warn(`Skipping render test: Required template '${templatePath}' not found.`);
+                return;
             }
+            // Passing useLayout=false to avoid dependency on layout file if possible
+            const html = await render('pages/home.hbs', { title: 'Test' }, { killmails: [] }, undefined, false);
+            expect(html).toBeDefined();
+            expect(typeof html).toBe('string');
+            // We expect some HTML content
         });
     });
 });
