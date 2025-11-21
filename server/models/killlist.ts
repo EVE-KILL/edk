@@ -139,10 +139,6 @@ export function buildKilllistConditions(
     conditions.push(database.sql`${prefix}"solarSystemId" = ${filters.solarSystemId}`)
   }
 
-  if (filters.killmailId !== undefined) {
-    conditions.push(database.sql`${prefix}"killmailId" = ${filters.killmailId}`)
-  }
-
   return conditions
 }
 
@@ -449,7 +445,6 @@ export async function countFollowedEntitiesActivity(
  * Filter options for killlist queries
  */
 export interface KilllistFilters {
-  killmailId?: number
   spaceType?: string
   isSolo?: boolean
   isBig?: boolean

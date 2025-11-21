@@ -138,7 +138,7 @@ function handleClientMessage(peer: Peer, message: string, handler: MessageHandle
 export function createWebSocketHandler(handler: MessageHandler) {
   const redis = createRedisClient()
 
-  redis.subscribe('killmail-broadcasts', (err, count) => {
+  redis.subscribe('killmails', (err, count) => {
     if (err) {
       logger.error('Failed to subscribe: %s', err.message)
     } else {
