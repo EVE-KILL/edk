@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS killmails (
   "awox" BOOLEAN DEFAULT false,
 
   "createdAt" TIMESTAMP DEFAULT NOW(),
-  "version" INTEGER
+  "version" BIGINT
 );
 
 CREATE INDEX IF NOT EXISTS "idx_killmails_solar_system" ON killmails ("solarSystemId");
