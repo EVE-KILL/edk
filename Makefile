@@ -9,7 +9,7 @@ setup:
 	@sleep 5
 	@bun install || (echo "Failed to install dependencies"; exit 1)
 	@bun cli db:migrate || (echo "Failed to run migrations"; exit 1)
-	@bun cli sde:import || (echo "Failed to import SDE"; exit 1)
+	@bun cli sde:download || (echo "Failed to download and import SDE"; exit 1)
 	@echo "Setup complete!"
 
 reset:
@@ -23,6 +23,6 @@ migrate:
 	@echo "Migrations complete!"
 
 import-sde:
-	@echo "Importing SDE..."
-	@bun cli sde:import
-	@echo "SDE import complete!"
+	@echo "Downloading and importing SDE..."
+	@bun cli sde:download
+	@echo "SDE download and import complete!"
