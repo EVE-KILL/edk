@@ -1,5 +1,17 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import { normalizeKillRow, render } from '../server/helpers/templates';
+
+// Mock logger for tests since it's auto-imported in Nitro but not available in test context
+beforeAll(() => {
+    // @ts-ignore - logger is auto-imported in Nitro context
+    global.logger = {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        debug: () => {},
+        success: () => {}
+    };
+});
 
 describe('Frontend Rendering & Helpers', () => {
     describe('normalizeKillRow', () => {
@@ -32,23 +44,65 @@ describe('Frontend Rendering & Helpers', () => {
     });
 
     describe('Template Rendering', () => {
-        /**
-         * Prerequisite: The template file 'templates/default/pages/home.hbs' must exist for this test to run.
-         * If the template is missing, the test will be skipped.
-         */
-        it('should render a template if it exists', async () => {
-            // Check if the required template file exists before running the test
-            const templatePath = 'templates/default/pages/home.hbs';
-            if (!(await Bun.file(templatePath).exists())) {
-                // Skip the test if the template is missing
-                console.warn(`Skipping render test: Required template '${templatePath}' not found.`);
-                return;
+        it('should render a template without layout', async () => {
+            // Set theme to test to use test fixtures
+            const originalTheme = process.env.THEME;
+            process.env.THEME = 'test';
+            
+            try {
+                const html = await render(
+                    'pages/test-page.hbs',
+                    { title: 'Test Page' },
+                    { message: 'Hello World', items: ['Item 1', 'Item 2'] },
+                    undefined,
+                    false // no layout
+                );
+                
+                expect(html).toBeDefined();
+                expect(typeof html).toBe('string');
+                expect(html).toContain('Test Page');
+                expect(html).toContain('Hello World');
+                expect(html).toContain('Item 1');
+                expect(html).toContain('Item 2');
+            } finally {
+                // Restore original theme
+                if (originalTheme !== undefined) {
+                    process.env.THEME = originalTheme;
+                } else {
+                    delete process.env.THEME;
+                }
             }
-            // Passing useLayout=false to avoid dependency on layout file if possible
-            const html = await render('pages/home.hbs', { title: 'Test' }, { killmails: [] }, undefined, false);
-            expect(html).toBeDefined();
-            expect(typeof html).toBe('string');
-            // We expect some HTML content
+        });
+
+        it('should render a template with layout', async () => {
+            // Set theme to test to use test fixtures
+            const originalTheme = process.env.THEME;
+            process.env.THEME = 'test';
+            
+            try {
+                const html = await render(
+                    'pages/test-page.hbs',
+                    { title: 'Test Page' },
+                    { message: 'Test Message' },
+                    undefined,
+                    true, // with layout
+                    'layouts/test-layout.hbs'
+                );
+                
+                expect(html).toBeDefined();
+                expect(typeof html).toBe('string');
+                expect(html).toContain('<!DOCTYPE html>');
+                expect(html).toContain('<title>Test Page');
+                expect(html).toContain('Test Message');
+                expect(html).toContain('EVE-KILL');
+            } finally {
+                // Restore original theme
+                if (originalTheme !== undefined) {
+                    process.env.THEME = originalTheme;
+                } else {
+                    delete process.env.THEME;
+                }
+            }
         });
     });
 });
