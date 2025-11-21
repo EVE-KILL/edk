@@ -2,35 +2,38 @@
 
 ## Project Overview
 
-**EVE-KILL EDK** is a real-time EVE Online killmail tracking and analytics system built on modern infrastructure. The project ingests killmails from multiple sources (WebSocket streams, ESI API), stores them in ClickHouse for high-performance analytics, and provides REST APIs for data access.
+**EVE-KILL EDK** is a real-time EVE Online killmail tracking and analytics system built on modern infrastructure. The project ingests killmails from multiple sources (WebSocket streams, ESI API), stores them in PostgreSQL, and provides REST APIs and server-side rendered pages for data access.
 
 ### Core Purpose
 - Real-time killmail ingestion from EVE-KILL WebSocket feed
 - Historical killmail data storage and querying
 - Entity (character/corporation/alliance) tracking with background processing
 - EVE Online Static Data Export (SDE) management and import
-- High-performance analytics on killmail data
+- Server-side rendered frontend with Handlebars templates
+- High-performance data access and analytics
 
 ---
 
 ## Technology Stack
 
 ### Runtime & Framework
-- **Runtime**: Bun (modern JavaScript runtime)
-- **Framework**: Nitro (Universal JavaScript Server)
+- **Runtime**: Bun (modern JavaScript runtime - use `bun` for all scripts and testing)
+- **Framework**: Nitro (Universal JavaScript Server for server-side application)
 - **Language**: TypeScript (strict mode enabled)
+- **Templating**: Handlebars (server-side rendering)
 
 ### Data Layer
-- **Primary Database**: ClickHouse (columnar database optimized for analytics)
-  - Uses `ReplacingMergeTree` for deduplication with versioning
-  - Partitioned by time for optimal query performance
-  - Materialized views for ESI format reconstruction
+- **Primary Database**: PostgreSQL (with `postgres.js` driver)
+  - Mixed-case column names (camelCase) - **MUST use double quotes in raw SQL**
+  - Schema migrations tracked in `migrations` table
+  - Automatic column addition via schema migration plugin
 - **Cache/Queue**: Redis (caching layer + BullMQ job queue)
 - **Queue System**: BullMQ with Redis backend
 
 ### Infrastructure
-- Docker Compose setup (ClickHouse + Redis)
-- Schema-based migrations tracked in database
+- Docker Compose setup (PostgreSQL + Redis)
+- SQL migration files in `db/` directory
+- Automatic schema migration on startup
 - Environment-based configuration
 
 ---
@@ -41,67 +44,98 @@
 /
 ├── cli.ts                    # CLI entry point with dynamic command loading
 ├── queue.ts                  # Queue worker entry point with auto-discovery
+├── cronjobs.ts              # Cron job runner with auto-discovery
 ├── nitro.config.ts          # Nitro server configuration
-├── schema.sql               # Complete ClickHouse database schema
-├── docker-compose.yml       # Local development infrastructure
+├── docker-compose.yml       # Local development infrastructure (PostgreSQL + Redis)
+├── AGENTS.md                # Agent instructions (always up-to-date - refer to this)
+│
+├── db/                      # PostgreSQL migration files
+│   ├── 01-create-migrations-table.sql
+│   ├── 05-create-config-table.sql
+│   ├── 10-create-killmail-tables.sql
+│   ├── 11-create-entity-tables.sql
+│   ├── 12-create-prices-table.sql
+│   └── 20-25-create-sde-*.sql  # SDE table migrations
 │
 ├── commands/                # CLI commands (auto-loaded by cli.ts)
+│   ├── backfill.ts         # Backfill operations
 │   ├── ekws.ts             # EVE-KILL WebSocket listener
+│   ├── purge-db.ts         # Database purge utility
 │   ├── db/                 # Database commands
 │   ├── debug/              # Debug/inspection commands
 │   ├── sde/                # SDE management commands
 │   └── test/               # Test commands
 │
+├── cronjobs/                # Cron job processors (auto-loaded)
+│   └── database-health-check.ts
+│
 ├── queue/                   # Queue processors (auto-loaded by queue.ts)
 │   ├── character.ts        # Character entity processor
 │   ├── corporation.ts      # Corporation entity processor
-│   └── alliance.ts         # Alliance entity processor
+│   ├── alliance.ts         # Alliance entity processor
+│   ├── killmail.ts         # Killmail processor
+│   └── price.ts            # Price data processor
+│
+├── templates/               # Handlebars templates
+│   ├── default/            # Default theme
+│   │   ├── components/
+│   │   ├── layouts/
+│   │   ├── pages/
+│   │   ├── partials/
+│   │   └── static/
+│   └── test/               # Test theme
+│
+├── tests/                   # Bun Test files
+│   ├── setup.ts            # Test setup (auto-drops/creates test DB)
+│   ├── *.test.ts           # Test files
+│   └── helpers/            # Test helpers
 │
 └── server/                  # Nitro server code
     ├── fetchers/           # API/data fetchers (auto-imported)
     │   ├── killmail.ts    # Killmail fetcher from ESI
     │   ├── character.ts   # Character data fetcher
     │   ├── corporation.ts # Corporation data fetcher
-    │   └── alliance.ts    # Alliance data fetcher
+    │   ├── alliance.ts    # Alliance data fetcher
+    │   └── price.ts       # Price data fetcher
     │
     ├── helpers/            # Utility helpers (auto-imported)
     │   ├── cache.ts       # Redis caching helper
-    │   ├── database.ts    # ClickHouse database helper
+    │   ├── database.ts    # PostgreSQL database helper (DatabaseHelper class)
     │   ├── fetcher.ts     # HTTP fetcher with retry logic
     │   ├── logger.ts      # Structured logging helper
     │   ├── queue.ts       # BullMQ queue helper with type safety
+    │   ├── templates.ts   # Handlebars template rendering
+    │   ├── pagination.ts  # Pagination helper
+    │   ├── time.ts        # Time utilities
+    │   ├── topbox.ts      # Top box helper
+    │   ├── format-top-boxes.ts
     │   └── sde/           # SDE (Static Data Export) helpers
-    │       ├── configs.ts # SDE table field mappings
-    │       ├── fetcher.ts # SDE download and import manager
-    │       ├── parser.ts  # JSONL streaming parser
-    │       └── types.ts   # SDE type definitions
     │
     ├── models/             # Data models (auto-imported)
-    │   ├── killmails.ts          # Killmail storage/retrieval
-    │   ├── killmails-esi.ts      # ESI format killmail queries
-    │   ├── solarSystems.ts       # Solar system data
-    │   ├── regions.ts            # Region data
-    │   ├── constellations.ts     # Constellation data
-    │   ├── types.ts              # Item types
-    │   ├── groups.ts             # Item groups
-    │   └── [...20+ more SDE models]
+    │   ├── killmails.ts           # Killmail storage/retrieval
+    │   ├── killmailsESI.ts        # ESI format killmail queries
+    │   ├── killlist.ts            # Killmail list queries
+    │   ├── characters.ts          # Character entities
+    │   ├── corporations.ts        # Corporation entities
+    │   ├── alliances.ts           # Alliance entities
+    │   ├── prices.ts              # Price data
+    │   ├── solarSystems.ts        # Solar system data
+    │   ├── regions.ts             # Region data
+    │   ├── constellations.ts      # Constellation data
+    │   ├── types.ts               # Item types
+    │   ├── groups.ts              # Item groups
+    │   └── [...30+ more SDE and entity models]
     │
     ├── plugins/            # Nitro plugins (auto-loaded)
-    │   ├── clickhouse.ts         # ClickHouse client initialization
-    │   └── schema-migration.ts   # Database schema migration
+    │   └── schema-migration.ts   # PostgreSQL schema migration
     │
     ├── middleware/         # HTTP middleware
     │   └── request-logger.ts     # Request logging
     │
-    └── routes/             # API routes (file-based routing)
+    └── routes/             # Routes (file-based routing)
+        ├── index.ts               # Homepage
         ├── health.ts              # Health check endpoint
-        ├── index.ts               # Root endpoint
-        ├── schema.ts              # Schema info endpoint
-        └── api/
-            ├── example.ts
-            └── killmail/
-                └── [id]/
-                    └── esi.get.ts # GET /api/killmail/:id/esi
+        └── api/                   # API routes
 ```
 
 ---
@@ -130,21 +164,31 @@ The project uses dynamic module loading for extensibility:
 
 ### 2. **Database Patterns**
 
-**ClickHouse Schema Design**:
-- `ReplacingMergeTree` for versioned deduplication
-- Time-based partitioning (`PARTITION BY toYYYYMM(killmailTime)`)
-- Granular indexes for common query patterns
-- Views for data denormalization (e.g., `killmails_esi`)
+**PostgreSQL with postgres.js**:
+- Uses `postgres.js` driver for high-performance PostgreSQL access
+- Mixed-case column names (camelCase) - **MUST use double quotes in raw SQL**
+- Migrations in `db/` directory (numbered SQL files)
+- Automatic schema migration on startup adds missing columns
+- No materialized views - direct complex queries against base tables
 
 **Database Helper** (`server/helpers/database.ts`):
 ```typescript
-// Singleton instance with convenient methods
-const result = await database.query('SELECT ...')
-const row = await database.queryOne('SELECT ...')
-const count = await database.count('tableName', 'where clause')
+// DatabaseHelper class provides convenient methods
+const sql = database.sql // Access raw postgres.js sql client
+
+// Common methods:
 await database.insert('tableName', data)
-await database.bulkInsert('tableName', dataArray)
+await database.bulkInsert('tableName', [data])
+await database.bulkUpsert('tableName', [data], ['conflictColumn'])
+await database.queryOne('SELECT ...')
+await database.queryMany('SELECT ...')
+// Use sql`` for raw queries with proper escaping
 ```
+
+**Important: Column Name Quoting**:
+- When writing **Raw SQL**, wrap mixed-case columns in double quotes: `SELECT "killmailId" FROM ...`
+- When using `postgres.js` with objects, ensure keys match exactly (camelCase)
+- `DatabaseHelper` methods handle quoting automatically
 
 **Model Pattern**:
 Models export functions for data access, not classes:
@@ -181,23 +225,12 @@ await enqueueJobMany(QueueType.CHARACTER, [{ id: 1 }, { id: 2 }])
 
 ### 4. **SDE (Static Data Export) Management**
 
-**SDE Fetcher** (`server/helpers/sde/fetcher.ts`):
+**SDE System**:
 - Downloads latest EVE Online static data from CCP
-- Supports ETag-based caching
-- Extracts JSONL files
-- Streaming JSONL parser for memory efficiency
-- Generic table import with field mappings
+- SDE tables defined in migration files (`db/20-25-create-sde-*.sql`)
+- Import logic in `server/helpers/sde/`
+- Supports versioning and updates
 - Build number tracking to avoid re-imports
-- Force reimport mode for testing/updates
-
-**SDE Table Pattern**:
-```typescript
-await sdeFetcher.importTable('mapSolarSystems', [
-  { source: '_key', target: 'solarSystemId', type: 'number' },
-  { source: 'name.en', target: 'name', type: 'string' },
-  // ...
-])
-```
 
 ### 5. **API Fetcher Pattern**
 
@@ -264,7 +297,7 @@ Features:
 
 **Storage Flow**:
 ```
-WebSocket → fetchAndStoreKillmail() → storeKillmail() → ClickHouse
+WebSocket → fetchAndStoreKillmail() → storeKillmail() → PostgreSQL
                                     ↓
                             Entity Extraction
                                     ↓
@@ -285,23 +318,23 @@ WebSocket → fetchAndStoreKillmail() → storeKillmail() → ClickHouse
 
 **Cosmetics**: `skins`
 
-All SDE tables use `ReplacingMergeTree(version)` for update handling.
+All tables use PostgreSQL with proper indexing and constraints.
 
 ---
 
 ## Environment Variables
 
 ```bash
-# ClickHouse
-CLICKHOUSE_URL=http://localhost:8123
-CLICKHOUSE_USER=edk_user
-CLICKHOUSE_PASSWORD=edk_password
-CLICKHOUSE_DB=edk
+# PostgreSQL
+DATABASE_URL=postgresql://edk_user:edk_password@localhost:5432/edk
 
 # Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=redis_password
+
+# Testing
+TEST_DB_NAME=edk_test
 
 # Node/Bun
 NODE_ENV=development
@@ -353,13 +386,13 @@ bun run type-check            # TypeScript type checking
 - **Functions**: camelCase (`getSolarSystem`)
 - **Types/Interfaces**: PascalCase (`ESIKillmail`)
 - **Constants**: UPPER_SNAKE_CASE (`SDE_BASE_URL`)
-- **Database fields**: camelCase in TypeScript, snake_case in ClickHouse views
+- **Database fields**: camelCase in TypeScript (use double quotes in raw SQL)
 
 ### Database Queries
-- Use parameterized queries: `{param:Type}` syntax
-- Always specify types in parameters: `UInt32`, `String`, `Float64`
-- Use prepared statements via `database.query(sql, params)`
-- Batch inserts via `database.bulkInsert()`
+- Use `postgres.js` tagged templates for safe queries
+- Always use double quotes for mixed-case column names in raw SQL
+- Use `DatabaseHelper` methods when possible
+- Batch inserts via `database.bulkInsert()` or `database.bulkUpsert()`
 
 ### Error Handling
 - Use structured logging via `logger` helper
@@ -380,12 +413,12 @@ logger.debug('Debug info', { details })
 
 ## Performance Considerations
 
-### ClickHouse Optimization
-- Use `OPTIMIZE TABLE` after bulk imports to merge parts
-- Partition tables by time for query pruning
-- Use appropriate indexes (minmax, set, bloom_filter)
+### PostgreSQL Optimization
+- Use proper indexes on frequently queried columns
+- Batch inserts for bulk operations
+- Use transactions for multiple related operations
 - Avoid `SELECT *` in production queries
-- Use materialized views for complex aggregations
+- Use direct complex queries instead of materialized views
 
 ### Queue Processing
 - Batch enqueue operations with `enqueueJobMany()`
@@ -403,11 +436,17 @@ logger.debug('Debug info', { details })
 - Stream JSONL parsing for large SDE files
 - Batch database inserts (typically 1000 rows)
 - Clear arrays after batch operations
-- Use appropriate ClickHouse column types (UInt32 vs UInt64)
+- Use appropriate data types (integer vs bigint)
 
 ---
 
 ## Testing & Debugging
+
+### Testing
+- **Run all tests**: `bun test`
+- **Test setup**: `tests/setup.ts` automatically drops/creates test DB and runs migrations
+- **Test files**: Place in `tests/` directory
+- **Do not** manually migrate test DB - setup script handles it
 
 ### Debug Commands
 - `bun cli debug:check-data` - Verify data integrity
@@ -416,13 +455,12 @@ logger.debug('Debug info', { details })
 
 ### Health Checks
 - `GET /health` - Server health endpoint
-- `GET /schema` - Schema information
-- Check ClickHouse: `await database.ping()`
+- Check PostgreSQL: `await database.sql`SELECT 1``
 - Check Redis: BullMQ connection status
 
 ### Common Issues
 
-**ClickHouse Connection**:
+**PostgreSQL Connection**:
 - Verify docker-compose services are running
 - Check credentials in environment variables
 - Test with `bun cli db:test`
@@ -435,7 +473,7 @@ logger.debug('Debug info', { details })
 **SDE Import**:
 - Ensure adequate disk space (~500MB per build)
 - Verify network access to developers.eveonline.com
-- Check extraction succeeded (files in `.data/sde/extracted/`)
+- Check extraction succeeded
 
 ---
 
@@ -483,56 +521,57 @@ export default defineEventHandler(async (event) => {
 - Use views to reconstruct complex formats
 - Duplicate frequently-joined data
 
-### Versioning & Updates
-- All SDE tables use `version` field (Unix timestamp)
-- `ReplacingMergeTree(version)` keeps latest version
-- Run `OPTIMIZE TABLE` to apply deduplication
-- Track imports in `config` table
+### Migrations
+- Migrations located in `db/` directory
+- `server/plugins/schema-migration.ts` automatically adds missing columns
+- Relies on checksums stored in `migrations` table
+- Test environment auto-migrates via `tests/setup.ts`
 
 ### Query Optimization
 - Index commonly filtered fields
-- Use granularity 3 for most indexes
-- Partition by time for killmail tables
-- Use UInt32 for IDs (save space vs UInt64)
+- Use proper PostgreSQL indexes
+- Construct dynamic queries with `postgres.js` template literals
+- Use arrays of fragments for dynamic filters
 
 ---
 
 ## Future Development Notes
 
 ### Planned Features
-- Character/corporation/alliance entity tables
-- Historical tracking of entity changes
+- Enhanced entity tracking and statistics
 - Additional SDE tables (blueprints, etc.)
 - Killmail statistics and aggregations
 - WebSocket API for real-time updates
+- Advanced analytics and reporting
 
 ### Extension Points
 - Add new queue types in `queue/` directory
 - Add new CLI commands in `commands/` directory
 - Add new API routes in `server/routes/api/`
-- Add new SDE tables via `importTable()` method
+- Add new SDE tables via migration files
 - Add new fetchers in `server/fetchers/`
+- Add new templates in `templates/` directory
 
 ### Maintenance Tasks
 - Regular SDE updates (monthly)
-- ClickHouse table optimization
 - Redis cache cleanup
 - Database backup strategy
 - Monitor queue job failures
+- PostgreSQL vacuum and maintenance
 
 ---
 
 ## Important Gotchas
 
-1. **ClickHouse DateTime**: Use ISO 8601 format or Unix timestamps, not JavaScript Date objects
+1. **PostgreSQL Column Quoting**: Mixed-case columns MUST be double-quoted in raw SQL
 2. **Bun vs Node**: Some Node packages may not work, use Bun-compatible alternatives
 3. **Fish Shell**: No heredocs, use `printf` or `echo` for multi-line commands
 4. **Nitro Auto-imports**: Don't explicitly import auto-imported helpers/models
 5. **Queue Job IDs**: Must be unique, use `${queueType}:${JSON.stringify(data)}`
-6. **SDE Language Fields**: Extract with `extractLanguageField(field, 'en')`
-7. **ClickHouse NULL**: Use `Nullable(Type)` in schema, handle nulls explicitly
-8. **Array Fields**: ClickHouse arrays are 1-indexed, not 0-indexed
-9. **ReplacingMergeTree**: Deduplication happens on merge, not on insert
+6. **SDE Language Fields**: Extract with appropriate parsing logic
+7. **postgres.js**: Use tagged templates for safe queries
+8. **Test Database**: `tests/setup.ts` handles all test DB setup automatically
+9. **Migrations**: Run automatically on server startup via schema migration plugin
 10. **ESI Rate Limits**: Respect CCP's rate limits (150 req/s burst, throttle down)
 
 ---
@@ -548,8 +587,8 @@ When adding new features:
 6. **Batch operations** - Use bulk inserts and queue batch enqueuing
 7. **Test locally** - Use docker-compose for full stack testing
 8. **Document complex logic** - Add comments for non-obvious code
-9. **Update schema** - Keep `schema.sql` in sync with changes
-10. **Version your data** - Use version field for updatable tables
+9. **Update migrations** - Add new migrations in `db/` for schema changes
+10. **Test your changes** - Write tests and ensure they pass
 
 ---
 
@@ -557,10 +596,12 @@ When adding new features:
 
 - **EVE ESI API**: https://esi.evetech.net/ui/
 - **EVE SDE**: https://developers.eveonline.com/resource/resources
-- **ClickHouse Docs**: https://clickhouse.com/docs/
+- **PostgreSQL Docs**: https://www.postgresql.org/docs/
+- **postgres.js Docs**: https://github.com/porsager/postgres
 - **Nitro Docs**: https://nitro.build/
 - **BullMQ Docs**: https://docs.bullmq.io/
 - **Bun Docs**: https://bun.sh/docs
+- **Handlebars Docs**: https://handlebarsjs.com/
 
 ---
 

@@ -11,8 +11,9 @@ import chalk from 'chalk'
  * Starts all workers or a specific worker based on CLI argument
  *
  * Usage:
- *   bun queue              # Start all queues
- *   bun queue character    # Start only character queue
+ *   bun queue                    # Start all queues
+ *   bun queue character          # Start only character queue
+ *   bun queue character --limit 5  # Process only 5 jobs then exit
  */
 
 const __filename = fileURLToPath(import.meta.url)
@@ -30,6 +31,10 @@ interface QueueModule {
   name: string
   processor: (job: any) => Promise<void>
   createWorker: (connection: any) => Worker
+}
+
+interface QueueOptions {
+  limit?: number
 }
 
 /**
@@ -69,7 +74,7 @@ async function loadQueueModules(): Promise<Map<string, QueueModule>> {
 /**
  * Start queue workers
  */
-async function startQueues(queueNames?: string[]): Promise<Worker[]> {
+async function startQueues(queueNames?: string[], options: QueueOptions = {}): Promise<Worker[]> {
   const queues = await loadQueueModules()
 
   if (queues.size === 0) {
@@ -78,6 +83,7 @@ async function startQueues(queueNames?: string[]): Promise<Worker[]> {
   }
 
   const workers: Worker[] = []
+  const jobCounts = new Map<string, number>()
 
   // If specific queues requested, filter to those
   let queuesToStart = Array.from(queues.keys())
@@ -94,11 +100,15 @@ async function startQueues(queueNames?: string[]): Promise<Worker[]> {
   console.log('')
   console.log(chalk.blue.bold('🚀 Starting Queue Workers'))
   console.log(chalk.dim(`Queues to start: ${queuesToStart.join(', ')}`))
+  if (options.limit) {
+    console.log(chalk.dim(`Job limit: ${options.limit} per queue`))
+  }
   console.log('')
 
   // Create and start workers
   for (const queueName of queuesToStart) {
     const module = queues.get(queueName)!
+    jobCounts.set(queueName, 0)
 
     try {
       const worker = module.createWorker(REDIS_CONFIG)
@@ -106,10 +116,46 @@ async function startQueues(queueNames?: string[]): Promise<Worker[]> {
       // Add event listeners
       worker.on('completed', (job, result) => {
         console.log(`✅ [${queueName}] Job ${job.id} completed`)
+        
+        // Track job count if limit is set
+        if (options.limit) {
+          const count = (jobCounts.get(queueName) || 0) + 1
+          jobCounts.set(queueName, count)
+          
+          if (count >= options.limit) {
+            console.log(chalk.yellow(`⏹️  [${queueName}] Reached limit of ${options.limit} jobs, stopping worker...`))
+            worker.close().then(() => {
+              // Check if all workers are done
+              const allDone = workers.every(w => w.isRunning() === false)
+              if (allDone) {
+                console.log(chalk.green('✅ All workers finished processing limited jobs'))
+                process.exit(0)
+              }
+            })
+          }
+        }
       })
 
       worker.on('failed', (job, error) => {
         console.error(`❌ [${queueName}] Job ${job?.id} failed:`, error?.message)
+        
+        // Still count failed jobs towards the limit
+        if (options.limit) {
+          const count = (jobCounts.get(queueName) || 0) + 1
+          jobCounts.set(queueName, count)
+          
+          if (count >= options.limit) {
+            console.log(chalk.yellow(`⏹️  [${queueName}] Reached limit of ${options.limit} jobs, stopping worker...`))
+            worker.close().then(() => {
+              // Check if all workers are done
+              const allDone = workers.every(w => w.isRunning() === false)
+              if (allDone) {
+                console.log(chalk.green('✅ All workers finished processing limited jobs'))
+                process.exit(0)
+              }
+            })
+          }
+        }
       })
 
       worker.on('error', (error) => {
@@ -125,7 +171,9 @@ async function startQueues(queueNames?: string[]): Promise<Worker[]> {
 
   console.log('')
   console.log(chalk.green(`✅ All ${workers.length} queue worker(s) started`))
-  console.log(chalk.dim('Press Ctrl+C to stop'))
+  if (!options.limit) {
+    console.log(chalk.dim('Press Ctrl+C to stop'))
+  }
   console.log('')
 
   return workers
@@ -154,10 +202,21 @@ async function shutdown(workers: Worker[]) {
  * Main entry point
  */
 async function main() {
-  // Get queue names from CLI arguments (skip node and script path)
-  const queueArgs = process.argv.slice(2)
+  // Parse CLI arguments
+  const args = process.argv.slice(2)
+  const queueNames: string[] = []
+  const options: QueueOptions = {}
+  
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--limit' && i + 1 < args.length) {
+      options.limit = parseInt(args[i + 1])
+      i++ // Skip next arg as it's the limit value
+    } else if (!args[i].startsWith('--')) {
+      queueNames.push(args[i])
+    }
+  }
 
-  const workers = await startQueues(queueArgs)
+  const workers = await startQueues(queueNames.length > 0 ? queueNames : undefined, options)
 
   // Handle graceful shutdown
   process.on('SIGINT', () => shutdown(workers))
@@ -165,7 +224,7 @@ async function main() {
 
   // Keep process alive
   await new Promise(() => {
-    // Process will exit on SIGINT/SIGTERM
+    // Process will exit on SIGINT/SIGTERM or when limit is reached
   })
 }
 

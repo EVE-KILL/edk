@@ -36,8 +36,8 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
   try {
     // Step 1: Fetch killmail from ESI
     const response = await fetchESI<ESIKillmail>(`/killmails/${killmailId}/${hash}/`)
-    if (!response.data) {
-      console.warn(`⚠️  [killmail] Killmail ${killmailId} not found`)
+    if (!response.ok || !response.data || !response.data.victim) {
+      console.warn(`⚠️  [killmail] Killmail ${killmailId} not found or invalid (status: ${response.status})`)
       return
     }
 

@@ -673,9 +673,9 @@ export class SDEFetcher {
 
         if (records.length >= BATCH_SIZE) {
           if (primaryKey) {
-            await database.bulkUpsert(`${tableName.toLowerCase()}`, records, primaryKey)
+            await database.bulkUpsert(tableName.toLowerCase(), records, primaryKey)
           } else {
-            await database.bulkInsert(`${tableName.toLowerCase()}`, records)
+            await database.bulkInsert(tableName.toLowerCase(), records)
           }
           console.log(`   Inserted ${imported} rows...`)
           records.length = 0
@@ -684,9 +684,9 @@ export class SDEFetcher {
 
       if (records.length > 0) {
         if (primaryKey) {
-          await database.bulkUpsert(`${tableName.toLowerCase()}`, records, primaryKey)
+          await database.bulkUpsert(tableName.toLowerCase(), records, primaryKey)
         } else {
-          await database.bulkInsert(`${tableName.toLowerCase()}`, records)
+          await database.bulkInsert(tableName.toLowerCase(), records)
         }
       }
 

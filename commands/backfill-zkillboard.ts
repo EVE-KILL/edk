@@ -35,7 +35,14 @@ export default {
 
     const dateCounts: Record<string, number> = await historyResponse.json();
     const dateEntries = Object.entries(dateCounts)
-        .map(([dateStr, count]) => ({ date: new Date(dateStr), count }))
+        .map(([dateStr, count]) => {
+            // Parse YYYYMMDD format from zkillboard
+            const year = dateStr.slice(0, 4);
+            const month = dateStr.slice(4, 6);
+            const day = dateStr.slice(6, 8);
+            const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
+            return { date, count };
+        })
         .filter(({ date }) => date <= userStartDate)
         .sort((a, b) => b.date.getTime() - a.date.getTime());
 
