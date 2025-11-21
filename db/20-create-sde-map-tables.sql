@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS solarSystems (
     "positionX" REAL,
     "positionY" REAL,
     "positionZ" REAL,
-    "radius" REAL,
+    "radius" DOUBLE PRECISION,
     "regional" BOOLEAN,
     "securityClass" VARCHAR(255),
     "securityStatus" REAL,
