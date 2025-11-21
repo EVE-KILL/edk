@@ -51,15 +51,15 @@ export async function action() {
 
     for (const table of tables) {
       logger.info(`Dropping table: ${table}`)
-      await database.execute(`DROP TABLE IF EXISTS "${table}" CASCADE`)
+      await database.sql.unsafe(`DROP TABLE IF EXISTS "${table}" CASCADE`)
     }
 
     // 2. Verify cleanup
-    const remaining = await database.query<{name: string}>(`
+    const remaining = await database.sql<{name: string}[]>`
       SELECT table_name as name
       FROM information_schema.tables
       WHERE table_schema = 'public'
-    `)
+    `
 
     if (remaining.length === 0) {
       logger.success('✅ Database purged successfully.')

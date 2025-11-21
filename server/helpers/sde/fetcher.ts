@@ -298,13 +298,12 @@ export class SDEFetcher {
    */
   private async isTableAlreadyImported(tableName: string, buildNumber: number): Promise<boolean> {
     try {
-      const result = await database.queryOne<any>(
-        `SELECT "configValue" FROM config
-         WHERE "configKey" = {key:String} AND "buildNumber" = {build:UInt32}
-         ORDER BY "version" DESC LIMIT 1`,
-        { key: `sde_imported_${tableName}`, build: buildNumber }
-      )
-      return result !== null
+      const [result] = await database.sql<any[]>`
+        SELECT "configValue" FROM config
+         WHERE "configKey" = ${`sde_imported_${tableName}`} AND "buildNumber" = ${buildNumber}
+         ORDER BY "version" DESC LIMIT 1
+      `
+      return result !== undefined
     } catch (error) {
       // If query fails, assume not imported
       return false
@@ -353,7 +352,7 @@ export class SDEFetcher {
 
       for (const table of tables) {
         // Use VACUUM ANALYZE for Postgres
-        await database.query(`VACUUM ANALYZE "${table.toLowerCase()}"`)
+        await database.sql.unsafe(`VACUUM ANALYZE "${table.toLowerCase()}"`)
       }
       console.log(`   ✓ Optimized ${tables.length} SDE tables`)
     } catch (error) {

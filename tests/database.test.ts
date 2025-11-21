@@ -7,39 +7,39 @@ describe('DatabaseHelper', () => {
     await database.ping()
   })
 
-  afterAll(async () => {
-    await database.close()
-  })
+  // Do not close the connection as it is shared with other tests
+  // afterAll(async () => {
+  //   await database.close()
+  // })
 
   it('should be connected', async () => {
     const connected = await database.ping()
     expect(connected).toBe(true)
   })
 
-  it('should prepare queries with parameters', async () => {
-    const result = await database.queryValue('SELECT 1 as val WHERE 1 = {num:UInt32}', { num: 1 })
-    expect(Number(result)).toBe(1)
+  it('should execute queries with postgres.js template literals', async () => {
+    const num = 1
+    const [result] = await database.sql`SELECT 1 as val WHERE 1 = ${num}`
+    expect(Number(result.val)).toBe(1)
   })
 
-  it('should handle array parameters', async () => {
-    // postgres.js handles arrays natively, so we don't need manual casting in SQL if the driver does it right.
-    // However, our SQL uses `ANY({ids:Array...})`.
-    // If we pass an array `[1, 2, 3]`, `postgres.js` serializes it to a Postgres array literal `{1,2,3}` or appropriate binding.
-    // `ANY($1)` works if $1 is an array.
-
-    const result = await database.queryValue('SELECT 1 as val WHERE 1 = ANY({ids:Array(UInt32)})', { ids: [1, 2, 3] })
-    expect(Number(result)).toBe(1)
+  it('should handle array parameters natively', async () => {
+    const ids = [1, 2, 3]
+    // postgres.js handles arrays natively
+    const [result] = await database.sql`SELECT 1 as val WHERE 1 = ANY(${ids})`
+    expect(Number(result.val)).toBe(1)
   })
 
   it('should handle Date parameters', async () => {
     const now = new Date()
-    const result = await database.queryValue<string>('SELECT {date:Date}::text', { date: now.toISOString() })
-    // Check if date matches (ignoring potential TZ differences in string format if just checking day)
-    expect(new Date(result!).getDate()).toBe(now.getDate())
+    // postgres.js handles Date objects
+    const [result] = await database.sql`SELECT ${now}::text as date_str`
+    expect(new Date(result.date_str).getDate()).toBe(now.getDate())
   })
 
-  it('should return null for empty result', async () => {
-    const result = await database.queryOne('SELECT * FROM information_schema.tables WHERE table_name = {name:String}', { name: 'non_existent_table_xyz' })
-    expect(result).toBeNull()
+  it('should return empty array for empty result', async () => {
+    const name = 'non_existent_table_xyz'
+    const result = await database.sql`SELECT * FROM information_schema.tables WHERE table_name = ${name}`
+    expect(result.length).toBe(0)
   })
 })

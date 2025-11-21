@@ -28,10 +28,10 @@ export interface Corporation {
  * Get corporation by ID
  */
 export async function getCorporation(corporationId: number): Promise<Corporation | null> {
-  return await database.queryOne<Corporation>(
-    'SELECT * FROM corporations WHERE corporationId = {id:UInt32}',
-    { id: corporationId }
-  )
+  const [row] = await database.sql<Corporation[]>`
+    SELECT * FROM corporations WHERE corporationId = ${corporationId}
+  `
+  return row || null
 }
 
 /**
@@ -40,89 +40,88 @@ export async function getCorporation(corporationId: number): Promise<Corporation
 export async function getCorporations(corporationIds: number[]): Promise<Corporation[]> {
   if (corporationIds.length === 0) return []
 
-  return await database.query<Corporation>(
-    'SELECT * FROM corporations WHERE corporationId = ANY({ids:Array(UInt32)})',
-    { ids: corporationIds }
-  )
+  return await database.sql<Corporation[]>`
+    SELECT * FROM corporations WHERE corporationId = ANY(${corporationIds})
+  `
 }
 
 /**
  * Search corporations by name
  */
 export async function searchCorporations(searchTerm: string, limit: number = 20): Promise<Corporation[]> {
-  return await database.query<Corporation>(
-    `SELECT * FROM corporations
-     WHERE name ILIKE {search:String}
-     ORDER BY name
-     LIMIT {limit:UInt32}`,
-    { search: `%${searchTerm}%`, limit }
-  )
+  return await database.sql<Corporation[]>`
+    SELECT * FROM corporations
+    WHERE name ILIKE ${`%${searchTerm}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }
 
 /**
  * Get corporation name by ID
  */
 export async function getCorporationName(corporationId: number): Promise<string | null> {
-  const name = await database.queryValue<string>(
-    'SELECT name FROM corporations WHERE corporationId = {id:UInt32}',
-    { id: corporationId }
-  )
-  return name || null
+  const [result] = await database.sql<{name: string}[]>`
+    SELECT name FROM corporations WHERE corporationId = ${corporationId}
+  `
+  return result?.name || null
 }
 
 /**
  * Get corporation ticker by ID
  */
 export async function getCorporationTicker(corporationId: number): Promise<string | null> {
-  const ticker = await database.queryValue<string>(
-    'SELECT ticker FROM corporations WHERE corporationId = {id:UInt32}',
-    { id: corporationId }
-  )
-  return ticker || null
+  const [result] = await database.sql<{ticker: string}[]>`
+    SELECT ticker FROM corporations WHERE corporationId = ${corporationId}
+  `
+  return result?.ticker || null
 }
 
 /**
  * Get corporations by alliance
  */
 export async function getCorporationsByAlliance(allianceId: number): Promise<Corporation[]> {
-  return await database.query<Corporation>(
-    'SELECT * FROM corporations WHERE allianceId = {allianceId:UInt32}',
-    { allianceId }
-  )
+  return await database.sql<Corporation[]>`
+    SELECT * FROM corporations WHERE allianceId = ${allianceId}
+  `
 }
 
 /**
  * Get corporations by CEO
  */
 export async function getCorporationsByCEO(characterId: number): Promise<Corporation[]> {
-  return await database.query<Corporation>(
-    'SELECT * FROM corporations WHERE ceoId = {charId:UInt32}',
-    { charId: characterId }
-  )
+  return await database.sql<Corporation[]>`
+    SELECT * FROM corporations WHERE ceoId = ${characterId}
+  `
 }
 
 /**
  * Get corporations by creator
  */
 export async function getCorporationsByCreator(characterId: number): Promise<Corporation[]> {
-  return await database.query<Corporation>(
-    'SELECT * FROM corporations WHERE creatorId = {charId:UInt32}',
-    { charId: characterId }
-  )
+  return await database.sql<Corporation[]>`
+    SELECT * FROM corporations WHERE creatorId = ${characterId}
+  `
 }
 
 /**
  * Count total corporations
  */
 export async function countCorporations(): Promise<number> {
-  return await database.count('corporations', '')
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM corporations
+  `
+  return Number(result?.count || 0)
 }
 
 /**
  * Count corporations in an alliance
  */
 export async function countCorporationsInAlliance(allianceId: number): Promise<number> {
-  return await database.count('corporations', 'allianceId = {allianceId:UInt32}', { allianceId })
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM corporations WHERE allianceId = ${allianceId}
+  `
+  return Number(result?.count || 0)
 }
 
 /**
@@ -217,8 +216,10 @@ export async function storeCorporationsBulk(
  * Check if corporation exists
  */
 export async function corporationExists(corporationId: number): Promise<boolean> {
-  const count = await database.count('corporations', 'corporationId = {id:UInt32}', { id: corporationId })
-  return count > 0
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM corporations WHERE corporationId = ${corporationId}
+  `
+  return Number(result?.count) > 0
 }
 
 /**
@@ -231,24 +232,23 @@ export async function getCorporationWithAlliance(corporationId: number): Promise
   allianceName: string | null
   allianceTicker: string | null
 } | null> {
-  return await database.queryOne<{
+  const [row] = await database.sql<{
     name: string
     ticker: string
     allianceId: number | null
     allianceName: string | null
     allianceTicker: string | null
-  }>(
-    `SELECT
+  }[]>`
+    SELECT
       c.name as name,
       c.ticker as ticker,
-      c.allianceId as allianceId,
-      alliance.name as allianceName,
-      alliance.ticker as allianceTicker
+      c.allianceId as "allianceId",
+      alliance.name as "allianceName",
+      alliance.ticker as "allianceTicker"
     FROM corporations c
-
     LEFT JOIN alliances alliance ON c.allianceId = alliance.allianceId
-    WHERE c.corporationId = {corporationId:UInt32}
-    LIMIT 1`,
-    { corporationId }
-  )
+    WHERE c.corporationId = ${corporationId}
+    LIMIT 1
+  `
+  return row || null
 }

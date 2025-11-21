@@ -38,8 +38,8 @@ export interface MostValuableKill {
   regionName?: string | null
 }
 
-const SELECT_CLAUSE = `
-  {periodType:String} as "periodType",
+const getSelectClause = (periodType: string) => database.sql`
+  ${periodType} as "periodType",
   k."killmailId",
   k."killmailTime",
   k."solarSystemId",
@@ -70,7 +70,7 @@ const SELECT_CLAUSE = `
   reg.name as "regionName"
 `
 
-const JOIN_CLAUSE = `
+const JOIN_CLAUSE = database.sql`
   FROM killmails k
   LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
   LEFT JOIN regions reg ON ss."regionId" = reg."regionId"
@@ -84,6 +84,17 @@ const JOIN_CLAUSE = `
   LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
 `
 
+function getHoursAgo(periodType: string): number {
+  switch (periodType) {
+    case 'hour': return 1
+    case 'day': return 24
+    case 'week': return 168
+    case 'month': return 720
+    case 'all': return 876000
+    default: return 168
+  }
+}
+
 /**
  * Get most valuable kills for a period
  */
@@ -91,36 +102,17 @@ export async function getMostValuableKillsByPeriod(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
-  // Calculate time threshold based on period type
-  let hoursAgo: number
-  switch (periodType) {
-    case 'hour':
-      hoursAgo = 1
-      break
-    case 'day':
-      hoursAgo = 24
-      break
-    case 'week':
-      hoursAgo = 168
-      break
-    case 'month':
-      hoursAgo = 720
-      break
-    case 'all':
-      hoursAgo = 876000 // ~100 years
-      break
-  }
+  const hoursAgo = getHoursAgo(periodType)
 
-  return await database.query<MostValuableKill>(
-    `SELECT
-      ${SELECT_CLAUSE}
+  return await database.sql<MostValuableKill[]>`
+    SELECT
+      ${getSelectClause(periodType)}
     ${JOIN_CLAUSE}
-    WHERE k."killmailTime" >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
+    WHERE k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
       AND k."attackerCount" > 0
     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
-    LIMIT {limit:UInt32}`,
-    { periodType, hoursAgo, limit }
-  )
+    LIMIT ${limit}
+  `
 }
 
 /**
@@ -131,35 +123,16 @@ export async function getMostValuableKillsByCharacter(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
-  // Calculate time threshold based on period type
-  let hoursAgo: number
-  switch (periodType) {
-    case 'hour':
-      hoursAgo = 1
-      break
-    case 'day':
-      hoursAgo = 24
-      break
-    case 'week':
-      hoursAgo = 168
-      break
-    case 'month':
-      hoursAgo = 720
-      break
-    case 'all':
-      hoursAgo = 876000 // ~100 years
-      break
-  }
+  const hoursAgo = getHoursAgo(periodType)
 
-  return await database.query<MostValuableKill>(
-    `SELECT ${SELECT_CLAUSE}
+  return await database.sql<MostValuableKill[]>`
+    SELECT ${getSelectClause(periodType)}
      ${JOIN_CLAUSE}
-     WHERE k."victimCharacterId" = {characterId:UInt32}
-       AND k."killmailTime" >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
+     WHERE k."victimCharacterId" = ${characterId}
+       AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
-     LIMIT {limit:UInt32}`,
-    { periodType, characterId, hoursAgo, limit }
-  )
+     LIMIT ${limit}
+  `
 }
 
 /**
@@ -170,35 +143,16 @@ export async function getMostValuableKillsByCorporation(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
-  // Calculate time threshold based on period type
-  let hoursAgo: number
-  switch (periodType) {
-    case 'hour':
-      hoursAgo = 1
-      break
-    case 'day':
-      hoursAgo = 24
-      break
-    case 'week':
-      hoursAgo = 168
-      break
-    case 'month':
-      hoursAgo = 720
-      break
-    case 'all':
-      hoursAgo = 876000 // ~100 years
-      break
-  }
+  const hoursAgo = getHoursAgo(periodType)
 
-  return await database.query<MostValuableKill>(
-    `SELECT ${SELECT_CLAUSE}
+  return await database.sql<MostValuableKill[]>`
+    SELECT ${getSelectClause(periodType)}
      ${JOIN_CLAUSE}
-     WHERE k."victimCorporationId" = {corporationId:UInt32}
-       AND k."killmailTime" >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
+     WHERE k."victimCorporationId" = ${corporationId}
+       AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
-     LIMIT {limit:UInt32}`,
-    { periodType, corporationId, hoursAgo, limit }
-  )
+     LIMIT ${limit}
+  `
 }
 
 /**
@@ -209,35 +163,16 @@ export async function getMostValuableKillsByAlliance(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
-  // Calculate time threshold based on period type
-  let hoursAgo: number
-  switch (periodType) {
-    case 'hour':
-      hoursAgo = 1
-      break
-    case 'day':
-      hoursAgo = 24
-      break
-    case 'week':
-      hoursAgo = 168
-      break
-    case 'month':
-      hoursAgo = 720
-      break
-    case 'all':
-      hoursAgo = 876000 // ~100 years
-      break
-  }
+  const hoursAgo = getHoursAgo(periodType)
 
-  return await database.query<MostValuableKill>(
-    `SELECT ${SELECT_CLAUSE}
+  return await database.sql<MostValuableKill[]>`
+    SELECT ${getSelectClause(periodType)}
      ${JOIN_CLAUSE}
-     WHERE k."victimAllianceId" = {allianceId:UInt32}
-       AND k."killmailTime" >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
+     WHERE k."victimAllianceId" = ${allianceId}
+       AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
-     LIMIT {limit:UInt32}`,
-    { periodType, allianceId, hoursAgo, limit }
-  )
+     LIMIT ${limit}
+  `
 }
 
 /**
@@ -247,33 +182,14 @@ export async function getMostValuableSoloKills(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
-  // Calculate time threshold based on period type
-  let hoursAgo: number
-  switch (periodType) {
-    case 'hour':
-      hoursAgo = 1
-      break
-    case 'day':
-      hoursAgo = 24
-      break
-    case 'week':
-      hoursAgo = 168
-      break
-    case 'month':
-      hoursAgo = 720
-      break
-    case 'all':
-      hoursAgo = 876000 // ~100 years
-      break
-  }
+  const hoursAgo = getHoursAgo(periodType)
 
-  return await database.query<MostValuableKill>(
-    `SELECT ${SELECT_CLAUSE}
+  return await database.sql<MostValuableKill[]>`
+    SELECT ${getSelectClause(periodType)}
      ${JOIN_CLAUSE}
      WHERE k.solo = true
-       AND k."killmailTime" >= NOW() - ({hoursAgo:UInt32} || ' hours')::interval
+       AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
-     LIMIT {limit:UInt32}`,
-    { periodType, hoursAgo, limit }
-  )
+     LIMIT ${limit}
+  `
 }

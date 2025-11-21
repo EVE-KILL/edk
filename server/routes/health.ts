@@ -1,3 +1,7 @@
+import { defineEventHandler } from 'h3'
+import { database } from '../helpers/database'
+import { cache } from '../helpers/cache'
+
 export default defineEventHandler(async (event) => {
   try {
     // Test Postgres connection
@@ -12,7 +16,8 @@ export default defineEventHandler(async (event) => {
     let dbInfo: any = null
     if (dbConnected) {
       try {
-        dbInfo = await database.queryOne('SELECT version() as version')
+        const [result] = await database.sql<{version: string}[]>`SELECT version() as version`
+        dbInfo = result
       } catch (error) {
         console.error('Failed to get Postgres version:', error)
       }

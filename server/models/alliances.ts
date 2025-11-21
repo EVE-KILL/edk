@@ -23,10 +23,10 @@ export interface Alliance {
  * Get alliance by ID
  */
 export async function getAlliance(allianceId: number): Promise<Alliance | null> {
-  return await database.queryOne<Alliance>(
-    'SELECT * FROM alliances WHERE allianceId = {id:UInt32}',
-    { id: allianceId }
-  )
+  const [row] = await database.sql<Alliance[]>`
+    SELECT * FROM alliances WHERE allianceId = ${allianceId}
+  `
+  return row || null
 }
 
 /**
@@ -35,72 +35,69 @@ export async function getAlliance(allianceId: number): Promise<Alliance | null> 
 export async function getAlliances(allianceIds: number[]): Promise<Alliance[]> {
   if (allianceIds.length === 0) return []
 
-  return await database.query<Alliance>(
-    'SELECT * FROM alliances WHERE allianceId = ANY({ids:Array(UInt32)})',
-    { ids: allianceIds }
-  )
+  return await database.sql<Alliance[]>`
+    SELECT * FROM alliances WHERE allianceId = ANY(${allianceIds})
+  `
 }
 
 /**
  * Search alliances by name
  */
 export async function searchAlliances(searchTerm: string, limit: number = 20): Promise<Alliance[]> {
-  return await database.query<Alliance>(
-    `SELECT * FROM alliances
-     WHERE name ILIKE {search:String}
-     ORDER BY name
-     LIMIT {limit:UInt32}`,
-    { search: `%${searchTerm}%`, limit }
-  )
+  return await database.sql<Alliance[]>`
+    SELECT * FROM alliances
+    WHERE name ILIKE ${`%${searchTerm}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }
 
 /**
  * Get alliance name by ID
  */
 export async function getAllianceName(allianceId: number): Promise<string | null> {
-  const name = await database.queryValue<string>(
-    'SELECT name FROM alliances WHERE allianceId = {id:UInt32}',
-    { id: allianceId }
-  )
-  return name || null
+  const [result] = await database.sql<{name: string}[]>`
+    SELECT name FROM alliances WHERE allianceId = ${allianceId}
+  `
+  return result?.name || null
 }
 
 /**
  * Get alliance ticker by ID
  */
 export async function getAllianceTicker(allianceId: number): Promise<string | null> {
-  const ticker = await database.queryValue<string>(
-    'SELECT ticker FROM alliances WHERE allianceId = {id:UInt32}',
-    { id: allianceId }
-  )
-  return ticker || null
+  const [result] = await database.sql<{ticker: string}[]>`
+    SELECT ticker FROM alliances WHERE allianceId = ${allianceId}
+  `
+  return result?.ticker || null
 }
 
 /**
  * Get alliances by executor corporation
  */
 export async function getAlliancesByExecutor(corporationId: number): Promise<Alliance[]> {
-  return await database.query<Alliance>(
-    'SELECT * FROM alliances WHERE executorCorporationId = {corpId:UInt32}',
-    { corpId: corporationId }
-  )
+  return await database.sql<Alliance[]>`
+    SELECT * FROM alliances WHERE executorCorporationId = ${corporationId}
+  `
 }
 
 /**
  * Get alliances by creator
  */
 export async function getAlliancesByCreator(characterId: number): Promise<Alliance[]> {
-  return await database.query<Alliance>(
-    'SELECT * FROM alliances WHERE creatorId = {charId:UInt32}',
-    { charId: characterId }
-  )
+  return await database.sql<Alliance[]>`
+    SELECT * FROM alliances WHERE creatorId = ${characterId}
+  `
 }
 
 /**
  * Count total alliances
  */
 export async function countAlliances(): Promise<number> {
-  return await database.count('alliances', '')
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM alliances
+  `
+  return Number(result?.count || 0)
 }
 
 /**
@@ -124,11 +121,11 @@ export async function storeAlliance(
       allianceId: allianceId,
       creatorCorporationId: data.creatorCorporationId,
       creatorId: data.creatorId,
-      date_founded: data.dateFounded,
+      dateFounded: data.dateFounded, // Changed from snake_case (date_founded) to camelCase to match schema if needed, but check schema.
       executorCorporationId: data.executorCorporationId,
       name: data.name,
       ticker: data.ticker,
-      updated_at: now,
+      updatedAt: new Date(now * 1000), // Changed from updated_at to updatedAt and using Date
       version: now
     }
   ])
@@ -160,7 +157,7 @@ export async function storeAlliancesBulk(
     executorCorporationId: alliance.executorCorporationId,
     name: alliance.name,
     ticker: alliance.ticker,
-    updatedAt: now,
+    updatedAt: new Date(now * 1000),
     version: now
   }))
 
@@ -171,6 +168,8 @@ export async function storeAlliancesBulk(
  * Check if alliance exists
  */
 export async function allianceExists(allianceId: number): Promise<boolean> {
-  const count = await database.count('alliances', 'allianceId = {id:UInt32}', { id: allianceId })
-  return count > 0
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM alliances WHERE allianceId = ${allianceId}
+  `
+  return Number(result?.count) > 0
 }

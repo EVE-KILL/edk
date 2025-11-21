@@ -12,8 +12,8 @@ describe("Schema Migration", () => {
     beforeAll(async () => {
         // Cleanup potential leftovers
         try {
-            await database.execute('DROP TABLE IF EXISTS test_migration_table');
-            await database.execute("DELETE FROM migrations WHERE filename = {filename:String}", { filename: TEST_MIGRATION_FILE });
+            await database.sql`DROP TABLE IF EXISTS test_migration_table`;
+            await database.sql`DELETE FROM migrations WHERE filename = ${TEST_MIGRATION_FILE}`;
             if (existsSync(TEST_MIGRATION_PATH)) {
                 unlinkSync(TEST_MIGRATION_PATH);
             }
@@ -25,8 +25,8 @@ describe("Schema Migration", () => {
     afterAll(async () => {
         // Cleanup
         try {
-            await database.execute('DROP TABLE IF EXISTS test_migration_table');
-            await database.execute("DELETE FROM migrations WHERE filename = {filename:String}", { filename: TEST_MIGRATION_FILE });
+            await database.sql`DROP TABLE IF EXISTS test_migration_table`;
+            await database.sql`DELETE FROM migrations WHERE filename = ${TEST_MIGRATION_FILE}`;
             if (existsSync(TEST_MIGRATION_PATH)) {
                 unlinkSync(TEST_MIGRATION_PATH);
             }
@@ -48,15 +48,16 @@ describe("Schema Migration", () => {
         await migrateSchema();
 
         // Verify table exists
-        const exists = await database.tableExists('test_migration_table');
-        expect(exists).toBe(true);
+        // database.tableExists uses legacy queryValue, which we verify works, or we can check manually
+        const result = await database.sql`SELECT 1 FROM information_schema.tables WHERE table_name = 'test_migration_table'`;
+        expect(result.length).toBe(1);
 
         // Verify checksum stored
-        const checksum = await database.queryValue(
-            "SELECT checksum FROM migrations WHERE filename = {filename:String} ORDER BY id DESC LIMIT 1",
-            { filename: TEST_MIGRATION_FILE }
-        );
-        expect(checksum).toBeDefined();
+        const checksumResult = await database.sql`
+            SELECT checksum FROM migrations WHERE filename = ${TEST_MIGRATION_FILE} ORDER BY id DESC LIMIT 1
+        `;
+        expect(checksumResult.length).toBe(1);
+        expect(checksumResult[0].checksum).toBeDefined();
     });
 
     test("should detect schema changes and add new column", async () => {
@@ -73,13 +74,18 @@ describe("Schema Migration", () => {
         await migrateSchema();
 
         // Verify new column exists
-        const columns = await database.getTableSchema('test_migration_table');
-        const hasNewColumn = columns.some(c => c.name === 'new_column');
+        const columns = await database.sql`
+            SELECT column_name, data_type, column_default
+            FROM information_schema.columns
+            WHERE table_name = 'test_migration_table'
+        `;
+
+        const hasNewColumn = columns.some(c => c.column_name === 'new_column');
         expect(hasNewColumn).toBe(true);
 
         // Verify it has the correct type (approximate check)
-        const col = columns.find(c => c.name === 'new_column');
-        expect(col?.type).toMatch(/integer/i);
+        const col = columns.find(c => c.column_name === 'new_column');
+        expect(col?.data_type).toMatch(/integer/i);
     });
 
     test("should handle complex defaults properly (parser test)", async () => {
@@ -97,12 +103,16 @@ describe("Schema Migration", () => {
         await migrateSchema();
 
         // Verify new column exists
-        const columns = await database.getTableSchema('test_migration_table');
-        const hasStatusColumn = columns.some(c => c.name === 'status');
+        const columns = await database.sql`
+            SELECT column_name, data_type, column_default
+            FROM information_schema.columns
+            WHERE table_name = 'test_migration_table'
+        `;
+
+        const hasStatusColumn = columns.some(c => c.column_name === 'status');
         expect(hasStatusColumn).toBe(true);
 
-        // Ideally we would check the default value but getTableSchema returns default_expression which might vary
-        const col = columns.find(c => c.name === 'status');
-        expect(col?.default_expression).toContain('pending,active');
+        const col = columns.find(c => c.column_name === 'status');
+        expect(col?.column_default).toContain('pending,active');
     });
 });
