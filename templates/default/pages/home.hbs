@@ -24,100 +24,251 @@
 </div>
 
 <script type="module">
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+  const MAX_KILLMAILS = 30; // Keep list at 30 items + 1 header
+  let reconnectAttempts = 0;
+  let ws = null;
 
-  ws.onopen = () => {
-    console.log('WebSocket connected');
-    ws.send(JSON.stringify({ type: 'subscribe', topics: ['all'] }));
-  };
-
-  ws.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    if (message.type === 'killmail') {
-      const killmail = message.data;
-      const killmailList = document.querySelector('.kb-kl-list');
-      const killmailRow = document.createElement('div');
-      killmailRow.classList.add('kb-kl-row');
-      if (killmail.isLoss) {
-        killmailRow.classList.add('kb-kl-row--loss');
-      }
-      killmailRow.dataset.killmailId = killmail.killmailId;
-      killmailRow.onclick = () => {
-        window.location.href = `/killmail/${killmail.killmailId}`;
-      };
-      killmailRow.style.cursor = 'pointer';
-
-      killmailRow.innerHTML = `
-        <div class="kb-kl-col kb-kl-col--ship">
-          <div class="kb-kl-ship">
-            <img src="https://images.evetech.net/types/${killmail.victim.ship.typeId}/render?size=64" class="kb-kl-ship-icon" alt="${killmail.victim.ship.name}">
-            <div class="kb-kl-info kb-kl-info--ship">
-              <div class="kb-kl-info__primary">${killmail.victim.ship.name}</div>
-              <div class="kb-kl-info__secondary">${killmail.victim.ship.group}</div>
-            </div>
-          </div>
-        </div>
-        <div class="kb-kl-col kb-kl-col--victim">
-          <div class="kb-kl-info kb-kl-info--victim">
-            <div class="kb-kl-info__primary">
-              <a href="/character/${killmail.victim.character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${killmail.victim.character.name}</a>
-            </div>
-            <div class="kb-kl-info__secondary">
-              <a href="/corporation/${killmail.victim.corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.victim.corporation.name}</a>
-            </div>
-            ${killmail.victim.alliance ? `
-            <div class="kb-kl-info__secondary">
-              <a href="/alliance/${killmail.victim.alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.victim.alliance.name}</a>
-            </div>
-            ` : ''}
-          </div>
-        </div>
-        <div class="kb-kl-col kb-kl-col--finalblow">
-          <div class="kb-kl-info kb-kl-info--finalblow">
-            <div class="kb-kl-info__primary">
-              <a href="/character/${killmail.attackers[0].character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${killmail.attackers[0].character.name}</a>
-            </div>
-            <div class="kb-kl-info__secondary">
-              <a href="/corporation/${killmail.attackers[0].corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.attackers[0].corporation.name}</a>
-            </div>
-            ${killmail.attackers[0].alliance ? `
-            <div class="kb-kl-info__secondary">
-              <a href="/alliance/${killmail.attackers[0].alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.attackers[0].alliance.name}</a>
-            </div>
-            ` : ''}
-          </div>
-        </div>
-        <div class="kb-kl-col kb-kl-col--location">
-          <div class="kb-kl-info">
-            <div class="kb-kl-info__primary">${killmail.solarSystem.name}</div>
-            <div class="kb-kl-info__secondary">${killmail.solarSystem.region}</div>
-          </div>
-        </div>
-        <div class="kb-kl-col kb-kl-col--value">
-          <div class="kb-kl-info kb-kl-info--value">
-            <div class="kb-kl-value">${new Intl.NumberFormat('en-US', { notation: 'compact' }).format(killmail.totalValue)}</div>
-            <div class="kb-kl-info__secondary kb-kl-attackers-count">(${killmail.attackerCount})</div>
-          </div>
-        </div>
-        <div class="kb-kl-col kb-kl-col--time">
-          <span class="kb-kl-time">Just now</span>
-        </div>
-      `;
-
-      killmailList.insertBefore(killmailRow, killmailList.children[1]);
-
-      if (killmailList.children.length > 31) {
-        killmailList.removeChild(killmailList.lastElementChild);
-      }
+  function createElement(tag, options = {}) {
+    const el = document.createElement(tag);
+    if (options.className) el.className = options.className;
+    if (options.textContent) el.textContent = options.textContent;
+    if (options.href) el.href = options.href;
+    if (options.src) el.src = options.src;
+    if (options.alt) el.alt = options.alt;
+    if (options.onclick) el.onclick = options.onclick;
+    if (options.dataset) {
+      Object.entries(options.dataset).forEach(([key, value]) => {
+        el.dataset[key] = value;
+      });
     }
-  };
+    if (options.style) {
+      Object.entries(options.style).forEach(([key, value]) => {
+        el.style[key] = value;
+      });
+    }
+    return el;
+  }
 
-  ws.onclose = () => {
-    console.log('WebSocket disconnected');
-  };
+  function createKillmailRow(killmail) {
+    // Validate killmail structure
+    if (!killmail || !killmail.killmailId || !killmail.victim || !killmail.attackers || killmail.attackers.length === 0) {
+      console.warn('Invalid killmail structure:', killmail);
+      return null;
+    }
 
-  ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
-  };
+    const killmailRow = createElement('div', {
+      className: `kb-kl-row${killmail.isLoss ? ' kb-kl-row--loss' : ''}`,
+      dataset: { killmailId: killmail.killmailId },
+      style: { cursor: 'pointer' },
+      onclick: () => { window.location.href = `/killmail/${killmail.killmailId}`; }
+    });
+
+    // Ship column
+    const shipCol = createElement('div', { className: 'kb-kl-col kb-kl-col--ship' });
+    const shipDiv = createElement('div', { className: 'kb-kl-ship' });
+    const shipImg = createElement('img', {
+      src: `https://images.evetech.net/types/${killmail.victim?.ship?.typeId || 0}/render?size=64`,
+      className: 'kb-kl-ship-icon',
+      alt: killmail.victim?.ship?.name || 'Unknown'
+    });
+    const shipInfo = createElement('div', { className: 'kb-kl-info kb-kl-info--ship' });
+    const shipName = createElement('div', { className: 'kb-kl-info__primary', textContent: killmail.victim?.ship?.name || 'Unknown' });
+    const shipGroup = createElement('div', { className: 'kb-kl-info__secondary', textContent: killmail.victim?.ship?.group || 'Unknown' });
+    shipInfo.appendChild(shipName);
+    shipInfo.appendChild(shipGroup);
+    shipDiv.appendChild(shipImg);
+    shipDiv.appendChild(shipInfo);
+    shipCol.appendChild(shipDiv);
+
+    // Victim column
+    const victimCol = createElement('div', { className: 'kb-kl-col kb-kl-col--victim' });
+    const victimInfo = createElement('div', { className: 'kb-kl-info kb-kl-info--victim' });
+    const victimPrimary = createElement('div', { className: 'kb-kl-info__primary' });
+    const victimCharLink = createElement('a', {
+      href: `/character/${killmail.victim?.character?.id || 0}`,
+      className: 'kb-kl-info__link',
+      textContent: killmail.victim?.character?.name || 'Unknown',
+      onclick: (e) => e.stopPropagation()
+    });
+    victimPrimary.appendChild(victimCharLink);
+    victimInfo.appendChild(victimPrimary);
+    
+    const victimCorpSecondary = createElement('div', { className: 'kb-kl-info__secondary' });
+    const victimCorpLink = createElement('a', {
+      href: `/corporation/${killmail.victim?.corporation?.id || 0}`,
+      className: 'kb-kl-info__link--secondary',
+      textContent: killmail.victim?.corporation?.name || 'Unknown',
+      onclick: (e) => e.stopPropagation()
+    });
+    victimCorpSecondary.appendChild(victimCorpLink);
+    victimInfo.appendChild(victimCorpSecondary);
+    
+    if (killmail.victim?.alliance) {
+      const victimAllianceSecondary = createElement('div', { className: 'kb-kl-info__secondary' });
+      const victimAllianceLink = createElement('a', {
+        href: `/alliance/${killmail.victim.alliance.id}`,
+        className: 'kb-kl-info__link--secondary',
+        textContent: killmail.victim.alliance.name,
+        onclick: (e) => e.stopPropagation()
+      });
+      victimAllianceSecondary.appendChild(victimAllianceLink);
+      victimInfo.appendChild(victimAllianceSecondary);
+    }
+    victimCol.appendChild(victimInfo);
+
+    // Finalblow column
+    const finalBlowCol = createElement('div', { className: 'kb-kl-col kb-kl-col--finalblow' });
+    const finalBlowInfo = createElement('div', { className: 'kb-kl-info kb-kl-info--finalblow' });
+    const finalBlowPrimary = createElement('div', { className: 'kb-kl-info__primary' });
+    const finalBlowCharLink = createElement('a', {
+      href: `/character/${killmail.attackers[0]?.character?.id || 0}`,
+      className: 'kb-kl-info__link',
+      textContent: killmail.attackers[0]?.character?.name || 'Unknown',
+      onclick: (e) => e.stopPropagation()
+    });
+    finalBlowPrimary.appendChild(finalBlowCharLink);
+    finalBlowInfo.appendChild(finalBlowPrimary);
+    
+    const finalBlowCorpSecondary = createElement('div', { className: 'kb-kl-info__secondary' });
+    const finalBlowCorpLink = createElement('a', {
+      href: `/corporation/${killmail.attackers[0]?.corporation?.id || 0}`,
+      className: 'kb-kl-info__link--secondary',
+      textContent: killmail.attackers[0]?.corporation?.name || 'Unknown',
+      onclick: (e) => e.stopPropagation()
+    });
+    finalBlowCorpSecondary.appendChild(finalBlowCorpLink);
+    finalBlowInfo.appendChild(finalBlowCorpSecondary);
+    
+    if (killmail.attackers[0]?.alliance) {
+      const finalBlowAllianceSecondary = createElement('div', { className: 'kb-kl-info__secondary' });
+      const finalBlowAllianceLink = createElement('a', {
+        href: `/alliance/${killmail.attackers[0].alliance.id}`,
+        className: 'kb-kl-info__link--secondary',
+        textContent: killmail.attackers[0].alliance.name,
+        onclick: (e) => e.stopPropagation()
+      });
+      finalBlowAllianceSecondary.appendChild(finalBlowAllianceLink);
+      finalBlowInfo.appendChild(finalBlowAllianceSecondary);
+    }
+    finalBlowCol.appendChild(finalBlowInfo);
+
+    // Location column
+    const locationCol = createElement('div', { className: 'kb-kl-col kb-kl-col--location' });
+    const locationInfo = createElement('div', { className: 'kb-kl-info' });
+    const locationPrimary = createElement('div', { className: 'kb-kl-info__primary', textContent: killmail.solarSystem?.name || 'Unknown' });
+    const locationSecondary = createElement('div', { className: 'kb-kl-info__secondary', textContent: killmail.solarSystem?.region || 'Unknown' });
+    locationInfo.appendChild(locationPrimary);
+    locationInfo.appendChild(locationSecondary);
+    locationCol.appendChild(locationInfo);
+
+    // Value column
+    const valueCol = createElement('div', { className: 'kb-kl-col kb-kl-col--value' });
+    const valueInfo = createElement('div', { className: 'kb-kl-info kb-kl-info--value' });
+    const valueDiv = createElement('div', { 
+      className: 'kb-kl-value', 
+      textContent: new Intl.NumberFormat('en-US', { notation: 'compact' }).format(killmail.totalValue || 0)
+    });
+    const attackersCount = createElement('div', { 
+      className: 'kb-kl-info__secondary kb-kl-attackers-count', 
+      textContent: `(${killmail.attackerCount || 0})`
+    });
+    valueInfo.appendChild(valueDiv);
+    valueInfo.appendChild(attackersCount);
+    valueCol.appendChild(valueInfo);
+
+    // Time column
+    const timeCol = createElement('div', { className: 'kb-kl-col kb-kl-col--time' });
+    const timeSpan = createElement('span', { className: 'kb-kl-time', textContent: 'Just now' });
+    timeCol.appendChild(timeSpan);
+
+    killmailRow.appendChild(shipCol);
+    killmailRow.appendChild(victimCol);
+    killmailRow.appendChild(finalBlowCol);
+    killmailRow.appendChild(locationCol);
+    killmailRow.appendChild(valueCol);
+    killmailRow.appendChild(timeCol);
+
+    return killmailRow;
+  }
+
+  function showNotification(message, type = 'error') {
+    // Simple notification - could be enhanced with a proper notification system
+    const notification = createElement('div', {
+      textContent: message,
+      style: {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        padding: '12px 20px',
+        backgroundColor: type === 'error' ? '#dc3545' : '#28a745',
+        color: 'white',
+        borderRadius: '4px',
+        zIndex: '9999',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+      }
+    });
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 5000);
+  }
+
+  function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+    ws.onopen = () => {
+      console.log('WebSocket connected');
+      reconnectAttempts = 0;
+      ws.send(JSON.stringify({ type: 'subscribe', topics: ['all'] }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === 'killmail' && message.data && message.data.killmailId) {
+          const killmail = message.data;
+          const killmailList = document.querySelector('.kb-kl-list');
+          if (!killmailList) {
+            console.warn('Killmail list not found');
+            return;
+          }
+
+          const killmailRow = createKillmailRow(killmail);
+          if (!killmailRow) {
+            return;
+          }
+
+          // Insert after first child (header) or at beginning if no children
+          const insertPosition = killmailList.children.length > 0 ? killmailList.children[0].nextSibling : null;
+          killmailList.insertBefore(killmailRow, insertPosition);
+
+          if (killmailList.children.length > MAX_KILLMAILS + 1) {
+            killmailList.removeChild(killmailList.lastElementChild);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to process WebSocket message:', error);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket disconnected');
+      if (reconnectAttempts < 5) {
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+        console.log(`Reconnecting in ${delay}ms... (attempt ${reconnectAttempts + 1}/5)`);
+        setTimeout(() => {
+          reconnectAttempts++;
+          connectWebSocket();
+        }, delay);
+      } else {
+        showNotification('Connection lost. Real-time updates unavailable. Please refresh the page.', 'error');
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      showNotification('Connection error. Real-time updates may be unavailable.', 'error');
+    };
+  }
+
+  connectWebSocket();
 </script>
