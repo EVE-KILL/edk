@@ -2,6 +2,7 @@ import Handlebars from "handlebars";
 import { readFile, access, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { H3Event } from "h3";
+import { requestContext } from "../utils/request-context";
 
 export interface NormalizedKillmailEntity {
   id: number | null;
@@ -827,6 +828,12 @@ export async function render(
         imageServerUrl: process.env.IMAGE_SERVER_URL || "https://images.evetech.net",
       },
     };
+
+    // Add performance data if available
+    const performance = requestContext.getStore()?.performance;
+    if (performance) {
+      context.performance = performance.getSummary();
+    }
 
     // Render content
     const bodyHtml = contentTemplate(context);

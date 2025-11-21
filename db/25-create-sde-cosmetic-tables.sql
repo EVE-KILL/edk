@@ -4,17 +4,17 @@
 -- Skins table
 CREATE TABLE IF NOT EXISTS skins (
     "skinId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "description" TEXT,
     "iconId" INTEGER,
-    "internalName" TEXT,
+    "internalName" VARCHAR(255),
     "version" INTEGER
 );
 
 -- Station Operations table (for station services)
 CREATE TABLE IF NOT EXISTS stationOperations (
     "operationId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "description" TEXT,
     "activityId" INTEGER,
     "border" REAL,
@@ -24,6 +24,6 @@ CREATE TABLE IF NOT EXISTS stationOperations (
     "manufacturingFactor" REAL,
     "ratio" REAL,
     "researchFactor" REAL,
-    "stationType" TEXT,
+    "stationType" VARCHAR(255),
     "version" INTEGER
 );

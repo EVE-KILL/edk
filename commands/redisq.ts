@@ -83,12 +83,13 @@ class RedisQImporter {
 
   private async processKillmailPackage(pkg: any): Promise<void> {
     // Note: The original example used killID, but the zKillboard documentation shows killmail_id
-    if (!pkg || !pkg.killmail_id || !pkg.zkb || !pkg.zkb.hash) {
+    const killmailId = pkg?.killmail_id || pkg?.killID;
+
+    if (!pkg || !killmailId || !pkg.zkb || !pkg.zkb.hash) {
       this.error(`Invalid killmail package received: ${JSON.stringify(pkg).substring(0, 200)}`);
       return;
     }
 
-    const killmailId = pkg.killmail_id;
     const hash = pkg.zkb.hash;
 
     this.stats.received++;

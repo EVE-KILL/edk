@@ -4,6 +4,10 @@ services:
     container_name: edk_postgres
     ports:
       - "5432:5432"
+    command:
+      - "postgres"
+      - "-c"
+      - "default_toast_compression=lz4"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-edk}
       POSTGRES_USER: ${POSTGRES_USER:-edk_user}

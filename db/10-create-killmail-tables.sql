@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS killmails (
   "positionZ" DOUBLE PRECISION,
 
   -- ESI hash for API access
-  "hash" TEXT DEFAULT '',
+  "hash" VARCHAR(40) DEFAULT '',
 
   -- Denormalized attacker info (top/final blow attacker)
   "topAttackerCharacterId" INTEGER,

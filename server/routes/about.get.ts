@@ -10,50 +10,44 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Get stats
-    const [
-      totalKills,
-      totalISK,
-      characters,
-      corporations,
-      alliances,
-      soloKills,
-      avgAttackers,
-      activity24h,
-      activity7d,
-      topCharacters,
-      topCorporations,
-      topAlliances,
-      mostDestroyedShips,
-      mostDangerousSystems
-    ] = await Promise.all([
-      getTotalKillmailCount(),
-      getTotalISKDestroyed(),
-      getUniqueEntityCount('character'),
-      getUniqueEntityCount('corporation'),
-      getUniqueEntityCount('alliance'),
-      getSoloKillsCount(),
-      getAverageAttackersPerKill(),
-      getActivityStats(24),
-      getActivityStats(168),
-      getTopCharactersByKills(5),
-      getTopCorporationsByKills(5),
-      getTopAlliancesByKills(5),
-      getMostDestroyedShips(5),
-      getMostDangerousSystems(5)
-    ])
+    // Get stats sequentially to avoid connection issues
+    const totalKills = await getTotalKillmailCount()
+    logger.info('About page stats', { totalKills })
+    const totalISK = await getTotalISKDestroyed()
+    const characters = await getUniqueEntityCount('character')
+    const corporations = await getUniqueEntityCount('corporation')
+    const alliances = await getUniqueEntityCount('alliance')
+    const soloKills = await getSoloKillsCount()
+    const avgAttackers = await getAverageAttackersPerKill()
+    const activity24h = await getActivityStats(24)
+    const activity7d = await getActivityStats(168)
+    const topCharacters = await getTopCharactersByKills(5)
+    const topCorporations = await getTopCorporationsByKills(5)
+    const topAlliances = await getTopAlliancesByKills(5)
+    const mostDestroyedShips = await getMostDestroyedShips(5)
+    const mostDangerousSystems = await getMostDangerousSystems(5)
+
+    logger.info('About page all stats', { totalKills, characters, corporations, alliances, soloKills })
 
     const statistics = {
-      totalKills,
-      totalISK: totalISK.toLocaleString(),
-      characters: characters.toLocaleString(),
-      corporations: corporations.toLocaleString(),
-      alliances: alliances.toLocaleString(),
-      soloKills: soloKills.toLocaleString(),
+      totalKillmails: totalKills,
+      totalISKDestroyed: totalISK,
+      uniqueCharacters: characters,
+      uniqueCorporations: corporations,
+      uniqueAlliances: alliances,
+      soloKills: soloKills,
       soloPercentage: totalKills > 0 ? ((soloKills / totalKills) * 100).toFixed(1) : '0.0',
-      avgAttackers: avgAttackers.toFixed(1),
-      activity24h,
-      activity7d,
+      averageAttackersPerKill: avgAttackers.toFixed(1),
+      activePilotsLast24Hours: activity24h.pilots,
+      activePilotsLast7Days: activity7d.pilots,
+      killsLast24Hours: activity24h.kills,
+      killsLast7Days: activity7d.kills,
+      killsLast30Days: 0, // TODO: Add 30 day tracking
+      topKiller: topCharacters[0] || null,
+      topCorporation: topCorporations[0] || null,
+      topAlliance: topAlliances[0] || null,
+      mostDestroyedShip: mostDestroyedShips[0] || null,
+      mostDangerousSystem: mostDangerousSystems[0] || null,
       topCharactersAll: topCharacters.slice(0, 5),
       topCorporationsAll: topCorporations.slice(0, 5),
       topAlliancesAll: topAlliances.slice(0, 5),
@@ -105,16 +99,15 @@ async function getTotalISKDestroyed(): Promise<number> {
  * Get count of unique entities (character, corporation, alliance)
  */
 async function getUniqueEntityCount(type: 'character' | 'corporation' | 'alliance'): Promise<number> {
-  let sql
+  let result
   if (type === 'character') {
-    sql = database.sql`SELECT count(DISTINCT "victimCharacterId") as count FROM killmails WHERE "victimCharacterId" > 0`
+    [result] = await database.sql<{count: number}[]>`SELECT count(DISTINCT "victimCharacterId") as count FROM killmails WHERE "victimCharacterId" > 0`
   } else if (type === 'corporation') {
-    sql = database.sql`SELECT count(DISTINCT "victimCorporationId") as count FROM killmails WHERE "victimCorporationId" > 0`
+    [result] = await database.sql<{count: number}[]>`SELECT count(DISTINCT "victimCorporationId") as count FROM killmails WHERE "victimCorporationId" > 0`
   } else {
-    sql = database.sql`SELECT count(DISTINCT "victimAllianceId") as count FROM killmails WHERE "victimAllianceId" > 0`
+    [result] = await database.sql<{count: number}[]>`SELECT count(DISTINCT "victimAllianceId") as count FROM killmails WHERE "victimAllianceId" > 0`
   }
 
-  const [result] = await database.sql<{count: number}[]>`${sql}`
   return Number(result?.count) || 0
 }
 

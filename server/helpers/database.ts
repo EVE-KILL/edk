@@ -1,4 +1,5 @@
 import postgres from 'postgres'
+import { requestContext } from '../utils/request-context'
 
 /**
  * Postgres Database Helper (using postgres.js)
@@ -27,7 +28,66 @@ export class DatabaseHelper {
         }
       })
     }
-    return this._sql
+
+    // Get the raw SQL instance
+    const sqlInstance = this._sql
+
+    // From here, we create a proxy to intercept query calls for performance tracking.
+    // The handler retrieves the performance tracker from the current async context.
+
+    const handler: ProxyHandler<postgres.Sql> = {
+      // This trap handles tagged template literal calls, e.g., sql`SELECT * FROM users`
+      apply: (target, thisArg, args) => {
+        const performance = requestContext.getStore()?.performance
+        if (!performance) {
+          return Reflect.apply(target, thisArg, args)
+        }
+
+        const startTime = performance.now()
+        const promise = Reflect.apply(target, thisArg, args) as Promise<any>
+
+        promise.finally(() => {
+          const duration = performance.now() - startTime
+          // For template tags, args[0] has a `raw` property with query parts
+          const query = (args[0].raw as string[]).join('?')
+          const params = args.slice(1)
+          performance.addQuery(query, params, duration)
+        })
+
+        return promise
+      },
+      // This trap handles method calls on the sql object, e.g., sql.unsafe('...')
+      get: (target, prop, receiver) => {
+        const original = (target as any)[prop]
+        if (typeof original !== 'function') {
+          return Reflect.get(target, prop, receiver)
+        }
+
+        return (...args: any[]) => {
+          const performance = requestContext.getStore()?.performance
+          if (!performance) {
+            return original.apply(target, args)
+          }
+
+          const startTime = performance.now()
+          const result = original.apply(target, args)
+
+          // Check if the result is a PendingQuery, which indicates a query-executing method
+          if (result && typeof result.finally === 'function' && 'sql' in result) {
+            result.finally(() => {
+              const duration = performance.now() - startTime
+              const query = result.sql
+              const params = result.parameters
+              performance.addQuery(query, params, duration)
+            })
+          }
+
+          return result
+        }
+      }
+    }
+
+    return new Proxy(sqlInstance, handler)
   }
 
   /**
