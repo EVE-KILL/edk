@@ -5,6 +5,7 @@ import { getMostValuableKillsByPeriod } from '../models/mostValuableKills'
 import { normalizeKillRow } from '../helpers/templates'
 
 export default defineEventHandler(async (event: H3Event) => {
+  console.log('Index route hit')
   // Page context
   const pageContext = {
     title: 'Home',
