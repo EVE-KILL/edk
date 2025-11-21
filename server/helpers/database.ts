@@ -59,14 +59,17 @@ export class DatabaseHelper {
 
     try {
         const columns = Object.keys(items[0]).filter(c => c !== conflictKey)
-
-        // Construct dynamic update list: "col" = EXCLUDED."col"
-        const updateList = columns.map(col => this.sql`${this.sql(col)} = EXCLUDED.${this.sql(col)}`)
+        const updateFragments = columns.map(col => this.sql`${this.sql(col)} = EXCLUDED.${this.sql(col)}`)
 
         await this.sql`
             INSERT INTO ${this.sql(table)} ${this.sql(items)}
             ON CONFLICT (${this.sql(conflictKey)})
-            DO UPDATE SET ${this.sql(updateList)}
+            DO UPDATE SET ${
+                updateFragments.reduce((acc, curr, i) => {
+                    if (i === 0) return [curr]
+                    return [...acc, this.sql`, `, curr]
+                }, [] as any[])
+            }
         `
     } catch (error) {
       console.error('Database upsert error:', error)
@@ -99,6 +102,42 @@ export class DatabaseHelper {
        WHERE table_schema = 'public' AND table_name = ${tableName}
        ORDER BY ordinal_position
     `
+  }
+
+  /**
+   * Execute a raw query
+   */
+  async query<T = any>(query: string, params?: any[]): Promise<T[]> {
+    return await this.sql.unsafe<T[]>(query, params) as T[]
+  }
+
+  /**
+   * Execute a raw query and return the first row
+   */
+  async queryOne<T = any>(query: string, params?: any[]): Promise<T | null> {
+    const result = await this.sql.unsafe<T[]>(query, params)
+    return result.length > 0 ? result[0] : null
+  }
+
+  /**
+   * Execute a raw query and return the first value of the first row
+   */
+  async queryValue<T = any>(query: string, params?: any[]): Promise<T | null> {
+    const result = await this.sql.unsafe<any[]>(query, params)
+    if (result.length > 0) {
+      const keys = Object.keys(result[0])
+      if (keys.length > 0) {
+        return result[0][keys[0]] as T
+      }
+    }
+    return null
+  }
+
+  /**
+   * Execute a command (alias for query but implies no return value needed)
+   */
+  async execute(query: string, params?: any[]): Promise<void> {
+    await this.sql.unsafe(query, params)
   }
 
   /**
