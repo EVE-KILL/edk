@@ -6,16 +6,16 @@
 CREATE TABLE IF NOT EXISTS characters (
   "characterId" INTEGER PRIMARY KEY,
   "allianceId" INTEGER,
-  "birthday" TEXT,
+  "birthday" DATE,
   "bloodlineId" INTEGER,
   "corporationId" INTEGER,
   "description" TEXT,
-  "gender" TEXT,
-  "name" TEXT,
+  "gender" VARCHAR(30),
+  "name" VARCHAR(255),
   "raceId" INTEGER,
-  "securityStatus" REAL,
+  "securityStatus" NUMERIC(4, 2),
   "updatedAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT
+  "version" INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS "idx_characters_alliance" ON characters ("allianceId");
@@ -30,17 +30,17 @@ CREATE TABLE IF NOT EXISTS corporations (
   "allianceId" INTEGER,
   "ceoId" INTEGER,
   "creatorId" INTEGER,
-  "dateFounded" TEXT,
+  "dateFounded" DATE,
   "description" TEXT,
   "homeStationId" INTEGER,
   "memberCount" INTEGER,
-  "name" TEXT,
+  "name" VARCHAR(255),
   "shares" BIGINT,
   "taxRate" REAL,
-  "ticker" TEXT,
+  "ticker" VARCHAR(10),
   "url" TEXT,
   "updatedAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT
+  "version" INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS "idx_corporations_alliance" ON corporations ("allianceId");
@@ -53,12 +53,12 @@ CREATE TABLE IF NOT EXISTS alliances (
   "allianceId" INTEGER PRIMARY KEY,
   "creatorCorporationId" INTEGER,
   "creatorId" INTEGER,
-  "dateFounded" TEXT,
+  "dateFounded" DATE,
   "executorCorporationId" INTEGER,
-  "name" TEXT,
-  "ticker" TEXT,
+  "name" VARCHAR(255),
+  "ticker" VARCHAR(10),
   "updatedAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT
+  "version" INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS "idx_alliances_creator_corp" ON alliances ("creatorCorporationId");

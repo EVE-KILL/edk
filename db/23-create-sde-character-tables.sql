@@ -4,7 +4,7 @@
 -- Factions table
 CREATE TABLE IF NOT EXISTS factions (
     "factionId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "description" TEXT,
     "shortDescription" TEXT,
     "corporationId" INTEGER,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS factions (
 -- Races table
 CREATE TABLE IF NOT EXISTS races (
     "raceId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "description" TEXT,
     "iconId" INTEGER,
     "version" INTEGER
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS races (
 -- Bloodlines table
 CREATE TABLE IF NOT EXISTS bloodlines (
     "bloodlineId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "description" TEXT,
     "raceId" INTEGER,
     "shipTypeId" INTEGER,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS bloodlines (
 -- Ancestries table
 CREATE TABLE IF NOT EXISTS ancestries (
     "ancestryId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "bloodlineId" INTEGER,
     "description" TEXT,
     "iconId" INTEGER,
