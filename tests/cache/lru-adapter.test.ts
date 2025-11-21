@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from "bun:test";
-import { LRUCacheAdapter } from "../../app/utils/cache/lru-adapter";
+import { LRUCacheAdapter } from "../../src/cache/lru-adapter";
 
 describe("LRU Cache Adapter", () => {
   let cache: LRUCacheAdapter;

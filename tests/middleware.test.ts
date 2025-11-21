@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { performanceMonitor } from "../app/utils/middleware";
+import { performanceMonitor } from "../src/server/middleware";
 
 describe("Middleware", () => {
   test("performanceMonitor should add X-Response-Time header", async () => {
@@ -36,7 +36,7 @@ describe("Middleware", () => {
     // Parse and attach URL (simulating router behavior)
     (mockRequest as any).parsedUrl = new URL(mockRequest.url);
 
-    const logCompletion = require("../app/utils/middleware").requestLogger(mockRequest);
+    const logCompletion = require("../src/server/middleware").requestLogger(mockRequest);
 
     expect(typeof logCompletion).toBe("function");
 

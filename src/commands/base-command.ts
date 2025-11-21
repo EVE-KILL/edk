@@ -110,7 +110,7 @@ export abstract class BaseCommand implements CliCommand {
       return this.select(question, choices);
     }
 
-    return choices[index];
+    return choices[index]!;
   }
 
   // Logging helpers

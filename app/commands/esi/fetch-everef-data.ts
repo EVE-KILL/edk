@@ -57,7 +57,8 @@ async function fetchTypeData(typeId: number): Promise<EveRefType | null> {
 
 async function updateTypeInDatabase(eveRefData: EveRefType) {
   const typeId = eveRefData.type_id;
-  const englishName = eveRefData.name?.en || eveRefData.name?.[Object.keys(eveRefData.name || {})[0]] || `Type ${typeId}`;
+  const firstKey = Object.keys(eveRefData.name || {})[0] || "";
+  const englishName = eveRefData.name?.en || eveRefData.name?.[firstKey] || `Type ${typeId}`;
   const englishDescription = eveRefData.description?.en || undefined;
 
   // Check if type exists

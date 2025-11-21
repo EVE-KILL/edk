@@ -14,7 +14,7 @@ export default class CacheClearCommand extends BaseCommand {
     "bun cli cache:clear --force      # Skip confirmation prompt",
   ];
 
-  async execute(args: string[]): Promise<void> {
+  public override async execute(args: string[]): Promise<void> {
     const { positional, flags } = this.parseArgs(args);
     const type = positional[0] || "all";
 

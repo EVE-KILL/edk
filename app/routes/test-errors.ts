@@ -1,7 +1,7 @@
 import { WebController } from "../../src/controllers/web-controller";
 
 export class Controller extends WebController {
-  async handle(): Promise<Response> {
+  override async handle(): Promise<Response> {
     const type = this.getQuery("type") || "404";
 
     switch (type) {

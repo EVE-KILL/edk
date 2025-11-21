@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { buildResponseCacheKey, buildDataCacheKey } from "../../app/utils/cache/cache-key";
+import { buildResponseCacheKey, buildDataCacheKey } from "../../src/cache/cache-key";
 import type { CacheConfig } from "../../app/types/cache.d";
 
 describe("Cache Key Generation", () => {

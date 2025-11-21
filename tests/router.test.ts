@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { buildRouteIndex, matchRoute, Route } from "../app/utils/router";
+import { buildRouteIndex, matchRoute, type Route } from "../src/server/router";
 
 describe("Route Matching", () => {
   test("should match static routes using O(1) lookup", () => {
@@ -105,10 +105,18 @@ describe("Route Matching", () => {
     const index = buildRouteIndex(routes);
 
     // Static routes should be in the staticRoutes map
-    expect(index.staticRoutes.get("GET")?.has("/static-route")).toBe(true);
+    const getRoutes = index.staticRoutes.get("GET");
+    expect(getRoutes).not.toBeUndefined();
+
+    if (getRoutes) {
+      // Check manually to avoid type errors with expect
+      if (!getRoutes.has("/static-route")) {
+        throw new Error("Static route not found in index");
+      }
+    }
 
     // Dynamic routes should be in the dynamicRoutes array
     expect(index.dynamicRoutes.length).toBe(1);
-    expect(index.dynamicRoutes[0].route.path).toBe("/dynamic/:id");
+    expect(index.dynamicRoutes[0]!.route.path).toBe("/dynamic/:id");
   });
 });

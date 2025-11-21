@@ -14,7 +14,7 @@ export default class TestCommand extends BaseCommand {
     "bun cli test api        # Test API endpoints",
   ];
 
-  async execute(args: string[]): Promise<void> {
+  override async execute(args: string[]): Promise<void> {
     const { positional } = this.parseArgs(args);
     const component = positional[0] || "all";
 

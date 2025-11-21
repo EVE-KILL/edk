@@ -14,7 +14,7 @@ export default class SeedCommand extends BaseCommand {
     "bun cli db:seed --force      # Skip confirmation",
   ];
 
-  async execute(args: string[]): Promise<void> {
+  override async execute(args: string[]): Promise<void> {
     const { positional, flags } = this.parseArgs(args);
     const seeder = positional[0] || "all";
 
