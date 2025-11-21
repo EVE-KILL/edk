@@ -33,10 +33,11 @@
   };
 
   ws.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    if (message.type === 'killmail') {
-      const killmail = message.data;
-      const killmailList = document.querySelector('.kb-kl-list');
+    try {
+      const message = JSON.parse(event.data);
+      if (message.type === 'killmail' && message.data && message.data.killmailId) {
+        const killmail = message.data;
+        const killmailList = document.querySelector('.kb-kl-list');
       const killmailRow = document.createElement('div');
       killmailRow.classList.add('kb-kl-row');
       if (killmail.isLoss) {
@@ -61,31 +62,35 @@
         <div class="kb-kl-col kb-kl-col--victim">
           <div class="kb-kl-info kb-kl-info--victim">
             <div class="kb-kl-info__primary">
-              <a href="/character/${killmail.victim.character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${killmail.victim.character.name}</a>
+              <a href="/character/${killmail.victim?.character?.id || 0}" class="kb-kl-info__link" onclick="event.stopPropagation();">${killmail.victim?.character?.name || 'Unknown'}</a>
             </div>
             <div class="kb-kl-info__secondary">
-              <a href="/corporation/${killmail.victim.corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.victim.corporation.name}</a>
+              <a href="/corporation/${killmail.victim?.corporation?.id || 0}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.victim?.corporation?.name || 'Unknown'}</a>
             </div>
             ${killmail.victim.alliance ? `
             <div class="kb-kl-info__secondary">
-              <a href="/alliance/${killmail.victim.alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.victim.alliance.name}</a>
+              <a href="/alliance/${killmail.victim?.alliance?.id || 0}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.victim?.alliance?.name || 'Unknown'}</a>
             </div>
             ` : ''}
           </div>
         </div>
         <div class="kb-kl-col kb-kl-col--finalblow">
           <div class="kb-kl-info kb-kl-info--finalblow">
-            <div class="kb-kl-info__primary">
-              <a href="/character/${killmail.attackers[0].character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${killmail.attackers[0].character.name}</a>
-            </div>
-            <div class="kb-kl-info__secondary">
-              <a href="/corporation/${killmail.attackers[0].corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.attackers[0].corporation.name}</a>
-            </div>
-            ${killmail.attackers[0].alliance ? `
-            <div class="kb-kl-info__secondary">
-              <a href="/alliance/${killmail.attackers[0].alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.attackers[0].alliance.name}</a>
-            </div>
-            ` : ''}
+            ${killmail.attackers && killmail.attackers.length > 0 ? `
+              <div class="kb-kl-info__primary">
+                <a href="/character/${killmail.attackers[0].character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${killmail.attackers[0].character.name}</a>
+              </div>
+              <div class="kb-kl-info__secondary">
+                <a href="/corporation/${killmail.attackers[0].corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.attackers[0].corporation.name}</a>
+              </div>
+              ${killmail.attackers[0].alliance ? `
+              <div class="kb-kl-info__secondary">
+                <a href="/alliance/${killmail.attackers[0].alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.attackers[0].alliance.name}</a>
+              </div>
+              ` : ''}
+            ` : `
+              <div class="kb-kl-info__primary">Unknown</div>
+            `}
           </div>
         </div>
         <div class="kb-kl-col kb-kl-col--location">
@@ -105,11 +110,15 @@
         </div>
       `;
 
+      const MAX_KILLMAILS = 30; // Keep list at 30 items + 1 header
       killmailList.insertBefore(killmailRow, killmailList.children[1]);
 
-      if (killmailList.children.length > 31) {
+      if (killmailList.children.length > MAX_KILLMAILS + 1) {
         killmailList.removeChild(killmailList.lastElementChild);
       }
+    }
+    } catch (error) {
+      console.error('Failed to process WebSocket message:', error);
     }
   };
 

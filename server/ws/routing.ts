@@ -4,8 +4,8 @@ export function determineRoutingKeys(killmail: EntityKillmail): string[] {
   const routingKeys = new Set(['all'])
   const totalValue = Number(killmail.totalValue) || 0
 
-  if (totalValue > 1_000_000_000) routingKeys.add('10b')
-  if (totalValue > 500_000_000) routingKeys.add('5b')
+  if (totalValue >= 10_000_000_000) routingKeys.add('10b')
+  if (totalValue >= 5_000_000_000) routingKeys.add('5b')
 
   routingKeys.add(`victim.${killmail.victimCharacterId}`)
   routingKeys.add(`victim.${killmail.victimCorporationId}`)

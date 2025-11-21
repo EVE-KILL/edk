@@ -1,11 +1,6 @@
 import { Worker, Job } from 'bullmq'
-import Redis from 'ioredis'
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  db: 0,
-})
+import { createRedisClient } from '../server/helpers/redis'
+const redis = createRedisClient()
 import { fetchESI } from '../server/helpers/esi'
 import { storeKillmail, type ESIKillmail } from '../server/models/killmails'
 import { fetchAndStoreCharacter } from '../server/fetchers/character'
@@ -130,7 +125,11 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     console.log(`[killmail] ${killmailId}: Storing killmail...`)
     await storeKillmail(killmail, hash)
 
-    await redis.publish('killmail-broadcasts', JSON.stringify({ killmailId }))
+    const [fetchedKillmail] = await getFilteredKillsWithNames({ killmailId }, 1, 1)
+    if (fetchedKillmail) {
+      const normalized = normalizeKillRow(fetchedKillmail)
+      await redis.publish('killmail-broadcasts', JSON.stringify({ normalizedKillmail: normalized }))
+    }
 
     console.log(`✅ [killmail] Successfully processed killmail ${killmailId}`)
   } catch (error) {

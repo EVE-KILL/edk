@@ -1,5 +1,5 @@
 import { Peer } from 'crossws'
-import Redis from 'ioredis'
+import { createRedisClient } from '~/helpers/redis'
 import { getFilteredKillsWithNames } from '~/models/killlist'
 import { normalizeKillRow } from '~/helpers/templates'
 
@@ -52,7 +52,7 @@ export function broadcast(data: any, handler: MessageHandler) {
   }
 
   if (sentCount > 0) {
-    console.log(`📡 Broadcasted ${messageType} ${logId} to ${sentCount} client(s)`)
+    logger.debug(`📡 Broadcasted ${messageType} ${logId} to ${sentCount} client(s)`)
   }
 }
 
@@ -86,7 +86,7 @@ function handleSubscription(peer: Peer, topics: string[], handler: MessageHandle
     })
   )
 
-  console.log(`📝 Client subscribed to: ${validTopicsToAdd.join(', ')}`)
+  logger.info(`📝 Client subscribed to: ${validTopicsToAdd.join(', ')}`)
 }
 
 function handleUnsubscription(peer: Peer, topics: string[]) {
@@ -107,7 +107,7 @@ function handleUnsubscription(peer: Peer, topics: string[]) {
     })
   )
 
-  console.log(`📝 Client unsubscribed from: ${topics.join(', ')}`)
+  logger.info(`📝 Client unsubscribed from: ${topics.join(', ')}`)
 }
 
 function handleClientMessage(peer: Peer, message: string, handler: MessageHandler) {
@@ -136,36 +136,33 @@ function handleClientMessage(peer: Peer, message: string, handler: MessageHandle
 }
 
 export function createWebSocketHandler(handler: MessageHandler) {
-  const redis = new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-    db: 0,
-  })
+  const redis = createRedisClient()
 
   redis.subscribe('killmail-broadcasts', (err, count) => {
     if (err) {
-      console.error('Failed to subscribe: %s', err.message)
+      logger.error('Failed to subscribe: %s', err.message)
     } else {
-      console.log(
+      logger.info(
         `Subscribed successfully! This client is currently subscribed to ${count} channels.`
       )
     }
   })
 
   redis.on('message', async (channel, message) => {
-    console.log(`Received ${message} from ${channel}`)
-    const { killmailId } = JSON.parse(message)
-    const [killmail] = await getFilteredKillsWithNames({ killmailId }, 1, 1)
-    if (killmail) {
-      const normalized = normalizeKillRow(killmail)
-      broadcast(normalized, handler)
+    try {
+      logger.debug(`Received message from Redis`, { channel, message })
+      const { normalizedKillmail } = JSON.parse(message)
+      if (normalizedKillmail) {
+        broadcast(normalizedKillmail, handler)
+      }
+    } catch (error) {
+      logger.error('Failed to process Redis message:', error)
     }
   })
 
   return defineWebSocketHandler({
     open(peer) {
-      console.log('[ws] open', peer)
+      logger.info('[ws] open', peer)
       peers.add(peer)
       clientData.set(peer, {
         topics: [],
@@ -173,15 +170,15 @@ export function createWebSocketHandler(handler: MessageHandler) {
       })
     },
     close(peer, details) {
-      console.log('[ws] close', peer, details)
+      logger.info('[ws] close', peer, details)
       peers.delete(peer)
       clientData.delete(peer)
     },
     error(peer, error) {
-      console.error('[ws] error', peer, error)
+      logger.error('[ws] error', peer, error)
     },
     message(peer, message) {
-      console.log('[ws] message', peer, message)
+      logger.debug('[ws] message', peer, message)
       handleClientMessage(peer, message.text(), handler)
     },
   })
