@@ -64,14 +64,8 @@ export async function seedAlliances(count: number = 10) {
     return alliances;
 }
 
-// Helper to safely escape SQLite identifiers (table names)
-function escapeIdentifier(identifier: string): string {
-    // Double up any double quotes to escape them, then wrap in double quotes
-    return '"' + identifier.replace(/"/g, '""') + '"';
-}
-
 export async function clearTables(tables: string[]) {
     for (const table of tables) {
-        await database.execute(`TRUNCATE TABLE ${escapeIdentifier(table)} RESTART IDENTITY CASCADE`);
+        await database.sql`TRUNCATE TABLE ${database.sql(table)} RESTART IDENTITY CASCADE`;
     }
 }

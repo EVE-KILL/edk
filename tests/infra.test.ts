@@ -3,7 +3,8 @@ import { database } from '../server/helpers/database';
 
 describe('Infrastructure', () => {
     it('should be connected to the test database', async () => {
-        const dbName = await database.queryValue('SELECT current_database()');
+        const [result] = await database.sql<{current_database: string}[]>`SELECT current_database()`;
+        const dbName = result?.current_database;
         expect(dbName).toBe('edk_test');
     });
 

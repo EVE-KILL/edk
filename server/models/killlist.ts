@@ -319,51 +319,32 @@ export async function getFollowedEntitiesActivity(
   perPage: number = 30
 ): Promise<EntityKillmail[]> {
   const offset = (page - 1) * perPage
-  const conditions: string[] = []
 
   // Ensure safe numbers
   const safeCharIds = charIds.map(Number).filter(n => !isNaN(n) && n > 0)
   const safeCorpIds = corpIds.map(Number).filter(n => !isNaN(n) && n > 0)
   const safeAllyIds = allyIds.map(Number).filter(n => !isNaN(n) && n > 0)
 
-  // Construct OR conditions for each entity type (attacker or victim)
-  // For character: victimCharacterId IN (...) OR topAttackerCharacterId IN (...)
-  // But we need to join attackers table for full attacker check?
-  // topAttacker columns only show top attacker.
-  // Ideally we join attackers table.
-
-  // For simplicity and performance, checking topAttacker columns is faster but less accurate for assists.
-  // Checking victim columns is fast.
-
-  // Let's use topAttacker columns for now to avoid massive joins/duplicates,
-  // or use the logic from getEntityKillmails 'all' mode which handles it properly?
-  // getEntityKillmails 'all' mode uses LEFT JOIN attackers.
-
-  // Custom query here:
-  let whereParts: string[] = []
+  const conditions: any[] = []
 
   if (safeCharIds.length > 0) {
-    whereParts.push(`k."victimCharacterId" IN (${safeCharIds.join(',')})`)
-    whereParts.push(`k."topAttackerCharacterId" IN (${safeCharIds.join(',')})`)
-    // Also join attackers? Maybe later.
+    conditions.push(database.sql`(k."victimCharacterId" IN ${database.sql(safeCharIds)} OR k."topAttackerCharacterId" IN ${database.sql(safeCharIds)})`)
   }
   if (safeCorpIds.length > 0) {
-    whereParts.push(`k."victimCorporationId" IN (${safeCorpIds.join(',')})`)
-    whereParts.push(`k."topAttackerCorporationId" IN (${safeCorpIds.join(',')})`)
+    conditions.push(database.sql`(k."victimCorporationId" IN ${database.sql(safeCorpIds)} OR k."topAttackerCorporationId" IN ${database.sql(safeCorpIds)})`)
   }
   if (safeAllyIds.length > 0) {
-    whereParts.push(`k."victimAllianceId" IN (${safeAllyIds.join(',')})`)
-    whereParts.push(`k."topAttackerAllianceId" IN (${safeAllyIds.join(',')})`)
+    conditions.push(database.sql`(k."victimAllianceId" IN ${database.sql(safeAllyIds)} OR k."topAttackerAllianceId" IN ${database.sql(safeAllyIds)})`)
   }
 
-  if (whereParts.length === 0) {
+  if (conditions.length === 0) {
     return []
   }
 
-  const whereClause = `(${whereParts.join(' OR ')})`
+  const whereClause = conditions.reduce((acc, curr, i) => i === 0 ? curr : database.sql`${acc} OR ${curr}`, database.sql``)
 
-  return await database.query<EntityKillmail>(
-    `SELECT DISTINCT ON (k."killmailTime", k."killmailId")
+  return await database.sql<EntityKillmail[]>`
+    SELECT DISTINCT ON (k."killmailTime", k."killmailId")
       k."killmailId",
       k."killmailTime",
       -- Victim info
@@ -420,9 +401,7 @@ export async function getFollowedEntitiesActivity(
 
     WHERE ${whereClause}
     ORDER BY k."killmailTime" DESC, k."killmailId" DESC
-    LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
-    { limit: perPage, offset }
-  )
+    LIMIT ${perPage} OFFSET ${offset}`
 }
 
 export async function countFollowedEntitiesActivity(
@@ -434,31 +413,28 @@ export async function countFollowedEntitiesActivity(
   const safeCorpIds = corpIds.map(Number).filter(n => !isNaN(n) && n > 0)
   const safeAllyIds = allyIds.map(Number).filter(n => !isNaN(n) && n > 0)
 
-  let whereParts: string[] = []
+  const conditions: any[] = []
 
   if (safeCharIds.length > 0) {
-    whereParts.push(`"victimCharacterId" IN (${safeCharIds.join(',')})`)
-    whereParts.push(`"topAttackerCharacterId" IN (${safeCharIds.join(',')})`)
+    conditions.push(database.sql`("victimCharacterId" IN ${database.sql(safeCharIds)} OR "topAttackerCharacterId" IN ${database.sql(safeCharIds)})`)
   }
   if (safeCorpIds.length > 0) {
-    whereParts.push(`"victimCorporationId" IN (${safeCorpIds.join(',')})`)
-    whereParts.push(`"topAttackerCorporationId" IN (${safeCorpIds.join(',')})`)
+    conditions.push(database.sql`("victimCorporationId" IN ${database.sql(safeCorpIds)} OR "topAttackerCorporationId" IN ${database.sql(safeCorpIds)})`)
   }
   if (safeAllyIds.length > 0) {
-    whereParts.push(`"victimAllianceId" IN (${safeAllyIds.join(',')})`)
-    whereParts.push(`"topAttackerAllianceId" IN (${safeAllyIds.join(',')})`)
+    conditions.push(database.sql`("victimAllianceId" IN ${database.sql(safeAllyIds)} OR "topAttackerAllianceId" IN ${database.sql(safeAllyIds)})`)
   }
 
-  if (whereParts.length === 0) {
+  if (conditions.length === 0) {
     return 0
   }
 
-  const whereClause = `(${whereParts.join(' OR ')})`
+  const whereClause = conditions.reduce((acc, curr, i) => i === 0 ? curr : database.sql`${acc} OR ${curr}`, database.sql``)
 
-  const result = await database.queryValue<number>(
-    `SELECT count(*) FROM killmails WHERE ${whereClause}`
-  )
-  return Number(result) || 0
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM killmails WHERE ${whereClause}
+  `
+  return Number(result?.count || 0)
 }
 
 /**
@@ -919,31 +895,32 @@ export async function getFollowedEntitiesLosses(
   perPage: number = 30
 ): Promise<EntityKillmail[]> {
   const offset = (page - 1) * perPage
-  const conditions: string[] = []
 
   // Ensure safe numbers
   const safeCharIds = charIds.map(Number).filter(n => !isNaN(n) && n > 0)
   const safeCorpIds = corpIds.map(Number).filter(n => !isNaN(n) && n > 0)
   const safeAllyIds = allyIds.map(Number).filter(n => !isNaN(n) && n > 0)
 
+  const conditions: any[] = []
+
   if (safeCharIds.length > 0) {
-    conditions.push(`k."victimCharacterId" IN (${safeCharIds.join(',')})`)
+    conditions.push(database.sql`k."victimCharacterId" IN ${database.sql(safeCharIds)}`)
   }
   if (safeCorpIds.length > 0) {
-    conditions.push(`k."victimCorporationId" IN (${safeCorpIds.join(',')})`)
+    conditions.push(database.sql`k."victimCorporationId" IN ${database.sql(safeCorpIds)}`)
   }
   if (safeAllyIds.length > 0) {
-    conditions.push(`k."victimAllianceId" IN (${safeAllyIds.join(',')})`)
+    conditions.push(database.sql`k."victimAllianceId" IN ${database.sql(safeAllyIds)}`)
   }
 
   if (conditions.length === 0) {
     return []
   }
 
-  const whereClause = `(${conditions.join(' OR ')})`
+  const whereClause = conditions.reduce((acc, curr, i) => i === 0 ? curr : database.sql`${acc} OR ${curr}`, database.sql``)
 
-  return await database.query<EntityKillmail>(
-    `SELECT DISTINCT ON (k."killmailTime", k."killmailId")
+  return await database.sql<EntityKillmail[]>`
+    SELECT DISTINCT ON (k."killmailTime", k."killmailId")
       k."killmailId",
       k."killmailTime",
       -- Victim info
@@ -1000,9 +977,7 @@ export async function getFollowedEntitiesLosses(
 
     WHERE ${whereClause}
     ORDER BY k."killmailTime" DESC, k."killmailId" DESC
-    LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
-    { limit: perPage, offset }
-  )
+    LIMIT ${perPage} OFFSET ${offset}`
 }
 
 export async function countFollowedEntitiesLosses(
@@ -1010,30 +985,30 @@ export async function countFollowedEntitiesLosses(
   corpIds: number[],
   allyIds: number[]
 ): Promise<number> {
-  const conditions: string[] = []
-
   const safeCharIds = charIds.map(Number).filter(n => !isNaN(n) && n > 0)
   const safeCorpIds = corpIds.map(Number).filter(n => !isNaN(n) && n > 0)
   const safeAllyIds = allyIds.map(Number).filter(n => !isNaN(n) && n > 0)
 
+  const conditions: any[] = []
+
   if (safeCharIds.length > 0) {
-    conditions.push(`"victimCharacterId" IN (${safeCharIds.join(',')})`)
+    conditions.push(database.sql`"victimCharacterId" IN ${database.sql(safeCharIds)}`)
   }
   if (safeCorpIds.length > 0) {
-    conditions.push(`"victimCorporationId" IN (${safeCorpIds.join(',')})`)
+    conditions.push(database.sql`"victimCorporationId" IN ${database.sql(safeCorpIds)}`)
   }
   if (safeAllyIds.length > 0) {
-    conditions.push(`"victimAllianceId" IN (${safeAllyIds.join(',')})`)
+    conditions.push(database.sql`"victimAllianceId" IN ${database.sql(safeAllyIds)}`)
   }
 
   if (conditions.length === 0) {
     return 0
   }
 
-  const whereClause = `(${conditions.join(' OR ')})`
+  const whereClause = conditions.reduce((acc, curr, i) => i === 0 ? curr : database.sql`${acc} OR ${curr}`, database.sql``)
 
-  const result = await database.queryValue<number>(
-    `SELECT count(*) FROM killmails WHERE ${whereClause}`
-  )
-  return Number(result) || 0
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM killmails WHERE ${whereClause}
+  `
+  return Number(result?.count || 0)
 }
