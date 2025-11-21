@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS characters (
   "gender" VARCHAR(30),
   "name" VARCHAR(255),
   "raceId" INTEGER,
-  "securityStatus" NUMERIC(4, 2),
+  "securityStatus" REAL,
   "updatedAt" TIMESTAMP DEFAULT NOW(),
   "version" INTEGER
 );
