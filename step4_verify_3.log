@@ -1,0 +1,730 @@
+✅ Loaded queue: killmail
+✅ Loaded queue: character
+✅ Loaded queue: corporation
+✅ Loaded queue: alliance
+✅ Loaded queue: price
+
+🚀 Starting Queue Workers
+Queues to start: killmail, character, corporation, alliance, price
+
+▶️  Started worker for queue: killmail
+▶️  Started worker for queue: character
+▶️  Started worker for queue: corporation
+▶️  Started worker for queue: alliance
+11/21/2025, 19:02:26 [INFO] [Price Queue] Worker started
+▶️  Started worker for queue: price
+
+✅ All 5 queue worker(s) started
+Press Ctrl+C to stop
+
+[killmail] Processing killmail 131385905...
+[killmail] Processing killmail 131385911...
+[killmail] Processing killmail 131385881...
+[killmail] 131385905: Extracted 2 characters, 2 corporations, 1 alliances, 15 types
+[killmail] 131385905: Fetching entity data...
+[killmail] 131385911: Extracted 13 characters, 2 corporations, 1 alliances, 6 types
+[killmail] 131385911: Fetching entity data...
+[killmail] 131385881: Extracted 2 characters, 2 corporations, 0 alliances, 19 types
+[killmail] 131385881: Fetching entity data...
+[killmail] 131385905: Fetching prices for 15 types...
+[killmail] 131385911: Fetching prices for 6 types...
+[killmail] 131385881: Fetching prices for 19 types...
+[killmail] 131385905: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:33 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385905: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385905,"hash"_"ee2abe8467d18493278557018ffd81eef3f7562d"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385902...
+[killmail] 131385911: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:34 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385911: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385911,"hash"_"0e0397f151597b08c791ee8f1c4b257d905607c4"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385919...
+[killmail] 131385881: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:34 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385881: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385881,"hash"_"3a1bb0a622ee81d097cc2f7847e312bc51664f8c"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385948...
+[killmail] 131385902: Extracted 2 characters, 2 corporations, 1 alliances, 13 types
+[killmail] 131385902: Fetching entity data...
+[killmail] 131385919: Extracted 2 characters, 2 corporations, 1 alliances, 5 types
+[killmail] 131385919: Fetching entity data...
+[killmail] 131385948: Extracted 2 characters, 2 corporations, 1 alliances, 2 types
+[killmail] 131385948: Fetching entity data...
+[killmail] 131385902: Fetching prices for 13 types...
+[killmail] 131385902: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:36 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385902: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385902,"hash"_"5f28289c4a600bb16ac7aeac4d91ac8ab604cbee"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385853...
+[killmail] 131385919: Fetching prices for 5 types...
+[killmail] 131385919: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:37 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385919: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385919,"hash"_"1a31a84120baf433405dfd40def0b7dffe6cc52b"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385928...
+[killmail] 131385948: Fetching prices for 2 types...
+[killmail] 131385948: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:38 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385948: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385948,"hash"_"a09c9061cf6ebc626ab340af4735f782d23ddc55"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385942...
+[killmail] 131385853: Extracted 12 characters, 5 corporations, 2 alliances, 23 types
+[killmail] 131385853: Fetching entity data...
+[killmail] 131385928: Extracted 2 characters, 2 corporations, 0 alliances, 18 types
+[killmail] 131385928: Fetching entity data...
+[killmail] 131385942: Extracted 4 characters, 3 corporations, 1 alliances, 9 types
+[killmail] 131385942: Fetching entity data...
+[killmail] 131385853: Fetching prices for 23 types...
+[killmail] 131385853: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:43 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385853: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385853,"hash"_"fa4a5404349a86d47253c116acfd6503f813814e"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385961...
+[killmail] 131385928: Fetching prices for 18 types...
+[killmail] 131385928: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:44 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385928: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385928,"hash"_"7cecf0fc0ca1511356e46dd4ebbd806ccae15a75"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385979...
+[killmail] 131385942: Fetching prices for 9 types...
+[killmail] 131385942: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:45 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385942: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385942,"hash"_"67a50ab2d90ccf9083ade9a8e4eb86309938721d"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385888...
+[killmail] 131385961: Extracted 2 characters, 2 corporations, 1 alliances, 7 types
+[killmail] 131385961: Fetching entity data...
+[killmail] 131385979: Extracted 2 characters, 2 corporations, 0 alliances, 2 types
+[killmail] 131385979: Fetching entity data...
+[killmail] 131385888: Extracted 2 characters, 3 corporations, 0 alliances, 9 types
+[killmail] 131385888: Fetching entity data...
+[killmail] 131385961: Fetching prices for 7 types...
+[killmail] 131385961: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:47 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385961: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385961,"hash"_"6f9a3c48dcee07b6ce2322e644edbce3d734ef05"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385935...
+[killmail] 131385979: Fetching prices for 2 types...
+[killmail] 131385979: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:48 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385979: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385979,"hash"_"b5c3dc8be3606937f95af192db00f714f303dcb1"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385923...
+[killmail] 131385888: Fetching prices for 9 types...
+[killmail] 131385888: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:02:49 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385888: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385888,"hash"_"c42f276235877c9d4e59a609e4856b4a8110e84f"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385886...
+[killmail] 131385935: Extracted 2 characters, 2 corporations, 2 alliances, 2 types
+[killmail] 131385935: Fetching entity data...
+[killmail] 131385923: Extracted 2 characters, 2 corporations, 2 alliances, 2 types
+[killmail] 131385923: Fetching entity data...
+[killmail] 131385886: Extracted 2 characters, 2 corporations, 1 alliances, 2 types
+[killmail] 131385886: Fetching entity data...
+[killmail] 131385935: Fetching prices for 2 types...
+[killmail] 131385935: Storing killmail...
+11/21/2025, 19:02:51 [INFO] [Killmail] Stored killmail 131385935 with hash 79d7ea147b1b2b972052edecbc4ff9623e5d1724
+✅ [killmail] Successfully processed killmail 131385935
+✅ [killmail] Job killmail-{"killmailId"_131385935,"hash"_"79d7ea147b1b2b972052edecbc4ff9623e5d1724"} completed
+[killmail] Processing killmail 131385832...
+[killmail] 131385923: Fetching prices for 2 types...
+[killmail] 131385923: Storing killmail...
+11/21/2025, 19:02:52 [INFO] [Killmail] Stored killmail 131385923 with hash 124fb5dedcdbfbe28c8286060eaa1ae6c8580e7f
+✅ [killmail] Successfully processed killmail 131385923
+✅ [killmail] Job killmail-{"killmailId"_131385923,"hash"_"124fb5dedcdbfbe28c8286060eaa1ae6c8580e7f"} completed
+[killmail] Processing killmail 131385933...
+[killmail] 131385886: Fetching prices for 2 types...
+[killmail] 131385886: Storing killmail...
+11/21/2025, 19:02:53 [INFO] [Killmail] Stored killmail 131385886 with hash b94f3158569d8d3c1701c7b3498fe5fc3dd71d62
+✅ [killmail] Successfully processed killmail 131385886
+✅ [killmail] Job killmail-{"killmailId"_131385886,"hash"_"b94f3158569d8d3c1701c7b3498fe5fc3dd71d62"} completed
+[killmail] Processing killmail 131385871...
+[killmail] 131385832: Extracted 2 characters, 2 corporations, 1 alliances, 5 types
+[killmail] 131385832: Fetching entity data...
+[killmail] 131385933: Extracted 2 characters, 2 corporations, 2 alliances, 43 types
+[killmail] 131385933: Fetching entity data...
+[killmail] 131385871: Extracted 3 characters, 3 corporations, 2 alliances, 18 types
+[killmail] 131385871: Fetching entity data...
+[killmail] 131385832: Fetching prices for 5 types...
+[killmail] 131385832: Storing killmail...
+11/21/2025, 19:02:55 [INFO] [Killmail] Stored killmail 131385832 with hash ef01209935d2afe9fdda8f433a3bdd33d8d43939
+✅ [killmail] Successfully processed killmail 131385832
+✅ [killmail] Job killmail-{"killmailId"_131385832,"hash"_"ef01209935d2afe9fdda8f433a3bdd33d8d43939"} completed
+[killmail] Processing killmail 131385926...
+[killmail] 131385933: Fetching prices for 43 types...
+[killmail] 131385933: Storing killmail...
+11/21/2025, 19:02:56 [INFO] [Killmail] Stored killmail 131385933 with hash 54ffd4546e65d7a375448cffac227c78a4346134
+✅ [killmail] Successfully processed killmail 131385933
+✅ [killmail] Job killmail-{"killmailId"_131385933,"hash"_"54ffd4546e65d7a375448cffac227c78a4346134"} completed
+[killmail] Processing killmail 131385955...
+[killmail] 131385871: Fetching prices for 18 types...
+[killmail] 131385871: Storing killmail...
+11/21/2025, 19:02:58 [INFO] [Killmail] Stored killmail 131385871 with hash 3a10e2b192227553934313b4d46c3086d3060cc4
+✅ [killmail] Successfully processed killmail 131385871
+✅ [killmail] Job killmail-{"killmailId"_131385871,"hash"_"3a10e2b192227553934313b4d46c3086d3060cc4"} completed
+[killmail] Processing killmail 131385969...
+[killmail] 131385926: Extracted 14 characters, 6 corporations, 4 alliances, 15 types
+[killmail] 131385926: Fetching entity data...
+[killmail] 131385955: Extracted 3 characters, 3 corporations, 3 alliances, 3 types
+[killmail] 131385955: Fetching entity data...
+[killmail] 131385969: Extracted 2 characters, 2 corporations, 1 alliances, 15 types
+[killmail] 131385969: Fetching entity data...
+[killmail] 131385926: Fetching prices for 15 types...
+[killmail] 131385926: Storing killmail...
+11/21/2025, 19:03:04 [INFO] [Killmail] Stored killmail 131385926 with hash 6e1bca9669f7c0e27192da42edfa24848cb8c7df
+✅ [killmail] Successfully processed killmail 131385926
+✅ [killmail] Job killmail-{"killmailId"_131385926,"hash"_"6e1bca9669f7c0e27192da42edfa24848cb8c7df"} completed
+[killmail] Processing killmail 131385940...
+[killmail] 131385955: Fetching prices for 3 types...
+[killmail] 131385955: Storing killmail...
+11/21/2025, 19:03:06 [INFO] [Killmail] Stored killmail 131385955 with hash 68f23188c5993657a9ad20fa585f129847c51891
+✅ [killmail] Successfully processed killmail 131385955
+✅ [killmail] Job killmail-{"killmailId"_131385955,"hash"_"68f23188c5993657a9ad20fa585f129847c51891"} completed
+[killmail] Processing killmail 131385959...
+[killmail] 131385969: Fetching prices for 15 types...
+[killmail] 131385969: Storing killmail...
+11/21/2025, 19:03:07 [INFO] [Killmail] Stored killmail 131385969 with hash 336a3726e131a80a1f0ca770a5e90ecfea03713d
+✅ [killmail] Successfully processed killmail 131385969
+✅ [killmail] Job killmail-{"killmailId"_131385969,"hash"_"336a3726e131a80a1f0ca770a5e90ecfea03713d"} completed
+[killmail] Processing killmail 131385967...
+[killmail] 131385940: Extracted 2 characters, 2 corporations, 0 alliances, 9 types
+[killmail] 131385940: Fetching entity data...
+[killmail] 131385959: Extracted 2 characters, 2 corporations, 1 alliances, 15 types
+[killmail] 131385959: Fetching entity data...
+[killmail] 131385967: Extracted 5 characters, 4 corporations, 2 alliances, 4 types
+[killmail] 131385967: Fetching entity data...
+[killmail] 131385940: Fetching prices for 9 types...
+[killmail] 131385940: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:03:09 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385940: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385940,"hash"_"c3025904356d399feaa02af1ebf0ed5eb8dc3900"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385971...
+[killmail] 131385959: Fetching prices for 15 types...
+[killmail] 131385959: Storing killmail...
+11/21/2025, 19:03:10 [INFO] [Killmail] Stored killmail 131385959 with hash 63a85a5af0bce4514cb787bd7dd0b27697ed0235
+✅ [killmail] Successfully processed killmail 131385959
+✅ [killmail] Job killmail-{"killmailId"_131385959,"hash"_"63a85a5af0bce4514cb787bd7dd0b27697ed0235"} completed
+[killmail] Processing killmail 131385984...
+[killmail] 131385967: Fetching prices for 4 types...
+[killmail] 131385967: Storing killmail...
+11/21/2025, 19:03:12 [INFO] [Killmail] Stored killmail 131385967 with hash bbd3223cac394438a4e70e765b46b842635c87b2
+✅ [killmail] Successfully processed killmail 131385967
+✅ [killmail] Job killmail-{"killmailId"_131385967,"hash"_"bbd3223cac394438a4e70e765b46b842635c87b2"} completed
+[killmail] Processing killmail 131385918...
+[killmail] 131385971: Extracted 2 characters, 2 corporations, 1 alliances, 17 types
+[killmail] 131385971: Fetching entity data...
+[killmail] 131385984: Extracted 2 characters, 2 corporations, 1 alliances, 7 types
+[killmail] 131385984: Fetching entity data...
+[killmail] 131385918: Extracted 2 characters, 2 corporations, 2 alliances, 2 types
+[killmail] 131385918: Fetching entity data...
+[killmail] 131385971: Fetching prices for 17 types...
+[killmail] 131385971: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:03:14 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385971: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385971,"hash"_"8377eb2f65aa3c7e25cd822a7ad035237018af49"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385934...
+[killmail] 131385984: Fetching prices for 7 types...
+[killmail] 131385984: Storing killmail...
+Database insert error: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+11/21/2025, 19:03:15 [ERROR] [Killmail] Error storing killmail:
+  {
+    "error": {
+      "code": "UNDEFINED_VALUE"
+    }
+  }
+❌ [killmail] Error processing killmail 131385984: 78 |     x instanceof Parameter
+79 |       ? x.value = options.transform.undefined
+80 |       : value = x = options.transform.undefined
+81 |
+82 |     if (value === undefined)
+83 |       throw Errors.generic('UNDEFINED_VALUE', 'Undefined values are not allowed')
+                        ^
+UNDEFINED_VALUE: Undefined values are not allowed
+ code: "UNDEFINED_VALUE"
+
+      at handleValue (/app/node_modules/postgres/src/types.js:83:20)
+
+❌ [killmail] Job killmail-{"killmailId"_131385984,"hash"_"080b355f7a16951398b445f6b4a928e2ef98fd55"} failed: UNDEFINED_VALUE: Undefined values are not allowed
+[killmail] Processing killmail 131385991...
+[killmail] 131385918: Fetching prices for 2 types...
+[killmail] 131385918: Storing killmail...
+11/21/2025, 19:03:17 [INFO] [Killmail] Stored killmail 131385918 with hash dd1c0989dd6e36f77b0371cc684fff8a89e21e4b
+✅ [killmail] Successfully processed killmail 131385918
+✅ [killmail] Job killmail-{"killmailId"_131385918,"hash"_"dd1c0989dd6e36f77b0371cc684fff8a89e21e4b"} completed
+[killmail] Processing killmail 131386003...
+[killmail] 131385934: Extracted 2 characters, 2 corporations, 2 alliances, 2 types
+[killmail] 131385934: Fetching entity data...
+[killmail] 131385991: Extracted 2 characters, 2 corporations, 1 alliances, 16 types
+[killmail] 131385991: Fetching entity data...
+[killmail] 131386003: Extracted 1 characters, 2 corporations, 1 alliances, 5 types
+[killmail] 131386003: Fetching entity data...
+[killmail] 131385934: Fetching prices for 2 types...
+[killmail] 131385934: Storing killmail...
+11/21/2025, 19:03:19 [INFO] [Killmail] Stored killmail 131385934 with hash 53fe7432f5010fa05f53a75c6739cb4e8fe20577
+✅ [killmail] Successfully processed killmail 131385934
+✅ [killmail] Job killmail-{"killmailId"_131385934,"hash"_"53fe7432f5010fa05f53a75c6739cb4e8fe20577"} completed
+[killmail] Processing killmail 131385946...
+[killmail] 131385991: Fetching prices for 16 types...
+[killmail] 131385991: Storing killmail...
+11/21/2025, 19:03:20 [INFO] [Killmail] Stored killmail 131385991 with hash 09ddc736f0af43e7fb698fa35c0d120bfb23e187
+✅ [killmail] Successfully processed killmail 131385991
+✅ [killmail] Job killmail-{"killmailId"_131385991,"hash"_"09ddc736f0af43e7fb698fa35c0d120bfb23e187"} completed
+[killmail] Processing killmail 131385896...
+[killmail] 131386003: Fetching prices for 5 types...
+[killmail] 131386003: Storing killmail...
+11/21/2025, 19:03:20 [INFO] [Killmail] Stored killmail 131386003 with hash e0efdbf92852b6881f058542b82bedf0652100fd
+✅ [killmail] Successfully processed killmail 131386003
+✅ [killmail] Job killmail-{"killmailId"_131386003,"hash"_"e0efdbf92852b6881f058542b82bedf0652100fd"} completed
+[killmail] Processing killmail 131385927...
+[killmail] 131385946: Extracted 2 characters, 4 corporations, 1 alliances, 13 types
+[killmail] 131385946: Fetching entity data...
+[killmail] 131385896: Extracted 3 characters, 2 corporations, 2 alliances, 14 types
+[killmail] 131385896: Fetching entity data...
+[killmail] 131385927: Extracted 2 characters, 2 corporations, 2 alliances, 14 types
+[killmail] 131385927: Fetching entity data...
+[killmail] 131385946: Fetching prices for 13 types...
+[killmail] 131385946: Storing killmail...
+11/21/2025, 19:03:23 [INFO] [Killmail] Stored killmail 131385946 with hash f87992ecdf4735ecc59262fbbc1cd5373218eb40
+✅ [killmail] Successfully processed killmail 131385946
+✅ [killmail] Job killmail-{"killmailId"_131385946,"hash"_"f87992ecdf4735ecc59262fbbc1cd5373218eb40"} completed
+[killmail] Processing killmail 131385894...
+[killmail] 131385896: Fetching prices for 14 types...
+[killmail] 131385896: Storing killmail...
+11/21/2025, 19:03:24 [INFO] [Killmail] Stored killmail 131385896 with hash 1e835662d2c6aede858f62de9cebe755a5d29ee4
+✅ [killmail] Successfully processed killmail 131385896
+✅ [killmail] Job killmail-{"killmailId"_131385896,"hash"_"1e835662d2c6aede858f62de9cebe755a5d29ee4"} completed
+[killmail] Processing killmail 131385852...
+[killmail] 131385927: Fetching prices for 14 types...
+[killmail] 131385927: Storing killmail...
+11/21/2025, 19:03:25 [INFO] [Killmail] Stored killmail 131385927 with hash a4c9fbfa435375768ff94283276869cfd598c726
+✅ [killmail] Successfully processed killmail 131385927
+✅ [killmail] Job killmail-{"killmailId"_131385927,"hash"_"a4c9fbfa435375768ff94283276869cfd598c726"} completed
+[killmail] Processing killmail 131385899...
+[killmail] 131385894: Extracted 3 characters, 3 corporations, 1 alliances, 3 types
+[killmail] 131385894: Fetching entity data...
+[killmail] 131385852: Extracted 3 characters, 3 corporations, 1 alliances, 11 types
+[killmail] 131385852: Fetching entity data...
+
+⏹️  Shutting down queue workers...
+[killmail] 131385899: Extracted 3 characters, 2 corporations, 1 alliances, 3 types
+[killmail] 131385899: Fetching entity data...
+[killmail] 131385894: Fetching prices for 3 types...
+[killmail] 131385894: Storing killmail...
+11/21/2025, 19:03:28 [INFO] [Killmail] Stored killmail 131385894 with hash c3a138a2660bfeaefb3dfda19eb0fc963dffa7b0
+✅ [killmail] Successfully processed killmail 131385894
+✅ [killmail] Job killmail-{"killmailId"_131385894,"hash"_"c3a138a2660bfeaefb3dfda19eb0fc963dffa7b0"} completed
+[killmail] 131385852: Fetching prices for 11 types...
+[killmail] 131385852: Storing killmail...
+11/21/2025, 19:03:29 [INFO] [Killmail] Stored killmail 131385852 with hash d22d0391e6f191a8bceecb18a301404ded940c5a
+✅ [killmail] Successfully processed killmail 131385852
+✅ [killmail] Job killmail-{"killmailId"_131385852,"hash"_"d22d0391e6f191a8bceecb18a301404ded940c5a"} completed
+[killmail] 131385899: Fetching prices for 3 types...
+[killmail] 131385899: Storing killmail...
+11/21/2025, 19:03:30 [INFO] [Killmail] Stored killmail 131385899 with hash 2ac00e8f000ba5551bb5ff9335bc282d73ef1c33
+✅ [killmail] Successfully processed killmail 131385899
+✅ [killmail] Job killmail-{"killmailId"_131385899,"hash"_"2ac00e8f000ba5551bb5ff9335bc282d73ef1c33"} completed
+✅ All workers shut down

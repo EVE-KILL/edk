@@ -1,0 +1,22 @@
+$ bun cli.ts redisq
+🚀 Starting RedisQ killmail importer
+📡 Listening to URL: https://zkillredisq.stream/listen.php?queueID=jules_test_agent
+Press Ctrl+C to stop
+11/21/2025, 18:31:06 [ERROR] Invalid killmail package received: {"killID":131385848,"zkb":{"locationID":50002185,"hash":"40e6b40affc5c4a57e374b894ed957849404fac6","fittedValue":2240357.05,"droppedValue":375058.94,"destroyedValue":2044486.64,"totalValue":2419545.58
+11/21/2025, 18:31:07 [ERROR] Invalid killmail package received: {"killID":131385893,"zkb":{"locationID":50001625,"hash":"5d447a10bc3edd2c3879d57a656596f9b9382651","fittedValue":10000,"droppedValue":0,"destroyedValue":10000,"totalValue":10000,"points":1,"npc":false
+11/21/2025, 18:31:09 [ERROR] Invalid killmail package received: {"killID":131385897,"zkb":{"locationID":40285806,"hash":"21a310a2870f00583db199f0c85f5afb012b8251","fittedValue":69532736.36,"droppedValue":23878536.79,"destroyedValue":54342869.22,"totalValue":782214
+11/21/2025, 18:31:10 [ERROR] Invalid killmail package received: {"killID":131385904,"zkb":{"locationID":50001625,"hash":"60e059d0c371ba93853f14374ad1cc3325f4c9b1","fittedValue":191783767.59,"droppedValue":250529623.89,"destroyedValue":356343719.34,"totalValue":606
+11/21/2025, 18:31:11 [ERROR] Invalid killmail package received: {"killID":131385903,"zkb":{"locationID":40439205,"hash":"08442dc21e76df96906b7ffa5363eb66d388e3ba","fittedValue":10000,"droppedValue":0,"destroyedValue":52323738.49,"totalValue":52323738.49,"points":1
+11/21/2025, 18:31:24 [ERROR] Invalid killmail package received: {"killID":131385867,"zkb":{"locationID":50009909,"hash":"6ce311608f3cf9ec6c12e994fb7796275dc32072","fittedValue":10000,"droppedValue":0,"destroyedValue":10000,"totalValue":10000,"points":1,"npc":false
+11/21/2025, 18:31:32 [ERROR] Invalid killmail package received: {"killID":131385890,"zkb":{"locationID":40157642,"hash":"7ee42d25f4a1d93d164adba68b0b0bc1c3c418a6","fittedValue":19214870.25,"droppedValue":17385832.26,"destroyedValue":2468813.2,"totalValue":19854645
+
+11/21/2025, 18:31:32 [WARN] Shutting down RedisQ importer...
+
+11/21/2025, 18:31:32 [INFO] Final Stats:
+  {
+    "received": 0,
+    "new": 0,
+    "duplicate": 0,
+    "processed": 0,
+    "errors": 0
+  }

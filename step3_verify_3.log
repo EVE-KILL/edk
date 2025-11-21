@@ -1,0 +1,50 @@
+$ bun cli.ts redisq
+🚀 Starting RedisQ killmail importer
+📡 Listening to URL: https://zkillredisq.stream/listen.php?queueID=jules_test_agent
+Press Ctrl+C to stop
+11/21/2025, 19:01:45 [✓] Enqueued killmail 131385935 for processing
+11/21/2025, 19:01:46 [✓] Enqueued killmail 131385923 for processing
+11/21/2025, 19:01:47 [✓] Enqueued killmail 131385886 for processing
+11/21/2025, 19:01:48 [✓] Enqueued killmail 131385832 for processing
+11/21/2025, 19:01:50 [✓] Enqueued killmail 131385933 for processing
+11/21/2025, 19:01:51 [✓] Enqueued killmail 131385871 for processing
+11/21/2025, 19:01:52 [✓] Enqueued killmail 131385926 for processing
+11/21/2025, 19:01:53 [✓] Enqueued killmail 131385955 for processing
+11/21/2025, 19:01:55 [✓] Enqueued killmail 131385969 for processing
+11/21/2025, 19:01:56 [✓] Enqueued killmail 131385940 for processing
+11/21/2025, 19:01:57 [✓] Enqueued killmail 131385959 for processing
+11/21/2025, 19:01:58 [✓] Enqueued killmail 131385967 for processing
+11/21/2025, 19:01:59 [✓] Enqueued killmail 131385971 for processing
+11/21/2025, 19:02:00 [✓] Enqueued killmail 131385984 for processing
+11/21/2025, 19:02:01 [✓] Enqueued killmail 131385918 for processing
+11/21/2025, 19:02:02 [✓] Enqueued killmail 131385934 for processing
+11/21/2025, 19:02:02 [✓] Enqueued killmail 131385991 for processing
+11/21/2025, 19:02:04 [✓] Enqueued killmail 131386003 for processing
+11/21/2025, 19:02:05 [✓] Enqueued killmail 131385946 for processing
+11/21/2025, 19:02:06 [✓] Enqueued killmail 131385896 for processing
+11/21/2025, 19:02:08 [✓] Enqueued killmail 131385927 for processing
+11/21/2025, 19:02:09 [✓] Enqueued killmail 131385894 for processing
+11/21/2025, 19:02:10 [✓] Enqueued killmail 131385852 for processing
+11/21/2025, 19:02:11 [✓] Enqueued killmail 131385899 for processing
+11/21/2025, 19:02:12 [✓] Enqueued killmail 131385892 for processing
+
+11/21/2025, 19:02:12 [INFO] Stats (every 25 killmails):
+  {
+    "received": 25,
+    "new": 25,
+    "duplicate": 0,
+    "processed": 25,
+    "errors": 0
+  }
+
+
+11/21/2025, 19:02:13 [WARN] Shutting down RedisQ importer...
+
+11/21/2025, 19:02:13 [INFO] Final Stats:
+  {
+    "received": 25,
+    "new": 25,
+    "duplicate": 0,
+    "processed": 25,
+    "errors": 0
+  }

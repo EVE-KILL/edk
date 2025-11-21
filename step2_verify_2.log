@@ -1,0 +1,5 @@
+$ bun cli.ts redisq
+error: Cannot find package 'commander' from '/app/cli.ts'
+
+Bun v1.2.14 (Linux x64 baseline)
+error: script "cli" exited with code 1

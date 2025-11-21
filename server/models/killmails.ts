@@ -298,22 +298,22 @@ export async function storeKillmail(
     const solo = attackerCount === 1;
     const npc = esiData.attackers.every((a) => !a.character_id); // All attackers are NPC
     const awox =
-      victim.alliance_id &&
+      !!(victim.alliance_id &&
       victim.alliance_id > 0 &&
-      esiData.attackers.some((a) => a.alliance_id === victim.alliance_id);
+      esiData.attackers.some((a) => a.alliance_id === victim.alliance_id));
 
     // Insert main killmail record
     const killmailRecord = {
       killmailId: esiData.killmail_id,
       killmailTime: esiData.killmail_time.replace("Z", "").replace("T", " "), // Convert ISO to ClickHouse DateTime format
-      solarSystemId: esiData.solar_system_id,
+      solarSystemId: esiData.solar_system_id ?? 0,
 
       // Victim information
       victimAllianceId: victim.alliance_id ?? null,
       victimCharacterId: victim.character_id ?? null,
-      victimCorporationId: victim.corporation_id,
-      victimDamageTaken: victim.damage_taken,
-      victimShipTypeId: victim.ship_type_id,
+      victimCorporationId: victim.corporation_id ?? null,
+      victimDamageTaken: victim.damage_taken ?? 0,
+      victimShipTypeId: victim.ship_type_id ?? null,
 
       // Victim position
       positionX: victim.position?.x ?? null,
@@ -355,7 +355,7 @@ export async function storeKillmail(
       allianceId: attacker.alliance_id ?? null,
       corporationId: attacker.corporation_id ?? null,
       characterId: attacker.character_id ?? null,
-      damageDone: attacker.damage_done,
+      damageDone: attacker.damage_done ?? 0,
       finalBlow: attacker.final_blow ? true : false,
       securityStatus: attacker.security_status ?? null,
       shipTypeId: attacker.ship_type_id ?? null,
@@ -374,7 +374,7 @@ export async function storeKillmail(
         killmailId: esiData.killmail_id,
         killmailTime: esiData.killmail_time.replace('Z', '').replace('T', ' '),
         flag: item.flag ?? 0,
-        itemTypeId: item.item_type_id,
+        itemTypeId: item.item_type_id ?? 0,
         quantityDropped: item.quantity_dropped ?? 0,
         quantityDestroyed: item.quantity_destroyed ?? 0,
         singleton: item.singleton ?? 0,
@@ -428,19 +428,19 @@ export async function storeKillmailsBulk(
       const solo = attackerCount === 1;
       const npc = esi.attackers.every((a) => !a.character_id); // All attackers are NPC
       const awox =
-        victim.alliance_id &&
+        !!(victim.alliance_id &&
         victim.alliance_id > 0 &&
-        esi.attackers.some((a) => a.alliance_id === victim.alliance_id);
+        esi.attackers.some((a) => a.alliance_id === victim.alliance_id));
 
       return {
         killmailId: esi.killmail_id,
         killmailTime: esi.killmail_time.replace("Z", "").replace("T", " "),
-        solarSystemId: esi.solar_system_id,
+        solarSystemId: esi.solar_system_id ?? 0,
         victimAllianceId: victim.alliance_id || null,
         victimCharacterId: victim.character_id || null,
-        victimCorporationId: victim.corporation_id,
-        victimDamageTaken: victim.damage_taken,
-        victimShipTypeId: victim.ship_type_id,
+        victimCorporationId: victim.corporation_id ?? null,
+        victimDamageTaken: victim.damage_taken ?? 0,
+        victimShipTypeId: victim.ship_type_id ?? null,
         positionX: victim.position?.x || null,
         positionY: victim.position?.y || null,
         positionZ: victim.position?.z || null,
@@ -473,7 +473,7 @@ export async function storeKillmailsBulk(
         allianceId: attacker.alliance_id || null,
         corporationId: attacker.corporation_id || null,
         characterId: attacker.character_id || null,
-        damageDone: attacker.damage_done,
+        damageDone: attacker.damage_done ?? 0,
         finalBlow: attacker.final_blow ? true : false,
         securityStatus: attacker.security_status || null,
         shipTypeId: attacker.ship_type_id || null,
@@ -499,11 +499,11 @@ export async function storeKillmailsBulk(
       return victim.items.map((item) => ({
         killmailId: esi.killmail_id,
         killmailTime: esi.killmail_time.replace('Z', '').replace('T', ' '),
-        flag: item.flag,
-        itemTypeId: item.item_type_id,
+        flag: item.flag ?? 0,
+        itemTypeId: item.item_type_id ?? 0,
         quantityDropped: item.quantity_dropped || 0,
         quantityDestroyed: item.quantity_destroyed || 0,
-        singleton: item.singleton,
+        singleton: item.singleton ?? 0,
         createdAt: new Date(nowUnix * 1000),
         version,
       }));

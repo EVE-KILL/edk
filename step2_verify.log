@@ -1,0 +1,19 @@
+$ bun cli.ts redisq
+36 |     errors: 0
+37 |   };
+38 |
+39 |   constructor() {
+40 |     if (!process.env.REDISQ_ID) {
+41 |       throw new Error('REDISQ_ID environment variable is not set.');
+                 ^
+error: REDISQ_ID environment variable is not set.
+      at new RedisQImporter (/app/commands/redisq.ts:41:13)
+      at <anonymous> (/app/commands/redisq.ts:22:22)
+      at action (/app/commands/redisq.ts:21:11)
+      at _parseCommand (/app/node_modules/.cache/commander@14.0.2@@@1/lib/command.js:1603:27)
+      at _dispatchSubcommand (/app/node_modules/.cache/commander@14.0.2@@@1/lib/command.js:1363:25)
+      at parse (/app/node_modules/.cache/commander@14.0.2@@@1/lib/command.js:1093:10)
+      at main (/app/cli.ts:180:13)
+
+Bun v1.2.14 (Linux x64 baseline)
+error: script "cli" exited with code 1
