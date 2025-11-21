@@ -1,4 +1,4 @@
-import { fetchEveKill, fetchESI } from '../helpers/fetcher'
+import { fetchESI } from '../helpers/esi'
 import { storeCharacter as storeCharacterInDB, getCharacter } from '../models/characters'
 
 /**
@@ -18,22 +18,14 @@ export interface ESICharacter {
 }
 
 /**
- * Fetch character data from EVE-KILL with fallback to ESI
+ * Fetch character data from ESI
  * Stores only ESI-compatible fields in the database
  */
 export async function fetchAndStoreCharacter(characterId: number): Promise<ESICharacter | null> {
   try {
-    // Try EVE-KILL first
-    let characterData = await fetchFromEveKill(characterId)
-
-    // Fallback to ESI if EVE-KILL fails
-    if (!characterData) {
-      console.log(`⚠️  EVE-KILL failed for character ${characterId}, falling back to ESI`)
-      characterData = await fetchFromESI(characterId)
-    }
+    const characterData = await fetchFromESI(characterId)
 
     if (!characterData) {
-      console.error(`❌ Failed to fetch character ${characterId} from both sources`)
       return null
     }
 
@@ -45,28 +37,7 @@ export async function fetchAndStoreCharacter(characterId: number): Promise<ESICh
 
     return esiCharacter
   } catch (error) {
-    console.error(`❌ Error fetching character ${characterId}:`, error)
-    return null
-  }
-}
-
-/**
- * Fetch character data from EVE-KILL API
- */
-async function fetchFromEveKill(characterId: number): Promise<any | null> {
-  try {
-    const response = await fetchEveKill(`/characters/${characterId}`)
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null
-      }
-      throw new Error(`EVE-KILL API error: ${response.statusText}`)
-    }
-
-    return response.data
-  } catch (error) {
-    console.warn(`⚠️  EVE-KILL fetch failed for character ${characterId}:`, error)
+    console.error(`ESI fetch failed for character ${characterId}:`, error)
     return null
   }
 }
@@ -87,7 +58,7 @@ async function fetchFromESI(characterId: number): Promise<any | null> {
 
     return response.data
   } catch (error) {
-    console.warn(`⚠️  ESI fetch failed for character ${characterId}:`, error)
+    console.error(`ESI fetch failed for character ${characterId}:`, error)
     return null
   }
 }
@@ -149,7 +120,6 @@ export async function getCachedCharacter(characterId: number): Promise<ESICharac
       security_status: result.securityStatus
     }
   } catch (error) {
-    console.warn(`⚠️  Failed to get cached character ${characterId}:`, error)
     return null
   }
 }

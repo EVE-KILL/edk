@@ -1,4 +1,4 @@
-import { fetchESI } from '../helpers/fetcher'
+import { fetchESI } from '../helpers/esi'
 import { storeKillmail, type ESIKillmail } from '../models/killmails'
 import { logger } from '../helpers/logger'
 
