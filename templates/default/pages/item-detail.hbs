@@ -1,0 +1,40 @@
+<!-- Item Detail - EDK Style -->
+
+<!-- Item Stats Header -->
+{{> components/entity-header
+    entityId=item.typeId
+    entityType="item"
+    name=item.name
+}}
+
+<!-- Item Info Section -->
+{{#if item}}
+<div style="margin-bottom: 20px;">
+    <div class="data-table">
+        <tbody>
+            {{#if item.groupName}}
+            <tr>
+                <td class="data-table__label">Group:</td>
+                <td>{{item.groupName}}</td>
+            </tr>
+            {{/if}}
+            {{#if item.categoryName}}
+            <tr>
+                <td class="data-table__label">Category:</td>
+                <td>{{item.categoryName}}</td>
+            </tr>
+            {{/if}}
+        </tbody>
+    </div>
+</div>
+{{/if}}
+
+<!-- Top 10 Sidebar (Items destroyed/dropped stats) -->
+<div style="display: grid; grid-template-columns: 20% 80%; gap: 5px; width: 100%; box-sizing: border-box; margin-bottom: 20px;">
+  <!-- Top 10 Sidebar -->
+  <aside style="min-width: 0; overflow: hidden;">
+    {{#if top10Stats}}
+      {{> components/top-10-stats top10Stats=top10Stats}}
+    {{/if}}
+  </aside>
+</div>

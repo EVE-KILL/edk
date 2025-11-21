@@ -24,59 +24,58 @@ export interface Constellation {
  * Get a single constellation by ID
  */
 export async function getConstellation(constellationId: number): Promise<Constellation | null> {
-  return await database.queryOne<Constellation>(
-    'SELECT * FROM constellations WHERE constellationId = {id:UInt32}',
-    { id: constellationId }
-  )
+  const [row] = await database.sql<Constellation[]>`
+    SELECT * FROM constellations WHERE constellationId = ${constellationId}
+  `
+  return row || null
 }
 
 /**
  * Get all constellations in a region
  */
 export async function getConstellationsByRegion(regionId: number): Promise<Constellation[]> {
-  return await database.query<Constellation>(
-    'SELECT * FROM constellations WHERE regionId = {regionId:UInt32} ORDER BY name',
-    { regionId }
-  )
+  return await database.sql<Constellation[]>`
+    SELECT * FROM constellations WHERE regionId = ${regionId} ORDER BY name
+  `
 }
 
 /**
  * Search constellations by name
  */
 export async function searchConstellations(namePattern: string, limit: number = 10): Promise<Constellation[]> {
-  return await database.query<Constellation>(
-    `SELECT * FROM constellations
-     WHERE name LIKE {pattern:String}
-     ORDER BY name
-     LIMIT {limit:UInt32}`,
-    { pattern: `%${namePattern}%`, limit }
-  )
+  return await database.sql<Constellation[]>`
+    SELECT * FROM constellations
+    WHERE name ILIKE ${`%${namePattern}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }
 
 /**
  * Get constellation name by ID
  */
 export async function getConstellationName(constellationId: number): Promise<string | null> {
-  const result = await database.queryValue<string>(
-    'SELECT name FROM constellations WHERE constellationId = {id:UInt32}',
-    { id: constellationId }
-  )
-  return result || null
+  const [result] = await database.sql<{name: string}[]>`
+    SELECT name FROM constellations WHERE constellationId = ${constellationId}
+  `
+  return result?.name || null
 }
 
 /**
  * Get constellations by faction
  */
 export async function getConstellationsByFaction(factionId: number): Promise<Constellation[]> {
-  return await database.query<Constellation>(
-    'SELECT * FROM constellations WHERE factionId = {factionId:UInt32} ORDER BY name',
-    { factionId }
-  )
+  return await database.sql<Constellation[]>`
+    SELECT * FROM constellations WHERE factionId = ${factionId} ORDER BY name
+  `
 }
 
 /**
  * Count total constellations
  */
 export async function countConstellations(): Promise<number> {
-  return await database.count('constellations')
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM constellations
+  `
+  return Number(result?.count || 0)
 }

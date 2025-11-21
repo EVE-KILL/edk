@@ -17,45 +17,49 @@ export interface Race {
  * Get a single race by ID
  */
 export async function getRace(raceId: number): Promise<Race | null> {
-  return await database.queryOne<Race>(
-    'SELECT * FROM races WHERE raceId = {id:UInt32}',
-    { id: raceId }
-  )
+  const [row] = await database.sql<Race[]>`
+    SELECT * FROM races WHERE raceId = ${raceId}
+  `
+  return row || null
 }
 
 /**
  * Get all races
  */
 export async function getAllRaces(): Promise<Race[]> {
-  return await database.query<Race>(
-    'SELECT * FROM races ORDER BY name'
-  )
+  return await database.sql<Race[]>`
+    SELECT * FROM races ORDER BY name
+  `
 }
 
 /**
  * Search races by name
  */
 export async function searchRaces(namePattern: string, limit: number = 10): Promise<Race[]> {
-  return await database.query<Race>(
-    'SELECT * FROM races WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
-    { pattern: `%${namePattern}%`, limit }
-  )
+  return await database.sql<Race[]>`
+    SELECT * FROM races
+    WHERE name ILIKE ${`%${namePattern}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }
 
 /**
  * Get race name by ID
  */
 export async function getRaceName(raceId: number): Promise<string | null> {
-  const result = await database.queryValue<string>(
-    'SELECT name FROM races WHERE raceId = {id:UInt32}',
-    { id: raceId }
-  )
-  return result || null
+  const [result] = await database.sql<{name: string}[]>`
+    SELECT name FROM races WHERE raceId = ${raceId}
+  `
+  return result?.name || null
 }
 
 /**
  * Count total races
  */
 export async function countRaces(): Promise<number> {
-  return await database.count('races')
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM races
+  `
+  return Number(result?.count || 0)
 }

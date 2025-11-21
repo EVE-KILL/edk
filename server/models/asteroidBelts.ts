@@ -21,46 +21,29 @@ export interface AsteroidBelt {
  * Get a single asteroid belt by ID
  */
 export async function getAsteroidBelt(asteroidBeltId: number): Promise<AsteroidBelt | null> {
-  return await database.queryOne<AsteroidBelt>(
-    'SELECT * FROM asteroidBelts WHERE asteroidBeltId = {id:UInt32}',
-    { id: asteroidBeltId }
-  )
+  const [row] = await database.sql<AsteroidBelt[]>`
+    SELECT * FROM asteroidBelts WHERE asteroidBeltId = ${asteroidBeltId}
+  `
+  return row || null
 }
 
 /**
  * Get all asteroid belts in a solar system
  */
 export async function getAsteroidBeltsBySystem(solarSystemId: number): Promise<AsteroidBelt[]> {
-  return await database.query<AsteroidBelt>(
-    'SELECT * FROM asteroidBelts WHERE solarSystemId = {systemId:UInt32} ORDER BY celestialIndex',
-    { systemId: solarSystemId }
-  )
+  return await database.sql<AsteroidBelt[]>`
+    SELECT * FROM asteroidBelts WHERE solarSystemId = ${solarSystemId} ORDER BY celestialIndex
+  `
 }
 
 /**
  * Search asteroid belts by name
  */
 export async function searchAsteroidBelts(namePattern: string, limit: number = 10): Promise<AsteroidBelt[]> {
-  return await database.query<AsteroidBelt>(
-    'SELECT * FROM asteroidBelts WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
-    { pattern: `%${namePattern}%`, limit }
-  )
-}
-
-/**
- * Get asteroid belt name by ID
- */
-export async function getAsteroidBeltName(asteroidBeltId: number): Promise<string | null> {
-  const result = await database.queryValue<string>(
-    'SELECT name FROM asteroidBelts WHERE asteroidBeltId = {id:UInt32}',
-    { id: asteroidBeltId }
-  )
-  return result || null
-}
-
-/**
- * Count total asteroid belts
- */
-export async function countAsteroidBelts(): Promise<number> {
-  return await database.count('asteroidBelts')
+  return await database.sql<AsteroidBelt[]>`
+    SELECT * FROM asteroidBelts
+    WHERE name ILIKE ${`%${namePattern}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }

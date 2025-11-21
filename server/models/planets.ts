@@ -21,46 +21,49 @@ export interface Planet {
  * Get a single planet by ID
  */
 export async function getPlanet(planetId: number): Promise<Planet | null> {
-  return await database.queryOne<Planet>(
-    'SELECT * FROM planets WHERE planetId = {id:UInt32}',
-    { id: planetId }
-  )
+  const [row] = await database.sql<Planet[]>`
+    SELECT * FROM planets WHERE planetId = ${planetId}
+  `
+  return row || null
 }
 
 /**
  * Get all planets in a solar system
  */
 export async function getPlanetsBySystem(solarSystemId: number): Promise<Planet[]> {
-  return await database.query<Planet>(
-    'SELECT * FROM planets WHERE solarSystemId = {systemId:UInt32} ORDER BY celestialIndex',
-    { systemId: solarSystemId }
-  )
+  return await database.sql<Planet[]>`
+    SELECT * FROM planets WHERE solarSystemId = ${solarSystemId} ORDER BY celestialIndex
+  `
 }
 
 /**
  * Search planets by name
  */
 export async function searchPlanets(namePattern: string, limit: number = 10): Promise<Planet[]> {
-  return await database.query<Planet>(
-    'SELECT * FROM planets WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
-    { pattern: `%${namePattern}%`, limit }
-  )
+  return await database.sql<Planet[]>`
+    SELECT * FROM planets
+    WHERE name ILIKE ${`%${namePattern}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }
 
 /**
  * Get planet name by ID
  */
 export async function getPlanetName(planetId: number): Promise<string | null> {
-  const result = await database.queryValue<string>(
-    'SELECT name FROM planets WHERE planetId = {id:UInt32}',
-    { id: planetId }
-  )
-  return result || null
+  const [result] = await database.sql<{name: string}[]>`
+    SELECT name FROM planets WHERE planetId = ${planetId}
+  `
+  return result?.name || null
 }
 
 /**
  * Count total planets
  */
 export async function countPlanets(): Promise<number> {
-  return await database.count('planets')
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM planets
+  `
+  return Number(result?.count || 0)
 }

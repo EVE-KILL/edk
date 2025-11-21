@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { database } from '../../server/helpers/database'
 
 export const description = 'Create entity_killlist materialized view'

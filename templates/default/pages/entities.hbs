@@ -1,0 +1,47 @@
+{{#if hasEntities}}
+  <!-- Entities Stats Header -->
+  {{> partials/entity-stats}}
+
+  <!-- Entities Navigation Tabs -->
+  {{> partials/entity-navbar}}
+
+  <!-- Ship Group Statistics (Combined Kills & Losses) -->
+  {{#if shipGroupStats}}
+  <div style="margin-bottom: 20px;">
+      <div class="block-header2">Ship Groups (Last 30 Days)</div>
+      {{> components/ship-group-combined-stats columns=shipGroupColumns}}
+  </div>
+  {{/if}}
+
+  <!-- Most Valuable Kills -->
+  {{#if mostValuableKills}}
+  {{> partials/mostvaluable mostValuableKills=mostValuableKills timeRange="Last 7 Days"}}
+  {{/if}}
+
+  <!-- Top 10 + Recent Activity Layout -->
+  <div style="display: grid; grid-template-columns: minmax(200px, 225px) 1fr; gap: 12px; width: 100%; box-sizing: border-box;">
+    <aside style="min-width: 0; overflow: hidden;">
+      {{#if top10Stats}}
+        {{> components/top-10-stats top10Stats=top10Stats}}
+      {{/if}}
+    </aside>
+    <section style="min-width: 0; overflow: hidden;">
+      {{> partials/killmail-list killmails=recentKillmails}}
+    </section>
+  </div>
+{{else}}
+  <div class="box">
+      <div class="box-header">Entities</div>
+      <div class="box-content">
+          <p>No entities configured.</p>
+          <p style="margin-top: 15px; color: #666;">
+              Configure followed entities by setting the following environment variables:
+          </p>
+          <ul style="margin-top: 10px; color: #666;">
+              <li>FOLLOWED_CHARACTER_IDS (comma-separated character IDs)</li>
+              <li>FOLLOWED_CORPORATION_IDS (comma-separated corporation IDs)</li>
+              <li>FOLLOWED_ALLIANCE_IDS (comma-separated alliance IDs)</li>
+          </ul>
+      </div>
+  </div>
+{{/if}}

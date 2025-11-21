@@ -21,56 +21,58 @@ export interface NPCCharacter {
  * Get a single NPC character by ID
  */
 export async function getNPCCharacter(characterId: number): Promise<NPCCharacter | null> {
-  return await database.queryOne<NPCCharacter>(
-    'SELECT * FROM npcCharacters WHERE characterId = {id:UInt32}',
-    { id: characterId }
-  )
+  const [row] = await database.sql<NPCCharacter[]>`
+    SELECT * FROM npcCharacters WHERE characterId = ${characterId}
+  `
+  return row || null
 }
 
 /**
  * Get all NPC characters in a corporation
  */
 export async function getNPCCharactersByCorporation(corporationId: number): Promise<NPCCharacter[]> {
-  return await database.query<NPCCharacter>(
-    'SELECT * FROM npcCharacters WHERE corporationId = {corporationId:UInt32} ORDER BY name',
-    { corporationId }
-  )
+  return await database.sql<NPCCharacter[]>`
+    SELECT * FROM npcCharacters WHERE corporationId = ${corporationId} ORDER BY name
+  `
 }
 
 /**
  * Get all NPC characters of a bloodline
  */
 export async function getNPCCharactersByBloodline(bloodlineId: number): Promise<NPCCharacter[]> {
-  return await database.query<NPCCharacter>(
-    'SELECT * FROM npcCharacters WHERE bloodlineId = {bloodlineId:UInt32} ORDER BY name',
-    { bloodlineId }
-  )
+  return await database.sql<NPCCharacter[]>`
+    SELECT * FROM npcCharacters WHERE bloodlineId = ${bloodlineId} ORDER BY name
+  `
 }
 
 /**
  * Search NPC characters by name
  */
 export async function searchNPCCharacters(namePattern: string, limit: number = 10): Promise<NPCCharacter[]> {
-  return await database.query<NPCCharacter>(
-    'SELECT * FROM npcCharacters WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
-    { pattern: `%${namePattern}%`, limit }
-  )
+  return await database.sql<NPCCharacter[]>`
+    SELECT * FROM npcCharacters
+    WHERE name ILIKE ${`%${namePattern}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }
 
 /**
  * Get NPC character name by ID
  */
 export async function getNPCCharacterName(characterId: number): Promise<string | null> {
-  const result = await database.queryValue<string>(
-    'SELECT name FROM npcCharacters WHERE characterId = {id:UInt32}',
-    { id: characterId }
-  )
-  return result || null
+  const [result] = await database.sql<{name: string}[]>`
+    SELECT name FROM npcCharacters WHERE characterId = ${characterId}
+  `
+  return result?.name || null
 }
 
 /**
  * Count total NPC characters
  */
 export async function countNPCCharacters(): Promise<number> {
-  return await database.count('npcCharacters')
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM npcCharacters
+  `
+  return Number(result?.count || 0)
 }

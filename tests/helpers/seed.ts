@@ -1,77 +1,71 @@
 import { database } from '../../server/helpers/database';
 
-export async function seedKillmails(count: number = 10, startId: number = 1) {
+export async function seedKillmails(count: number = 10) {
     const killmails = [];
     const now = new Date();
 
-    for (let i = 0; i < count; i++) {
-        const id = startId + i;
+    for (let i = 1; i <= count; i++) {
         killmails.push({
-            killmailId: id,
+            killmailId: i,
             killmailTime: new Date(now.getTime() - i * 3600000).toISOString(), // 1 hour apart
             solarSystemId: 30000142, // Jita
-            victimCharacterId: 1000 + id,
-            victimCorporationId: 2000 + id,
-            victimAllianceId: 3000 + id,
+            victimCharacterId: 1000 + i,
+            victimCorporationId: 2000 + i,
+            victimAllianceId: 3000 + i,
             victimShipTypeId: 603, // Merlin
             victimDamageTaken: 1000,
-            totalValue: 1000000 * id,
-            hash: 'hash' + id
+            totalValue: 1000000 * i,
+            hash: 'hash' + i
         });
     }
-    // Using bulkInsert is safer for seeding new data, but bulkUpsert is now fixed and safe too.
-    // Stick to bulkInsert for explicit intention of "new data".
-    await database.bulkInsert('killmails', killmails);
+    await database.bulkUpsert('killmails', killmails, 'killmailId');
     return killmails;
 }
 
-export async function seedCharacters(count: number = 10, startId: number = 1) {
+export async function seedCharacters(count: number = 10) {
     const chars = [];
-    for (let i = 0; i < count; i++) {
-        const id = 1000 + startId + i;
+    for (let i = 1; i <= count; i++) {
         chars.push({
-            characterId: id,
-            name: `Character ${id}`,
-            corporationId: 2000 + startId + i,
-            allianceId: 3000 + startId + i,
+            characterId: 1000 + i,
+            name: `Character ${i}`,
+            corporationId: 2000 + i,
+            allianceId: 3000 + i,
             securityStatus: 0.5
         });
     }
-    await database.bulkInsert('characters', chars);
+    await database.bulkUpsert('characters', chars, 'characterId');
     return chars;
 }
 
-export async function seedCorporations(count: number = 10, startId: number = 1) {
+export async function seedCorporations(count: number = 10) {
     const corps = [];
-    for (let i = 0; i < count; i++) {
-        const id = 2000 + startId + i;
+    for (let i = 1; i <= count; i++) {
         corps.push({
-            corporationId: id,
-            name: `Corporation ${id}`,
-            allianceId: 3000 + startId + i,
-            ticker: `CORP${id}`
+            corporationId: 2000 + i,
+            name: `Corporation ${i}`,
+            allianceId: 3000 + i,
+            ticker: `CORP${i}`
         });
     }
-    await database.bulkInsert('corporations', corps);
+    await database.bulkUpsert('corporations', corps, 'corporationId');
     return corps;
 }
 
-export async function seedAlliances(count: number = 10, startId: number = 1) {
+export async function seedAlliances(count: number = 10) {
     const alliances = [];
-    for (let i = 0; i < count; i++) {
-        const id = 3000 + startId + i;
+    for (let i = 1; i <= count; i++) {
         alliances.push({
-            allianceId: id,
-            name: `Alliance ${id}`,
-            ticker: `ALL${id}`
+            allianceId: 3000 + i,
+            name: `Alliance ${i}`,
+            ticker: `ALL${i}`
         });
     }
-    await database.bulkInsert('alliances', alliances);
+    await database.bulkUpsert('alliances', alliances, 'allianceId');
     return alliances;
 }
 
 export async function clearTables(tables: string[]) {
     for (const table of tables) {
-        await database.execute(`TRUNCATE TABLE "${table}" RESTART IDENTITY CASCADE`);
+        await database.sql`TRUNCATE TABLE ${database.sql(table)} RESTART IDENTITY CASCADE`;
     }
 }

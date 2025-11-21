@@ -1,5 +1,17 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import { normalizeKillRow, render } from '../server/helpers/templates';
+
+// Mock logger for tests since it's auto-imported in Nitro but not available in test context
+beforeAll(() => {
+    // @ts-ignore - logger is auto-imported in Nitro context
+    global.logger = {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        debug: () => {},
+        success: () => {}
+    };
+});
 
 describe('Frontend Rendering & Helpers', () => {
     describe('normalizeKillRow', () => {
@@ -32,21 +44,65 @@ describe('Frontend Rendering & Helpers', () => {
     });
 
     describe('Template Rendering', () => {
-        // This test assumes templates/default/pages/home.hbs and layouts/main.hbs exist.
-        // If they don't, this might fail.
-        // We'll skip if file not found in a real scenario, but here we want to ensure they work if present.
+        it('should render a template without layout', async () => {
+            // Set theme to test to use test fixtures
+            const originalTheme = process.env.THEME;
+            process.env.THEME = 'test';
+            
+            try {
+                const html = await render(
+                    'pages/test-page.hbs',
+                    { title: 'Test Page' },
+                    { message: 'Hello World', items: ['Item 1', 'Item 2'] },
+                    undefined,
+                    false // no layout
+                );
+                
+                expect(html).toBeDefined();
+                expect(typeof html).toBe('string');
+                expect(html).toContain('Test Page');
+                expect(html).toContain('Hello World');
+                expect(html).toContain('Item 1');
+                expect(html).toContain('Item 2');
+            } finally {
+                // Restore original theme
+                if (originalTheme !== undefined) {
+                    process.env.THEME = originalTheme;
+                } else {
+                    delete process.env.THEME;
+                }
+            }
+        });
 
-        it('should render a template if it exists', async () => {
-            // We expect 'pages/home.hbs' to exist as it is used in the application.
-            // This test ensures the template file is present and the render function works.
-
-            // Passing useLayout=false to avoid dependency on layout file if possible,
-            // but render defaults to using layout.
-            const html = await render('pages/home.hbs', { title: 'Test' }, { killmails: [] }, undefined, false);
-
-            expect(html).toBeDefined();
-            expect(typeof html).toBe('string');
-            expect(html.length).toBeGreaterThan(0);
+        it('should render a template with layout', async () => {
+            // Set theme to test to use test fixtures
+            const originalTheme = process.env.THEME;
+            process.env.THEME = 'test';
+            
+            try {
+                const html = await render(
+                    'pages/test-page.hbs',
+                    { title: 'Test Page' },
+                    { message: 'Test Message' },
+                    undefined,
+                    true, // with layout
+                    'layouts/test-layout.hbs'
+                );
+                
+                expect(html).toBeDefined();
+                expect(typeof html).toBe('string');
+                expect(html).toContain('<!DOCTYPE html>');
+                expect(html).toContain('<title>Test Page');
+                expect(html).toContain('Test Message');
+                expect(html).toContain('EVE-KILL');
+            } finally {
+                // Restore original theme
+                if (originalTheme !== undefined) {
+                    process.env.THEME = originalTheme;
+                } else {
+                    delete process.env.THEME;
+                }
+            }
         });
     });
 });

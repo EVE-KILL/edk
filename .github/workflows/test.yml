@@ -56,3 +56,4 @@ jobs:
         DB_NAME: edk
         REDIS_HOST: localhost
         REDIS_PORT: 6379
+        TEST_DB_NAME: edk_test

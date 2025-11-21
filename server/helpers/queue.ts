@@ -136,15 +136,15 @@ export async function getQueueStats(queueType: QueueType): Promise<{
 }> {
   const queue = getQueue(queueType)
 
-  const [active, waiting, completed, failed, delayed] = await Promise.all([
-    queue.count('active'),
-    queue.count('waiting'),
-    queue.count('completed'),
-    queue.count('failed'),
-    queue.count('delayed')
-  ])
+  const counts = await queue.getJobCounts('active', 'waiting', 'completed', 'failed', 'delayed')
 
-  return { active, waiting, completed, failed, delayed }
+  return {
+    active: counts.active,
+    waiting: counts.waiting,
+    completed: counts.completed,
+    failed: counts.failed,
+    delayed: counts.delayed
+  }
 }
 
 /**

@@ -43,11 +43,11 @@ try {
         AND pid <> pg_backend_pid()
     `.catch(() => {});
 
-    await sql`DROP DATABASE IF EXISTS ${sql(TEST_DB)}`;
-    await sql`CREATE DATABASE ${sql(TEST_DB)}`;
+    await sql.unsafe(`DROP DATABASE IF EXISTS "${TEST_DB}"`);
+    await sql.unsafe(`CREATE DATABASE "${TEST_DB}"`);
 } catch (e) {
     console.error('Failed to recreate test database:', e);
-    console.error('Admin URL used:', adminUrl);
+    console.error('Database:', DB_HOST, 'Port:', DB_PORT, 'Name:', ADMIN_DATABASE);
     process.exit(1);
 } finally {
     await sql.end();

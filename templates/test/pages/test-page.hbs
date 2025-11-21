@@ -1,0 +1,13 @@
+<div class="test-page">
+  <h1>{{page.title}}</h1>
+  {{#if data.message}}
+  <p class="message">{{data.message}}</p>
+  {{/if}}
+  {{#if data.items}}
+  <ul class="items">
+    {{#each data.items}}
+    <li>{{this}}</li>
+    {{/each}}
+  </ul>
+  {{/if}}
+</div>
