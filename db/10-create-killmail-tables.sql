@@ -16,9 +16,9 @@ CREATE TABLE IF NOT EXISTS killmails (
   "victimShipTypeId" INTEGER,
 
   -- Victim position
-  "positionX" REAL,
-  "positionY" REAL,
-  "positionZ" REAL,
+  "positionX" DOUBLE PRECISION,
+  "positionY" DOUBLE PRECISION,
+  "positionZ" DOUBLE PRECISION,
 
   -- ESI hash for API access
   "hash" VARCHAR(40) DEFAULT '',
