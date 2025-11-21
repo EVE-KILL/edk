@@ -7,10 +7,6 @@ describe('DatabaseHelper', () => {
     await database.ping()
   })
 
-  afterAll(async () => {
-    await database.close()
-  })
-
   it('should be connected', async () => {
     const connected = await database.ping()
     expect(connected).toBe(true)

@@ -203,7 +203,7 @@ export async function getKillmail(
 ): Promise<ESIKillmail | null> {
   // Get main killmail record
   const killmail = await database.queryOne<any>(
-    "SELECT * FROM killmails WHERE killmailId = {id:UInt32}",
+    'SELECT * FROM killmails WHERE "killmailId" = {id:UInt32}',
     { id: killmailId }
   );
 
@@ -213,13 +213,13 @@ export async function getKillmail(
 
   // Get attackers
   const attackers = await database.query<any>(
-    "SELECT * FROM attackers WHERE killmailId = {id:UInt32}",
+    'SELECT * FROM attackers WHERE "killmailId" = {id:UInt32}',
     { id: killmailId }
   );
 
   // Get items
   const items = await database.query<any>(
-    "SELECT * FROM items WHERE killmailId = {id:UInt32}",
+    'SELECT * FROM items WHERE "killmailId" = {id:UInt32}',
     { id: killmailId }
   );
 
