@@ -141,11 +141,18 @@ export class DatabaseHelper {
 
     try {
         const columns = Object.keys(items[0])
+        const updateColumns = columns.filter(c => c !== conflictKey)
+
+        const updateSet = updateColumns.map(col =>
+            this.sql`${this.sql(col)} = EXCLUDED.${this.sql(col)}`
+        )
+
+        // console.log('Update columns:', updateColumns)
 
         await this.sql`
             INSERT INTO ${this.sql(table)} ${this.sql(items)}
             ON CONFLICT (${this.sql(conflictKey)})
-            DO UPDATE SET ${this.sql(items[0], columns.filter(c => c !== conflictKey))}
+            DO UPDATE SET ${updateSet}
         `
     } catch (error) {
       console.error('Database upsert error:', error)
