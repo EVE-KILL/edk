@@ -47,30 +47,26 @@ export async function getPrice(
 ): Promise<Price | null> {
   const queryDate = date || new Date().toISOString().split('T')[0]
 
-  const sql = `
+  const [row] = await database.sql<Price[]>`
     SELECT
-      typeId,
-      regionId,
-      TO_CHAR(priceDate, 'YYYY-MM-DD') as priceDate,
-      averagePrice,
-      highestPrice,
-      lowestPrice,
-      orderCount,
-      volume,
-      TO_CHAR(updatedAt, 'YYYY-MM-DD HH24:MI:SS') as updatedAt
+      "typeId",
+      "regionId",
+      TO_CHAR("priceDate", 'YYYY-MM-DD') as "priceDate",
+      "averagePrice",
+      "highestPrice",
+      "lowestPrice",
+      "orderCount",
+      "volume",
+      TO_CHAR("updatedAt", 'YYYY-MM-DD HH24:MI:SS') as "updatedAt"
     FROM prices
-    WHERE typeId = {typeId:UInt32}
-      AND regionId = {regionId:UInt32}
-      AND priceDate = {date:Date}
-    ORDER BY updatedAt DESC
+    WHERE "typeId" = ${typeId}
+      AND "regionId" = ${regionId}
+      AND "priceDate" = ${queryDate}
+    ORDER BY "updatedAt" DESC
     LIMIT 1
   `
 
-  return await database.queryOne<Price>(sql, {
-    typeId,
-    regionId,
-    date: queryDate
-  })
+  return row || null
 }
 
 /**
@@ -85,28 +81,23 @@ export async function getPriceHistory(
   regionId: number = 10000002,
   days: number = 14
 ): Promise<Price[]> {
-  const sql = `
+  return await database.sql<Price[]>`
     SELECT
-      typeId,
-      regionId,
-      TO_CHAR(priceDate, 'YYYY-MM-DD') as priceDate,
-      averagePrice,
-      highestPrice,
-      lowestPrice,
-      orderCount,
-      volume,
-      TO_CHAR(updatedAt, 'YYYY-MM-DD HH24:MI:SS') as updatedAt
+      "typeId",
+      "regionId",
+      TO_CHAR("priceDate", 'YYYY-MM-DD') as "priceDate",
+      "averagePrice",
+      "highestPrice",
+      "lowestPrice",
+      "orderCount",
+      "volume",
+      TO_CHAR("updatedAt", 'YYYY-MM-DD HH24:MI:SS') as "updatedAt"
     FROM prices
-    WHERE typeId = {typeId:UInt32}
-      AND regionId = {regionId:UInt32}
-      AND priceDate >= CURRENT_DATE - INTERVAL '${days} days'
-    ORDER BY priceDate DESC
+    WHERE "typeId" = ${typeId}
+      AND "regionId" = ${regionId}
+      AND "priceDate" >= CURRENT_DATE - (${days} || ' days')::interval
+    ORDER BY "priceDate" DESC
   `
-
-  return await database.query<Price>(sql, {
-    typeId,
-    regionId
-  })
 }
 
 /**
@@ -119,28 +110,25 @@ export async function getLatestPrice(
   typeId: number,
   regionId: number = 10000002
 ): Promise<Price | null> {
-  const sql = `
+  const [row] = await database.sql<Price[]>`
     SELECT
-      typeId,
-      regionId,
-      TO_CHAR(priceDate, 'YYYY-MM-DD') as priceDate,
-      averagePrice,
-      highestPrice,
-      lowestPrice,
-      orderCount,
-      volume,
-      TO_CHAR(updatedAt, 'YYYY-MM-DD HH24:MI:SS') as updatedAt
+      "typeId",
+      "regionId",
+      TO_CHAR("priceDate", 'YYYY-MM-DD') as "priceDate",
+      "averagePrice",
+      "highestPrice",
+      "lowestPrice",
+      "orderCount",
+      "volume",
+      TO_CHAR("updatedAt", 'YYYY-MM-DD HH24:MI:SS') as "updatedAt"
     FROM prices
-    WHERE typeId = {typeId:UInt32}
-      AND regionId = {regionId:UInt32}
-    ORDER BY priceDate DESC, updatedAt DESC
+    WHERE "typeId" = ${typeId}
+      AND "regionId" = ${regionId}
+    ORDER BY "priceDate" DESC, "updatedAt" DESC
     LIMIT 1
   `
 
-  return await database.queryOne<Price>(sql, {
-    typeId,
-    regionId
-  })
+  return row || null
 }
 
 /**
@@ -166,15 +154,7 @@ export async function storePrices(data: PriceAPIResponse[]): Promise<void> {
   }))
 
   try {
-    // Postgres bulk insert (or upsert if primary key constraint exists)
-    // The prices table has PRIMARY KEY (typeId, regionId, priceDate)
-    // We should probably use ON CONFLICT DO UPDATE if duplicates are possible within the same batch or updates
-    // But database.bulkInsert assumes simple insert.
-    // If we need upsert, we might need a custom query or loop.
-    // Assuming simple insert for now or relying on errors being ignored/handled.
-    // If `storePrices` implies updating existing daily records, we need upsert.
-
-    // For now, using bulkInsert as it maps to INSERT.
+    // Postgres bulk insert
     await database.bulkInsert('prices', records)
   } catch (error) {
     logger.error(`[Prices] Failed to store prices for type ${data[0].type_id}`, { error, sample: records[0] })
@@ -194,20 +174,15 @@ export async function hasRecentPrice(
   regionId: number = 10000002,
   maxAgeDays: number = 3
 ): Promise<boolean> {
-  const sql = `
+  const [result] = await database.sql<{count: number}[]>`
     SELECT count(*) as count
     FROM prices
-    WHERE typeId = {typeId:UInt32}
-      AND regionId = {regionId:UInt32}
-      AND priceDate >= CURRENT_DATE - INTERVAL '${maxAgeDays} days'
+    WHERE "typeId" = ${typeId}
+      AND "regionId" = ${regionId}
+      AND "priceDate" >= CURRENT_DATE - (${maxAgeDays} || ' days')::interval
   `
 
-  const count = await database.queryValue<number>(sql, {
-    typeId,
-    regionId
-  })
-
-  return (count || 0) > 0
+  return Number(result?.count || 0) > 0
 }
 
 /**
@@ -223,33 +198,26 @@ export async function getLatestPricesForTypes(
     return new Map()
   }
 
-  const params: Record<string, unknown> = {
-    typeIds,
-    regionId
-  }
-
-  let dateClause = ''
+  let dateClause = database.sql``
   if (asOfDate) {
     const dateString = typeof asOfDate === 'string'
       ? asOfDate.split('T')[0]
       : asOfDate.toISOString().split('T')[0]
 
-    params.asOfDate = dateString
-    dateClause = 'AND priceDate <= {asOfDate:Date}'
+    dateClause = database.sql`AND "priceDate" <= ${dateString}`
   }
 
   // Postgres specific: Get latest price per typeId using DISTINCT ON
-  // CH uses argMax.
-  const rows = await database.query<{ typeId: number; averagePrice: number | null }>(`
-    SELECT DISTINCT ON (typeId)
-      typeId,
-      averagePrice
+  const rows = await database.sql<{ typeId: number; averagePrice: number | null }[]>`
+    SELECT DISTINCT ON ("typeId")
+      "typeId",
+      "averagePrice"
     FROM prices
-    WHERE regionId = {regionId:UInt32}
-      AND typeId = ANY({typeIds:Array(UInt32)})
+    WHERE "regionId" = ${regionId}
+      AND "typeId" = ANY(${typeIds})
       ${dateClause}
-    ORDER BY typeId, priceDate DESC, version DESC
-  `, params)
+    ORDER BY "typeId", "priceDate" DESC, "version" DESC
+  `
 
   const priceMap = new Map<number, number>()
   for (const row of rows) {

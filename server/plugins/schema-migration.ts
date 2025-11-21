@@ -117,7 +117,11 @@ async function loadChecksumsFromDb(): Promise<FileChecksums> {
     const exists = await database.tableExists('migrations');
     if (!exists) return {};
 
-    const rows = await database.query<{filename: string, checksum: string}>('SELECT DISTINCT ON (filename) filename, checksum FROM migrations ORDER BY filename, id DESC');
+    const rows = await database.sql<{filename: string, checksum: string}[]>`
+        SELECT DISTINCT ON (filename) filename, checksum
+        FROM migrations
+        ORDER BY filename, id DESC
+    `;
     const checksums: FileChecksums = {};
     for (const row of rows) {
       checksums[row.filename] = row.checksum;
@@ -141,10 +145,10 @@ async function saveChecksumToDb(filename: string, checksum: string, success: boo
              return;
         }
 
-        await database.execute(
-            'INSERT INTO migrations (filename, checksum, success) VALUES ({filename:String}, {checksum:String}, {success:Boolean})',
-            { filename, checksum, success }
-        );
+        await database.sql`
+            INSERT INTO migrations (filename, checksum, success)
+            VALUES (${filename}, ${checksum}, ${success})
+        `;
     } catch (e) {
         console.error(chalk.red(`Failed to save checksum for ${filename} to DB:`), e);
     }
@@ -362,7 +366,7 @@ async function syncTableSchema(statement: string) {
             alterSql += ` DEFAULT ${col.defaultValue}`
         }
 
-        await database.execute(alterSql)
+        await database.sql.unsafe(alterSql)
         console.log(chalk.green(`   ✓ Added column '${col.name}'`))
       } else {
           // Check for type mismatches (simplified check)
@@ -513,7 +517,7 @@ export async function migrateSchema() {
 
             // Attempt to execute the statement (e.g. CREATE TABLE)
             try {
-                await database.execute(statement)
+                await database.sql.unsafe(statement)
             } catch (e) {
                  // Ignore "already exists" errors for CREATE TABLE/INDEX, but re-throw others
                  const msg = e instanceof Error ? e.message : String(e);

@@ -17,54 +17,38 @@ export interface Category {
  * Get a single category by ID
  */
 export async function getCategory(categoryId: number): Promise<Category | null> {
-  return await database.queryOne<Category>(
-    'SELECT * FROM categories WHERE categoryId = {id:UInt32}',
-    { id: categoryId }
-  )
+  const [row] = await database.sql<Category[]>`
+    SELECT * FROM categories WHERE categoryId = ${categoryId}
+  `
+  return row || null
 }
 
 /**
  * Get all published categories
  */
 export async function getPublishedCategories(): Promise<Category[]> {
-  return await database.query<Category>(
-    'SELECT * FROM categories WHERE published = 1 ORDER BY name'
-  )
+  return await database.sql<Category[]>`
+    SELECT * FROM categories WHERE published = 1 ORDER BY name
+  `
 }
 
 /**
  * Get all categories
  */
 export async function getAllCategories(): Promise<Category[]> {
-  return await database.query<Category>(
-    'SELECT * FROM categories ORDER BY name'
-  )
+  return await database.sql<Category[]>`
+    SELECT * FROM categories ORDER BY name
+  `
 }
 
 /**
  * Search categories by name
  */
 export async function searchCategories(namePattern: string, limit: number = 10): Promise<Category[]> {
-  return await database.query<Category>(
-    'SELECT * FROM categories WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
-    { pattern: `%${namePattern}%`, limit }
-  )
-}
-
-/**
- * Get category name by ID
- */
-export async function getCategoryName(categoryId: number): Promise<string | null> {
-  const result = await database.queryValue<string>(
-    'SELECT name FROM categories WHERE categoryId = {id:UInt32}',
-    { id: categoryId }
-  )
-  return result || null
-}
-
-/**
- * Count total categories
- */
-export async function countCategories(): Promise<number> {
-  return await database.count('categories')
+  return await database.sql<Category[]>`
+    SELECT * FROM categories
+    WHERE name ILIKE ${`%${namePattern}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }

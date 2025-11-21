@@ -88,11 +88,11 @@ function getDateRange(periodType: 'hour' | 'day' | 'week' | 'month' | 'all'): { 
  * Calculate derived stats from raw data
  */
 function calculateDerivedStats(stats: any): any {
-  const efficiency = (stats.iskDestroyed + stats.iskLost) > 0
-    ? (stats.iskDestroyed / (stats.iskDestroyed + stats.iskLost)) * 100
+  const efficiency = (Number(stats.iskDestroyed) + Number(stats.iskLost)) > 0
+    ? (Number(stats.iskDestroyed) / (Number(stats.iskDestroyed) + Number(stats.iskLost))) * 100
     : 0
 
-  const killLossRatio = stats.losses > 0 ? stats.kills / stats.losses : 0
+  const killLossRatio = Number(stats.losses) > 0 ? Number(stats.kills) / Number(stats.losses) : 0
 
   return {
     ...stats,
@@ -112,70 +112,65 @@ export async function getEntityStats(
 ): Promise<EntityStats | null> {
   const { start, end } = getDateRange(periodType)
 
-  // This query will be expensive without pre-aggregation.
-  // Simplified version: check killmails table for kills/losses.
-
-  let killsWhere = ''
-  let lossesWhere = ''
+  let killsWhere
+  let lossesWhere
 
   if (entityType === 'character') {
-    killsWhere = `"topAttackerCharacterId" = {entityId:UInt32}`;
-    lossesWhere = `"victimCharacterId" = {entityId:UInt32}`;
+    killsWhere = database.sql`"topAttackerCharacterId" = ${entityId}`;
+    lossesWhere = database.sql`"victimCharacterId" = ${entityId}`;
   } else if (entityType === 'corporation') {
-    killsWhere = `"topAttackerCorporationId" = {entityId:UInt32}`;
-    lossesWhere = `"victimCorporationId" = {entityId:UInt32}`;
-  } else if (entityType === 'alliance') {
-    killsWhere = `"topAttackerAllianceId" = {entityId:UInt32}`;
-    lossesWhere = `"victimAllianceId" = {entityId:UInt32}`;
+    killsWhere = database.sql`"topAttackerCorporationId" = ${entityId}`;
+    lossesWhere = database.sql`"victimCorporationId" = ${entityId}`;
+  } else { // alliance
+    killsWhere = database.sql`"topAttackerAllianceId" = ${entityId}`;
+    lossesWhere = database.sql`"victimAllianceId" = ${entityId}`;
   }
 
   // Combine Kills and Losses stats in one go using CTEs
-  const sql = `
+  const [result] = await database.sql<any[]>`
     WITH kills_data AS (
       SELECT
         count(*) as kills,
-        sum("totalValue") as iskDestroyed,
-        sum(case when solo then 1 else 0 end) as soloKills,
-        sum(case when npc then 1 else 0 end) as npcKills,
-        max("killmailTime") as lastKillTime
+        sum("totalValue") as "iskDestroyed",
+        sum(case when solo then 1 else 0 end) as "soloKills",
+        sum(case when npc then 1 else 0 end) as "npcKills",
+        max("killmailTime") as "lastKillTime"
       FROM killmails
       WHERE ${killsWhere}
-      AND "killmailTime" >= {start:String}::timestamp AND "killmailTime" <= {end:String}::timestamp
+      AND "killmailTime" >= ${start}::timestamp AND "killmailTime" <= ${end}::timestamp
     ),
     losses_data AS (
       SELECT
         count(*) as losses,
-        sum("totalValue") as iskLost,
-        sum(case when solo then 1 else 0 end) as soloLosses,
-        sum(case when npc then 1 else 0 end) as npcLosses,
-        max("killmailTime") as lastLossTime
+        sum("totalValue") as "iskLost",
+        sum(case when solo then 1 else 0 end) as "soloLosses",
+        sum(case when npc then 1 else 0 end) as "npcLosses",
+        max("killmailTime") as "lastLossTime"
       FROM killmails
       WHERE ${lossesWhere}
-      AND "killmailTime" >= {start:String}::timestamp AND "killmailTime" <= {end:String}::timestamp
+      AND "killmailTime" >= ${start}::timestamp AND "killmailTime" <= ${end}::timestamp
     )
     SELECT
-      {entityId:UInt32} as "entityId",
-      '{entityType:String}' as "entityType",
-      '{periodType:String}' as "periodType",
+      ${entityId} as "entityId",
+      ${entityType} as "entityType",
+      ${periodType} as "periodType",
       COALESCE(k.kills, 0) as kills,
       COALESCE(l.losses, 0) as losses,
-      COALESCE(k.iskDestroyed, 0) as "iskDestroyed",
-      COALESCE(l.iskLost, 0) as "iskLost",
-      0 as points, -- TODO: Implement point calculation logic
-      COALESCE(k.soloKills, 0) as "soloKills",
-      COALESCE(l.soloLosses, 0) as "soloLosses",
-      COALESCE(k.npcKills, 0) as "npcKills",
-      COALESCE(l.npcLosses, 0) as "npcLosses",
-      0 as "topShipTypeId", -- Placeholder
+      COALESCE(k."iskDestroyed", 0) as "iskDestroyed",
+      COALESCE(l."iskLost", 0) as "iskLost",
+      0 as points,
+      COALESCE(k."soloKills", 0) as "soloKills",
+      COALESCE(l."soloLosses", 0) as "soloLosses",
+      COALESCE(k."npcKills", 0) as "npcKills",
+      COALESCE(l."npcLosses", 0) as "npcLosses",
+      0 as "topShipTypeId",
       0 as "topShipKills",
       0 as "topSystemId",
       0 as "topSystemKills",
-      k.lastKillTime as "lastKillTime",
-      l.lastLossTime as "lastLossTime"
+      k."lastKillTime" as "lastKillTime",
+      l."lastLossTime" as "lastLossTime"
     FROM kills_data k, losses_data l
   `;
-
-  const result = await database.queryOne<any>(sql, { entityId, start, end });
 
   return result ? calculateDerivedStats(result) : null
 }
@@ -189,10 +184,6 @@ export async function getMultipleEntityStats(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all' = 'all'
 ): Promise<EntityStats[]> {
   // Fallback: loop and call getEntityStats.
-  // Or implement complex aggregation.
-  // Given time constraints, loop is safer logic-wise, but slower.
-  // But since this was likely used for small batches, maybe ok.
-
   const results: EntityStats[] = []
   for (const id of entityIds) {
     const stat = await getEntityStats(id, entityType, periodType)
@@ -229,9 +220,6 @@ export async function getTopEntitiesByKills(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 100
 ): Promise<EntityStats[]> {
-  // Querying top entities without pre-aggregation is heavy on killmails table.
-  // But we can try using topAttacker columns on killmails table.
-
   const { start, end } = getDateRange(periodType)
 
   let groupCol = ''
@@ -239,24 +227,22 @@ export async function getTopEntitiesByKills(
   else if (entityType === 'corporation') groupCol = 'topAttackerCorporationId';
   else groupCol = 'topAttackerAllianceId';
 
-  const sql = `
+  const results = await database.sql<any[]>`
     SELECT
-      ${groupCol} as entityId,
-      '{entityType:String}' as entityType,
-      '{periodType:String}' as periodType,
+      ${database.sql(groupCol)} as "entityId",
+      ${entityType} as "entityType",
+      ${periodType} as "periodType",
       count(*) as kills,
       0 as losses,
-      sum(totalValue) as iskDestroyed,
-      0 as iskLost
+      sum("totalValue") as "iskDestroyed",
+      0 as "iskLost"
     FROM killmails
-    WHERE ${groupCol} IS NOT NULL AND ${groupCol} > 0
-    AND killmailTime >= {start:String}::timestamp AND killmailTime <= {end:String}::timestamp
-    GROUP BY ${groupCol}
+    WHERE ${database.sql(groupCol)} IS NOT NULL AND ${database.sql(groupCol)} > 0
+    AND "killmailTime" >= ${start}::timestamp AND "killmailTime" <= ${end}::timestamp
+    GROUP BY ${database.sql(groupCol)}
     ORDER BY kills DESC
-    LIMIT {limit:UInt32}
+    LIMIT ${limit}
   `
-
-  const results = await database.query<any>(sql, { start, end, limit });
   return results.map(r => calculateDerivedStats(r))
 }
 
@@ -269,8 +255,5 @@ export async function getTopEntitiesByEfficiency(
   minKills: number = 10,
   limit: number = 100
 ): Promise<EntityStats[]> {
-  // This requires joining kills and losses which is very expensive without materialized views.
-  // We return empty for now or implement heavy query.
-  // Returning empty list to avoid performance kill.
   return []
 }

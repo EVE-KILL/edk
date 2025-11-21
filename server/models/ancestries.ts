@@ -19,55 +19,38 @@ export interface Ancestry {
  * Get a single ancestry by ID
  */
 export async function getAncestry(ancestryId: number): Promise<Ancestry | null> {
-  return await database.queryOne<Ancestry>(
-    'SELECT * FROM ancestries WHERE ancestryId = {id:UInt32}',
-    { id: ancestryId }
-  )
+  const [row] = await database.sql<Ancestry[]>`
+    SELECT * FROM ancestries WHERE ancestryId = ${ancestryId}
+  `
+  return row || null
 }
 
 /**
  * Get all ancestries for a bloodline
  */
 export async function getAncestriesByBloodline(bloodlineId: number): Promise<Ancestry[]> {
-  return await database.query<Ancestry>(
-    'SELECT * FROM ancestries WHERE bloodlineId = {bloodlineId:UInt32} ORDER BY name',
-    { bloodlineId }
-  )
+  return await database.sql<Ancestry[]>`
+    SELECT * FROM ancestries WHERE bloodlineId = ${bloodlineId} ORDER BY name
+  `
 }
 
 /**
  * Get all ancestries
  */
 export async function getAllAncestries(): Promise<Ancestry[]> {
-  return await database.query<Ancestry>(
-    'SELECT * FROM ancestries ORDER BY bloodlineId, name'
-  )
+  return await database.sql<Ancestry[]>`
+    SELECT * FROM ancestries ORDER BY bloodlineId, name
+  `
 }
 
 /**
  * Search ancestries by name
  */
 export async function searchAncestries(namePattern: string, limit: number = 10): Promise<Ancestry[]> {
-  return await database.query<Ancestry>(
-    'SELECT * FROM ancestries WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
-    { pattern: `%${namePattern}%`, limit }
-  )
-}
-
-/**
- * Get ancestry name by ID
- */
-export async function getAncestryName(ancestryId: number): Promise<string | null> {
-  const result = await database.queryValue<string>(
-    'SELECT name FROM ancestries WHERE ancestryId = {id:UInt32}',
-    { id: ancestryId }
-  )
-  return result || null
-}
-
-/**
- * Count total ancestries
- */
-export async function countAncestries(): Promise<number> {
-  return await database.count('ancestries')
+  return await database.sql<Ancestry[]>`
+    SELECT * FROM ancestries
+    WHERE name ILIKE ${`%${namePattern}%`}
+    ORDER BY name
+    LIMIT ${limit}
+  `
 }
