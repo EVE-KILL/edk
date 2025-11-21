@@ -1,10 +1,9 @@
 -- Configuration table - Tracks import state, build numbers, and metadata
 CREATE TABLE IF NOT EXISTS config (
-  "configKey" TEXT PRIMARY KEY,
-  "configValue" TEXT,
+  "configKey" VARCHAR(255) PRIMARY KEY,
+  "configValue" VARCHAR(255),
   "buildNumber" INTEGER,
-  "tableName" TEXT,
+  "tableName" VARCHAR(255),
   "rowCount" INTEGER,
-  "updatedAt" TIMESTAMP,
-  "version" BIGINT
+  "updatedAt" TIMESTAMP
 );

@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { database } from '../server/helpers/database';
+import { database } from './setup';
 import { migrateSchema } from '../server/plugins/schema-migration';
 import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';

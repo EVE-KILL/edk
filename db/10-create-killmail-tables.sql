@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS killmails (
   "positionZ" DOUBLE PRECISION,
 
   -- ESI hash for API access
-  "hash" TEXT DEFAULT '',
+  "hash" VARCHAR(40) DEFAULT '',
 
   -- Denormalized attacker info (top/final blow attacker)
   "topAttackerCharacterId" INTEGER,
@@ -38,8 +38,7 @@ CREATE TABLE IF NOT EXISTS killmails (
   "solo" BOOLEAN DEFAULT false,
   "awox" BOOLEAN DEFAULT false,
 
-  "createdAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT
+  "createdAt" TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS "idx_killmails_solar_system" ON killmails ("solarSystemId");
@@ -65,8 +64,7 @@ CREATE TABLE IF NOT EXISTS attackers (
   "securityStatus" REAL,
   "shipTypeId" INTEGER,
   "weaponTypeId" INTEGER,
-  "createdAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT
+  "createdAt" TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS "idx_attackers_killmail_id" ON attackers ("killmailId");
@@ -89,8 +87,7 @@ CREATE TABLE IF NOT EXISTS items (
   "quantityDropped" INTEGER,
   "quantityDestroyed" INTEGER,
   "singleton" BOOLEAN,
-  "createdAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT
+  "createdAt" TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS "idx_items_killmail_id" ON items ("killmailId");

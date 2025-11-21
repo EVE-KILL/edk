@@ -12,7 +12,6 @@ export interface Config {
   tableName: string | null
   rowCount: number | null
   updatedAt: string | null
-  version: number | null
 }
 
 /**
@@ -30,16 +29,14 @@ export async function getConfig(key: string): Promise<string | null> {
  */
 export async function setConfig(key: string, value: string): Promise<void> {
   const now = new Date()
-  const version = Date.now()
 
   await database.sql`
-    INSERT INTO config ("configKey", "configValue", "updatedAt", "version")
-    VALUES (${key}, ${value}, ${now}, ${version})
+    INSERT INTO config ("configKey", "configValue", "updatedAt")
+    VALUES (${key}, ${value}, ${now})
     ON CONFLICT ("configKey")
     DO UPDATE SET
       "configValue" = ${value},
-      "updatedAt" = ${now},
-      "version" = ${version}
+      "updatedAt" = ${now}
   `
 }
 

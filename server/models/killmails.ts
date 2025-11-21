@@ -22,7 +22,6 @@ export interface Killmail {
   positionY: number;
   positionZ: number;
   createdAt: string;
-  version: number;
 }
 
 export interface ESIKillmailItem {
@@ -280,7 +279,6 @@ export async function storeKillmail(
   try {
     const victim = esiData.victim;
     const nowUnix = Math.floor(Date.now() / 1000);
-    const version = Date.now();
     const killmailHash = hash || calculateKillmailHash(esiData);
     const valueBreakdown = await calculateKillmailValues(esiData);
 
@@ -298,9 +296,9 @@ export async function storeKillmail(
     const solo = attackerCount === 1;
     const npc = esiData.attackers.every((a) => !a.character_id); // All attackers are NPC
     const awox =
-      victim.alliance_id &&
+      !!(victim.alliance_id &&
       victim.alliance_id > 0 &&
-      esiData.attackers.some((a) => a.alliance_id === victim.alliance_id);
+      esiData.attackers.some((a) => a.alliance_id === victim.alliance_id));
 
     // Insert main killmail record
     const killmailRecord = {
@@ -339,7 +337,6 @@ export async function storeKillmail(
       awox: awox ?? false,
 
       createdAt: new Date(nowUnix * 1000),
-      version: version ?? Date.now(),
     };
 
     // Insert killmail
@@ -361,7 +358,6 @@ export async function storeKillmail(
       shipTypeId: attacker.ship_type_id ?? null,
       weaponTypeId: attacker.weapon_type_id ?? null,
       createdAt: new Date(nowUnix * 1000),
-      version,
     }));
 
     if (attackerRecords.length > 0) {
@@ -379,7 +375,6 @@ export async function storeKillmail(
         quantityDestroyed: item.quantity_destroyed ?? 0,
         singleton: item.singleton ?? 0,
         createdAt: new Date(nowUnix * 1000),
-        version,
       }));
 
       await database.bulkInsert("items", itemRecords);
@@ -402,7 +397,6 @@ export async function storeKillmailsBulk(
 
   try {
     const nowUnix = Math.floor(Date.now() / 1000);
-    const version = Date.now();
     const valueBreakdowns = await resolveKillmailValueBreakdowns(
       esiDataArray,
       valueOverrides
@@ -428,9 +422,9 @@ export async function storeKillmailsBulk(
       const solo = attackerCount === 1;
       const npc = esi.attackers.every((a) => !a.character_id); // All attackers are NPC
       const awox =
-        victim.alliance_id &&
+        !!(victim.alliance_id &&
         victim.alliance_id > 0 &&
-        esi.attackers.some((a) => a.alliance_id === victim.alliance_id);
+        esi.attackers.some((a) => a.alliance_id === victim.alliance_id));
 
       return {
         killmailId: esi.killmail_id ?? 0,
@@ -455,7 +449,6 @@ export async function storeKillmailsBulk(
         solo: solo ?? false,
         awox: awox ?? false,
         createdAt: new Date(nowUnix * 1000),
-        version: version ?? Date.now(),
       };
     });
 
@@ -479,7 +472,6 @@ export async function storeKillmailsBulk(
         shipTypeId: attacker.ship_type_id ?? null,
         weaponTypeId: attacker.weapon_type_id ?? null,
         createdAt: new Date(nowUnix * 1000),
-        version: version ?? Date.now(),
       }))
     );
 
@@ -505,7 +497,6 @@ export async function storeKillmailsBulk(
         quantityDestroyed: item.quantity_destroyed ?? 0,
         singleton: item.singleton ?? 0,
         createdAt: new Date(nowUnix * 1000),
-        version: version ?? Date.now(),
       }));
     });
 
@@ -634,7 +625,7 @@ export async function getKillmailDetails(
         AND "priceDate" = (
           SELECT max("priceDate") FROM prices WHERE "regionId" = 10000002
         )
-      ORDER BY "typeId", version DESC
+      ORDER BY "typeId"
     ) vship_price ON k."victimShipTypeId" = vship_price."typeId"
 
     LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
@@ -670,7 +661,7 @@ export async function getKillmailItems(
       FROM prices
       WHERE "regionId" = 10000002
       AND "priceDate" = (SELECT max("priceDate") FROM prices WHERE "regionId" = 10000002)
-      ORDER BY "typeId", version DESC
+      ORDER BY "typeId"
     ) p ON i."itemTypeId" = p."typeId"
     WHERE i."killmailId" = ${killmailId}
     AND i."itemTypeId" IS NOT NULL

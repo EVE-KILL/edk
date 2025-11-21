@@ -545,7 +545,6 @@ export interface Character {
   raceId: number
   securityStatus: number
   updatedAt: Date
-  version: number
 }
 
 /**
@@ -660,7 +659,6 @@ export async function storeCharacter(
       raceId: data.raceId,
       securityStatus: data.securityStatus,
       updatedAt: new Date(now * 1000),
-      version: now
     }
   ], ['characterId'])
 }
@@ -698,7 +696,6 @@ export async function storeCharactersBulk(
     raceId: char.raceId,
     securityStatus: char.securityStatus,
     updatedAt: new Date(now * 1000),
-    version: now
   }))
 
   await database.bulkInsert('characters', records)
