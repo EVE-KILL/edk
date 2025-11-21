@@ -242,12 +242,12 @@ export async function getCorporationWithAlliance(corporationId: number): Promise
     SELECT
       c.name as name,
       c.ticker as ticker,
-      c.allianceId as "allianceId",
+      c."allianceId" as "allianceId",
       alliance.name as "allianceName",
       alliance.ticker as "allianceTicker"
     FROM corporations c
-    LEFT JOIN alliances alliance ON c.allianceId = alliance.allianceId
-    WHERE c.corporationId = ${corporationId}
+    LEFT JOIN alliances alliance ON c."allianceId" = alliance."allianceId"
+    WHERE c."corporationId" = ${corporationId}
     LIMIT 1
   `
   return row || null

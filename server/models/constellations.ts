@@ -25,7 +25,7 @@ export interface Constellation {
  */
 export async function getConstellation(constellationId: number): Promise<Constellation | null> {
   const [row] = await database.sql<Constellation[]>`
-    SELECT * FROM constellations WHERE constellationId = ${constellationId}
+    SELECT * FROM constellations WHERE "constellationId" = ${constellationId}
   `
   return row || null
 }
@@ -55,10 +55,10 @@ export async function searchConstellations(namePattern: string, limit: number = 
  * Get constellation name by ID
  */
 export async function getConstellationName(constellationId: number): Promise<string | null> {
-  const [result] = await database.sql<{name: string}[]>`
-    SELECT name FROM constellations WHERE constellationId = ${constellationId}
+  const [row] = await database.sql<{ name: string }[]>`
+    SELECT name FROM constellations WHERE "constellationId" = ${constellationId}
   `
-  return result?.name || null
+  return row?.name || null
 }
 
 /**

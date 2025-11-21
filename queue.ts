@@ -112,19 +112,19 @@ async function startQueues(queueNames?: string[], options: QueueOptions = {}): P
 
     try {
       // When limit is set, use concurrency=1 to process one at a time
-      const worker = options.limit 
+      const worker = options.limit
         ? module.createWorker(REDIS_CONFIG, { concurrency: 1 })
         : module.createWorker(REDIS_CONFIG)
 
       // Add event listeners
       worker.on('completed', (job, result) => {
         console.log(`✅ [${queueName}] Job ${job.id} completed`)
-        
+
         // Track job count if limit is set
         if (options.limit) {
           const count = (jobCounts.get(queueName) || 0) + 1
           jobCounts.set(queueName, count)
-          
+
           if (count >= options.limit) {
             console.log(chalk.yellow(`⏹️  [${queueName}] Reached limit of ${options.limit} jobs, stopping worker...`))
             worker.close().then(() => {
@@ -141,12 +141,12 @@ async function startQueues(queueNames?: string[], options: QueueOptions = {}): P
 
       worker.on('failed', (job, error) => {
         console.error(`❌ [${queueName}] Job ${job?.id} failed:`, error?.message)
-        
+
         // Still count failed jobs towards the limit
         if (options.limit) {
           const count = (jobCounts.get(queueName) || 0) + 1
           jobCounts.set(queueName, count)
-          
+
           if (count >= options.limit) {
             console.log(chalk.yellow(`⏹️  [${queueName}] Reached limit of ${options.limit} jobs, stopping worker...`))
             worker.close().then(() => {
@@ -209,7 +209,7 @@ async function main() {
   const args = process.argv.slice(2)
   const queueNames: string[] = []
   const options: QueueOptions = {}
-  
+
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--limit' && i + 1 < args.length) {
       options.limit = parseInt(args[i + 1])

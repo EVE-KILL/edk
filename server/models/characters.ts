@@ -70,10 +70,10 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
         alliance.ticker as "allianceTicker",
         k.killmailTime as "lastSeen"
       FROM attackers a
-      LEFT JOIN killmails k ON a.killmailId = k.killmailId
-      LEFT JOIN corporations corp ON a.corporationId = corp.corporationId
-      LEFT JOIN corporations alliance ON a.allianceId = alliance.corporationId
-      WHERE a.characterId = ${characterId}
+      LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+      LEFT JOIN corporations corp ON a."corporationId" = corp."corporationId"
+      LEFT JOIN alliances alliance ON a."allianceId" = alliance."allianceId"
+      WHERE a."characterId" = ${characterId}
 
       UNION ALL
 
@@ -84,11 +84,11 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
         k.victimAllianceId as "allianceId",
         alliance.name as "allianceName",
         alliance.ticker as "allianceTicker",
-        k.killmailTime as "lastSeen"
+        k."killmailTime" as "lastSeen"
       FROM killmails k
-      LEFT JOIN corporations corp ON k.victimCorporationId = corp.corporationId
-      LEFT JOIN corporations alliance ON k.victimAllianceId = alliance.corporationId
-      WHERE k.victimCharacterId = ${characterId}
+      LEFT JOIN corporations corp ON k."victimCorporationId" = corp."corporationId"
+      LEFT JOIN alliances alliance ON k."victimAllianceId" = alliance."allianceId"
+      WHERE k."victimCharacterId" = ${characterId}
     ) as sub
     ORDER BY "lastSeen" DESC
     LIMIT 1
@@ -613,16 +613,16 @@ export async function getCharacterWithCorporationAndAlliance(
   const [row] = await database.sql<CharacterWithCorporationAndAlliance[]>`
     SELECT
       c.name as name,
-      c.corporationId as "corporationId",
+      c."corporationId" as "corporationId",
       corp.name as "corporationName",
       corp.ticker as "corporationTicker",
-      corp.allianceId as "allianceId",
+      corp."allianceId" as "allianceId",
       alliance.name as "allianceName",
       alliance.ticker as "allianceTicker"
     FROM characters c
-    LEFT JOIN corporations corp ON c.corporationId = corp.corporationId
-    LEFT JOIN alliances alliance ON corp.allianceId = alliance.allianceId
-    WHERE c.characterId = ${characterId}
+    LEFT JOIN corporations corp ON c."corporationId" = corp."corporationId"
+    LEFT JOIN alliances alliance ON corp."allianceId" = alliance."allianceId"
+    WHERE c."characterId" = ${characterId}
     LIMIT 1
   `
   return row || null

@@ -304,24 +304,24 @@ export async function storeKillmail(
 
     // Insert main killmail record
     const killmailRecord = {
-      killmailId: esiData.killmail_id,
-      killmailTime: esiData.killmail_time.replace("Z", "").replace("T", " "), // Convert ISO to ClickHouse DateTime format
+      killmailId: esiData.killmail_id ?? 0,
+      killmailTime: esiData.killmail_time?.replace("Z", "").replace("T", " ") ?? new Date().toISOString().replace("Z", "").replace("T", " "),
       solarSystemId: esiData.solar_system_id ?? 0,
 
       // Victim information
-      victimAllianceId: victim.alliance_id ?? null,
-      victimCharacterId: victim.character_id ?? null,
-      victimCorporationId: victim.corporation_id ?? null,
-      victimDamageTaken: victim.damage_taken ?? 0,
-      victimShipTypeId: victim.ship_type_id ?? null,
+      victimAllianceId: victim?.alliance_id ?? null,
+      victimCharacterId: victim?.character_id ?? null,
+      victimCorporationId: victim?.corporation_id ?? 0,
+      victimDamageTaken: victim?.damage_taken ?? 0,
+      victimShipTypeId: victim?.ship_type_id ?? 0,
 
       // Victim position
-      positionX: victim.position?.x ?? null,
-      positionY: victim.position?.y ?? null,
-      positionZ: victim.position?.z ?? null,
+      positionX: victim?.position?.x ?? null,
+      positionY: victim?.position?.y ?? null,
+      positionZ: victim?.position?.z ?? null,
 
       // ESI hash for API access
-      hash: killmailHash,
+      hash: killmailHash ?? '',
 
       // Denormalized attacker info
       topAttackerCharacterId: topAttacker?.character_id ?? null,
@@ -330,16 +330,16 @@ export async function storeKillmail(
       topAttackerShipTypeId: topAttacker?.ship_type_id ?? null,
 
       // Aggregate stats
-      totalValue: valueBreakdown.totalValue,
-      attackerCount,
+      totalValue: valueBreakdown?.totalValue ?? 0,
+      attackerCount: attackerCount ?? 0,
 
       // Flags
-      npc,
-      solo,
-      awox,
+      npc: npc ?? false,
+      solo: solo ?? false,
+      awox: awox ?? false,
 
       createdAt: new Date(nowUnix * 1000),
-      version,
+      version: version ?? Date.now(),
     };
 
     // Insert killmail
@@ -433,29 +433,29 @@ export async function storeKillmailsBulk(
         esi.attackers.some((a) => a.alliance_id === victim.alliance_id));
 
       return {
-        killmailId: esi.killmail_id,
-        killmailTime: esi.killmail_time.replace("Z", "").replace("T", " "),
+        killmailId: esi.killmail_id ?? 0,
+        killmailTime: esi.killmail_time?.replace("Z", "").replace("T", " ") ?? new Date().toISOString().replace("Z", "").replace("T", " "),
         solarSystemId: esi.solar_system_id ?? 0,
-        victimAllianceId: victim.alliance_id || null,
-        victimCharacterId: victim.character_id || null,
-        victimCorporationId: victim.corporation_id ?? null,
-        victimDamageTaken: victim.damage_taken ?? 0,
-        victimShipTypeId: victim.ship_type_id ?? null,
-        positionX: victim.position?.x || null,
-        positionY: victim.position?.y || null,
-        positionZ: victim.position?.z || null,
-        hash: killmailHash,
-        topAttackerCharacterId: topAttacker?.character_id || null,
-        topAttackerCorporationId: topAttacker?.corporation_id || null,
-        topAttackerAllianceId: topAttacker?.alliance_id || null,
-        topAttackerShipTypeId: topAttacker?.ship_type_id || null,
+        victimAllianceId: victim?.alliance_id ?? null,
+        victimCharacterId: victim?.character_id ?? null,
+        victimCorporationId: victim?.corporation_id ?? 0,
+        victimDamageTaken: victim?.damage_taken ?? 0,
+        victimShipTypeId: victim?.ship_type_id ?? 0,
+        positionX: victim?.position?.x ?? null,
+        positionY: victim?.position?.y ?? null,
+        positionZ: victim?.position?.z ?? null,
+        hash: killmailHash ?? '',
+        topAttackerCharacterId: topAttacker?.character_id ?? null,
+        topAttackerCorporationId: topAttacker?.corporation_id ?? null,
+        topAttackerAllianceId: topAttacker?.alliance_id ?? null,
+        topAttackerShipTypeId: topAttacker?.ship_type_id ?? null,
         totalValue: valueBreakdown?.totalValue ?? 0,
-        attackerCount,
-        npc,
-        solo,
-        awox,
+        attackerCount: attackerCount ?? 0,
+        npc: npc ?? false,
+        solo: solo ?? false,
+        awox: awox ?? false,
         createdAt: new Date(nowUnix * 1000),
-        version,
+        version: version ?? Date.now(),
       };
     });
 
@@ -468,18 +468,18 @@ export async function storeKillmailsBulk(
     // Prepare all attacker records
     const allAttackerRecords = esiDataArray.flatMap(({ esi }) =>
       esi.attackers.map((attacker) => ({
-        killmailId: esi.killmail_id,
-        killmailTime: esi.killmail_time.replace('Z', '').replace('T', ' '),
-        allianceId: attacker.alliance_id || null,
-        corporationId: attacker.corporation_id || null,
-        characterId: attacker.character_id || null,
+        killmailId: esi.killmail_id ?? 0,
+        killmailTime: esi.killmail_time?.replace('Z', '').replace('T', ' ') ?? new Date().toISOString().replace('Z', '').replace('T', ' '),
+        allianceId: attacker.alliance_id ?? null,
+        corporationId: attacker.corporation_id ?? null,
+        characterId: attacker.character_id ?? null,
         damageDone: attacker.damage_done ?? 0,
         finalBlow: attacker.final_blow ? true : false,
-        securityStatus: attacker.security_status || null,
-        shipTypeId: attacker.ship_type_id || null,
-        weaponTypeId: attacker.weapon_type_id || null,
+        securityStatus: attacker.security_status ?? null,
+        shipTypeId: attacker.ship_type_id ?? null,
+        weaponTypeId: attacker.weapon_type_id ?? null,
         createdAt: new Date(nowUnix * 1000),
-        version,
+        version: version ?? Date.now(),
       }))
     );
 
@@ -497,15 +497,15 @@ export async function storeKillmailsBulk(
       if (!victim.items || victim.items.length === 0) return [];
 
       return victim.items.map((item) => ({
-        killmailId: esi.killmail_id,
-        killmailTime: esi.killmail_time.replace('Z', '').replace('T', ' '),
+        killmailId: esi.killmail_id ?? 0,
+        killmailTime: esi.killmail_time?.replace('Z', '').replace('T', ' ') ?? new Date().toISOString().replace('Z', '').replace('T', ' '),
         flag: item.flag ?? 0,
         itemTypeId: item.item_type_id ?? 0,
-        quantityDropped: item.quantity_dropped || 0,
-        quantityDestroyed: item.quantity_destroyed || 0,
+        quantityDropped: item.quantity_dropped ?? 0,
+        quantityDestroyed: item.quantity_destroyed ?? 0,
         singleton: item.singleton ?? 0,
         createdAt: new Date(nowUnix * 1000),
-        version,
+        version: version ?? Date.now(),
       }));
     });
 
