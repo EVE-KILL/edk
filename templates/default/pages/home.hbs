@@ -22,3 +22,102 @@
     {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
   </section>
 </div>
+
+<script type="module">
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+  ws.onopen = () => {
+    console.log('WebSocket connected');
+    ws.send(JSON.stringify({ type: 'subscribe', topics: ['all'] }));
+  };
+
+  ws.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    if (message.type === 'killmail') {
+      const killmail = message.data;
+      const killmailList = document.querySelector('.kb-kl-list');
+      const killmailRow = document.createElement('div');
+      killmailRow.classList.add('kb-kl-row');
+      if (killmail.isLoss) {
+        killmailRow.classList.add('kb-kl-row--loss');
+      }
+      killmailRow.dataset.killmailId = killmail.killmailId;
+      killmailRow.onclick = () => {
+        window.location.href = `/killmail/${killmail.killmailId}`;
+      };
+      killmailRow.style.cursor = 'pointer';
+
+      killmailRow.innerHTML = `
+        <div class="kb-kl-col kb-kl-col--ship">
+          <div class="kb-kl-ship">
+            <img src="https://images.evetech.net/types/${killmail.victim.ship.typeId}/render?size=64" class="kb-kl-ship-icon" alt="${killmail.victim.ship.name}">
+            <div class="kb-kl-info kb-kl-info--ship">
+              <div class="kb-kl-info__primary">${killmail.victim.ship.name}</div>
+              <div class="kb-kl-info__secondary">${killmail.victim.ship.group}</div>
+            </div>
+          </div>
+        </div>
+        <div class="kb-kl-col kb-kl-col--victim">
+          <div class="kb-kl-info kb-kl-info--victim">
+            <div class="kb-kl-info__primary">
+              <a href="/character/${killmail.victim.character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${killmail.victim.character.name}</a>
+            </div>
+            <div class="kb-kl-info__secondary">
+              <a href="/corporation/${killmail.victim.corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.victim.corporation.name}</a>
+            </div>
+            ${killmail.victim.alliance ? `
+            <div class="kb-kl-info__secondary">
+              <a href="/alliance/${killmail.victim.alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.victim.alliance.name}</a>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+        <div class="kb-kl-col kb-kl-col--finalblow">
+          <div class="kb-kl-info kb-kl-info--finalblow">
+            <div class="kb-kl-info__primary">
+              <a href="/character/${killmail.attackers[0].character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${killmail.attackers[0].character.name}</a>
+            </div>
+            <div class="kb-kl-info__secondary">
+              <a href="/corporation/${killmail.attackers[0].corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.attackers[0].corporation.name}</a>
+            </div>
+            ${killmail.attackers[0].alliance ? `
+            <div class="kb-kl-info__secondary">
+              <a href="/alliance/${killmail.attackers[0].alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.attackers[0].alliance.name}</a>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+        <div class="kb-kl-col kb-kl-col--location">
+          <div class="kb-kl-info">
+            <div class="kb-kl-info__primary">${killmail.solarSystem.name}</div>
+            <div class="kb-kl-info__secondary">${killmail.solarSystem.region}</div>
+          </div>
+        </div>
+        <div class="kb-kl-col kb-kl-col--value">
+          <div class="kb-kl-info kb-kl-info--value">
+            <div class="kb-kl-value">${new Intl.NumberFormat('en-US', { notation: 'compact' }).format(killmail.totalValue)}</div>
+            <div class="kb-kl-info__secondary kb-kl-attackers-count">(${killmail.attackerCount})</div>
+          </div>
+        </div>
+        <div class="kb-kl-col kb-kl-col--time">
+          <span class="kb-kl-time">Just now</span>
+        </div>
+      `;
+
+      killmailList.insertBefore(killmailRow, killmailList.children[1]);
+
+      if (killmailList.children.length > 31) {
+        killmailList.removeChild(killmailList.lastElementChild);
+      }
+    }
+  };
+
+  ws.onclose = () => {
+    console.log('WebSocket disconnected');
+  };
+
+  ws.onerror = (error) => {
+    console.error('WebSocket error:', error);
+  };
+</script>

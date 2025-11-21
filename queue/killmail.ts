@@ -1,4 +1,11 @@
 import { Worker, Job } from 'bullmq'
+import Redis from 'ioredis'
+const redis = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+  password: process.env.REDIS_PASSWORD,
+  db: 0,
+})
 import { fetchESI } from '../server/helpers/esi'
 import { storeKillmail, type ESIKillmail } from '../server/models/killmails'
 import { fetchAndStoreCharacter } from '../server/fetchers/character'
@@ -122,6 +129,8 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     // The materialized view will populate with complete data
     console.log(`[killmail] ${killmailId}: Storing killmail...`)
     await storeKillmail(killmail, hash)
+
+    await redis.publish('killmail-broadcasts', JSON.stringify({ killmailId }))
 
     console.log(`✅ [killmail] Successfully processed killmail ${killmailId}`)
   } catch (error) {
