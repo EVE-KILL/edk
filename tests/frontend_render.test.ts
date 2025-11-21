@@ -41,8 +41,8 @@ describe('Frontend Rendering & Helpers', () => {
             // which confirms it tries to look up templates.
 
             try {
-                // Passing useLayout=false to avoid dependency on layout file if possible,
-                // but render defaults to using layout.
+                // Passing useLayout=false to avoid dependency on layout file if possible.
+                // 
                 // Let's assume 'pages/home.hbs' exists as seen in routes/index.ts
                 const html = await render('pages/home.hbs', { title: 'Test' }, { killmails: [] }, undefined, false);
 
