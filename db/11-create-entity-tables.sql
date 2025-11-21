@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS alliances (
   "dateFounded" TIMESTAMP,
   "executorCorporationId" INTEGER,
   "name" VARCHAR(255),
-  "ticker" VARCHAR(10),
+  "ticker" VARCHAR(50),
   "updatedAt" TIMESTAMP DEFAULT NOW(),
   "version" INTEGER
 );
