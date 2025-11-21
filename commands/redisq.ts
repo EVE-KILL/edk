@@ -3,12 +3,11 @@ import { QueueType } from '../server/helpers/queue';
 import { killmailExists } from '../server/models/killmails';
 import chalk from 'chalk';
 import { logger } from '../server/helpers/logger';
-import Redis from 'ioredis';
 
 /**
  * RedisQ Killmail Importer Command
  *
- * Connects to a Redis list and listens for killmail packages from zKillboard's redisq.
+ * Connects to zKillboard's RedisQ HTTP stream and listens for killmail packages.
  * When a killmail is received:
  * 1. Check if it already exists in the database.
  * 2. If new, enqueue it for processing.
@@ -17,7 +16,7 @@ import Redis from 'ioredis';
  *   bun cli redisq
  */
 export default {
-  description: 'Listen to a Redis list for killmail packages',
+  description: 'Listen to zKillboard RedisQ for killmails',
 
   action: async () => {
     const importer = new RedisQImporter();
@@ -27,7 +26,7 @@ export default {
 
 class RedisQImporter {
   private running = false;
-  private redis: Redis;
+  private readonly queueUrl: string;
 
   private stats = {
     received: 0,
@@ -38,17 +37,15 @@ class RedisQImporter {
   };
 
   constructor() {
-    this.redis = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
-      db: 0
-    });
+    if (!process.env.REDISQ_ID) {
+      throw new Error('REDISQ_ID environment variable is not set.');
+    }
+    this.queueUrl = `https://zkillredisq.stream/listen.php?queueID=${process.env.REDISQ_ID}`;
   }
 
   async execute(): Promise<void> {
     this.log(chalk.blue.bold('🚀 Starting RedisQ killmail importer'));
-    this.log(`📡 Redis Host: ${chalk.cyan(this.redis.options.host)}`);
+    this.log(`📡 Listening to URL: ${chalk.cyan(this.queueUrl)}`);
 
     this.log(chalk.dim('Press Ctrl+C to stop'));
 
@@ -56,27 +53,38 @@ class RedisQImporter {
     process.on('SIGTERM', () => this.shutdown());
 
     this.running = true;
-    this.listen();
+    this.poll();
   }
 
-  private async listen(): Promise<void> {
+  private async poll(): Promise<void> {
     while (this.running) {
       try {
-        const data = await this.redis.blpop('zkillboard:killmail', 0);
-        if (data && data[1]) {
-          this.processKillmailPackage(JSON.parse(data[1]));
+        const response = await fetch(this.queueUrl, {
+          headers: { 'User-Agent': 'EVE-KILL' }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data && data.package) {
+          this.processKillmailPackage(data.package);
         }
       } catch (error) {
-        this.error(`Error during blpop: ${error}`);
+        this.error(`Error fetching from RedisQ: ${error}`);
         this.stats.errors++;
-        await this.sleep(5000); // Wait 5 seconds before retrying
+        // Wait 5 seconds before retrying on error
+        await this.sleep(5000);
       }
     }
   }
 
   private async processKillmailPackage(pkg: any): Promise<void> {
+    // Note: The original example used killID, but the zKillboard documentation shows killmail_id
     if (!pkg || !pkg.killmail_id || !pkg.zkb || !pkg.zkb.hash) {
-      this.error('Invalid killmail package received');
+      this.error(`Invalid killmail package received: ${JSON.stringify(pkg).substring(0, 200)}`);
       return;
     }
 
@@ -112,7 +120,7 @@ class RedisQImporter {
   }
 
   private printStats(): void {
-    if (this.stats.received % 25 === 0) {
+    if (this.stats.received % 25 === 0 && this.stats.received > 0) {
       this.log('');
       logger.info('Stats (every 25 killmails):', { ...this.stats });
       this.log('');
@@ -123,7 +131,6 @@ class RedisQImporter {
     this.log('');
     logger.warn('Shutting down RedisQ importer...');
     this.running = false;
-    this.redis.disconnect();
 
     this.log('');
     logger.info('Final Stats:', { ...this.stats });
