@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS dogmaAttributes (
     "attributeId" INTEGER PRIMARY KEY,
     "name" VARCHAR(255),
     "categoryId" INTEGER,
-    "defaultValue" REAL,
+    "defaultValue" DOUBLE PRECISION,
     "description" TEXT,
     "displayName" VARCHAR(255),
     "iconId" INTEGER,
