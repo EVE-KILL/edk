@@ -16,15 +16,15 @@
   },
   "devDependencies": {
     "@types/handlebars": "^4.1.0",
-    "@types/node": "^24.9.1",
-    "commander": "^14.0.1",
+    "@types/node": "^24.10.1",
+    "commander": "^14.0.2",
     "h3": "^1.15.4",
-    "nitropack": "^2.12.8"
+    "nitropack": "^2.12.9"
   },
   "dependencies": {
-    "bullmq": "^5.61.2",
+    "bullmq": "^5.64.1",
     "chalk": "^5.6.2",
-    "cron": "^4.3.3",
+    "cron": "^4.3.4",
     "handlebars": "^4.7.8",
     "ioredis": "^5.8.2",
     "postgres": "^3.4.7",
