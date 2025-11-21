@@ -9,4 +9,4 @@ dist
 data/*
 .vscode/.server-controller-port.log
 .DS_Store
-\nserver.log
+server.log
