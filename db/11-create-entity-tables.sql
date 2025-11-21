@@ -6,7 +6,7 @@
 CREATE TABLE IF NOT EXISTS characters (
   "characterId" INTEGER PRIMARY KEY,
   "allianceId" INTEGER,
-  "birthday" DATE,
+  "birthday" TIMESTAMP,
   "bloodlineId" INTEGER,
   "corporationId" INTEGER,
   "description" TEXT,
