@@ -37,4 +37,20 @@ describe('DatabaseHelper', () => {
     const result = await database.sql`SELECT * FROM information_schema.tables WHERE table_name = ${name}`
     expect(result.length).toBe(0)
   })
+
+  it('should handle bulkUpsert correctly with multiple conflicting rows', async () => {
+    await database.execute('CREATE TABLE IF NOT EXISTS test_upsert (id INT PRIMARY KEY, val TEXT)');
+    await database.execute('DELETE FROM test_upsert');
+
+    // Insert initial data
+    await database.insert('test_upsert', [{id: 1, val: 'A'}, {id: 2, val: 'B'}]);
+
+    // Upsert with new values
+    await database.bulkUpsert('test_upsert', [{id: 1, val: 'A2'}, {id: 2, val: 'B2'}], 'id');
+
+    const rows = await database.query<any>('SELECT * FROM test_upsert ORDER BY id');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].val).toBe('A2');
+    expect(rows[1].val).toBe('B2');
+  })
 })
