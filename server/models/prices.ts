@@ -140,7 +140,6 @@ export async function getLatestPrice(
 export async function storePrices(data: PriceAPIResponse[]): Promise<void> {
   if (data.length === 0) return
 
-  const version = Date.now()
   const today = new Date().toISOString().split('T')[0]
 
   const records = data
@@ -155,7 +154,6 @@ export async function storePrices(data: PriceAPIResponse[]): Promise<void> {
       orderCount: price.order_count || 0,
       volume: price.volume || 0,
       updatedAt: new Date(), // Postgres timestamp
-      version
     }))
 
   try {
@@ -221,7 +219,7 @@ export async function getLatestPricesForTypes(
     WHERE "regionId" = ${regionId}
       AND "typeId" = ANY(${typeIds})
       ${dateClause}
-    ORDER BY "typeId", "priceDate" DESC, "version" DESC
+    ORDER BY "typeId", "priceDate" DESC
   `
 
   const priceMap = new Map<number, number>()

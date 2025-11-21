@@ -21,7 +21,6 @@ export interface Corporation {
   ticker: string
   url: string
   updatedAt: Date
-  version: number
 }
 
 /**
@@ -162,7 +161,6 @@ export async function storeCorporation(
       ticker: data.ticker,
       url: data.url,
       updatedAt: new Date(now * 1000),
-      version: now
     }
   ], ['corporationId'])
 }
@@ -206,7 +204,6 @@ export async function storeCorporationsBulk(
     ticker: corp.ticker,
     url: corp.url,
     updatedAt: new Date(now * 1000),
-    version: now
   }))
 
   await database.bulkInsert('corporations', records)

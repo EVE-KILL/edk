@@ -5,6 +5,5 @@ CREATE TABLE IF NOT EXISTS config (
   "buildNumber" INTEGER,
   "tableName" VARCHAR(255),
   "rowCount" INTEGER,
-  "updatedAt" TIMESTAMP,
-  "version" BIGINT
+  "updatedAt" TIMESTAMP
 );
