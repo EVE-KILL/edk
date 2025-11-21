@@ -20,14 +20,16 @@ export interface Price {
 }
 
 export interface PriceAPIResponse {
-  region_id: number
-  date: string // ISO date string
+  region_id?: number
+  date?: string // ISO date string
   type_id: number
-  average: number
-  highest: number
-  lowest: number
-  order_count: number
-  volume: number
+  average_price?: number
+  adjusted_price?: number
+  average?: number
+  highest?: number
+  lowest?: number
+  order_count?: number
+  volume?: number
 }
 
 // Default price region used for ISK calculations (The Forge / Jita)
@@ -139,23 +141,26 @@ export async function storePrices(data: PriceAPIResponse[]): Promise<void> {
   if (data.length === 0) return
 
   const version = Date.now()
+  const today = new Date().toISOString().split('T')[0]
 
-  const records = data.map((price) => ({
-    typeId: price.type_id,
-    regionId: price.region_id,
-    priceDate: price.date.split('T')[0], // Extract YYYY-MM-DD
-    averagePrice: price.average,
-    highestPrice: price.highest,
-    lowestPrice: price.lowest,
-    orderCount: price.order_count,
-    volume: price.volume,
-    updatedAt: new Date(), // Postgres timestamp
-    version
-  }))
+  const records = data
+    .filter(price => price.date || price.average_price || price.average) // Skip invalid prices
+    .map((price) => ({
+      typeId: price.type_id,
+      regionId: price.region_id || 10000002, // Default to The Forge if not specified
+      priceDate: price.date ? price.date.split('T')[0] : today, // Use today if no date
+      averagePrice: price.average || price.average_price || 0,
+      highestPrice: price.highest || price.average_price || 0,
+      lowestPrice: price.lowest || price.average_price || 0,
+      orderCount: price.order_count || 0,
+      volume: price.volume || 0,
+      updatedAt: new Date(), // Postgres timestamp
+      version
+    }))
 
   try {
-    // Postgres bulk insert
-    await database.bulkInsert('prices', records)
+    // Postgres bulk upsert to handle duplicates
+    await database.bulkUpsert('prices', records, ['typeId', 'regionId', 'priceDate'])
   } catch (error) {
     logger.error(`[Prices] Failed to store prices for type ${data[0].type_id}`, { error, sample: records[0] })
     throw error

@@ -48,10 +48,10 @@ async function processor(job: Job<QueueJobData[QueueType.PRICE]>) {
 /**
  * Create worker instance
  */
-export function createWorker() {
+export function createWorker(connection?: any, options?: { concurrency?: number }) {
   const worker = new Worker(QueueType.PRICE, processor, {
-    connection: REDIS_CONFIG,
-    concurrency: 5, // Process up to 5 price fetches concurrently
+    connection: connection || REDIS_CONFIG,
+    concurrency: options?.concurrency ?? 5, // Process up to 5 price fetches concurrently
     limiter: {
       max: 10, // Max 10 jobs
       duration: 1000 // Per second

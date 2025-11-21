@@ -5,7 +5,7 @@
  * configurable server URLs, and error handling.
  */
 
-import { fetcher, FetcherOptions, FetcherResponse } from '~/server/helpers/fetcher'
+import { fetcher, FetcherOptions, FetcherResponse } from './fetcher'
 
 const ESI_SERVER = process.env.ESI_SERVER_URL || 'https://esi.evetech.net'
 let errorLimitRemain = 100

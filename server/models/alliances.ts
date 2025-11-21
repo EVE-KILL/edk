@@ -116,7 +116,7 @@ export async function storeAlliance(
 ): Promise<void> {
   const now = Math.floor(Date.now() / 1000)
 
-  await database.bulkInsert('alliances', [
+  await database.bulkUpsert('alliances', [
     {
       allianceId: allianceId,
       creatorCorporationId: data.creatorCorporationId,
@@ -128,7 +128,7 @@ export async function storeAlliance(
       updatedAt: new Date(now * 1000), // Changed from updated_at to updatedAt and using Date
       version: now
     }
-  ])
+  ], ['allianceId'])
 }
 
 /**

@@ -647,7 +647,7 @@ export async function storeCharacter(
 ): Promise<void> {
   const now = Math.floor(Date.now() / 1000)
 
-  await database.bulkInsert('characters', [
+  await database.bulkUpsert('characters', [
     {
       characterId: characterId,
       allianceId: data.allianceId,
@@ -662,7 +662,7 @@ export async function storeCharacter(
       updatedAt: new Date(now * 1000),
       version: now
     }
-  ])
+  ], ['characterId'])
 }
 
 /**

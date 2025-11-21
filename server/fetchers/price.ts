@@ -41,7 +41,12 @@ export async function fetchPrices(
   const price = allPrices.find(p => p.type_id === typeId)
 
   if (price) {
-    return [price]
+    // ESI returns adjusted_price and average_price, add today's date
+    return [{
+      ...price,
+      date: new Date().toISOString().split('T')[0],
+      region_id: 10000002 // The Forge
+    }]
   }
 
   return []

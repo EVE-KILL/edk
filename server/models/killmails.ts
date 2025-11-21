@@ -309,25 +309,25 @@ export async function storeKillmail(
       solarSystemId: esiData.solar_system_id,
 
       // Victim information
-      victimAllianceId: victim.alliance_id || null,
-      victimCharacterId: victim.character_id || null,
+      victimAllianceId: victim.alliance_id ?? null,
+      victimCharacterId: victim.character_id ?? null,
       victimCorporationId: victim.corporation_id,
       victimDamageTaken: victim.damage_taken,
       victimShipTypeId: victim.ship_type_id,
 
       // Victim position
-      positionX: victim.position?.x || null,
-      positionY: victim.position?.y || null,
-      positionZ: victim.position?.z || null,
+      positionX: victim.position?.x ?? null,
+      positionY: victim.position?.y ?? null,
+      positionZ: victim.position?.z ?? null,
 
       // ESI hash for API access
       hash: killmailHash,
 
       // Denormalized attacker info
-      topAttackerCharacterId: topAttacker?.character_id || null,
-      topAttackerCorporationId: topAttacker?.corporation_id || null,
-      topAttackerAllianceId: topAttacker?.alliance_id || null,
-      topAttackerShipTypeId: topAttacker?.ship_type_id || null,
+      topAttackerCharacterId: topAttacker?.character_id ?? null,
+      topAttackerCorporationId: topAttacker?.corporation_id ?? null,
+      topAttackerAllianceId: topAttacker?.alliance_id ?? null,
+      topAttackerShipTypeId: topAttacker?.ship_type_id ?? null,
 
       // Aggregate stats
       totalValue: valueBreakdown.totalValue,
@@ -352,14 +352,14 @@ export async function storeKillmail(
     const attackerRecords = esiData.attackers.map((attacker) => ({
       killmailId: esiData.killmail_id,
       killmailTime: esiData.killmail_time.replace('Z', '').replace('T', ' '),
-      allianceId: attacker.alliance_id || null,
-      corporationId: attacker.corporation_id || null,
-      characterId: attacker.character_id || null,
+      allianceId: attacker.alliance_id ?? null,
+      corporationId: attacker.corporation_id ?? null,
+      characterId: attacker.character_id ?? null,
       damageDone: attacker.damage_done,
       finalBlow: attacker.final_blow ? true : false,
-      securityStatus: attacker.security_status || null,
-      shipTypeId: attacker.ship_type_id || null,
-      weaponTypeId: attacker.weapon_type_id || null,
+      securityStatus: attacker.security_status ?? null,
+      shipTypeId: attacker.ship_type_id ?? null,
+      weaponTypeId: attacker.weapon_type_id ?? null,
       createdAt: new Date(nowUnix * 1000),
       version,
     }));
@@ -373,11 +373,11 @@ export async function storeKillmail(
       const itemRecords = victim.items.map((item) => ({
         killmailId: esiData.killmail_id,
         killmailTime: esiData.killmail_time.replace('Z', '').replace('T', ' '),
-        flag: item.flag,
+        flag: item.flag ?? 0,
         itemTypeId: item.item_type_id,
-        quantityDropped: item.quantity_dropped || 0,
-        quantityDestroyed: item.quantity_destroyed || 0,
-        singleton: item.singleton,
+        quantityDropped: item.quantity_dropped ?? 0,
+        quantityDestroyed: item.quantity_destroyed ?? 0,
+        singleton: item.singleton ?? 0,
         createdAt: new Date(nowUnix * 1000),
         version,
       }));

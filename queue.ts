@@ -111,7 +111,10 @@ async function startQueues(queueNames?: string[], options: QueueOptions = {}): P
     jobCounts.set(queueName, 0)
 
     try {
-      const worker = module.createWorker(REDIS_CONFIG)
+      // When limit is set, use concurrency=1 to process one at a time
+      const worker = options.limit 
+        ? module.createWorker(REDIS_CONFIG, { concurrency: 1 })
+        : module.createWorker(REDIS_CONFIG)
 
       // Add event listeners
       worker.on('completed', (job, result) => {

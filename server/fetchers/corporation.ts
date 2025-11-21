@@ -1,5 +1,6 @@
 import { fetchESI } from '../helpers/esi'
 import { storeCorporation as storeCorporationInDB, getCorporation } from '../models/corporations'
+import { getNPCCorporation } from '../models/npcCorporations'
 
 /**
  * ESI Corporation Data - Fields we store
@@ -21,11 +22,40 @@ export interface ESICorporation {
 }
 
 /**
- * Fetch corporation data from ESI
+ * Fetch corporation data from ESI or SDE
+ * For NPC corporations (ID < 2000000), check SDE first
  * Stores only ESI-compatible fields in the database
  */
 export async function fetchAndStoreCorporation(corporationId: number): Promise<ESICorporation | null> {
   try {
+    // Check if this is an NPC corporation (ID range: 1,000,000 - 1,999,999)
+    // See: https://developers.eveonline.com/docs/guides/id-ranges/
+    if (corporationId >= 1000000 && corporationId <= 1999999) {
+      const npcCorp = await getNPCCorporation(corporationId)
+      if (npcCorp) {
+        // Convert NPC corporation to ESI format and store
+        const esiCorporation: ESICorporation = {
+          alliance_id: null, // NPC corps don't have alliances
+          ceo_id: npcCorp.ceoId ?? 1,
+          creator_id: 1, // Default for NPC corps
+          date_founded: '2003-05-06T00:00:00Z', // EVE launch date
+          description: npcCorp.description ?? '',
+          home_station_id: npcCorp.stationId ?? null,
+          member_count: 0, // NPC corps don't track members
+          name: npcCorp.name,
+          shares: 0,
+          tax_rate: npcCorp.taxRate ?? 0,
+          ticker: npcCorp.tickerName ?? '',
+          url: ''
+        }
+        
+        // Store in corporations table for consistency
+        await storeCorporation(corporationId, esiCorporation)
+        return esiCorporation
+      }
+    }
+
+    // Not an NPC corp or not found in SDE, fetch from ESI
     const corporationData = await fetchFromESI(corporationId)
 
     if (!corporationData) {
@@ -40,7 +70,7 @@ export async function fetchAndStoreCorporation(corporationId: number): Promise<E
 
     return esiCorporation
   } catch (error) {
-    console.error(`ESI fetch failed for corporation ${corporationId}:`, error)
+    console.error(`Failed to fetch corporation ${corporationId}:`, error)
     return null
   }
 }
@@ -71,18 +101,18 @@ async function fetchFromESI(corporationId: number): Promise<any | null> {
  */
 function extractESIFields(data: any): ESICorporation {
   return {
-    alliance_id: data.alliance_id || null,
-    ceo_id: data.ceo_id,
-    creator_id: data.creator_id,
-    date_founded: data.date_founded,
-    description: data.description || '',
-    home_station_id: data.home_station_id || null,
-    member_count: data.member_count || 0,
+    alliance_id: data.alliance_id ?? null,
+    ceo_id: data.ceo_id ?? 1, // Default to 1 for NPC corps
+    creator_id: data.creator_id ?? 1, // Default to 1 for NPC corps
+    date_founded: data.date_founded ?? '2003-05-06T00:00:00Z', // EVE launch date
+    description: data.description ?? '',
+    home_station_id: data.home_station_id ?? null,
+    member_count: data.member_count ?? 0,
     name: data.name,
-    shares: data.shares || 0,
-    tax_rate: data.tax_rate || 0,
+    shares: data.shares ?? 0,
+    tax_rate: data.tax_rate ?? 0,
     ticker: data.ticker,
-    url: data.url || ''
+    url: data.url ?? ''
   }
 }
 

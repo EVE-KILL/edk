@@ -33,10 +33,10 @@ export async function processor(job: Job): Promise<void> {
  * Create worker instance
  * Used by main queue.ts runner
  */
-export function createWorker(connection: any) {
+export function createWorker(connection: any, options?: { concurrency?: number }) {
   return new Worker(name, processor, {
     connection,
-    concurrency: 5,
+    concurrency: options?.concurrency ?? 5,
     lockDuration: 30000,
     lockRenewTime: 15000,
     maxStalledCount: 2,

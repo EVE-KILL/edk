@@ -24,7 +24,7 @@ export interface NPCCorporation {
  */
 export async function getNPCCorporation(corporationId: number): Promise<NPCCorporation | null> {
   const [row] = await database.sql<NPCCorporation[]>`
-    SELECT * FROM npcCorporations WHERE corporationId = ${corporationId}
+    SELECT * FROM npccorporations WHERE "corporationId" = ${corporationId}
   `
   return row || null
 }
@@ -34,7 +34,7 @@ export async function getNPCCorporation(corporationId: number): Promise<NPCCorpo
  */
 export async function getNPCCorporationsByFaction(factionId: number): Promise<NPCCorporation[]> {
   return await database.sql<NPCCorporation[]>`
-    SELECT * FROM npcCorporations WHERE factionId = ${factionId} ORDER BY name
+    SELECT * FROM npccorporations WHERE "factionId" = ${factionId} ORDER BY name
   `
 }
 
@@ -43,7 +43,7 @@ export async function getNPCCorporationsByFaction(factionId: number): Promise<NP
  */
 export async function getActiveNPCCorporations(): Promise<NPCCorporation[]> {
   return await database.sql<NPCCorporation[]>`
-    SELECT * FROM npcCorporations WHERE deleted = 0 ORDER BY name
+    SELECT * FROM npccorporations WHERE deleted = false ORDER BY name
   `
 }
 
@@ -52,7 +52,7 @@ export async function getActiveNPCCorporations(): Promise<NPCCorporation[]> {
  */
 export async function searchNPCCorporations(namePattern: string, limit: number = 10): Promise<NPCCorporation[]> {
   return await database.sql<NPCCorporation[]>`
-    SELECT * FROM npcCorporations
+    SELECT * FROM npccorporations
     WHERE name ILIKE ${`%${namePattern}%`}
     ORDER BY name
     LIMIT ${limit}
@@ -64,7 +64,7 @@ export async function searchNPCCorporations(namePattern: string, limit: number =
  */
 export async function getNPCCorporationName(corporationId: number): Promise<string | null> {
   const [result] = await database.sql<{name: string}[]>`
-    SELECT name FROM npcCorporations WHERE corporationId = ${corporationId}
+    SELECT name FROM npccorporations WHERE "corporationId" = ${corporationId}
   `
   return result?.name || null
 }
@@ -74,7 +74,7 @@ export async function getNPCCorporationName(corporationId: number): Promise<stri
  */
 export async function countNPCCorporations(): Promise<number> {
   const [result] = await database.sql<{count: number}[]>`
-    SELECT count(*) as count FROM npcCorporations
+    SELECT count(*) as count FROM npccorporations
   `
   return Number(result?.count || 0)
 }
