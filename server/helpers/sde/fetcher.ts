@@ -397,9 +397,9 @@ export class SDEFetcher {
     try {
       for await (const row of streamParseJSONLines(filepath)) {
         const record = {
-          solarSystemId: row._key || row.id,
+          solarSystemId: row._key || row.id || null,
           border: toBoolean(row.border),
-          constellationId: row.constellationID,
+          constellationId: row.constellationID || null,
           corridor: toBoolean(row.corridor),
           factionId: row.factionID || null,
           fringe: toBoolean(row.fringe),
@@ -413,11 +413,11 @@ export class SDEFetcher {
           positionZ: parseNumber(row.position?.z),
           radius: parseNumber(row.radius),
           regional: toBoolean(row.regional),
-          regionId: row.regionID,
+          regionId: row.regionID || null,
           securityClass: row.securityClass || 'B',
           securityStatus: parseNumber(row.securityStatus),
           stargateIds: (row.stargateIDs && row.stargateIDs.length > 0) ? row.stargateIDs.map((id: any) => Number(id)) : null,
-          starId: row.starID,
+          starId: row.starID || null,
           visualEffect: row.visualEffect || '',
           wormholeClassId: row.wormholeClassID || null,
           updatedAt: new Date(),
@@ -488,7 +488,7 @@ export class SDEFetcher {
     try {
       for await (const row of streamParseJSONLines(filepath)) {
         const record = {
-          regionId: row._key || row.id,
+          regionId: row._key || row.id || null,
           // constellationIds: (row.constellationIDs && row.constellationIDs.length > 0) ? sql.array(row.constellationIDs.map((id: any) => Number(id))) : null,
           description: extractLanguageField(row.description, 'en'),
           factionId: row.factionID || null,
@@ -563,13 +563,13 @@ export class SDEFetcher {
     try {
       for await (const row of streamParseJSONLines(filepath)) {
         const record = {
-          constellationId: row._key || row.id,
+          constellationId: row._key || row.id || null,
           factionId: row.factionID || null,
           name: extractLanguageField(row.name, 'en'),
           positionX: parseNumber(row.position?.x),
           positionY: parseNumber(row.position?.y),
           positionZ: parseNumber(row.position?.z),
-          regionId: row.regionID,
+          regionId: row.regionID || null,
           solarSystemIds: row.solarSystemIDs || [],
           wormholeClassId: row.wormholeClassID || null,
           updatedAt: new Date(),
