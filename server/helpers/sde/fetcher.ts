@@ -301,7 +301,7 @@ export class SDEFetcher {
       const [result] = await database.sql<any[]>`
         SELECT "configValue" FROM config
          WHERE "configKey" = ${`sde_imported_${tableName}`} AND "buildNumber" = ${buildNumber}
-         ORDER BY "version" DESC LIMIT 1
+         LIMIT 1
       `
       return result !== undefined
     } catch (error) {
@@ -314,7 +314,6 @@ export class SDEFetcher {
   private async markTableAsImported(tableName: string, buildNumber: number, rowCount: number): Promise<void> {
     try {
       const now = new Date()
-      const version = Math.floor(now.getTime() / 1000)
 
       await database.bulkUpsert('config', [{
         configKey: `sde_imported_${tableName}`,
@@ -322,9 +321,8 @@ export class SDEFetcher {
         buildNumber,
         tableName,
         rowCount,
-        updatedAt: now,
-        version
-      }], 'configKey')
+        updatedAt: now
+      }], ['configKey'])
     } catch (error) {
       console.error(`⚠️  Failed to mark ${tableName} as imported:`, error)
       // Don't throw - import succeeded even if we can't mark it
