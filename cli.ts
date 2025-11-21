@@ -50,6 +50,7 @@ async function loadCommandsRecursive(
       try {
         const commandModule = await import(`file://${fullPath}?t=${Date.now()}`)
         const commandExport = commandModule.default || commandModule
+        console.log(`Loaded command from ${fullPath}:`, commandExport)
 
         // Build command name
         const commandName = prefix ? `${prefix}:${name}` : name

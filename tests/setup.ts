@@ -19,11 +19,11 @@ console.log('🛠️  Initializing Test Environment...');
 
 // 1. Set Environment Variables for the Application
 // These must be set before importing app modules
+process.env.NODE_ENV = 'test';
 process.env.TEST_DB_NAME = TEST_DB;
 process.env.DATABASE_URL = `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${TEST_DB}`;
 process.env.REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 process.env.REDIS_PORT = process.env.REDIS_PORT || '6379';
-process.env.NODE_ENV = 'test';
 
 // 2. Cleanup Previous State
 // Remove checksum file to force migration to ensure schema is up to date
