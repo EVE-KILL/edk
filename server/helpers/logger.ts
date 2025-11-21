@@ -41,7 +41,13 @@ function getLevelColor(level: LogLevel): string {
 }
 
 function formatData(data: Record<string, any>): string {
-  return '\n  ' + JSON.stringify(data, null, 2).split('\n').join('\n  ')
+    const replacer = (key: any, value: any) => {
+        if (typeof value === 'bigint') {
+            return value.toString();
+        }
+        return value;
+    };
+    return '\n  ' + JSON.stringify(data, replacer, 2).split('\n').join('\n  ')
 }
 
 function log(context: LogContext): void {
