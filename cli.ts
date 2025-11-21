@@ -106,34 +106,6 @@ function registerCommand(
   })
 }
 
-function formatCommandsHelp(commands: CommandInfo[]): string {
-  // Group commands by category
-  const grouped = new Map<string, CommandInfo[]>()
-
-  for (const cmd of commands) {
-    if (!grouped.has(cmd.category)) {
-      grouped.set(cmd.category, [])
-    }
-    grouped.get(cmd.category)!.push(cmd)
-  }
-
-  // Build help text
-  let help = '\n'
-  const categories = Array.from(grouped.keys()).sort()
-
-  for (const category of categories) {
-    const cmds = grouped.get(category)!
-    help += `  ${category}:\n`
-    for (const cmd of cmds) {
-      const padding = ' '.repeat(Math.max(1, 20 - cmd.name.length))
-      help += `    ${cmd.name}${padding}${cmd.description || ''}\n`
-    }
-    help += '\n'
-  }
-
-  return help
-}
-
 function formatCategorizedHelp(): string {
   let output = ''
 

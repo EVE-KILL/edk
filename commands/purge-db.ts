@@ -68,7 +68,7 @@ export async function action() {
     }
 
   } catch (error) {
-    logger.error('❌ Database purge failed:', error)
+    logger.error('❌ Database purge failed:', { error: error instanceof Error ? error.message : String(error) })
     process.exit(1)
   }
 }

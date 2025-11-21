@@ -8,7 +8,6 @@ import postgres from 'postgres'
  */
 export class DatabaseHelper {
   private _sql: postgres.Sql | undefined
-  private isConnected: boolean = false
 
   constructor() {}
 
@@ -28,7 +27,6 @@ export class DatabaseHelper {
           // undefined
         }
       })
-      this.isConnected = true
     }
     return this._sql
   }
@@ -42,7 +40,7 @@ export class DatabaseHelper {
 
     try {
       // postgres.js has a nice helper for inserts: sql(items)
-      await this.sql`INSERT INTO ${this.sql(table)} ${this.sql(items)}`
+      await this.sql`INSERT INTO ${this.sql(table)} ${this.sql(items as any)}`
     } catch (error) {
       console.error('Database insert error:', error)
       throw error
@@ -70,13 +68,14 @@ export class DatabaseHelper {
         // Use reduce to join with commas manually to avoid postgres.js array formatting issues in SET clause
         const updateClause = columns.reduce((acc, col, i) => {
           const fragment = this.sql`${this.sql(col)} = EXCLUDED.${this.sql(col)}`
-          return i === 0 ? fragment : this.sql`${acc}, ${fragment}`
+          // Cast to any to avoid complex type inference issues with postgres.js template literals
+          return i === 0 ? fragment : this.sql`${acc as any}, ${fragment}`
         }, this.sql``)
 
         await this.sql`
-            INSERT INTO ${this.sql(table)} ${this.sql(items)}
+            INSERT INTO ${this.sql(table)} ${this.sql(items as any)}
             ON CONFLICT (${this.sql(conflictKey)})
-            DO UPDATE SET ${updateClause}
+            DO UPDATE SET ${updateClause as any}
         `
     } catch (error) {
       console.error('Database upsert error:', error)
@@ -168,7 +167,6 @@ export class DatabaseHelper {
       await this._sql.end()
       this._sql = undefined
     }
-    this.isConnected = false
   }
 
   /**

@@ -4,6 +4,11 @@ import { logger } from '../helpers/logger'
 import { render } from '../helpers/templates'
 
 export default defineEventHandler(async (event) => {
+  const pageContext = {
+    title: 'About - EVE Killboard',
+    activeNav: 'about'
+  }
+
   try {
     // Get stats
     const [
@@ -37,11 +42,6 @@ export default defineEventHandler(async (event) => {
       getMostDestroyedShips(5),
       getMostDangerousSystems(5)
     ])
-
-    const pageContext = {
-      title: 'About - EVE Killboard',
-      activeNav: 'about'
-    }
 
     const statistics = {
       totalKills,

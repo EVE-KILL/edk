@@ -135,6 +135,10 @@ export function buildKilllistConditions(
     conditions.push(database.sql`ss."regionId" >= ${filters.regionIdMin} AND ss."regionId" <= ${filters.regionIdMax}`)
   }
 
+  if (filters.solarSystemId !== undefined) {
+    conditions.push(database.sql`${prefix}"solarSystemId" = ${filters.solarSystemId}`)
+  }
+
   return conditions
 }
 
@@ -452,6 +456,7 @@ export interface KilllistFilters {
   regionId?: number
   regionIdMin?: number
   regionIdMax?: number
+  solarSystemId?: number
 }
 
 /**

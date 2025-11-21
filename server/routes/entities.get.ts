@@ -21,15 +21,13 @@ export default defineEventHandler(async (event: H3Event) => {
   const perPage = 30
 
   let recentKillmails: any[] = []
-  let totalKillmails = 0
 
   if (hasEntities) {
-     const [killmailsData, count] = await Promise.all([
+     const [killmailsData] = await Promise.all([
         getFollowedEntitiesActivity(charIds, corpIds, allyIds, page, perPage),
         countFollowedEntitiesActivity(charIds, corpIds, allyIds)
      ])
      recentKillmails = killmailsData.map(normalizeKillRow)
-     totalKillmails = count
   }
 
   const data = {
