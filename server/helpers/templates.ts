@@ -824,6 +824,7 @@ export async function render(
         subtitle: process.env.SITE_SUBTITLE || "Real-time Killmail Tracking",
         copyright: `© ${new Date().getFullYear()}`,
         showVersion: process.env.NODE_ENV === "development",
+        imageServerUrl: process.env.IMAGE_SERVER_URL || "https://images.esitech.net",
       },
     };
 

@@ -1,21 +1,21 @@
 {{~#if (eq type "character")~}}
-https://images.eve-kill.com/characters/{{id}}/{{#if variant}}{{variant}}{{else}}portrait{{/if}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{@root.config.imageServerUrl}}/characters/{{id}}/{{default variant 'portrait'}}?size={{roundImageSize (default size 64) type}}
 {{~else if (eq type "corporation")~}}
-https://images.eve-kill.com/corporations/{{id}}/{{#if variant}}{{variant}}{{else}}logo{{/if}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{@root.config.imageServerUrl}}/corporations/{{id}}/{{default variant 'logo'}}?size={{roundImageSize (default size 64) type}}
 {{~else if (eq type "alliance")~}}
-https://images.eve-kill.com/alliances/{{id}}/{{#if variant}}{{variant}}{{else}}logo{{/if}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{@root.config.imageServerUrl}}/alliances/{{id}}/{{default variant 'logo'}}?size={{roundImageSize (default size 64) type}}
 {{~else if (eq type "ship")~}}
-https://images.eve-kill.com/types/{{id}}/{{#if variant}}{{variant}}{{else}}overlayrender{{/if}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{@root.config.imageServerUrl}}/types/{{id}}/{{default variant 'overlayrender'}}?size={{roundImageSize (default size 64) type}}
 {{~else if (eq type "item")~}}
-https://images.eve-kill.com/types/{{id}}/icon?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize (default size 64) type}}
 {{~else if (eq type "type")~}}
-https://images.eve-kill.com/types/{{id}}/{{#if variant}}{{variant}}{{else}}icon{{/if}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{@root.config.imageServerUrl}}/types/{{id}}/{{default variant 'icon'}}?size={{roundImageSize (default size 64) type}}
 {{~else if (eq type "system")~}}
-https://images.eve-kill.com/systems/{{id}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{@root.config.imageServerUrl}}/systems/{{id}}?size={{roundImageSize (default size 64) type}}
 {{~else if (eq type "constellation")~}}
-https://images.eve-kill.com/constellations/{{id}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{@root.config.imageServerUrl}}/constellations/{{id}}?size={{roundImageSize (default size 64) type}}
 {{~else if (eq type "region")~}}
-https://images.eve-kill.com/regions/{{id}}?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{@root.config.imageServerUrl}}/regions/{{id}}?size={{roundImageSize (default size 64) type}}
 {{~else~}}
-https://images.eve-kill.com/types/{{id}}/icon?size={{#if size}}{{size}}{{else}}64{{/if}}
+{{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize (default size 64) type}}
 {{~/if~}}
