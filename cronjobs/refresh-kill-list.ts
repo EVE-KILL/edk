@@ -7,7 +7,7 @@ const logger = {
 
 export const name = 'refresh-kill-list'
 export const description = 'Refreshes the kill_list materialized view'
-export const schedule = '* * * * *' // Every minute
+export const schedule = '*/10 * * * *' // Every 10 minutes
 
 export const action = async () => {
   logger.info('Refreshing kill_list materialized view...')

@@ -80,8 +80,8 @@ const ABYSSAL_REGION_MAX = 13000000
 const POCHVEN_REGION_ID = 10000070
 
 function buildSpaceTypeCondition(spaceType: string, alias: string = 'k'): any {
-  const securityColumn = database.sql`${database.sql(alias)}.security`
-  const regionColumn = database.sql`${database.sql(alias)}."regionId"`
+  const securityColumn = database.sql`${database.sql.unsafe(alias)}.security`
+  const regionColumn = database.sql`${database.sql.unsafe(alias)}."regionId"`
 
   switch (spaceType) {
     case 'highsec':
@@ -107,7 +107,7 @@ export function buildKilllistConditions(
   alias: string = 'k'
 ): any[] {
   const conditions: any[] = []
-  const prefix = database.sql(alias)
+  const prefix = database.sql.unsafe(alias)
 
   if (filters.spaceType) {
     const spaceTypeCondition = buildSpaceTypeCondition(filters.spaceType, alias)
@@ -177,6 +177,8 @@ export interface KilllistFilters {
   minSecurityStatus?: number
   maxSecurityStatus?: number
   regionId?: number
+  regionIdMin?: number
+  regionIdMax?: number
   solarSystemId?: number
 }
 
@@ -187,6 +189,161 @@ function conditionsToWhere(conditions: any[]): any {
   return conditions.length > 0
     ? database.sql`WHERE ${database.sql(conditions, ' AND ')}`
     : database.sql``
+}
+
+/**
+ * Get recent killmails for frontpage (all kills)
+ */
+export async function getRecentKills(limit: number = 50): Promise<KilllistRow[]> {
+  return await database.sql<KilllistRow[]>`
+    SELECT *
+     FROM kill_list
+     ORDER BY "killmailTime" DESC, "killmailId" DESC
+     LIMIT ${limit}
+  `
+}
+
+/**
+ * Get killmails for a specific entity (character/corp/alliance)
+ * Defaults to "kills" (where entity is attacker)
+ */
+export async function getEntityKills(
+  entityId: number,
+  entityType: 'character' | 'corporation' | 'alliance',
+  limit: number = 100
+): Promise<KilllistRow[]> {
+  const conditions: any[] = []
+  if (entityType === 'character') {
+    conditions.push(database.sql`"attackerCharacterId" = ${entityId}`)
+  } else if (entityType === 'corporation') {
+    conditions.push(database.sql`"attackerCorporationId" = ${entityId}`)
+  } else if (entityType === 'alliance') {
+    conditions.push(database.sql`"attackerAllianceId" = ${entityId}`)
+  }
+
+  const where = conditionsToWhere(conditions)
+
+  return await database.sql<KilllistRow[]>`
+    SELECT *
+     FROM kill_list
+     ${where}
+     ORDER BY "killmailTime" DESC, "killmailId" DESC
+     LIMIT ${limit}
+  `
+}
+
+/**
+ * Get kills where entity was the victim
+ */
+export async function getEntityLosses(
+  entityId: number,
+  entityType: 'character' | 'corporation' | 'alliance',
+  limit: number = 100
+): Promise<KilllistRow[]> {
+    const conditions: any[] = []
+    if (entityType === 'character') {
+        conditions.push(database.sql`"victimCharacterId" = ${entityId}`)
+    } else if (entityType === 'corporation') {
+        conditions.push(database.sql`"victimCorporationId" = ${entityId}`)
+    } else if (entityType === 'alliance') {
+        conditions.push(database.sql`"victimAllianceId" = ${entityId}`)
+    }
+
+    const where = conditionsToWhere(conditions)
+
+    return await database.sql<KilllistRow[]>`
+    SELECT *
+     FROM kill_list
+     ${where}
+     ORDER BY "killmailTime" DESC, "killmailId" DESC
+     LIMIT ${limit}
+  `
+}
+
+/**
+ * Count total kills for an entity
+ */
+export async function countEntityKills(
+  entityId: number,
+  entityType: 'character' | 'corporation' | 'alliance'
+): Promise<number> {
+    const conditions: any[] = []
+    if (entityType === 'character') {
+        conditions.push(database.sql`"attackerCharacterId" = ${entityId}`)
+    } else if (entityType === 'corporation') {
+        conditions.push(database.sql`"attackerCorporationId" = ${entityId}`)
+    } else if (entityType === 'alliance') {
+        conditions.push(database.sql`"attackerAllianceId" = ${entityId}`)
+    }
+    const where = conditionsToWhere(conditions)
+    const [result] = await database.sql<{count: string}[]>`
+    SELECT count(*) as count
+    FROM kill_list
+    ${where}
+  `
+  return Number(result?.count || 0)
+}
+
+/**
+ * Get activity (kills + losses) for multiple followed entities
+ */
+export async function getFollowedEntitiesActivity(
+  charIds: number[],
+  corpIds: number[],
+  allyIds: number[],
+  page: number = 1,
+  perPage: number = 30
+): Promise<EntityKillmail[]> {
+  const offset = (page - 1) * perPage
+  const conditions: any[] = []
+
+  if (charIds.length > 0) {
+    conditions.push(database.sql`("victimCharacterId" IN ${database.sql(charIds)} OR "attackerCharacterId" IN ${database.sql(charIds)})`)
+  }
+  if (corpIds.length > 0) {
+    conditions.push(database.sql`("victimCorporationId" IN ${database.sql(corpIds)} OR "attackerCorporationId" IN ${database.sql(corpIds)})`)
+  }
+  if (allyIds.length > 0) {
+    conditions.push(database.sql`("victimAllianceId" IN ${database.sql(allyIds)} OR "attackerAllianceId" IN ${database.sql(allyIds)})`)
+  }
+  const where = conditions.length > 0
+    ? database.sql`WHERE ${database.sql(conditions, ' OR ')}`
+    : database.sql``
+
+  return await database.sql<EntityKillmail[]>`
+    SELECT *
+    FROM kill_list
+    ${where}
+    ORDER BY "killmailTime" DESC, "killmailId" DESC
+    LIMIT ${perPage} OFFSET ${offset}`
+}
+
+export async function countFollowedEntitiesActivity(
+  charIds: number[],
+  corpIds: number[],
+  allyIds: number[]
+): Promise<number> {
+    const conditions: any[] = []
+
+  if (charIds.length > 0) {
+    conditions.push(database.sql`("victimCharacterId" IN ${database.sql(charIds)} OR "attackerCharacterId" IN ${database.sql(charIds)})`)
+  }
+  if (corpIds.length > 0) {
+    conditions.push(database.sql`("victimCorporationId" IN ${database.sql(corpIds)} OR "attackerCorporationId" IN ${database.sql(corpIds)})`)
+  }
+  if (allyIds.length > 0) {
+    conditions.push(database.sql`("victimAllianceId" IN ${database.sql(allyIds)} OR "attackerAllianceId" IN ${database.sql(allyIds)})`)
+  }
+  const where = conditions.length > 0
+    ? database.sql`WHERE ${database.sql(conditions, ' OR ')}`
+    : database.sql``
+
+  const [result] = await database.sql<{count: string}[]>`
+    SELECT count(*) as count
+    FROM kill_list
+    ${where}
+  `
+  return Number(result?.count || 0)
 }
 
 /**
@@ -240,7 +397,7 @@ export async function countFilteredKills(filters: KilllistFilters): Promise<numb
   const conditions = buildKilllistConditions(filters, 'k')
   const where = conditionsToWhere(conditions)
 
-  const [result] = await database.sql<{count: number}[]>`
+  const [result] = await database.sql<{count: string}[]>`
     SELECT count(*) as count
      FROM kill_list k
      ${where}
@@ -359,4 +516,66 @@ export async function getMostValuableKills(
      ORDER BY "totalValue" DESC, "killmailTime" DESC
      LIMIT ${limit}
   `
+}
+
+/**
+ * Get losses for multiple followed entities
+ */
+export async function getFollowedEntitiesLosses(
+  charIds: number[],
+  corpIds: number[],
+  allyIds: number[],
+  page: number = 1,
+  perPage: number = 30
+): Promise<EntityKillmail[]> {
+  const offset = (page - 1) * perPage
+  const conditions: any[] = []
+
+  if (charIds.length > 0) {
+    conditions.push(database.sql`"victimCharacterId" IN ${database.sql(charIds)}`)
+  }
+  if (corpIds.length > 0) {
+    conditions.push(database.sql`"victimCorporationId" IN ${database.sql(corpIds)}`)
+  }
+  if (allyIds.length > 0) {
+    conditions.push(database.sql`"victimAllianceId" IN ${database.sql(allyIds)}`)
+  }
+  const where = conditions.length > 0
+    ? database.sql`WHERE ${database.sql(conditions, ' OR ')}`
+    : database.sql``
+
+  return await database.sql<EntityKillmail[]>`
+    SELECT *
+    FROM kill_list
+    ${where}
+    ORDER BY "killmailTime" DESC, "killmailId" DESC
+    LIMIT ${perPage} OFFSET ${offset}`
+}
+
+export async function countFollowedEntitiesLosses(
+  charIds: number[],
+  corpIds: number[],
+  allyIds: number[]
+): Promise<number> {
+    const conditions: any[] = []
+
+  if (charIds.length > 0) {
+    conditions.push(database.sql`"victimCharacterId" IN ${database.sql(charIds)}`)
+  }
+  if (corpIds.length > 0) {
+    conditions.push(database.sql`"victimCorporationId" IN ${database.sql(corpIds)}`)
+  }
+  if (allyIds.length > 0) {
+    conditions.push(database.sql`"victimAllianceId" IN ${database.sql(allyIds)}`)
+  }
+  const where = conditions.length > 0
+    ? database.sql`WHERE ${database.sql(conditions, ' OR ')}`
+    : database.sql``
+
+  const [result] = await database.sql<{count: string}[]>`
+    SELECT count(*) as count
+    FROM kill_list
+    ${where}
+  `
+  return Number(result?.count || 0)
 }

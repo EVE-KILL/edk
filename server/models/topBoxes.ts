@@ -52,7 +52,7 @@ export async function getTopByKills(
   // The columns are id, name, kills, iskDestroyed.
   return await database.sql<TopBoxWithName[]>`
     SELECT id, name, kills, "iskDestroyed"
-    FROM ${database.sql(viewName)}
+    FROM ${database.sql.unsafe(viewName)}
     ORDER BY "iskDestroyed" DESC, kills DESC
     LIMIT ${limit}
   `
