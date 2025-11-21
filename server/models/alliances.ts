@@ -16,7 +16,6 @@ export interface Alliance {
   name: string
   ticker: string
   updatedAt: Date
-  version: number
 }
 
 /**
@@ -126,7 +125,6 @@ export async function storeAlliance(
       name: data.name,
       ticker: data.ticker,
       updatedAt: new Date(now * 1000), // Changed from updated_at to updatedAt and using Date
-      version: now
     }
   ], ['allianceId'])
 }
@@ -158,7 +156,6 @@ export async function storeAlliancesBulk(
     name: alliance.name,
     ticker: alliance.ticker,
     updatedAt: new Date(now * 1000),
-    version: now
   }))
 
   await database.bulkInsert('alliances', records)

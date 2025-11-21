@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS prices (
   "orderCount" INTEGER,
   "volume" BIGINT,
   "updatedAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT,
   PRIMARY KEY ("typeId", "regionId", "priceDate")
 );
 

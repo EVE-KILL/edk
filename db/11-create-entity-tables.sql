@@ -14,8 +14,7 @@ CREATE TABLE IF NOT EXISTS characters (
   "name" TEXT,
   "raceId" INTEGER,
   "securityStatus" REAL,
-  "updatedAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT
+  "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS "idx_characters_alliance" ON characters ("allianceId");
@@ -39,8 +38,7 @@ CREATE TABLE IF NOT EXISTS corporations (
   "taxRate" REAL,
   "ticker" TEXT,
   "url" TEXT,
-  "updatedAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT
+  "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS "idx_corporations_alliance" ON corporations ("allianceId");
@@ -57,8 +55,7 @@ CREATE TABLE IF NOT EXISTS alliances (
   "executorCorporationId" INTEGER,
   "name" TEXT,
   "ticker" TEXT,
-  "updatedAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT
+  "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS "idx_alliances_creator_corp" ON alliances ("creatorCorporationId");
