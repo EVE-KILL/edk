@@ -240,7 +240,7 @@ export async function countFilteredKills(filters: KilllistFilters): Promise<numb
   const conditions = buildKilllistConditions(filters, 'k')
   const where = conditionsToWhere(conditions)
 
-  const [result] = await database.sql<{count: string}[]>`
+  const [result] = await database.sql<{count: number}[]>`
     SELECT count(*) as count
      FROM kill_list k
      ${where}
