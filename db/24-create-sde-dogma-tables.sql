@@ -4,17 +4,17 @@
 -- Dogma Attributes table
 CREATE TABLE IF NOT EXISTS dogmaAttributes (
     "attributeId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "categoryId" INTEGER,
-    "defaultValue" DOUBLE PRECISION,
+    "defaultValue" REAL,
     "description" TEXT,
-    "displayName" TEXT,
+    "displayName" VARCHAR(255),
     "iconId" INTEGER,
     "highIsGood" BOOLEAN,
     "published" BOOLEAN,
     "stackable" BOOLEAN,
     "tooltipDescription" TEXT,
-    "tooltipTitle" TEXT,
+    "tooltipTitle" VARCHAR(255),
     "unitId" INTEGER,
     "version" INTEGER
 );
@@ -22,14 +22,14 @@ CREATE TABLE IF NOT EXISTS dogmaAttributes (
 -- Dogma Effects table
 CREATE TABLE IF NOT EXISTS dogmaEffects (
     "effectId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "categoryId" INTEGER,
     "description" TEXT,
     "disallowAutoRepeat" BOOLEAN,
     "dischargeAttributeId" INTEGER,
-    "displayName" TEXT,
+    "displayName" VARCHAR(255),
     "durationAttributeId" INTEGER,
-    "effectCategory" TEXT,
+    "effectCategory" VARCHAR(255),
     "falloffAttributeId" INTEGER,
     "fittingUsageChanceAttributeId" INTEGER,
     "iconId" INTEGER,

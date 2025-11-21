@@ -7,13 +7,13 @@ CREATE TABLE IF NOT EXISTS prices (
   "typeId" INTEGER NOT NULL,
   "regionId" INTEGER NOT NULL,
   "priceDate" DATE NOT NULL,
-  "averagePrice" DOUBLE PRECISION,
-  "highestPrice" DOUBLE PRECISION,
-  "lowestPrice" DOUBLE PRECISION,
+  "averagePrice" REAL,
+  "highestPrice" REAL,
+  "lowestPrice" REAL,
   "orderCount" INTEGER,
   "volume" BIGINT,
   "updatedAt" TIMESTAMP DEFAULT NOW(),
-  "version" BIGINT,
+  "version" INTEGER,
   PRIMARY KEY ("typeId", "regionId", "priceDate")
 );
 

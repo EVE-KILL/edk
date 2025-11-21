@@ -4,7 +4,7 @@
 -- Categories table
 CREATE TABLE IF NOT EXISTS categories (
     "categoryId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "iconId" INTEGER,
     "published" BOOLEAN,
     "version" INTEGER
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS categories (
 -- Groups table
 CREATE TABLE IF NOT EXISTS groups (
     "groupId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "categoryId" INTEGER,
     "iconId" INTEGER,
     "published" BOOLEAN,
@@ -23,29 +23,29 @@ CREATE TABLE IF NOT EXISTS groups (
 -- Types table
 CREATE TABLE IF NOT EXISTS types (
     "typeId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "description" TEXT,
     "groupId" INTEGER,
-    "capacity" DOUBLE PRECISION,
+    "capacity" REAL,
     "factionId" INTEGER,
     "graphicId" INTEGER,
     "iconId" INTEGER,
     "marketGroupId" INTEGER,
-    "mass" DOUBLE PRECISION,
+    "mass" REAL,
     "metaGroupId" INTEGER,
     "portionSize" INTEGER,
     "published" BOOLEAN,
     "raceId" INTEGER,
-    "radius" DOUBLE PRECISION,
+    "radius" REAL,
     "soundId" INTEGER,
-    "volume" DOUBLE PRECISION,
+    "volume" REAL,
     "version" INTEGER
 );
 
 -- Market Groups table
 CREATE TABLE IF NOT EXISTS marketGroups (
     "marketGroupId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "description" TEXT,
     "iconId" INTEGER,
     "hasTypes" BOOLEAN,
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS marketGroups (
 -- Meta Groups table
 CREATE TABLE IF NOT EXISTS metaGroups (
     "metaGroupId" INTEGER PRIMARY KEY,
-    "name" TEXT,
+    "name" VARCHAR(255),
     "description" TEXT,
     "iconId" INTEGER,
     "version" INTEGER
