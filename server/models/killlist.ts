@@ -3,8 +3,8 @@ import { database } from '../helpers/database'
 /**
  * Killlist Model
  *
- * Queries the killlist materialized view for killmail list displays
- * This table contains pre-joined and denormalized killmail data
+ * Queries killmail data.
+ * Formerly queried the 'killlist' materialized view, now queries base tables.
  */
 
 export interface KilllistRow {
@@ -52,9 +52,10 @@ const ABYSSAL_REGION_MIN = 12000000
 const ABYSSAL_REGION_MAX = 13000000
 const POCHVEN_REGION_ID = 10000070
 
-function buildSpaceTypeCondition(spaceType: string, prefix: string): string | null {
-  const securityColumn = `${prefix}security`
-  const regionColumn = `${prefix}regionId`
+function buildSpaceTypeCondition(spaceType: string, prefix: string = ''): string | null {
+  // Assumes joins: solarSystems ss
+  const securityColumn = `ss."securityStatus"`
+  const regionColumn = `ss."regionId"`
 
   switch (spaceType) {
     case 'highsec':
@@ -77,103 +78,136 @@ function buildSpaceTypeCondition(spaceType: string, prefix: string): string | nu
 
 export function buildKilllistWhereClause(
   filters: KilllistFilters,
-  alias: string = '',
-  includeEntityTypeFilter: boolean = true
+  alias: string = 'k', // killmails table alias
+  includeEntityTypeFilter: boolean = true // Deprecated in this new implementation but kept for signature compatibility
 ): {
   clause: string
   params: Record<string, unknown>
-  prewhereClause?: string
-  basePrewhereClause?: string
+  // prewhereClause?: string // Not used in Postgres
+  // basePrewhereClause?: string // Not used in Postgres
 } {
   const prefix = alias ? `${alias}.` : ''
   const conditions: string[] = []
   const params: Record<string, unknown> = {}
-  let prewhereClause: string | undefined
-  let basePrewhereClause: string | undefined
-
-  if (includeEntityTypeFilter) {
-    basePrewhereClause = 'entityType = {entityType:String} AND isVictim = 0'
-    prewhereClause = `${prefix}entityType = {entityType:String} AND ${prefix}isVictim = 0`
-    params.entityType = 'none'
-  }
 
   if (filters.spaceType) {
-    const spaceTypeCondition = buildSpaceTypeCondition(filters.spaceType, prefix)
+    const spaceTypeCondition = buildSpaceTypeCondition(filters.spaceType, alias)
     if (spaceTypeCondition) {
       conditions.push(spaceTypeCondition)
     }
   }
 
   if (filters.isSolo !== undefined) {
-    conditions.push(`${prefix}solo = {isSolo:UInt8}`)
-    params.isSolo = filters.isSolo ? 1 : 0
+    conditions.push(`${prefix}solo = {isSolo:Boolean}`)
+    params.isSolo = filters.isSolo
   }
 
   if (filters.isBig !== undefined) {
     params.bigShipGroupIds = BIG_SHIP_GROUP_IDS
-    const column = `${prefix}victimShipGroupId`
+    // Requires join with types t
+    const column = `t."groupId"`
     if (filters.isBig) {
-      conditions.push(`${column} IN {bigShipGroupIds:Array(UInt32)}`)
+      conditions.push(`${column} = ANY({bigShipGroupIds:Array(UInt32)})`)
     } else {
-      conditions.push(`${column} NOT IN {bigShipGroupIds:Array(UInt32)}`)
+      conditions.push(`${column} != ALL({bigShipGroupIds:Array(UInt32)})`)
     }
   }
 
   if (filters.isNpc !== undefined) {
-    conditions.push(`${prefix}npc = {isNpc:UInt8}`)
-    params.isNpc = filters.isNpc ? 1 : 0
+    conditions.push(`${prefix}npc = {isNpc:Boolean}`)
+    params.isNpc = filters.isNpc
   }
 
   if (filters.minValue !== undefined) {
-    conditions.push(`${prefix}totalValue >= {minValue:Float64}`)
+    conditions.push(`${prefix}"totalValue" >= {minValue:Float64}`)
     params.minValue = filters.minValue
   }
 
   if (filters.shipGroupIds && filters.shipGroupIds.length > 0) {
-    conditions.push(`${prefix}victimShipGroupId IN ({shipGroupIds:Array(UInt32)})`)
+    // Requires join with types t
+    conditions.push(`t."groupId" = ANY({shipGroupIds:Array(UInt32)})`)
     params.shipGroupIds = filters.shipGroupIds
   }
 
   if (filters.minSecurityStatus !== undefined) {
-    conditions.push(`${prefix}security >= {minSec:Float32}`)
+    // Requires join with solarSystems ss
+    conditions.push(`ss."securityStatus" >= {minSec:Float32}`)
     params.minSec = filters.minSecurityStatus
   }
 
   if (filters.maxSecurityStatus !== undefined) {
-    conditions.push(`${prefix}security <= {maxSec:Float32}`)
+    // Requires join with solarSystems ss
+    conditions.push(`ss."securityStatus" <= {maxSec:Float32}`)
     params.maxSec = filters.maxSecurityStatus
 
     if (filters.maxSecurityStatus <= 0) {
-      conditions.push(`(${prefix}regionId < {wormholeRegionMin:UInt32} OR ${prefix}regionId > {wormholeRegionMax:UInt32})`)
+      conditions.push(`(ss."regionId" < {wormholeRegionMin:UInt32} OR ss."regionId" > {wormholeRegionMax:UInt32})`)
       params.wormholeRegionMin = WORMHOLE_REGION_MIN
       params.wormholeRegionMax = WORMHOLE_REGION_MAX
     }
   }
 
   if (filters.regionId !== undefined) {
-    conditions.push(`${prefix}regionId = {regionId:UInt32}`)
+    // Requires join with solarSystems ss
+    conditions.push(`ss."regionId" = {regionId:UInt32}`)
     params.regionId = filters.regionId
   }
 
   if (filters.regionIdMin !== undefined && filters.regionIdMax !== undefined) {
-    conditions.push(`${prefix}regionId >= {regionIdMin:UInt32} AND ${prefix}regionId <= {regionIdMax:UInt32}`)
+    conditions.push(`ss."regionId" >= {regionIdMin:UInt32} AND ss."regionId" <= {regionIdMax:UInt32}`)
     params.regionIdMin = filters.regionIdMin
     params.regionIdMax = filters.regionIdMax
   }
 
   const clause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
-  return { clause, params, prewhereClause, basePrewhereClause }
+  return { clause, params }
 }
+
+// Base SELECT list for KilllistRow
+const BASE_SELECT_LIST = `
+  k."killmailId",
+  k."killmailTime",
+  k."solarSystemId",
+  ss."regionId",
+  ss."securityStatus" as security,
+  k."victimCharacterId",
+  k."victimCorporationId",
+  k."victimAllianceId",
+  k."victimShipTypeId",
+  t."groupId" as "victimShipGroupId",
+  k."victimDamageTaken",
+  k."topAttackerCharacterId",
+  k."topAttackerCorporationId",
+  k."topAttackerAllianceId",
+  k."topAttackerShipTypeId",
+  k."totalValue",
+  k."attackerCount",
+  k.npc,
+  k.solo,
+  k.awox
+`
+
+// Helper to get base query with joins
+const getBaseQuery = () => `
+  FROM killmails k
+  LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
+  LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
+`
 
 /**
  * Get recent killmails for frontpage (all kills)
  */
 export async function getRecentKills(limit: number = 50): Promise<KilllistRow[]> {
+  // Frontpage: no entity filter, just all kills
   return await database.query<KilllistRow>(
-    `SELECT * FROM killlist
-     PREWHERE entityType = 'none'
-     ORDER BY killmailTime DESC, killmailId DESC
+    `SELECT
+       ${BASE_SELECT_LIST},
+       0 as entityId,
+       'none' as entityType,
+       false as isVictim
+     ${getBaseQuery()}
+     ORDER BY k."killmailTime" DESC, k."killmailId" DESC
      LIMIT {limit:UInt32}`,
     { limit }
   )
@@ -181,16 +215,39 @@ export async function getRecentKills(limit: number = 50): Promise<KilllistRow[]>
 
 /**
  * Get killmails for a specific entity (character/corp/alliance)
+ * Defaults to "kills" (where entity is attacker)
  */
 export async function getEntityKills(
   entityId: number,
   entityType: 'character' | 'corporation' | 'alliance',
   limit: number = 100
 ): Promise<KilllistRow[]> {
+  // Logic: join attackers to find kills where this entity participated
+  let joinClause = ''
+  let whereClause = ''
+
+  if (entityType === 'character') {
+    joinClause = `JOIN attackers a ON k."killmailId" = a."killmailId"`;
+    whereClause = `a."characterId" = {entityId:UInt32}`;
+  } else if (entityType === 'corporation') {
+    joinClause = `JOIN attackers a ON k."killmailId" = a."killmailId"`;
+    whereClause = `a."corporationId" = {entityId:UInt32}`;
+  } else if (entityType === 'alliance') {
+    joinClause = `JOIN attackers a ON k."killmailId" = a."killmailId"`;
+    whereClause = `a."allianceId" = {entityId:UInt32}`;
+  }
+
+  // Postgres: DISTINCT ON k.killmailId to avoid duplicates if multiple chars from same corp on same kill
   return await database.query<KilllistRow>(
-    `SELECT * FROM killlist
-     PREWHERE entityId = {entityId:UInt32} AND entityType = {entityType:String}
-     ORDER BY killmailTime DESC, killmailId DESC
+    `SELECT DISTINCT ON (k."killmailTime", k."killmailId")
+       ${BASE_SELECT_LIST},
+       {entityId:UInt32} as entityId,
+       {entityType:String} as entityType,
+       false as isVictim
+     ${getBaseQuery()}
+     ${joinClause}
+     WHERE ${whereClause}
+     ORDER BY k."killmailTime" DESC, k."killmailId" DESC
      LIMIT {limit:UInt32}`,
     { entityId, entityType, limit }
   )
@@ -204,11 +261,26 @@ export async function getEntityLosses(
   entityType: 'character' | 'corporation' | 'alliance',
   limit: number = 100
 ): Promise<KilllistRow[]> {
+  // Logic: check victim columns on killmail
+  let whereClause = ''
+
+  if (entityType === 'character') {
+    whereClause = `k."victimCharacterId" = {entityId:UInt32}`;
+  } else if (entityType === 'corporation') {
+    whereClause = `k."victimCorporationId" = {entityId:UInt32}`;
+  } else if (entityType === 'alliance') {
+    whereClause = `k."victimAllianceId" = {entityId:UInt32}`;
+  }
+
   return await database.query<KilllistRow>(
-    `SELECT * FROM killlist
-     PREWHERE entityId = {entityId:UInt32} AND entityType = {entityType:String}
-     WHERE isVictim = true
-     ORDER BY killmailTime DESC, killmailId DESC
+    `SELECT
+       ${BASE_SELECT_LIST},
+       {entityId:UInt32} as entityId,
+       {entityType:String} as entityType,
+       true as isVictim
+     ${getBaseQuery()}
+     WHERE ${whereClause}
+     ORDER BY k."killmailTime" DESC, k."killmailId" DESC
      LIMIT {limit:UInt32}`,
     { entityId, entityType, limit }
   )
@@ -222,10 +294,14 @@ export async function getMostValuableKills(
   hoursAgo: number = 168 // 7 days default
 ): Promise<KilllistRow[]> {
   return await database.query<KilllistRow>(
-    `SELECT * FROM killlist
-     PREWHERE entityType = 'none'
-     WHERE killmailTime >= now() - INTERVAL {hours:UInt32} HOUR
-     ORDER BY totalValue DESC, killmailTime DESC
+    `SELECT
+       ${BASE_SELECT_LIST},
+       0 as entityId,
+       'none' as entityType,
+       false as isVictim
+     ${getBaseQuery()}
+     WHERE k."killmailTime" >= NOW() - ({hours:UInt32} || ' hours')::interval
+     ORDER BY k."totalValue" DESC, k."killmailTime" DESC
      LIMIT {limit:UInt32}`,
     { hours: hoursAgo, limit }
   )
@@ -238,12 +314,28 @@ export async function countEntityKills(
   entityId: number,
   entityType: 'character' | 'corporation' | 'alliance'
 ): Promise<number> {
+  let joinClause = ''
+  let whereClause = ''
+
+  if (entityType === 'character') {
+    joinClause = `JOIN attackers a ON k."killmailId" = a."killmailId"`;
+    whereClause = `a."characterId" = {entityId:UInt32}`;
+  } else if (entityType === 'corporation') {
+    joinClause = `JOIN attackers a ON k."killmailId" = a."killmailId"`;
+    whereClause = `a."corporationId" = {entityId:UInt32}`;
+  } else if (entityType === 'alliance') {
+    joinClause = `JOIN attackers a ON k."killmailId" = a."killmailId"`;
+    whereClause = `a."allianceId" = {entityId:UInt32}`;
+  }
+
   const result = await database.queryValue<number>(
-    `SELECT count() FROM killlist
-     PREWHERE entityId = {entityId:UInt32} AND entityType = {entityType:String}`,
-    { entityId, entityType }
+    `SELECT count(DISTINCT k."killmailId")
+     FROM killmails k
+     ${joinClause}
+     WHERE ${whereClause}`,
+    { entityId }
   )
-  return result || 0
+  return Number(result) || 0
 }
 
 /**
@@ -272,15 +364,18 @@ export async function getFilteredKills(
   perPage: number = 50
 ): Promise<KilllistRow[]> {
   const offset = (page - 1) * perPage
-  const { clause, params: filterParams, prewhereClause } = buildKilllistWhereClause(filters)
+  const { clause, params: filterParams } = buildKilllistWhereClause(filters, 'k')
   const params: Record<string, unknown> = { ...filterParams, limit: perPage, offset }
-  const prewhere = prewhereClause ? `PREWHERE ${prewhereClause}` : ''
 
   return await database.query<KilllistRow>(
-    `SELECT * FROM killlist
-     ${prewhere}
+    `SELECT
+       ${BASE_SELECT_LIST},
+       0 as entityId,
+       'none' as entityType,
+       false as isVictim
+     ${getBaseQuery()}
      ${clause}
-     ORDER BY killmailTime DESC, killmailId DESC
+     ORDER BY k."killmailTime" DESC, k."killmailId" DESC
      LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
     params
   )
@@ -290,16 +385,15 @@ export async function getFilteredKills(
  * Count filtered kills
  */
 export async function countFilteredKills(filters: KilllistFilters): Promise<number> {
-  const { clause, params, prewhereClause } = buildKilllistWhereClause(filters)
-  const prewhere = prewhereClause ? `PREWHERE ${prewhereClause}` : ''
+  const { clause, params } = buildKilllistWhereClause(filters, 'k')
 
   const result = await database.queryValue<number>(
-    `SELECT count() FROM killlist
-     ${prewhere}
+    `SELECT count(*)
+     ${getBaseQuery()}
      ${clause}`,
     params
   )
-  return result || 0
+  return Number(result) || 0
 }
 
 /**
@@ -312,15 +406,176 @@ export async function getFilteredKillsWithNames(
   perPage: number = 50
 ): Promise<EntityKillmail[]> {
   const offset = (page - 1) * perPage
-  const { clause, params: filterParams, prewhereClause, basePrewhereClause } = buildKilllistWhereClause(filters, 'k')
+  const { clause, params: filterParams } = buildKilllistWhereClause(filters, 'k')
   const params: Record<string, unknown> = { ...filterParams, perPage, offset }
-  const fromClause = basePrewhereClause
-    ? `(SELECT * FROM killlist PREWHERE ${basePrewhereClause}) k`
-    : 'killlist k'
-  const prewhere = prewhereClause && !basePrewhereClause ? `PREWHERE ${prewhereClause}` : ''
 
   return await database.query<EntityKillmail>(
     `SELECT
+      k."killmailId" as "killmailId",
+      k."killmailTime" as "killmailTime",
+
+      -- Victim info
+      k."victimCharacterId" as "victimCharacterId",
+      coalesce(vc.name, vnpc.name, 'Unknown') as "victimCharacterName",
+      k."victimCorporationId" as "victimCorporationId",
+      coalesce(vcorp.name, vnpc_corp.name, 'Unknown') as "victimCorporationName",
+      coalesce(vcorp.ticker, vnpc_corp."tickerName", '???') as "victimCorporationTicker",
+      k."victimAllianceId" as "victimAllianceId",
+      valliance.name as "victimAllianceName",
+      valliance.ticker as "victimAllianceTicker",
+      k."victimShipTypeId" as "victimShipTypeId",
+      coalesce(vship.name, 'Unknown') as "victimShipName",
+      coalesce(vshipgroup.name, 'Unknown') as "victimShipGroup",
+
+      -- Attacker info (top attacker)
+      k."topAttackerCharacterId" as "attackerCharacterId",
+      coalesce(ac.name, anpc.name, 'Unknown') as "attackerCharacterName",
+      k."topAttackerCorporationId" as "attackerCorporationId",
+      coalesce(acorp.name, anpc_corp.name, 'Unknown') as "attackerCorporationName",
+      coalesce(acorp.ticker, anpc_corp."tickerName", '???') as "attackerCorporationTicker",
+      k."topAttackerAllianceId" as "attackerAllianceId",
+      aalliance.name as "attackerAllianceName",
+      aalliance.ticker as "attackerAllianceTicker",
+
+      -- Location
+      k."solarSystemId" as "solarSystemId",
+      sys.name as "solarSystemName",
+      reg.name as "regionName",
+
+      -- Stats
+      k."totalValue" as "totalValue",
+      k."attackerCount" as "attackerCount"
+
+  FROM killmails k
+  LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
+  -- Alias solarSystems as ss to match filters
+  LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
+  LEFT JOIN regions reg ON sys."regionId" = reg."regionId"
+  LEFT JOIN types t ON k."victimShipTypeId" = t."typeId" -- Needed for filter conditions
+
+    -- Victim JOINs
+    LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
+    LEFT JOIN npcCharacters vnpc ON k."victimCharacterId" = vnpc."characterId"
+    LEFT JOIN corporations vcorp ON k."victimCorporationId" = vcorp."corporationId"
+    LEFT JOIN npcCorporations vnpc_corp ON k."victimCorporationId" = vnpc_corp."corporationId"
+    LEFT JOIN alliances valliance ON k."victimAllianceId" = valliance."allianceId"
+    LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
+    LEFT JOIN groups vshipgroup ON vship."groupId" = vshipgroup."groupId"
+
+    -- Attacker JOINs
+    LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
+    LEFT JOIN npcCharacters anpc ON k."topAttackerCharacterId" = anpc."characterId"
+    LEFT JOIN corporations acorp ON k."topAttackerCorporationId" = acorp."corporationId"
+    LEFT JOIN npcCorporations anpc_corp ON k."topAttackerCorporationId" = anpc_corp."corporationId"
+    LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
+
+    ${clause}
+    ORDER BY k."killmailTime" DESC
+    LIMIT {perPage:UInt32} OFFSET {offset:UInt32}`,
+    params
+  )
+}
+
+/**
+ * Extended killmail data with entity names (for entity pages)
+ */
+export interface EntityKillmail {
+  killmailId: number
+  killmailTime: string
+  // ... fields ...
+  victimCharacterId: number | null
+  victimCharacterName: string
+  victimCorporationId: number
+  victimCorporationName: string
+  victimCorporationTicker: string
+  victimAllianceId: number | null
+  victimAllianceName: string | null
+  victimAllianceTicker: string | null
+  victimShipTypeId: number
+  victimShipName: string
+  victimShipGroup: string
+
+  attackerCharacterId: number
+  attackerCharacterName: string
+  attackerCorporationId: number
+  attackerCorporationName: string
+  attackerCorporationTicker: string
+  attackerAllianceId: number | null
+  attackerAllianceName: string | null
+  attackerAllianceTicker: string | null
+
+  solarSystemId: number
+  solarSystemName: string
+  regionName: string
+
+  totalValue: number
+  attackerCount: number
+}
+
+/**
+ * Get killmails where entity was attacker (kills)
+ * Or victim (losses)
+ * Or both (all)
+ * Detailed view with names.
+ */
+export async function getEntityKillmails(
+  entityId: number,
+  entityType: 'character' | 'corporation' | 'alliance',
+  mode: 'kills' | 'losses' | 'all',
+  page: number = 1,
+  perPage: number = 30
+): Promise<EntityKillmail[]> {
+  const offset = (page - 1) * perPage
+
+  let joinClause = ''
+  let whereClause = ''
+
+  // For 'all' or 'kills', we might need to check attackers table for 'kills' if we want comprehensive list,
+  // OR check topAttacker columns if we only care about final blow/top attacker?
+  // The previous implementation used `killlist` view which likely included all attackers.
+  // So we should join attackers table for 'kills' mode.
+
+  // Wait, `killlist` view in ClickHouse often replicates the killmail for each attacker.
+  // So querying `killlist WHERE entityId = X` gets all kills where X was involved.
+
+  if (mode === 'kills') {
+    if (entityType === 'character') {
+       joinClause = `JOIN attackers a ON k.killmailId = a.killmailId`;
+       whereClause = `a.characterId = {entityId:UInt32}`;
+    } else if (entityType === 'corporation') {
+       joinClause = `JOIN attackers a ON k.killmailId = a.killmailId`;
+       whereClause = `a.corporationId = {entityId:UInt32}`;
+    } else if (entityType === 'alliance') {
+       joinClause = `JOIN attackers a ON k.killmailId = a.killmailId`;
+       whereClause = `a.allianceId = {entityId:UInt32}`;
+    }
+  } else if (mode === 'losses') {
+    if (entityType === 'character') {
+       whereClause = `k.victimCharacterId = {entityId:UInt32}`;
+    } else if (entityType === 'corporation') {
+       whereClause = `k.victimCorporationId = {entityId:UInt32}`;
+    } else if (entityType === 'alliance') {
+       whereClause = `k.victimAllianceId = {entityId:UInt32}`;
+    }
+  } else { // all
+    // This is tricky with simple WHERE. We need OR.
+    // And potentially JOIN attackers if we want to find kills where entity was attacker.
+    // But JOIN attackers will duplicate rows if we don't use DISTINCT.
+    // And we need to match either victim OR attacker.
+
+    joinClause = `LEFT JOIN attackers a ON k.killmailId = a.killmailId`;
+
+    if (entityType === 'character') {
+       whereClause = `(k.victimCharacterId = {entityId:UInt32} OR a.characterId = {entityId:UInt32})`;
+    } else if (entityType === 'corporation') {
+       whereClause = `(k.victimCorporationId = {entityId:UInt32} OR a.corporationId = {entityId:UInt32})`;
+    } else if (entityType === 'alliance') {
+       whereClause = `(k.victimAllianceId = {entityId:UInt32} OR a.allianceId = {entityId:UInt32})`;
+    }
+  }
+
+  return await database.query<EntityKillmail>(
+    `SELECT DISTINCT ON (k.killmailTime, k.killmailId)
       k.killmailId as killmailId,
       k.killmailTime as killmailTime,
 
@@ -356,151 +611,30 @@ export async function getFilteredKillsWithNames(
       k.totalValue as totalValue,
       k.attackerCount as attackerCount
 
-  FROM ${fromClause}
-  ${prewhere}
+    FROM killmails k
+    ${joinClause}
+
+    LEFT JOIN solarSystems sys ON k.solarSystemId = sys.solarSystemId
+    LEFT JOIN regions reg ON sys.regionId = reg.regionId
 
     -- Victim JOINs
-    LEFT JOIN characters vc FINAL ON k.victimCharacterId = vc.characterId
-    LEFT JOIN npcCharacters vnpc FINAL ON k.victimCharacterId = vnpc.characterId
-    LEFT JOIN corporations vcorp FINAL ON k.victimCorporationId = vcorp.corporationId
-    LEFT JOIN npcCorporations vnpc_corp FINAL ON k.victimCorporationId = vnpc_corp.corporationId
-    LEFT JOIN alliances valliance FINAL ON k.victimAllianceId = valliance.allianceId
-    LEFT JOIN types vship FINAL ON k.victimShipTypeId = vship.typeId
-    LEFT JOIN groups vshipgroup FINAL ON vship.groupId = vshipgroup.groupId
+    LEFT JOIN characters vc ON k.victimCharacterId = vc.characterId
+    LEFT JOIN npcCharacters vnpc ON k.victimCharacterId = vnpc.characterId
+    LEFT JOIN corporations vcorp ON k.victimCorporationId = vcorp.corporationId
+    LEFT JOIN npcCorporations vnpc_corp ON k.victimCorporationId = vnpc_corp.corporationId
+    LEFT JOIN alliances valliance ON k.victimAllianceId = valliance.allianceId
+    LEFT JOIN types vship ON k.victimShipTypeId = vship.typeId
+    LEFT JOIN groups vshipgroup ON vship.groupId = vshipgroup.groupId
 
     -- Attacker JOINs
-    LEFT JOIN characters ac FINAL ON k.topAttackerCharacterId = ac.characterId
-    LEFT JOIN npcCharacters anpc FINAL ON k.topAttackerCharacterId = anpc.characterId
-    LEFT JOIN corporations acorp FINAL ON k.topAttackerCorporationId = acorp.corporationId
-    LEFT JOIN npcCorporations anpc_corp FINAL ON k.topAttackerCorporationId = anpc_corp.corporationId
-    LEFT JOIN alliances aalliance FINAL ON k.topAttackerAllianceId = aalliance.allianceId
-
-    -- Location JOINs
-    LEFT JOIN solarSystems sys FINAL ON k.solarSystemId = sys.solarSystemId
-    LEFT JOIN regions reg FINAL ON sys.regionId = reg.regionId
-
-    ${clause}
-    ORDER BY k.killmailTime DESC
-    LIMIT {perPage:UInt32} OFFSET {offset:UInt32}`,
-    params
-  )
-}
-
-/**
- * Extended killmail data with entity names (for entity pages)
- */
-export interface EntityKillmail {
-  killmailId: number
-  killmailTime: string
-
-  // Victim info
-  victimCharacterId: number | null
-  victimCharacterName: string
-  victimCorporationId: number
-  victimCorporationName: string
-  victimCorporationTicker: string
-  victimAllianceId: number | null
-  victimAllianceName: string | null
-  victimAllianceTicker: string | null
-  victimShipTypeId: number
-  victimShipName: string
-  victimShipGroup: string
-
-  // Attacker info (top attacker)
-  attackerCharacterId: number
-  attackerCharacterName: string
-  attackerCorporationId: number
-  attackerCorporationName: string
-  attackerCorporationTicker: string
-  attackerAllianceId: number | null
-  attackerAllianceName: string | null
-  attackerAllianceTicker: string | null
-
-  // Location
-  solarSystemId: number
-  solarSystemName: string
-  regionName: string
-
-  // Stats
-  totalValue: number
-  attackerCount: number
-}
-
-/**
- * Get killmails where entity was attacker (kills)
- */
-export async function getEntityKillmails(
-  entityId: number,
-  entityType: 'character' | 'corporation' | 'alliance',
-  mode: 'kills' | 'losses' | 'all',
-  page: number = 1,
-  perPage: number = 30
-): Promise<EntityKillmail[]> {
-  const offset = (page - 1) * perPage
-
-  // Build WHERE clause based on mode
-  let whereClause = ''
-  if (mode === 'kills') {
-    whereClause = entityType === 'character'
-      ? 'topAttackerCharacterId = {entityId:UInt32}'
-      : entityType === 'corporation'
-      ? 'topAttackerCorporationId = {entityId:UInt32}'
-      : 'topAttackerAllianceId = {entityId:UInt32}'
-  } else if (mode === 'losses') {
-    whereClause = entityType === 'character'
-      ? 'victimCharacterId = {entityId:UInt32}'
-      : entityType === 'corporation'
-      ? 'victimCorporationId = {entityId:UInt32}'
-      : 'victimAllianceId = {entityId:UInt32}'
-  } else { // all
-    whereClause = entityType === 'character'
-      ? '(topAttackerCharacterId = {entityId:UInt32} OR victimCharacterId = {entityId:UInt32})'
-      : entityType === 'corporation'
-      ? '(topAttackerCorporationId = {entityId:UInt32} OR victimCorporationId = {entityId:UInt32})'
-      : '(topAttackerAllianceId = {entityId:UInt32} OR victimAllianceId = {entityId:UInt32})'
-  }
-
-  return await database.query<EntityKillmail>(
-    `SELECT
-      killmailId,
-      killmailTime,
-
-      -- Victim info
-      victimCharacterId,
-      victimCharacterName,
-      victimCorporationId,
-      victimCorporationName,
-      victimCorporationTicker,
-      victimAllianceId,
-      victimAllianceName,
-      victimAllianceTicker,
-      victimShipTypeId,
-      victimShipName,
-      victimShipGroup,
-
-      -- Attacker info (top attacker)
-      topAttackerCharacterId,
-      topAttackerCharacterName as attackerCharacterName,
-      topAttackerCorporationId,
-      topAttackerCorporationName as attackerCorporationName,
-      topAttackerCorporationTicker as attackerCorporationTicker,
-      topAttackerAllianceId,
-      topAttackerAllianceName as attackerAllianceName,
-      topAttackerAllianceTicker as attackerAllianceTicker,
-
-      -- Location
-      solarSystemId,
-      solarSystemName,
-      regionName,
-
-      -- Stats
-      totalValue,
-      attackerCount
-
-    FROM killlist
+    LEFT JOIN characters ac ON k.topAttackerCharacterId = ac.characterId
+    LEFT JOIN npcCharacters anpc ON k.topAttackerCharacterId = anpc.characterId
+    LEFT JOIN corporations acorp ON k.topAttackerCorporationId = acorp.corporationId
+    LEFT JOIN npcCorporations anpc_corp ON k.topAttackerCorporationId = anpc_corp.corporationId
+    LEFT JOIN alliances aalliance ON k.topAttackerAllianceId = aalliance.allianceId
 
     WHERE ${whereClause}
-    ORDER BY killmailTime DESC
+    ORDER BY k.killmailTime DESC, k.killmailId DESC
     LIMIT {perPage:UInt32} OFFSET {offset:UInt32}`,
     { entityId, perPage, offset }
   )
@@ -514,32 +648,47 @@ export async function countEntityKillmails(
   entityType: 'character' | 'corporation' | 'alliance',
   mode: 'kills' | 'losses' | 'all'
 ): Promise<number> {
+  let joinClause = ''
   let whereClause = ''
+
   if (mode === 'kills') {
-    whereClause = entityType === 'character'
-      ? 'topAttackerCharacterId = {entityId:UInt32}'
-      : entityType === 'corporation'
-      ? 'topAttackerCorporationId = {entityId:UInt32}'
-      : 'topAttackerAllianceId = {entityId:UInt32}'
+    if (entityType === 'character') {
+       joinClause = `JOIN attackers a ON k.killmailId = a.killmailId`;
+       whereClause = `a.characterId = {entityId:UInt32}`;
+    } else if (entityType === 'corporation') {
+       joinClause = `JOIN attackers a ON k.killmailId = a.killmailId`;
+       whereClause = `a.corporationId = {entityId:UInt32}`;
+    } else if (entityType === 'alliance') {
+       joinClause = `JOIN attackers a ON k.killmailId = a.killmailId`;
+       whereClause = `a.allianceId = {entityId:UInt32}`;
+    }
   } else if (mode === 'losses') {
-    whereClause = entityType === 'character'
-      ? 'victimCharacterId = {entityId:UInt32}'
-      : entityType === 'corporation'
-      ? 'victimCorporationId = {entityId:UInt32}'
-      : 'victimAllianceId = {entityId:UInt32}'
+    if (entityType === 'character') {
+       whereClause = `k.victimCharacterId = {entityId:UInt32}`;
+    } else if (entityType === 'corporation') {
+       whereClause = `k.victimCorporationId = {entityId:UInt32}`;
+    } else if (entityType === 'alliance') {
+       whereClause = `k.victimAllianceId = {entityId:UInt32}`;
+    }
   } else { // all
-    whereClause = entityType === 'character'
-      ? '(topAttackerCharacterId = {entityId:UInt32} OR victimCharacterId = {entityId:UInt32})'
-      : entityType === 'corporation'
-      ? '(topAttackerCorporationId = {entityId:UInt32} OR victimCorporationId = {entityId:UInt32})'
-      : '(topAttackerAllianceId = {entityId:UInt32} OR victimAllianceId = {entityId:UInt32})'
+    joinClause = `LEFT JOIN attackers a ON k.killmailId = a.killmailId`;
+    if (entityType === 'character') {
+       whereClause = `(k.victimCharacterId = {entityId:UInt32} OR a.characterId = {entityId:UInt32})`;
+    } else if (entityType === 'corporation') {
+       whereClause = `(k.victimCorporationId = {entityId:UInt32} OR a.corporationId = {entityId:UInt32})`;
+    } else if (entityType === 'alliance') {
+       whereClause = `(k.victimAllianceId = {entityId:UInt32} OR a.allianceId = {entityId:UInt32})`;
+    }
   }
 
   const result = await database.queryValue<number>(
-    `SELECT count() FROM killlist WHERE ${whereClause}`,
+    `SELECT count(DISTINCT k.killmailId)
+     FROM killmails k
+     ${joinClause}
+     WHERE ${whereClause}`,
     { entityId }
   )
-  return result || 0
+  return Number(result) || 0
 }
 
 /**
@@ -584,44 +733,10 @@ export async function getEntityKillsDetailed(
   page: number = 1,
   perPage: number = 30
 ): Promise<DetailedKilllistRow[]> {
-  const offset = (page - 1) * perPage
-  const whereField = `topAttacker${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`
-
-  return await database.query<DetailedKilllistRow>(
-    `SELECT
-      killmailId,
-      killmailTime,
-      victimCharacterId,
-      victimCharacterName,
-      victimCorporationId,
-      victimCorporationName,
-      victimCorporationTicker,
-      victimAllianceId,
-      victimAllianceName,
-      victimAllianceTicker,
-      victimShipTypeId,
-      victimShipName,
-      victimShipGroup,
-      topAttackerCharacterId as attackerCharacterId,
-      topAttackerCharacterName as attackerCharacterName,
-      topAttackerCorporationId as attackerCorporationId,
-      topAttackerCorporationName as attackerCorporationName,
-      topAttackerCorporationTicker as attackerCorporationTicker,
-      topAttackerAllianceId as attackerAllianceId,
-      topAttackerAllianceName as attackerAllianceName,
-      topAttackerAllianceTicker as attackerAllianceTicker,
-      solarSystemId,
-      solarSystemName,
-      regionName,
-      totalValue,
-      attackerCount,
-      isSolo
-    FROM killlist
-    WHERE ${whereField} = {entityId:UInt32}
-    ORDER BY killmailTime DESC
-    LIMIT {perPage:UInt32} OFFSET {offset:UInt32}`,
-    { entityId, perPage, offset }
-  )
+  // Re-use getEntityKillmails but cast result (interfaces are very similar, Detailed has strings for IDs? No, numbers)
+  // Actually EntityKillmail and DetailedKilllistRow match closely.
+  // Let's just call getEntityKillmails with mode='kills'.
+  return await getEntityKillmails(entityId, entityType, 'kills', page, perPage) as unknown as DetailedKilllistRow[];
 }
 
 /**
@@ -633,44 +748,7 @@ export async function getEntityLossesDetailed(
   page: number = 1,
   perPage: number = 30
 ): Promise<DetailedKilllistRow[]> {
-  const offset = (page - 1) * perPage
-  const whereField = `victim${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`
-
-  return await database.query<DetailedKilllistRow>(
-    `SELECT
-      killmailId,
-      killmailTime,
-      victimCharacterId,
-      victimCharacterName,
-      victimCorporationId,
-      victimCorporationName,
-      victimCorporationTicker,
-      victimAllianceId,
-      victimAllianceName,
-      victimAllianceTicker,
-      victimShipTypeId,
-      victimShipName,
-      victimShipGroup,
-      topAttackerCharacterId as attackerCharacterId,
-      topAttackerCharacterName as attackerCharacterName,
-      topAttackerCorporationId as attackerCorporationId,
-      topAttackerCorporationName as attackerCorporationName,
-      topAttackerCorporationTicker as attackerCorporationTicker,
-      topAttackerAllianceId as attackerAllianceId,
-      topAttackerAllianceName as attackerAllianceName,
-      topAttackerAllianceTicker as attackerAllianceTicker,
-      solarSystemId,
-      solarSystemName,
-      regionName,
-      totalValue,
-      attackerCount,
-      isSolo
-    FROM killlist
-    WHERE ${whereField} = {entityId:UInt32}
-    ORDER BY killmailTime DESC
-    LIMIT {perPage:UInt32} OFFSET {offset:UInt32}`,
-    { entityId, perPage, offset }
-  )
+  return await getEntityKillmails(entityId, entityType, 'losses', page, perPage) as unknown as DetailedKilllistRow[];
 }
 
 /**
@@ -682,45 +760,7 @@ export async function getEntityKillmailsDetailed(
   page: number = 1,
   perPage: number = 30
 ): Promise<DetailedKilllistRow[]> {
-  const offset = (page - 1) * perPage
-  const attackerField = `topAttacker${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`
-  const victimField = `victim${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`
-
-  return await database.query<DetailedKilllistRow>(
-    `SELECT
-      killmailId,
-      killmailTime,
-      victimCharacterId,
-      victimCharacterName,
-      victimCorporationId,
-      victimCorporationName,
-      victimCorporationTicker,
-      victimAllianceId,
-      victimAllianceName,
-      victimAllianceTicker,
-      victimShipTypeId,
-      victimShipName,
-      victimShipGroup,
-      topAttackerCharacterId as attackerCharacterId,
-      topAttackerCharacterName as attackerCharacterName,
-      topAttackerCorporationId as attackerCorporationId,
-      topAttackerCorporationName as attackerCorporationName,
-      topAttackerCorporationTicker as attackerCorporationTicker,
-      topAttackerAllianceId as attackerAllianceId,
-      topAttackerAllianceName as attackerAllianceName,
-      topAttackerAllianceTicker as attackerAllianceTicker,
-      solarSystemId,
-      solarSystemName,
-      regionName,
-      totalValue,
-      attackerCount,
-      isSolo
-    FROM killlist
-    WHERE ${attackerField} = {entityId:UInt32} OR ${victimField} = {entityId:UInt32}
-    ORDER BY killmailTime DESC
-    LIMIT {perPage:UInt32} OFFSET {offset:UInt32}`,
-    { entityId, perPage, offset }
-  )
+  return await getEntityKillmails(entityId, entityType, 'all', page, perPage) as unknown as DetailedKilllistRow[];
 }
 
 /**
@@ -730,12 +770,7 @@ export async function countEntityKillsDetailed(
   entityType: 'character' | 'corporation' | 'alliance',
   entityId: number
 ): Promise<number> {
-  const whereField = `attacker_${entityType}_id`
-  const result = await database.queryValue<number>(
-    `SELECT count() FROM killlist WHERE ${whereField} = {entityId:UInt32}`,
-    { entityId }
-  )
-  return result || 0
+  return await countEntityKillmails(entityId, entityType, 'kills');
 }
 
 /**
@@ -745,12 +780,7 @@ export async function countEntityLossesDetailed(
   entityType: 'character' | 'corporation' | 'alliance',
   entityId: number
 ): Promise<number> {
-  const whereField = `victim_${entityType}_id`
-  const result = await database.queryValue<number>(
-    `SELECT count() FROM killlist WHERE ${whereField} = {entityId:UInt32}`,
-    { entityId }
-  )
-  return result || 0
+  return await countEntityKillmails(entityId, entityType, 'losses');
 }
 
 /**
@@ -760,11 +790,5 @@ export async function countEntityKillmailsDetailed(
   entityType: 'character' | 'corporation' | 'alliance',
   entityId: number
 ): Promise<number> {
-  const attackerField = `attacker_${entityType}_id`
-  const victimField = `victim_${entityType}_id`
-  const result = await database.queryValue<number>(
-    `SELECT count() FROM killlist WHERE ${attackerField} = {entityId:UInt32} OR ${victimField} = {entityId:UInt32}`,
-    { entityId }
-  )
-  return result || 0
+  return await countEntityKillmails(entityId, entityType, 'all');
 }

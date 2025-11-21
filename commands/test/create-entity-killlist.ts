@@ -91,8 +91,8 @@ LEFT JOIN edk.attackers fb ON k.killmailId = fb.killmailId AND fb.finalBlow = 1
 LEFT JOIN (
   SELECT
     killmailId,
-    count() as attacker_count,
-    countIf(characterId IS NULL) = count() as is_npc
+    count(*) as attacker_count,
+    countIf(characterId IS NULL) = count(*) as is_npc
   FROM edk.attackers
   GROUP BY killmailId
 ) attacker_stats ON k.killmailId = attacker_stats.killmailId

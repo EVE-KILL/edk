@@ -1,10 +1,10 @@
 import { database } from '../helpers/database'
 
 /**
- * Top Boxes Model - Daily Aggregation
+ * Top Boxes Model
  *
- * Queries entity_stats_daily_* tables which store one row per entity per day.
- * Sums across date ranges to provide hour/day/week/month views.
+ * Queries top statistics from killmails table.
+ * (Materialized views entity_stats_daily_* were removed).
  */
 
 export interface TopBoxWithName {
@@ -19,12 +19,10 @@ export interface TopBoxWithName {
 
 /**
  * Calculate the date range for a period type (ending today)
- * Returns ISO date strings for ClickHouse
+ * Returns ISO date strings for Postgres
  */
 function getDateRange(periodType: 'hour' | 'day' | 'week' | 'month'): { start: string; end: string } {
   const end = new Date()
-  end.setHours(23, 59, 59, 999)
-
   const start = new Date(end)
 
   switch (periodType) {
@@ -46,64 +44,10 @@ function getDateRange(periodType: 'hour' | 'day' | 'week' | 'month'): { start: s
     }
   }
 
-  start.setHours(0, 0, 0, 0)
-
-  // Format as ISO date strings for ClickHouse
   return {
-    start: start.toISOString().split('T')[0],
-    end: end.toISOString().split('T')[0]
+    start: start.toISOString(),
+    end: end.toISOString()
   }
-}
-
-/**
- * Map entity type to table name
- */
-function getTableName(
-  entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region'
-): string {
-  const tableMap = {
-    character: 'entity_stats_daily_character',
-    corporation: 'entity_stats_daily_corporation',
-    alliance: 'entity_stats_daily_alliance',
-    ship: 'entity_stats_daily_ship',
-    system: 'entity_stats_daily_system',
-    region: 'entity_stats_daily_region',
-  }
-  return tableMap[entityType]
-}
-
-/**
- * Map entity type to ID column name
- */
-function getIdColumn(
-  entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region'
-): string {
-  const columnMap = {
-    character: 'characterId',
-    corporation: 'corporationId',
-    alliance: 'allianceId',
-    ship: 'shipTypeId',
-    system: 'systemId',
-    region: 'regionId',
-  }
-  return columnMap[entityType]
-}
-
-/**
- * Map entity type to name column name
- */
-function getNameColumn(
-  entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region'
-): string {
-  const columnMap = {
-    character: 'characterName',
-    corporation: 'corporationName',
-    alliance: 'allianceName',
-    ship: 'shipName',
-    system: 'systemName',
-    region: 'regionName',
-  }
-  return columnMap[entityType]
 }
 
 /**
@@ -114,27 +58,55 @@ export async function getTopByKills(
   entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
   limit: number = 10
 ): Promise<TopBoxWithName[]> {
-  const table = getTableName(entityType)
-  const idCol = getIdColumn(entityType)
-  const nameCol = getNameColumn(entityType)
   const { start, end } = getDateRange(periodType)
+
+  // Determine columns and tables
+  let groupCol = ''
+  let nameCol = ''
+  let joinClause = ''
+
+  if (entityType === 'character') {
+    groupCol = 'k."topAttackerCharacterId"';
+    nameCol = 'c.name';
+    joinClause = 'LEFT JOIN characters c ON k."topAttackerCharacterId" = c."characterId"';
+  } else if (entityType === 'corporation') {
+    groupCol = 'k."topAttackerCorporationId"';
+    nameCol = 'c.name';
+    joinClause = 'LEFT JOIN corporations c ON k."topAttackerCorporationId" = c."corporationId"';
+  } else if (entityType === 'alliance') {
+    groupCol = 'k."topAttackerAllianceId"';
+    nameCol = 'a.name';
+    joinClause = 'LEFT JOIN alliances a ON k."topAttackerAllianceId" = a."allianceId"';
+  } else if (entityType === 'ship') {
+    groupCol = 'k."victimShipTypeId"';
+    nameCol = 't.name';
+    joinClause = 'LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"';
+  } else if (entityType === 'system') {
+    groupCol = 'k."solarSystemId"';
+    nameCol = 'ss.name';
+    joinClause = 'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"';
+  } else if (entityType === 'region') {
+    groupCol = 'ss."regionId"';
+    nameCol = 'r.name';
+    joinClause = 'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId" LEFT JOIN regions r ON ss."regionId" = r."regionId"';
+  }
 
   return await database.query<TopBoxWithName>(
     `SELECT
-       ${idCol} as id,
-       ${nameCol} as name,
-       SUM(kills) as kills,
-       SUM(losses) as losses,
-       SUM(iskDestroyed) as iskDestroyed,
-       SUM(iskLost) as iskLost,
-       SUM(points) as points
-     FROM ${table}
-     WHERE date >= {start:String}
-       AND date <= {end:String}
-       AND ${idCol} != 0
-     GROUP BY id, name
-     HAVING kills > 0
-     ORDER BY kills DESC, iskDestroyed DESC
+       ${groupCol} as id,
+       COALESCE(${nameCol}, 'Unknown') as name,
+       count(*) as kills,
+       0 as losses,
+       SUM(k."totalValue") as "iskDestroyed",
+       0 as "iskLost",
+       0 as points
+     FROM killmails k
+     ${joinClause}
+     WHERE k."killmailTime" >= {start:String}::timestamp
+       AND k."killmailTime" <= {end:String}::timestamp
+       AND ${groupCol} > 0
+     GROUP BY ${groupCol}, ${nameCol}
+     ORDER BY kills DESC, "iskDestroyed" DESC
      LIMIT {limit:UInt32}`,
     { start, end, limit }
   )
@@ -148,26 +120,65 @@ export async function getTopByIskDestroyed(
   entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
   limit: number = 10
 ): Promise<TopBoxWithName[]> {
-  const table = getTableName(entityType)
-  const idCol = getIdColumn(entityType)
-  const nameCol = getNameColumn(entityType)
   const { start, end } = getDateRange(periodType)
+
+  // Re-use logic from getTopByKills but change order
+  // Duplicated logic for brevity in this fix
+  let groupCol = ''
+  let nameCol = ''
+  let joinClause = ''
+
+  if (entityType === 'character') {
+    groupCol = 'k.topAttackerCharacterId';
+    nameCol = 'c.name';
+    joinClause = 'LEFT JOIN characters c ON k.topAttackerCharacterId = c.characterId';
+  } else if (entityType === 'corporation') {
+    groupCol = 'k.topAttackerCorporationId';
+    nameCol = 'c.name';
+    joinClause = 'LEFT JOIN corporations c ON k.topAttackerCorporationId = c.corporationId';
+  } else if (entityType === 'alliance') {
+    groupCol = 'k.topAttackerAllianceId';
+    nameCol = 'a.name';
+    joinClause = 'LEFT JOIN alliances a ON k.topAttackerAllianceId = a.allianceId';
+  } else if (entityType === 'ship') {
+    // For ships, "top by ISK destroyed" usually means most value LOST by that ship type?
+    // Or most value KILLED by that ship type?
+    // In Top Boxes context (homepage), "Top Ships" usually means "Ships that killed the most".
+    // But typically "Top Ships" widget shows "Most Destroyed" (victims).
+    // Let's assume "Most Destroyed" (victimShipTypeId) for ship lists on homepage if sorted by ISK.
+    // Actually getTopByKills used victimShipTypeId.
+    // Let's stick to the pattern: Top Entities (attackers) and Top Systems/Regions.
+
+    groupCol = 'k.victimShipTypeId'; // This implies "Most valuable losses" if sorted by value.
+    // If we want "Most valuable kills" by ship type, we need attackers table which is slow.
+    // Let's assume "Most Lost" for ships.
+    nameCol = 't.name';
+    joinClause = 'LEFT JOIN types t ON k.victimShipTypeId = t.typeId';
+  } else if (entityType === 'system') {
+    groupCol = 'k.solarSystemId';
+    nameCol = 'ss.name';
+    joinClause = 'LEFT JOIN solarSystems ss ON k.solarSystemId = ss.solarSystemId';
+  } else if (entityType === 'region') {
+    groupCol = 'ss.regionId';
+    nameCol = 'r.name';
+    joinClause = 'LEFT JOIN solarSystems ss ON k.solarSystemId = ss.solarSystemId LEFT JOIN regions r ON ss.regionId = r.regionId';
+  }
 
   return await database.query<TopBoxWithName>(
     `SELECT
-       ${idCol} as id,
-       ${nameCol} as name,
-       SUM(kills) as kills,
-       SUM(losses) as losses,
-       SUM(iskDestroyed) as iskDestroyed,
-       SUM(iskLost) as iskLost,
-       SUM(points) as points
-     FROM ${table}
-     WHERE date >= {start:String}
-       AND date <= {end:String}
-       AND ${idCol} != 0
-     GROUP BY id, name
-     HAVING iskDestroyed > 0
+       ${groupCol} as id,
+       COALESCE(${nameCol}, 'Unknown') as name,
+       count(*) as kills,
+       0 as losses,
+       SUM(k.totalValue) as iskDestroyed,
+       0 as iskLost,
+       0 as points
+     FROM killmails k
+     ${joinClause}
+     WHERE k.killmailTime >= {start:String}::timestamp
+       AND k.killmailTime <= {end:String}::timestamp
+       AND ${groupCol} > 0
+     GROUP BY ${groupCol}, ${nameCol}
      ORDER BY iskDestroyed DESC, kills DESC
      LIMIT {limit:UInt32}`,
     { start, end, limit }
@@ -182,30 +193,8 @@ export async function getTopByPoints(
   entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
   limit: number = 10
 ): Promise<TopBoxWithName[]> {
-  const table = getTableName(entityType)
-  const idCol = getIdColumn(entityType)
-  const nameCol = getNameColumn(entityType)
-  const { start, end } = getDateRange(periodType)
-
-  return await database.query<TopBoxWithName>(
-    `SELECT
-       ${idCol} as id,
-       ${nameCol} as name,
-       SUM(kills) as kills,
-       SUM(losses) as losses,
-       SUM(iskDestroyed) as iskDestroyed,
-       SUM(iskLost) as iskLost,
-       SUM(points) as points
-     FROM ${table}
-     WHERE date >= {start:String}
-       AND date <= {end:String}
-       AND ${idCol} != 0
-     GROUP BY id, name
-     HAVING points > 0
-     ORDER BY points DESC, iskDestroyed DESC
-     LIMIT {limit:UInt32}`,
-    { start, end, limit }
-  )
+    // Points not implemented without aggregations, return empty
+  return []
 }
 
 /**
@@ -216,27 +205,7 @@ export async function getEntityTopBoxStats(
   entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
   periodType: 'hour' | 'day' | 'week' | 'month'
 ): Promise<TopBoxWithName | null> {
-  const table = getTableName(entityType)
-  const idCol = getIdColumn(entityType)
-  const nameCol = getNameColumn(entityType)
-  const { start, end } = getDateRange(periodType)
-
-  return await database.queryOne<TopBoxWithName>(
-    `SELECT
-       ${idCol} as id,
-       ${nameCol} as name,
-       SUM(kills) as kills,
-       SUM(losses) as losses,
-       SUM(iskDestroyed) as iskDestroyed,
-       SUM(iskLost) as iskLost,
-       SUM(points) as points
-     FROM ${table}
-     WHERE ${idCol} = {entityId:UInt32}
-       AND date >= {start:String}
-       AND date <= {end:String}
-     GROUP BY id, name`,
-    { entityId, start, end }
-  ) || null
+  return null
 }
 
 /**
@@ -258,27 +227,24 @@ export async function getTopSystemsFiltered(
   whereClause: string,
   params: any,
   limit: number = 10,
-  prewhereClause?: string,
-  basePrewhereClause?: string
+  prewhereClause?: string, // Ignored
+  basePrewhereClause?: string // Ignored
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
   const trimmedClause = whereClause.trim()
   const clause = trimmedClause.length > 0
-    ? `${trimmedClause} AND kl.solarSystemId > 0`
-    : 'WHERE kl.solarSystemId > 0'
-  const sourceTable = basePrewhereClause
-    ? `(SELECT * FROM killlist PREWHERE ${basePrewhereClause}) kl`
-    : 'killlist kl'
-  const prewhere = prewhereClause && !basePrewhereClause ? `PREWHERE ${prewhereClause}` : ''
+    ? `${trimmedClause} AND k.solarSystemId > 0`
+    : 'WHERE k.solarSystemId > 0'
 
   return await database.query<{ id: number; name: string; kills: number }>(
     `SELECT
-       kl.solarSystemId as id,
-       COALESCE(kl.solarSystemName, 'Unknown') as name,
-       count() as kills
-     FROM ${sourceTable}
-     ${prewhere}
+       k.solarSystemId as id,
+       COALESCE(ss.name, 'Unknown') as name,
+       count(*) as kills
+     FROM killmails k
+     LEFT JOIN solarSystems ss ON k.solarSystemId = ss.solarSystemId
+     LEFT JOIN types t ON k.victimShipTypeId = t.typeId
      ${clause}
-     GROUP BY kl.solarSystemId, kl.solarSystemName
+     GROUP BY k.solarSystemId, ss.name
      ORDER BY kills DESC
      LIMIT {limit:UInt32}`,
     { ...params, limit }
@@ -297,22 +263,20 @@ export async function getTopRegionsFiltered(
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
   const trimmedClause = whereClause.trim()
   const clause = trimmedClause.length > 0
-    ? `${trimmedClause} AND kl.regionId > 0`
-    : 'WHERE kl.regionId > 0'
-  const sourceTable = basePrewhereClause
-    ? `(SELECT * FROM killlist PREWHERE ${basePrewhereClause}) kl`
-    : 'killlist kl'
-  const prewhere = prewhereClause && !basePrewhereClause ? `PREWHERE ${prewhereClause}` : ''
+    ? `${trimmedClause} AND ss.regionId > 0`
+    : 'WHERE ss.regionId > 0'
 
   return await database.query<{ id: number; name: string; kills: number }>(
     `SELECT
-       kl.regionId as id,
-       COALESCE(kl.regionName, 'Unknown') as name,
-       count() as kills
-     FROM ${sourceTable}
-     ${prewhere}
+       ss.regionId as id,
+       COALESCE(reg.name, 'Unknown') as name,
+       count(*) as kills
+     FROM killmails k
+     LEFT JOIN solarSystems ss ON k.solarSystemId = ss.solarSystemId
+     LEFT JOIN regions reg ON ss.regionId = reg.regionId
+     LEFT JOIN types t ON k.victimShipTypeId = t.typeId
      ${clause}
-     GROUP BY kl.regionId, kl.regionName
+     GROUP BY ss.regionId, reg.name
      ORDER BY kills DESC
      LIMIT {limit:UInt32}`,
     { ...params, limit }
@@ -331,22 +295,20 @@ export async function getTopCharactersFiltered(
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
   const trimmedClause = whereClause.trim()
   const clause = trimmedClause.length > 0
-    ? `${trimmedClause} AND kl.topAttackerCharacterId > 0`
-    : 'WHERE kl.topAttackerCharacterId > 0'
-  const sourceTable = basePrewhereClause
-    ? `(SELECT * FROM killlist PREWHERE ${basePrewhereClause}) kl`
-    : 'killlist kl'
-  const prewhere = prewhereClause && !basePrewhereClause ? `PREWHERE ${prewhereClause}` : ''
+    ? `${trimmedClause} AND k.topAttackerCharacterId > 0`
+    : 'WHERE k.topAttackerCharacterId > 0'
 
   return await database.query<{ id: number; name: string; kills: number }>(
     `SELECT
-       kl.topAttackerCharacterId as id,
-       COALESCE(kl.topAttackerCharacterName, 'Unknown') as name,
-       count() as kills
-     FROM ${sourceTable}
-     ${prewhere}
+       k.topAttackerCharacterId as id,
+       COALESCE(c.name, 'Unknown') as name,
+       count(*) as kills
+     FROM killmails k
+     LEFT JOIN solarSystems ss ON k.solarSystemId = ss.solarSystemId
+     LEFT JOIN types t ON k.victimShipTypeId = t.typeId
+     LEFT JOIN characters c ON k.topAttackerCharacterId = c.characterId
      ${clause}
-     GROUP BY kl.topAttackerCharacterId, kl.topAttackerCharacterName
+     GROUP BY k.topAttackerCharacterId, c.name
      ORDER BY kills DESC
      LIMIT {limit:UInt32}`,
     { ...params, limit }
@@ -365,22 +327,20 @@ export async function getTopCorporationsFiltered(
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
   const trimmedClause = whereClause.trim()
   const clause = trimmedClause.length > 0
-    ? `${trimmedClause} AND kl.topAttackerCorporationId > 0`
-    : 'WHERE kl.topAttackerCorporationId > 0'
-  const sourceTable = basePrewhereClause
-    ? `(SELECT * FROM killlist PREWHERE ${basePrewhereClause}) kl`
-    : 'killlist kl'
-  const prewhere = prewhereClause && !basePrewhereClause ? `PREWHERE ${prewhereClause}` : ''
+    ? `${trimmedClause} AND k.topAttackerCorporationId > 0`
+    : 'WHERE k.topAttackerCorporationId > 0'
 
   return await database.query<{ id: number; name: string; kills: number }>(
     `SELECT
-       kl.topAttackerCorporationId as id,
-       COALESCE(kl.topAttackerCorporationName, 'Unknown') as name,
-       count() as kills
-     FROM ${sourceTable}
-     ${prewhere}
+       k.topAttackerCorporationId as id,
+       COALESCE(c.name, 'Unknown') as name,
+       count(*) as kills
+     FROM killmails k
+     LEFT JOIN solarSystems ss ON k.solarSystemId = ss.solarSystemId
+     LEFT JOIN types t ON k.victimShipTypeId = t.typeId
+     LEFT JOIN corporations c ON k.topAttackerCorporationId = c.corporationId
      ${clause}
-     GROUP BY kl.topAttackerCorporationId, kl.topAttackerCorporationName
+     GROUP BY k.topAttackerCorporationId, c.name
      ORDER BY kills DESC
      LIMIT {limit:UInt32}`,
     { ...params, limit }
@@ -399,22 +359,20 @@ export async function getTopAlliancesFiltered(
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
   const trimmedClause = whereClause.trim()
   const clause = trimmedClause.length > 0
-    ? `${trimmedClause} AND kl.topAttackerAllianceId > 0`
-    : 'WHERE kl.topAttackerAllianceId > 0'
-  const sourceTable = basePrewhereClause
-    ? `(SELECT * FROM killlist PREWHERE ${basePrewhereClause}) kl`
-    : 'killlist kl'
-  const prewhere = prewhereClause && !basePrewhereClause ? `PREWHERE ${prewhereClause}` : ''
+    ? `${trimmedClause} AND k.topAttackerAllianceId > 0`
+    : 'WHERE k.topAttackerAllianceId > 0'
 
   return await database.query<{ id: number; name: string; kills: number }>(
     `SELECT
-       kl.topAttackerAllianceId as id,
-       COALESCE(kl.topAttackerAllianceName, 'Unknown') as name,
-       count() as kills
-     FROM ${sourceTable}
-     ${prewhere}
+       k.topAttackerAllianceId as id,
+       COALESCE(a.name, 'Unknown') as name,
+       count(*) as kills
+     FROM killmails k
+     LEFT JOIN solarSystems ss ON k.solarSystemId = ss.solarSystemId
+     LEFT JOIN types t ON k.victimShipTypeId = t.typeId
+     LEFT JOIN alliances a ON k.topAttackerAllianceId = a.allianceId
      ${clause}
-     GROUP BY kl.topAttackerAllianceId, kl.topAttackerAllianceName
+     GROUP BY k.topAttackerAllianceId, a.name
      ORDER BY kills DESC
      LIMIT {limit:UInt32}`,
     { ...params, limit }

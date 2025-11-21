@@ -25,7 +25,7 @@ export interface Constellation {
  */
 export async function getConstellation(constellationId: number): Promise<Constellation | null> {
   return await database.queryOne<Constellation>(
-    'SELECT * FROM constellations WHERE constellationId = {id:UInt32} FINAL',
+    'SELECT * FROM constellations WHERE constellationId = {id:UInt32}',
     { id: constellationId }
   )
 }
@@ -35,7 +35,7 @@ export async function getConstellation(constellationId: number): Promise<Constel
  */
 export async function getConstellationsByRegion(regionId: number): Promise<Constellation[]> {
   return await database.query<Constellation>(
-    'SELECT * FROM constellations WHERE regionId = {regionId:UInt32} FINAL ORDER BY name',
+    'SELECT * FROM constellations WHERE regionId = {regionId:UInt32} ORDER BY name',
     { regionId }
   )
 }
@@ -45,7 +45,7 @@ export async function getConstellationsByRegion(regionId: number): Promise<Const
  */
 export async function searchConstellations(namePattern: string, limit: number = 10): Promise<Constellation[]> {
   return await database.query<Constellation>(
-    `SELECT * FROM constellations FINAL
+    `SELECT * FROM constellations
      WHERE name LIKE {pattern:String}
      ORDER BY name
      LIMIT {limit:UInt32}`,
@@ -58,7 +58,7 @@ export async function searchConstellations(namePattern: string, limit: number = 
  */
 export async function getConstellationName(constellationId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM constellations WHERE constellationId = {id:UInt32} FINAL',
+    'SELECT name FROM constellations WHERE constellationId = {id:UInt32}',
     { id: constellationId }
   )
   return result || null
@@ -69,7 +69,7 @@ export async function getConstellationName(constellationId: number): Promise<str
  */
 export async function getConstellationsByFaction(factionId: number): Promise<Constellation[]> {
   return await database.query<Constellation>(
-    'SELECT * FROM constellations WHERE factionId = {factionId:UInt32} FINAL ORDER BY name',
+    'SELECT * FROM constellations WHERE factionId = {factionId:UInt32} ORDER BY name',
     { factionId }
   )
 }

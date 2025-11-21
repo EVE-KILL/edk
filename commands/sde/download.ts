@@ -93,9 +93,9 @@ export default {
       logger.info("Importing tables...");
 
       // First batch - already implemented with special handling
-      await sdeFetcher.importMapSolarSystems();
-      await sdeFetcher.importMapRegions();
-      await sdeFetcher.importMapConstellations();
+      await sdeFetcher.importMapSolarSystems(metadata.buildNumber);
+      await sdeFetcher.importMapRegions(metadata.buildNumber);
+      await sdeFetcher.importMapConstellations(metadata.buildNumber);
 
       // Map tables
       await sdeFetcher.importConfiguredTable(mapStargatesConfig);

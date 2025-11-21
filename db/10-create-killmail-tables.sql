@@ -1,100 +1,99 @@
-USE edk;
-
 -- ============================================================================
 -- CORE KILLMAIL TABLES (OPTIMIZED)
 -- ============================================================================
 
 -- Killmails table - Core killmail records with victim information
 CREATE TABLE IF NOT EXISTS killmails (
-  killmailId UInt32 NOT NULL,
-  killmailTime DateTime NOT NULL,
-  solarSystemId UInt32 NOT NULL,
+  "killmailId" INTEGER PRIMARY KEY,
+  "killmailTime" TIMESTAMP NOT NULL,
+  "solarSystemId" INTEGER NOT NULL,
 
   -- Victim information
-  victimAllianceId Nullable(UInt32),
-  victimCharacterId Nullable(UInt32),
-  victimCorporationId UInt32,
-  victimDamageTaken UInt32,
-  victimShipTypeId UInt32,
+  "victimAllianceId" INTEGER,
+  "victimCharacterId" INTEGER,
+  "victimCorporationId" INTEGER,
+  "victimDamageTaken" INTEGER,
+  "victimShipTypeId" INTEGER,
 
   -- Victim position
-  positionX Nullable(Float64),
-  positionY Nullable(Float64),
-  positionZ Nullable(Float64),
+  "positionX" DOUBLE PRECISION,
+  "positionY" DOUBLE PRECISION,
+  "positionZ" DOUBLE PRECISION,
 
   -- ESI hash for API access
-  hash String DEFAULT '',
+  "hash" TEXT DEFAULT '',
 
   -- Denormalized attacker info (top/final blow attacker)
-  topAttackerCharacterId Nullable(UInt32),
-  topAttackerCorporationId Nullable(UInt32),
-  topAttackerAllianceId Nullable(UInt32),
-  topAttackerShipTypeId Nullable(UInt32),
+  "topAttackerCharacterId" INTEGER,
+  "topAttackerCorporationId" INTEGER,
+  "topAttackerAllianceId" INTEGER,
+  "topAttackerShipTypeId" INTEGER,
 
   -- Aggregate stats
-  totalValue Float64 DEFAULT 0,
-  attackerCount UInt16 DEFAULT 0,
+  "totalValue" DOUBLE PRECISION DEFAULT 0,
+  "attackerCount" INTEGER DEFAULT 0,
 
   -- Flags
-  npc Boolean DEFAULT false,
-  solo Boolean DEFAULT false,
-  awox Boolean DEFAULT false,
+  "npc" BOOLEAN DEFAULT false,
+  "solo" BOOLEAN DEFAULT false,
+  "awox" BOOLEAN DEFAULT false,
 
-  createdAt DateTime DEFAULT now(),
+  "createdAt" TIMESTAMP DEFAULT NOW(),
+  "version" BIGINT
+);
 
-  INDEX idx_solar_system (solarSystemId) TYPE minmax GRANULARITY 3,
-  INDEX idx_victim_character (victimCharacterId) TYPE minmax GRANULARITY 3,
-  INDEX idx_victim_corporation (victimCorporationId) TYPE minmax GRANULARITY 3,
-  INDEX idx_victim_alliance (victimAllianceId) TYPE minmax GRANULARITY 3,
-  INDEX idx_victim_ship_type (victimShipTypeId) TYPE minmax GRANULARITY 3,
-  INDEX idx_victim_damage_taken (victimDamageTaken) TYPE minmax GRANULARITY 3,
-  INDEX idx_total_value (totalValue) TYPE minmax GRANULARITY 3,
-  version UInt64
-) ENGINE = ReplacingMergeTree(version)
-ORDER BY (killmailTime, killmailId)
-PARTITION BY toYYYYMM(killmailTime);
+CREATE INDEX IF NOT EXISTS "idx_killmails_solar_system" ON killmails ("solarSystemId");
+CREATE INDEX IF NOT EXISTS "idx_killmails_victim_character" ON killmails ("victimCharacterId");
+CREATE INDEX IF NOT EXISTS "idx_killmails_victim_corporation" ON killmails ("victimCorporationId");
+CREATE INDEX IF NOT EXISTS "idx_killmails_victim_alliance" ON killmails ("victimAllianceId");
+CREATE INDEX IF NOT EXISTS "idx_killmails_victim_ship_type" ON killmails ("victimShipTypeId");
+CREATE INDEX IF NOT EXISTS "idx_killmails_victim_damage_taken" ON killmails ("victimDamageTaken");
+CREATE INDEX IF NOT EXISTS "idx_killmails_total_value" ON killmails ("totalValue");
+CREATE INDEX IF NOT EXISTS "idx_killmails_time" ON killmails ("killmailTime");
 
--- Attackers table - OPTIMIZED: Added killmail_time field, partitioned by killmail_time
+
+-- Attackers table
 CREATE TABLE IF NOT EXISTS attackers (
-  killmailId UInt32 NOT NULL,
-  killmailTime DateTime NOT NULL, -- NEW: Added for consistent partitioning
-  allianceId Nullable(UInt32),
-  corporationId Nullable(UInt32),
-  characterId Nullable(UInt32),
-  damageDone UInt32,
-  finalBlow UInt8,
-  securityStatus Nullable(Float32),
-  shipTypeId Nullable(UInt32),
-  weaponTypeId Nullable(UInt32),
-  createdAt DateTime DEFAULT now(),
+  "id" SERIAL PRIMARY KEY,
+  "killmailId" INTEGER NOT NULL,
+  "killmailTime" TIMESTAMP NOT NULL,
+  "allianceId" INTEGER,
+  "corporationId" INTEGER,
+  "characterId" INTEGER,
+  "damageDone" INTEGER,
+  "finalBlow" BOOLEAN,
+  "securityStatus" REAL,
+  "shipTypeId" INTEGER,
+  "weaponTypeId" INTEGER,
+  "createdAt" TIMESTAMP DEFAULT NOW(),
+  "version" BIGINT
+);
 
-  INDEX idx_character (characterId) TYPE minmax GRANULARITY 3,
-  INDEX idx_corporation (corporationId) TYPE minmax GRANULARITY 3,
-  INDEX idx_alliance (allianceId) TYPE minmax GRANULARITY 3,
-  INDEX idx_ship_type (shipTypeId) TYPE minmax GRANULARITY 3,
-  INDEX idx_weapon_type (weaponTypeId) TYPE minmax GRANULARITY 3,
-  INDEX idx_final_blow (finalBlow) TYPE minmax GRANULARITY 3,
-  INDEX idx_damage_done (damageDone) TYPE minmax GRANULARITY 3,
-  INDEX ids_security_status (securityStatus) TYPE minmax GRANULARITY 3,
-  version UInt64
-) ENGINE = ReplacingMergeTree(version)
-ORDER BY (killmailId, finalBlow)
-PARTITION BY toYYYYMM(killmailTime); -- CHANGED: from createdAt to killmailTime
+CREATE INDEX IF NOT EXISTS "idx_attackers_killmail_id" ON attackers ("killmailId");
+CREATE INDEX IF NOT EXISTS "idx_attackers_character" ON attackers ("characterId");
+CREATE INDEX IF NOT EXISTS "idx_attackers_corporation" ON attackers ("corporationId");
+CREATE INDEX IF NOT EXISTS "idx_attackers_alliance" ON attackers ("allianceId");
+CREATE INDEX IF NOT EXISTS "idx_attackers_ship_type" ON attackers ("shipTypeId");
+CREATE INDEX IF NOT EXISTS "idx_attackers_weapon_type" ON attackers ("weaponTypeId");
+CREATE INDEX IF NOT EXISTS "idx_attackers_final_blow" ON attackers ("finalBlow");
+CREATE INDEX IF NOT EXISTS "idx_attackers_time" ON attackers ("killmailTime");
 
--- Items table - OPTIMIZED: Added killmail_time field, partitioned by killmail_time
+
+-- Items table
 CREATE TABLE IF NOT EXISTS items (
-  killmailId UInt32 NOT NULL,
-  killmailTime DateTime NOT NULL, -- NEW: Added for consistent partitioning
-  flag UInt8,
-  itemTypeId UInt32,
-  quantityDropped UInt32,
-  quantityDestroyed UInt32,
-  singleton UInt8,
-  createdAt DateTime DEFAULT now(),
+  "id" SERIAL PRIMARY KEY,
+  "killmailId" INTEGER NOT NULL,
+  "killmailTime" TIMESTAMP NOT NULL,
+  "flag" INTEGER,
+  "itemTypeId" INTEGER,
+  "quantityDropped" INTEGER,
+  "quantityDestroyed" INTEGER,
+  "singleton" BOOLEAN,
+  "createdAt" TIMESTAMP DEFAULT NOW(),
+  "version" BIGINT
+);
 
-  INDEX idx_item_type (itemTypeId) TYPE minmax GRANULARITY 3,
-  INDEX idx_flag (flag) TYPE minmax GRANULARITY 3,
-  version UInt64
-) ENGINE = ReplacingMergeTree(version)
-ORDER BY (killmailId, itemTypeId)
-PARTITION BY toYYYYMM(killmailTime); -- CHANGED: from createdAt to killmailTime
+CREATE INDEX IF NOT EXISTS "idx_items_killmail_id" ON items ("killmailId");
+CREATE INDEX IF NOT EXISTS "idx_items_item_type" ON items ("itemTypeId");
+CREATE INDEX IF NOT EXISTS "idx_items_flag" ON items ("flag");
+CREATE INDEX IF NOT EXISTS "idx_items_time" ON items ("killmailTime");

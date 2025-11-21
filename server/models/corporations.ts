@@ -4,7 +4,6 @@ import { database } from '../helpers/database'
  * Corporation Model
  *
  * Queries the corporations table (player corporations from ESI)
- * Uses ReplacingMergeTree with version field for updates
  */
 
 export interface Corporation {
@@ -30,7 +29,7 @@ export interface Corporation {
  */
 export async function getCorporation(corporationId: number): Promise<Corporation | null> {
   return await database.queryOne<Corporation>(
-    'SELECT * FROM corporations FINAL WHERE corporationId = {id:UInt32}',
+    'SELECT * FROM corporations WHERE corporationId = {id:UInt32}',
     { id: corporationId }
   )
 }
@@ -42,7 +41,7 @@ export async function getCorporations(corporationIds: number[]): Promise<Corpora
   if (corporationIds.length === 0) return []
 
   return await database.query<Corporation>(
-    'SELECT * FROM corporations FINAL WHERE corporationId IN ({ids:Array(UInt32)})',
+    'SELECT * FROM corporations WHERE corporationId = ANY({ids:Array(UInt32)})',
     { ids: corporationIds }
   )
 }
@@ -52,7 +51,7 @@ export async function getCorporations(corporationIds: number[]): Promise<Corpora
  */
 export async function searchCorporations(searchTerm: string, limit: number = 20): Promise<Corporation[]> {
   return await database.query<Corporation>(
-    `SELECT * FROM corporations FINAL
+    `SELECT * FROM corporations
      WHERE name ILIKE {search:String}
      ORDER BY name
      LIMIT {limit:UInt32}`,
@@ -65,7 +64,7 @@ export async function searchCorporations(searchTerm: string, limit: number = 20)
  */
 export async function getCorporationName(corporationId: number): Promise<string | null> {
   const name = await database.queryValue<string>(
-    'SELECT name FROM corporations FINAL WHERE corporationId = {id:UInt32}',
+    'SELECT name FROM corporations WHERE corporationId = {id:UInt32}',
     { id: corporationId }
   )
   return name || null
@@ -76,7 +75,7 @@ export async function getCorporationName(corporationId: number): Promise<string 
  */
 export async function getCorporationTicker(corporationId: number): Promise<string | null> {
   const ticker = await database.queryValue<string>(
-    'SELECT ticker FROM corporations FINAL WHERE corporationId = {id:UInt32}',
+    'SELECT ticker FROM corporations WHERE corporationId = {id:UInt32}',
     { id: corporationId }
   )
   return ticker || null
@@ -87,7 +86,7 @@ export async function getCorporationTicker(corporationId: number): Promise<strin
  */
 export async function getCorporationsByAlliance(allianceId: number): Promise<Corporation[]> {
   return await database.query<Corporation>(
-    'SELECT * FROM corporations FINAL WHERE allianceId = {allianceId:UInt32}',
+    'SELECT * FROM corporations WHERE allianceId = {allianceId:UInt32}',
     { allianceId }
   )
 }
@@ -97,7 +96,7 @@ export async function getCorporationsByAlliance(allianceId: number): Promise<Cor
  */
 export async function getCorporationsByCEO(characterId: number): Promise<Corporation[]> {
   return await database.query<Corporation>(
-    'SELECT * FROM corporations FINAL WHERE ceoId = {charId:UInt32}',
+    'SELECT * FROM corporations WHERE ceoId = {charId:UInt32}',
     { charId: characterId }
   )
 }
@@ -107,7 +106,7 @@ export async function getCorporationsByCEO(characterId: number): Promise<Corpora
  */
 export async function getCorporationsByCreator(characterId: number): Promise<Corporation[]> {
   return await database.query<Corporation>(
-    'SELECT * FROM corporations FINAL WHERE creatorId = {charId:UInt32}',
+    'SELECT * FROM corporations WHERE creatorId = {charId:UInt32}',
     { charId: characterId }
   )
 }
@@ -154,16 +153,16 @@ export async function storeCorporation(
       allianceId: data.allianceId,
       ceoId: data.ceoId,
       creatorId: data.creatorId,
-      date_founded: data.dateFounded,
+      dateFounded: data.dateFounded,
       description: data.description,
-      home_station_id: data.homeStationId,
-      member_count: data.memberCount,
+      homeStationId: data.homeStationId,
+      memberCount: data.memberCount,
       name: data.name,
       shares: data.shares,
-      tax_rate: data.taxRate,
+      taxRate: data.taxRate,
       ticker: data.ticker,
       url: data.url,
-      updated_at: now,
+      updatedAt: new Date(now * 1000),
       version: now
     }
   ])
@@ -207,7 +206,7 @@ export async function storeCorporationsBulk(
     taxRate: corp.taxRate,
     ticker: corp.ticker,
     url: corp.url,
-    updatedAt: now,
+    updatedAt: new Date(now * 1000),
     version: now
   }))
 
@@ -246,8 +245,8 @@ export async function getCorporationWithAlliance(corporationId: number): Promise
       alliance.name as allianceName,
       alliance.ticker as allianceTicker
     FROM corporations c
-    FINAL
-    LEFT JOIN alliances alliance FINAL ON c.allianceId = alliance.allianceId
+
+    LEFT JOIN alliances alliance ON c.allianceId = alliance.allianceId
     WHERE c.corporationId = {corporationId:UInt32}
     LIMIT 1`,
     { corporationId }

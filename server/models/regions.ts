@@ -26,7 +26,7 @@ export interface Region {
  */
 export async function getRegion(regionId: number): Promise<Region | null> {
   return await database.queryOne<Region>(
-    'SELECT * FROM regions WHERE regionId = {id:UInt32} FINAL',
+    'SELECT * FROM regions WHERE regionId = {id:UInt32}',
     { id: regionId }
   )
 }
@@ -36,7 +36,7 @@ export async function getRegion(regionId: number): Promise<Region | null> {
  */
 export async function getAllRegions(): Promise<Region[]> {
   return await database.query<Region>(
-    'SELECT * FROM regions FINAL ORDER BY name'
+    'SELECT * FROM regions ORDER BY name'
   )
 }
 
@@ -45,7 +45,7 @@ export async function getAllRegions(): Promise<Region[]> {
  */
 export async function searchRegions(namePattern: string, limit: number = 10): Promise<Region[]> {
   return await database.query<Region>(
-    `SELECT * FROM regions FINAL
+    `SELECT * FROM regions
      WHERE name LIKE {pattern:String}
      ORDER BY name
      LIMIT {limit:UInt32}`,
@@ -58,7 +58,7 @@ export async function searchRegions(namePattern: string, limit: number = 10): Pr
  */
 export async function getRegionName(regionId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM regions WHERE regionId = {id:UInt32} FINAL',
+    'SELECT name FROM regions WHERE regionId = {id:UInt32}',
     { id: regionId }
   )
   return result || null
@@ -69,7 +69,7 @@ export async function getRegionName(regionId: number): Promise<string | null> {
  */
 export async function getRegionsByFaction(factionId: number): Promise<Region[]> {
   return await database.query<Region>(
-    'SELECT * FROM regions WHERE factionId = {factionId:UInt32} FINAL ORDER BY name',
+    'SELECT * FROM regions WHERE factionId = {factionId:UInt32} ORDER BY name',
     { factionId }
   )
 }

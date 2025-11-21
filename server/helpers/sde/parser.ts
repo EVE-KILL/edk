@@ -135,8 +135,8 @@ export function extractDescription(obj: any, lang: string = 'en'): string {
 /**
  * Convert boolean fields
  */
-export function toBoolean(value: any): number {
-  return value ? 1 : 0
+export function toBoolean(value: any): boolean {
+  return !!value
 }
 
 /**

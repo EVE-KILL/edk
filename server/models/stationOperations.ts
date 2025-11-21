@@ -26,7 +26,7 @@ export interface StationOperation {
  */
 export async function getStationOperation(operationId: number): Promise<StationOperation | null> {
   return await database.queryOne<StationOperation>(
-    'SELECT * FROM stationOperations FINAL WHERE operationId = {id:UInt32}',
+    'SELECT * FROM stationOperations WHERE operationId = {id:UInt32}',
     { id: operationId }
   )
 }
@@ -36,7 +36,7 @@ export async function getStationOperation(operationId: number): Promise<StationO
  */
 export async function getAllStationOperations(): Promise<StationOperation[]> {
   return await database.query<StationOperation>(
-    'SELECT * FROM stationOperations FINAL ORDER BY name'
+    'SELECT * FROM stationOperations ORDER BY name'
   )
 }
 
@@ -45,7 +45,7 @@ export async function getAllStationOperations(): Promise<StationOperation[]> {
  */
 export async function getStationOperationsByType(stationType: string): Promise<StationOperation[]> {
   return await database.query<StationOperation>(
-    'SELECT * FROM stationOperations FINAL WHERE stationType = {type:String} ORDER BY name',
+    'SELECT * FROM stationOperations WHERE stationType = {type:String} ORDER BY name',
     { type: stationType }
   )
 }
@@ -55,7 +55,7 @@ export async function getStationOperationsByType(stationType: string): Promise<S
  */
 export async function searchStationOperations(namePattern: string, limit: number = 10): Promise<StationOperation[]> {
   return await database.query<StationOperation>(
-    'SELECT * FROM stationOperations FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM stationOperations WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -65,7 +65,7 @@ export async function searchStationOperations(namePattern: string, limit: number
  */
 export async function getStationOperationName(operationId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM stationOperations FINAL WHERE operationId = {id:UInt32}',
+    'SELECT name FROM stationOperations WHERE operationId = {id:UInt32}',
     { id: operationId }
   )
   return result || null

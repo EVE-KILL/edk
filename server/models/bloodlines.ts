@@ -26,7 +26,7 @@ export interface Bloodline {
  */
 export async function getBloodline(bloodlineId: number): Promise<Bloodline | null> {
   return await database.queryOne<Bloodline>(
-    'SELECT * FROM bloodlines FINAL WHERE bloodlineId = {id:UInt32}',
+    'SELECT * FROM bloodlines WHERE bloodlineId = {id:UInt32}',
     { id: bloodlineId }
   )
 }
@@ -36,7 +36,7 @@ export async function getBloodline(bloodlineId: number): Promise<Bloodline | nul
  */
 export async function getBloodlinesByRace(raceId: number): Promise<Bloodline[]> {
   return await database.query<Bloodline>(
-    'SELECT * FROM bloodlines FINAL WHERE raceId = {raceId:UInt32} ORDER BY name',
+    'SELECT * FROM bloodlines WHERE raceId = {raceId:UInt32} ORDER BY name',
     { raceId }
   )
 }
@@ -46,7 +46,7 @@ export async function getBloodlinesByRace(raceId: number): Promise<Bloodline[]> 
  */
 export async function getAllBloodlines(): Promise<Bloodline[]> {
   return await database.query<Bloodline>(
-    'SELECT * FROM bloodlines FINAL ORDER BY raceId, name'
+    'SELECT * FROM bloodlines ORDER BY raceId, name'
   )
 }
 
@@ -55,7 +55,7 @@ export async function getAllBloodlines(): Promise<Bloodline[]> {
  */
 export async function searchBloodlines(namePattern: string, limit: number = 10): Promise<Bloodline[]> {
   return await database.query<Bloodline>(
-    'SELECT * FROM bloodlines FINAL WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
+    'SELECT * FROM bloodlines WHERE name LIKE {pattern:String} ORDER BY name LIMIT {limit:UInt32}',
     { pattern: `%${namePattern}%`, limit }
   )
 }
@@ -65,7 +65,7 @@ export async function searchBloodlines(namePattern: string, limit: number = 10):
  */
 export async function getBloodlineName(bloodlineId: number): Promise<string | null> {
   const result = await database.queryValue<string>(
-    'SELECT name FROM bloodlines FINAL WHERE bloodlineId = {id:UInt32}',
+    'SELECT name FROM bloodlines WHERE bloodlineId = {id:UInt32}',
     { id: bloodlineId }
   )
   return result || null
