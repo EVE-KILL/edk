@@ -1,7 +1,7 @@
-import { logger } from "../server/helpers/logger";
-import { database } from "../server/helpers/database";
-import { enqueueJobMany } from "../server/helpers/queue";
-import { QueueType } from "../server/helpers/queue";
+import { logger } from "../../server/helpers/logger";
+import { database } from "../../server/helpers/database";
+import { enqueueJobMany } from "../../server/helpers/queue";
+import { QueueType } from "../../server/helpers/queue";
 
 export default {
   description: "Backfill killmails from zKillboard history API",

@@ -1,8 +1,7 @@
-import { enqueueJob } from '../server/helpers/queue';
-import { QueueType } from '../server/helpers/queue';
-import { killmailExists } from '../server/models/killmails';
-import chalk from 'chalk';
-import { logger } from '../server/helpers/logger';
+import { enqueueJob } from '../../server/helpers/queue';
+import { QueueType } from '../../server/helpers/queue';
+import { killmailExists } from '../../server/models/killmails';
+import { logger } from '../../server/helpers/logger';
 
 /**
  * RedisQ Killmail Importer Command
@@ -44,10 +43,10 @@ class RedisQImporter {
   }
 
   async execute(): Promise<void> {
-    this.log(chalk.blue.bold('🚀 Starting RedisQ killmail importer'));
-    this.log(`📡 Listening to URL: ${chalk.cyan(this.queueUrl)}`);
+    this.log('🚀 Starting RedisQ killmail importer');
+    this.log(`📡 Listening to URL: ${this.queueUrl}`);
 
-    this.log(chalk.dim('Press Ctrl+C to stop'));
+    this.log('Press Ctrl+C to stop');
 
     process.on('SIGINT', () => this.shutdown());
     process.on('SIGTERM', () => this.shutdown());
