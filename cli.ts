@@ -4,6 +4,7 @@ import { join } from 'path'
 import { fileURLToPath } from 'url'
 import chalk from 'chalk'
 import { logger } from './server/helpers/logger'
+import { database } from './server/helpers/database'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -177,11 +178,15 @@ async function main(): Promise<void> {
   if (process.argv.length < 3) {
     program.outputHelp()
   } else {
-    program.parse(process.argv)
+    await program.parseAsync(process.argv)
   }
 }
 
-main().catch((error) => {
-  logger.error('CLI Error:', { error: String(error) })
-  process.exit(1)
-})
+main()
+  .catch((error) => {
+    logger.error('CLI Error:', { error: String(error) })
+    process.exit(1)
+  })
+  .finally(async () => {
+    await database.close()
+  })
