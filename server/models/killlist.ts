@@ -309,6 +309,135 @@ export async function countEntityKills(
 }
 
 /**
+ * Get activity (kills + losses) for multiple followed entities
+ */
+export async function getFollowedEntitiesActivity(
+  charIds: number[],
+  corpIds: number[],
+  allyIds: number[],
+  page: number = 1,
+  perPage: number = 30
+): Promise<EntityKillmail[]> {
+  const offset = (page - 1) * perPage
+
+  // Ensure safe numbers
+  const safeCharIds = charIds.map(Number).filter(n => !isNaN(n) && n > 0)
+  const safeCorpIds = corpIds.map(Number).filter(n => !isNaN(n) && n > 0)
+  const safeAllyIds = allyIds.map(Number).filter(n => !isNaN(n) && n > 0)
+
+  const conditions: any[] = []
+
+  if (safeCharIds.length > 0) {
+    conditions.push(database.sql`(k."victimCharacterId" IN ${database.sql(safeCharIds)} OR k."topAttackerCharacterId" IN ${database.sql(safeCharIds)})`)
+  }
+  if (safeCorpIds.length > 0) {
+    conditions.push(database.sql`(k."victimCorporationId" IN ${database.sql(safeCorpIds)} OR k."topAttackerCorporationId" IN ${database.sql(safeCorpIds)})`)
+  }
+  if (safeAllyIds.length > 0) {
+    conditions.push(database.sql`(k."victimAllianceId" IN ${database.sql(safeAllyIds)} OR k."topAttackerAllianceId" IN ${database.sql(safeAllyIds)})`)
+  }
+
+  if (conditions.length === 0) {
+    return []
+  }
+
+  const whereClause = conditions.reduce((acc, curr, i) => i === 0 ? curr : database.sql`${acc} OR ${curr}`, database.sql``)
+
+  return await database.sql<EntityKillmail[]>`
+    SELECT DISTINCT ON (k."killmailTime", k."killmailId")
+      k."killmailId",
+      k."killmailTime",
+      -- Victim info
+      k."victimCharacterId",
+      coalesce(vc.name, vnpc.name, 'Unknown') as "victimCharacterName",
+      k."victimCorporationId",
+      coalesce(vcorp.name, vnpc_corp.name, 'Unknown') as "victimCorporationName",
+      coalesce(vcorp.ticker, vnpc_corp."tickerName", '???') as "victimCorporationTicker",
+      k."victimAllianceId",
+      valliance.name as "victimAllianceName",
+      valliance.ticker as "victimAllianceTicker",
+      k."victimShipTypeId",
+      coalesce(vship.name, 'Unknown') as "victimShipName",
+      coalesce(vshipgroup.name, 'Unknown') as "victimShipGroup",
+
+      -- Attacker info
+      k."topAttackerCharacterId" as "attackerCharacterId",
+      coalesce(ac.name, anpc.name, 'Unknown') as "attackerCharacterName",
+      k."topAttackerCorporationId" as "attackerCorporationId",
+      coalesce(acorp.name, anpc_corp.name, 'Unknown') as "attackerCorporationName",
+      coalesce(acorp.ticker, anpc_corp."tickerName", '???') as "attackerCorporationTicker",
+      k."topAttackerAllianceId" as "attackerAllianceId",
+      aalliance.name as "attackerAllianceName",
+      aalliance.ticker as "attackerAllianceTicker",
+
+      -- Location
+      k."solarSystemId",
+      sys.name as "solarSystemName",
+      reg.name as "regionName",
+
+      -- Stats
+      k."totalValue",
+      k."attackerCount"
+
+    FROM killmails k
+    LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
+    LEFT JOIN regions reg ON sys."regionId" = reg."regionId"
+
+    -- Victim JOINs
+    LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
+    LEFT JOIN npcCharacters vnpc ON k."victimCharacterId" = vnpc."characterId"
+    LEFT JOIN corporations vcorp ON k."victimCorporationId" = vcorp."corporationId"
+    LEFT JOIN npcCorporations vnpc_corp ON k."victimCorporationId" = vnpc_corp."corporationId"
+    LEFT JOIN alliances valliance ON k."victimAllianceId" = valliance."allianceId"
+    LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
+    LEFT JOIN groups vshipgroup ON vship."groupId" = vshipgroup."groupId"
+
+    -- Attacker JOINs
+    LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
+    LEFT JOIN npcCharacters anpc ON k."topAttackerCharacterId" = anpc."characterId"
+    LEFT JOIN corporations acorp ON k."topAttackerCorporationId" = acorp."corporationId"
+    LEFT JOIN npcCorporations anpc_corp ON k."topAttackerCorporationId" = anpc_corp."corporationId"
+    LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
+
+    WHERE ${whereClause}
+    ORDER BY k."killmailTime" DESC, k."killmailId" DESC
+    LIMIT ${perPage} OFFSET ${offset}`
+}
+
+export async function countFollowedEntitiesActivity(
+  charIds: number[],
+  corpIds: number[],
+  allyIds: number[]
+): Promise<number> {
+  const safeCharIds = charIds.map(Number).filter(n => !isNaN(n) && n > 0)
+  const safeCorpIds = corpIds.map(Number).filter(n => !isNaN(n) && n > 0)
+  const safeAllyIds = allyIds.map(Number).filter(n => !isNaN(n) && n > 0)
+
+  const conditions: any[] = []
+
+  if (safeCharIds.length > 0) {
+    conditions.push(database.sql`("victimCharacterId" IN ${database.sql(safeCharIds)} OR "topAttackerCharacterId" IN ${database.sql(safeCharIds)})`)
+  }
+  if (safeCorpIds.length > 0) {
+    conditions.push(database.sql`("victimCorporationId" IN ${database.sql(safeCorpIds)} OR "topAttackerCorporationId" IN ${database.sql(safeCorpIds)})`)
+  }
+  if (safeAllyIds.length > 0) {
+    conditions.push(database.sql`("victimAllianceId" IN ${database.sql(safeAllyIds)} OR "topAttackerAllianceId" IN ${database.sql(safeAllyIds)})`)
+  }
+
+  if (conditions.length === 0) {
+    return 0
+  }
+
+  const whereClause = conditions.reduce((acc, curr, i) => i === 0 ? curr : database.sql`${acc} OR ${curr}`, database.sql``)
+
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM killmails WHERE ${whereClause}
+  `
+  return Number(result?.count || 0)
+}
+
+/**
  * Filter options for killlist queries
  */
 export interface KilllistFilters {
@@ -753,4 +882,133 @@ export async function countEntityKillmailsDetailed(
   entityId: number
 ): Promise<number> {
   return await countEntityKillmails(entityId, entityType, 'all');
+}
+
+/**
+ * Get losses for multiple followed entities
+ */
+export async function getFollowedEntitiesLosses(
+  charIds: number[],
+  corpIds: number[],
+  allyIds: number[],
+  page: number = 1,
+  perPage: number = 30
+): Promise<EntityKillmail[]> {
+  const offset = (page - 1) * perPage
+
+  // Ensure safe numbers
+  const safeCharIds = charIds.map(Number).filter(n => !isNaN(n) && n > 0)
+  const safeCorpIds = corpIds.map(Number).filter(n => !isNaN(n) && n > 0)
+  const safeAllyIds = allyIds.map(Number).filter(n => !isNaN(n) && n > 0)
+
+  const conditions: any[] = []
+
+  if (safeCharIds.length > 0) {
+    conditions.push(database.sql`k."victimCharacterId" IN ${database.sql(safeCharIds)}`)
+  }
+  if (safeCorpIds.length > 0) {
+    conditions.push(database.sql`k."victimCorporationId" IN ${database.sql(safeCorpIds)}`)
+  }
+  if (safeAllyIds.length > 0) {
+    conditions.push(database.sql`k."victimAllianceId" IN ${database.sql(safeAllyIds)}`)
+  }
+
+  if (conditions.length === 0) {
+    return []
+  }
+
+  const whereClause = conditions.reduce((acc, curr, i) => i === 0 ? curr : database.sql`${acc} OR ${curr}`, database.sql``)
+
+  return await database.sql<EntityKillmail[]>`
+    SELECT DISTINCT ON (k."killmailTime", k."killmailId")
+      k."killmailId",
+      k."killmailTime",
+      -- Victim info
+      k."victimCharacterId",
+      coalesce(vc.name, vnpc.name, 'Unknown') as "victimCharacterName",
+      k."victimCorporationId",
+      coalesce(vcorp.name, vnpc_corp.name, 'Unknown') as "victimCorporationName",
+      coalesce(vcorp.ticker, vnpc_corp."tickerName", '???') as "victimCorporationTicker",
+      k."victimAllianceId",
+      valliance.name as "victimAllianceName",
+      valliance.ticker as "victimAllianceTicker",
+      k."victimShipTypeId",
+      coalesce(vship.name, 'Unknown') as "victimShipName",
+      coalesce(vshipgroup.name, 'Unknown') as "victimShipGroup",
+
+      -- Attacker info
+      k."topAttackerCharacterId" as "attackerCharacterId",
+      coalesce(ac.name, anpc.name, 'Unknown') as "attackerCharacterName",
+      k."topAttackerCorporationId" as "attackerCorporationId",
+      coalesce(acorp.name, anpc_corp.name, 'Unknown') as "attackerCorporationName",
+      coalesce(acorp.ticker, anpc_corp."tickerName", '???') as "attackerCorporationTicker",
+      k."topAttackerAllianceId" as "attackerAllianceId",
+      aalliance.name as "attackerAllianceName",
+      aalliance.ticker as "attackerAllianceTicker",
+
+      -- Location
+      k."solarSystemId",
+      sys.name as "solarSystemName",
+      reg.name as "regionName",
+
+      -- Stats
+      k."totalValue",
+      k."attackerCount"
+
+    FROM killmails k
+    LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
+    LEFT JOIN regions reg ON sys."regionId" = reg."regionId"
+
+    -- Victim JOINs
+    LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
+    LEFT JOIN npcCharacters vnpc ON k."victimCharacterId" = vnpc."characterId"
+    LEFT JOIN corporations vcorp ON k."victimCorporationId" = vcorp."corporationId"
+    LEFT JOIN npcCorporations vnpc_corp ON k."victimCorporationId" = vnpc_corp."corporationId"
+    LEFT JOIN alliances valliance ON k."victimAllianceId" = valliance."allianceId"
+    LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
+    LEFT JOIN groups vshipgroup ON vship."groupId" = vshipgroup."groupId"
+
+    -- Attacker JOINs
+    LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
+    LEFT JOIN npcCharacters anpc ON k."topAttackerCharacterId" = anpc."characterId"
+    LEFT JOIN corporations acorp ON k."topAttackerCorporationId" = acorp."corporationId"
+    LEFT JOIN npcCorporations anpc_corp ON k."topAttackerCorporationId" = anpc_corp."corporationId"
+    LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
+
+    WHERE ${whereClause}
+    ORDER BY k."killmailTime" DESC, k."killmailId" DESC
+    LIMIT ${perPage} OFFSET ${offset}`
+}
+
+export async function countFollowedEntitiesLosses(
+  charIds: number[],
+  corpIds: number[],
+  allyIds: number[]
+): Promise<number> {
+  const safeCharIds = charIds.map(Number).filter(n => !isNaN(n) && n > 0)
+  const safeCorpIds = corpIds.map(Number).filter(n => !isNaN(n) && n > 0)
+  const safeAllyIds = allyIds.map(Number).filter(n => !isNaN(n) && n > 0)
+
+  const conditions: any[] = []
+
+  if (safeCharIds.length > 0) {
+    conditions.push(database.sql`"victimCharacterId" IN ${database.sql(safeCharIds)}`)
+  }
+  if (safeCorpIds.length > 0) {
+    conditions.push(database.sql`"victimCorporationId" IN ${database.sql(safeCorpIds)}`)
+  }
+  if (safeAllyIds.length > 0) {
+    conditions.push(database.sql`"victimAllianceId" IN ${database.sql(safeAllyIds)}`)
+  }
+
+  if (conditions.length === 0) {
+    return 0
+  }
+
+  const whereClause = conditions.reduce((acc, curr, i) => i === 0 ? curr : database.sql`${acc} OR ${curr}`, database.sql``)
+
+  const [result] = await database.sql<{count: number}[]>`
+    SELECT count(*) as count FROM killmails WHERE ${whereClause}
+  `
+  return Number(result?.count || 0)
 }

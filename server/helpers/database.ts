@@ -7,24 +7,30 @@ import postgres from 'postgres'
  * Handles connection management and provides common query patterns.
  */
 export class DatabaseHelper {
-  public sql: postgres.Sql
+  private _sql: postgres.Sql | undefined
   private isConnected: boolean = false
 
-  constructor() {
-    // Initialize postgres client
-    const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
+  constructor() {}
 
-    // postgres.js manages the connection pool automatically
-    this.sql = postgres(url, {
-      max: 10, // Max connections
-      idle_timeout: 20, // Idle connection timeout in seconds
-      connect_timeout: 10, // Connection timeout
-      transform: {
-        // Optional: convert row keys to camelCase if needed, but we stick to schema for now
-        // undefined
-      }
-    })
-    this.isConnected = true
+  get sql(): postgres.Sql {
+    if (!this._sql) {
+      // Initialize postgres client
+      const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
+      console.log('DatabaseHelper initialized with DB:', url.split('@')[1] || url); // Log DB part
+
+      // postgres.js manages the connection pool automatically
+      this._sql = postgres(url, {
+        max: 10, // Max connections
+        idle_timeout: 20, // Idle connection timeout in seconds
+        connect_timeout: 10, // Connection timeout
+        transform: {
+          // Optional: convert row keys to camelCase if needed, but we stick to schema for now
+          // undefined
+        }
+      })
+      this.isConnected = true
+    }
+    return this._sql
   }
 
   /**
@@ -61,12 +67,16 @@ export class DatabaseHelper {
         const columns = Object.keys(items[0]).filter(c => c !== conflictKey)
 
         // Construct dynamic update list: "col" = EXCLUDED."col"
-        const updateList = columns.map(col => this.sql`${this.sql(col)} = EXCLUDED.${this.sql(col)}`)
+        // Use reduce to join with commas manually to avoid postgres.js array formatting issues in SET clause
+        const updateClause = columns.reduce((acc, col, i) => {
+          const fragment = this.sql`${this.sql(col)} = EXCLUDED.${this.sql(col)}`
+          return i === 0 ? fragment : this.sql`${acc}, ${fragment}`
+        }, this.sql``)
 
         await this.sql`
             INSERT INTO ${this.sql(table)} ${this.sql(items)}
             ON CONFLICT (${this.sql(conflictKey)})
-            DO UPDATE SET ${this.sql(updateList)}
+            DO UPDATE SET ${updateClause}
         `
     } catch (error) {
       console.error('Database upsert error:', error)
@@ -118,7 +128,10 @@ export class DatabaseHelper {
    * Close the connection
    */
   async close(): Promise<void> {
-    await this.sql.end()
+    if (this._sql) {
+      await this._sql.end()
+      this._sql = undefined
+    }
     this.isConnected = false
   }
 

@@ -80,3 +80,27 @@ export async function countRegions(): Promise<number> {
   `
   return Number(result?.count || 0)
 }
+
+/**
+ * Get stats for a region
+ */
+export async function getRegionStats(regionId: number): Promise<any> {
+  const [result] = await database.sql<any[]>`
+    SELECT
+      count(k."killmailId") as kills,
+      sum(k."totalValue") as iskDestroyed
+    FROM killmails k
+    INNER JOIN solarSystems s ON k."solarSystemId" = s."solarSystemId"
+    WHERE s."regionId" = ${regionId}
+  `
+
+  return {
+    kills: Number(result?.kills ?? 0),
+    losses: 0,
+    iskDestroyed: Number(result?.iskDestroyed ?? 0),
+    iskLost: 0,
+    efficiency: 100,
+    iskEfficiency: 100,
+    killLossRatio: 0
+  }
+}

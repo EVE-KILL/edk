@@ -124,3 +124,26 @@ export async function countSolarSystems(): Promise<number> {
   `
   return Number(result?.count || 0)
 }
+
+/**
+ * Get stats for a solar system
+ */
+export async function getSystemStats(solarSystemId: number): Promise<any> {
+  const [result] = await database.sql<any[]>`
+    SELECT
+      count(*) as kills,
+      sum("totalValue") as iskDestroyed
+    FROM killmails
+    WHERE "solarSystemId" = ${solarSystemId}
+  `
+
+  return {
+    kills: Number(result?.kills ?? 0),
+    losses: 0,
+    iskDestroyed: Number(result?.iskDestroyed ?? 0),
+    iskLost: 0,
+    efficiency: 100,
+    iskEfficiency: 100,
+    killLossRatio: 0
+  }
+}
