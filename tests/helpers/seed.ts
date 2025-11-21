@@ -1,4 +1,4 @@
-import { database } from '../../server/helpers/database';
+import { database } from '../setup';
 
 export async function seedKillmails(count: number = 10) {
     const killmails = [];

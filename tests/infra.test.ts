@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { database } from '../server/helpers/database';
+import { database } from './setup';
 
 describe('Infrastructure', () => {
     it('should be connected to the test database', async () => {
