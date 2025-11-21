@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS attackers (
   "characterId" INTEGER,
   "damageDone" INTEGER,
   "finalBlow" BOOLEAN,
-  "securityStatus" NUMERIC(4, 2),
+  "securityStatus" NUMERIC(3, 1),
   "shipTypeId" INTEGER,
   "weaponTypeId" INTEGER,
   "createdAt" TIMESTAMP DEFAULT NOW(),
