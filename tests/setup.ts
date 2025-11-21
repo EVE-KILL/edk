@@ -37,6 +37,8 @@ beforeAll(async () => {
     }
 
     // 3. Recreate Database
+    // Use a single connection for admin operations (database creation/dropping).
+    // Setting max: 1 prevents unnecessary pool usage and clarifies intent.
     const sql = postgres(adminUrl, { max: 1 });
     try {
         await sql`

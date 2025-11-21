@@ -52,7 +52,7 @@ export async function getTopByKills(
   // The columns are id, name, kills, iskDestroyed.
   return await database.sql<TopBoxWithName[]>`
     SELECT id, name, kills, "iskDestroyed"
-    FROM ${database.sql(viewName)}
+    FROM ${database.sql.unsafe(viewName)}
     ORDER BY "iskDestroyed" DESC, kills DESC
     LIMIT ${limit}
   `
@@ -75,9 +75,12 @@ export interface FilteredTopStats {
  */
 function conditionsToWhere(conditions: any[], extraCondition?: any): any {
     const allConditions = extraCondition ? [...conditions, extraCondition] : conditions;
-    return allConditions.length > 0
-        ? database.sql`WHERE ${database.sql(allConditions, ' AND ')}`
-        : database.sql``;
+    if (allConditions.length === 0) {
+        return database.sql``;
+    }
+    // Join fragments with AND
+    const joined = allConditions.reduce((prev, curr) => prev === null ? curr : database.sql`${prev} AND ${curr}`, null);
+    return database.sql`WHERE ${joined}`;
 }
 
 /**

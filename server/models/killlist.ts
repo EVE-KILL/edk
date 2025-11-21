@@ -80,8 +80,8 @@ const ABYSSAL_REGION_MAX = 13000000
 const POCHVEN_REGION_ID = 10000070
 
 function buildSpaceTypeCondition(spaceType: string, alias: string = 'k'): any {
-  const securityColumn = database.sql`${database.sql(alias)}.security`
-  const regionColumn = database.sql`${database.sql(alias)}."regionId"`
+  const securityColumn = database.sql`${database.sql.unsafe(alias)}.security`
+  const regionColumn = database.sql`${database.sql.unsafe(alias)}."regionId"`
 
   switch (spaceType) {
     case 'highsec':
@@ -107,7 +107,7 @@ export function buildKilllistConditions(
   alias: string = 'k'
 ): any[] {
   const conditions: any[] = []
-  const prefix = database.sql(alias)
+  const prefix = database.sql.unsafe(alias)
 
   if (filters.spaceType) {
     const spaceTypeCondition = buildSpaceTypeCondition(filters.spaceType, alias)
@@ -157,6 +157,10 @@ export function buildKilllistConditions(
     conditions.push(database.sql`${prefix}."regionId" = ${filters.regionId}`)
   }
 
+  if (filters.regionIdMin !== undefined && filters.regionIdMax !== undefined) {
+    conditions.push(database.sql`${prefix}."regionId" BETWEEN ${filters.regionIdMin} AND ${filters.regionIdMax}`)
+  }
+
   if (filters.solarSystemId !== undefined) {
     conditions.push(database.sql`${prefix}."solarSystemId" = ${filters.solarSystemId}`)
   }
@@ -177,6 +181,8 @@ export interface KilllistFilters {
   minSecurityStatus?: number
   maxSecurityStatus?: number
   regionId?: number
+  regionIdMin?: number
+  regionIdMax?: number
   solarSystemId?: number
 }
 
@@ -184,9 +190,12 @@ export interface KilllistFilters {
  * Helper to combine conditions into a WHERE clause
  */
 function conditionsToWhere(conditions: any[]): any {
-  return conditions.length > 0
-    ? database.sql`WHERE ${database.sql(conditions, ' AND ')}`
-    : database.sql``
+  if (conditions.length === 0) {
+    return database.sql``
+  }
+  // Join fragments with AND
+  const joined = conditions.reduce((prev, curr) => prev === null ? curr : database.sql`${prev} AND ${curr}`, null)
+  return database.sql`WHERE ${joined}`
 }
 
 /**

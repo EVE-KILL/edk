@@ -45,25 +45,27 @@ SELECT
     k.solo,
     k.awox
 FROM killmails k
-LEFT JOIN solarsystems ss ON k."solarSystemId" = ss."solarSystemId"
+LEFT JOIN "solarSystems" ss ON k."solarSystemId" = ss."solarSystemId"
 LEFT JOIN regions r ON ss."regionId" = r."regionId"
 -- Victim JOINs
 LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
-LEFT JOIN npccharacters vnpc ON k."victimCharacterId" = vnpc."characterId"
+LEFT JOIN "npcCharacters" vnpc ON k."victimCharacterId" = vnpc."characterId"
 LEFT JOIN corporations vcorp ON k."victimCorporationId" = vcorp."corporationId"
-LEFT JOIN npccorporations vnpc_corp ON k."victimCorporationId" = vnpc_corp."corporationId"
+LEFT JOIN "npcCorporations" vnpc_corp ON k."victimCorporationId" = vnpc_corp."corporationId"
 LEFT JOIN alliances valliance ON k."victimAllianceId" = valliance."allianceId"
 LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
 LEFT JOIN groups vshipgroup ON vship."groupId" = vshipgroup."groupId"
 -- Attacker JOINs
 LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
-LEFT JOIN npccharacters anpc ON k."topAttackerCharacterId" = anpc."characterId"
+LEFT JOIN "npcCharacters" anpc ON k."topAttackerCharacterId" = anpc."characterId"
 LEFT JOIN corporations acorp ON k."topAttackerCorporationId" = acorp."corporationId"
-LEFT JOIN npccorporations anpc_corp ON k."topAttackerCorporationId" = anpc_corp."corporationId"
+LEFT JOIN "npcCorporations" anpc_corp ON k."topAttackerCorporationId" = anpc_corp."corporationId"
 LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
 LEFT JOIN types aship ON k."topAttackerShipTypeId" = aship."typeId";
 
 -- Add indexes to kill_list
+-- The unique index below is REQUIRED for REFRESH MATERIALIZED VIEW CONCURRENTLY in PostgreSQL.
+-- Without a unique index, concurrent refreshes will fail. Do not remove unless you change the refresh strategy.
 CREATE UNIQUE INDEX IF NOT EXISTS kill_list_killmail_id_idx ON kill_list("killmailId");
 CREATE INDEX IF NOT EXISTS kill_list_killmail_time_idx ON kill_list("killmailTime" DESC);
 
