@@ -298,9 +298,9 @@ export async function storeKillmail(
     const solo = attackerCount === 1;
     const npc = esiData.attackers.every((a) => !a.character_id); // All attackers are NPC
     const awox =
-      victim.alliance_id &&
+      !!(victim.alliance_id &&
       victim.alliance_id > 0 &&
-      esiData.attackers.some((a) => a.alliance_id === victim.alliance_id);
+      esiData.attackers.some((a) => a.alliance_id === victim.alliance_id));
 
     // Insert main killmail record
     const killmailRecord = {
@@ -428,9 +428,9 @@ export async function storeKillmailsBulk(
       const solo = attackerCount === 1;
       const npc = esi.attackers.every((a) => !a.character_id); // All attackers are NPC
       const awox =
-        victim.alliance_id &&
+        !!(victim.alliance_id &&
         victim.alliance_id > 0 &&
-        esi.attackers.some((a) => a.alliance_id === victim.alliance_id);
+        esi.attackers.some((a) => a.alliance_id === victim.alliance_id));
 
       return {
         killmailId: esi.killmail_id ?? 0,
