@@ -26,19 +26,19 @@ CREATE TABLE IF NOT EXISTS types (
     "name" VARCHAR(255),
     "description" TEXT,
     "groupId" INTEGER,
-    "capacity" REAL,
+    "capacity" DOUBLE PRECISION,
     "factionId" INTEGER,
     "graphicId" INTEGER,
     "iconId" INTEGER,
     "marketGroupId" INTEGER,
-    "mass" REAL,
+    "mass" DOUBLE PRECISION,
     "metaGroupId" INTEGER,
     "portionSize" INTEGER,
     "published" BOOLEAN,
     "raceId" INTEGER,
-    "radius" REAL,
+    "radius" DOUBLE PRECISION,
     "soundId" INTEGER,
-    "volume" REAL,
+    "volume" DOUBLE PRECISION,
     "version" INTEGER
 );
 

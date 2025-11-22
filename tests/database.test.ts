@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'bun:test'
-import { database } from '../server/helpers/database'
+import { database } from './setup'
 
 describe('DatabaseHelper', () => {
   beforeAll(async () => {

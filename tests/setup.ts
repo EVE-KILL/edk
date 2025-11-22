@@ -1,19 +1,21 @@
 import postgres from 'postgres';
 import { unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
+import { beforeAll, afterAll } from 'bun:test';
+import { DatabaseHelper } from '../server/helpers/database'; // Import the class
+import { migrateSchema } from '../server/plugins/schema-migration';
 
-// Configuration
-const TEST_DB = process.env.TEST_DB_NAME || 'edk_test';
-const DB_USER = process.env.DB_USER || 'edk_user';
-const DB_PASS = process.env.DB_PASSWORD || 'edk_password';
-const DB_HOST = process.env.DB_HOST || 'localhost';
-const DB_PORT = parseInt(process.env.DB_PORT || '5432');
-const DEFAULT_DB = process.env.DB_NAME || 'edk';
+// This is the dedicated database instance for tests.
+export const database = new DatabaseHelper();
 
-// Use the provided admin connection string or construct one
-// We need a connection to a database that exists (like 'postgres' or the default app db) to create the test db
-const ADMIN_DATABASE = process.env.ADMIN_DB_NAME || DEFAULT_DB;
-const adminUrl = process.env.ADMIN_DATABASE_URL || `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${ADMIN_DATABASE}`;
+beforeAll(async () => {
+    // Configuration
+    const TEST_DB = process.env.TEST_DB_NAME || 'edk_test';
+    const DB_USER = process.env.DB_USER || 'edk_user';
+    const DB_PASS = process.env.DB_PASSWORD || 'edk_password';
+    const DB_HOST = process.env.DB_HOST || 'localhost';
+    const DB_PORT = parseInt(process.env.DB_PORT || '5432');
+    const DEFAULT_DB = process.env.DB_NAME || 'edk';
 
 import { beforeAll } from 'bun:test';
 
