@@ -21,13 +21,13 @@ export default defineNitroPlugin((nitroApp) => {
     const performance = requestContext.getStore()?.performance;
     if (performance) {
       const summary = performance.getSummary();
-      console.log(
+      logger.info(
         `[Request Performance] URL: ${event.node.req.url} | Total: ${summary.totalTime}ms | DB: ${summary.dbTime}ms (${summary.queryCount} queries)`
       );
 
       if (summary.queries.length > 0) {
         for (const q of summary.queries) {
-          console.log(`  [DB Query] ${q.query} | ${q.duration}ms`);
+          logger.info(`  [DB Query] ${q.query} | ${q.duration}ms`);
         }
       }
     }

@@ -496,8 +496,6 @@ export interface KilllistFilters {
   solarSystemId?: number;
 }
 
-
-
 /**
  * Get filtered kills with pagination
  */

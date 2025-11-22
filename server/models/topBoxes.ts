@@ -56,15 +56,18 @@ export async function getTopByKills(
   if (entityType === 'character') {
     groupCol = 'k."topAttackerCharacterId"';
     nameCol = 'c.name';
-    joinClause = 'LEFT JOIN characters c ON k."topAttackerCharacterId" = c."characterId"';
+    joinClause =
+      'LEFT JOIN characters c ON k."topAttackerCharacterId" = c."characterId"';
   } else if (entityType === 'corporation') {
     groupCol = 'k."topAttackerCorporationId"';
     nameCol = 'c.name';
-    joinClause = 'LEFT JOIN corporations c ON k."topAttackerCorporationId" = c."corporationId"';
+    joinClause =
+      'LEFT JOIN corporations c ON k."topAttackerCorporationId" = c."corporationId"';
   } else if (entityType === 'alliance') {
     groupCol = 'k."topAttackerAllianceId"';
     nameCol = 'a.name';
-    joinClause = 'LEFT JOIN alliances a ON k."topAttackerAllianceId" = a."allianceId"';
+    joinClause =
+      'LEFT JOIN alliances a ON k."topAttackerAllianceId" = a."allianceId"';
   } else if (entityType === 'ship') {
     groupCol = 'k."victimShipTypeId"';
     nameCol = 't.name';
@@ -72,11 +75,13 @@ export async function getTopByKills(
   } else if (entityType === 'system') {
     groupCol = 'k."solarSystemId"';
     nameCol = 'ss.name';
-    joinClause = 'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"';
+    joinClause =
+      'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"';
   } else if (entityType === 'region') {
     groupCol = 'ss."regionId"';
     nameCol = 'r.name';
-    joinClause = 'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId" LEFT JOIN regions r ON ss."regionId" = r."regionId"';
+    joinClause =
+      'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId" LEFT JOIN regions r ON ss."regionId" = r."regionId"';
   } else {
     return [];
   }
@@ -147,8 +152,6 @@ export interface FilteredTopStats {
   corporations: Array<{ id: number; name: string; kills: number }>;
   alliances: Array<{ id: number; name: string; kills: number }>;
 }
-
-
 
 /**
  * Get top systems for filtered kills

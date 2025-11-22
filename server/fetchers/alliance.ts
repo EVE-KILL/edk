@@ -39,7 +39,9 @@ export async function fetchAndStoreAlliance(
 
     return esiAlliance;
   } catch (error) {
-    console.error(`ESI fetch failed for alliance ${allianceId}:`, error);
+    logger.error(`ESI fetch failed for alliance ${allianceId}`, {
+      error: String(error),
+    });
     return null;
   }
 }
@@ -60,7 +62,9 @@ async function fetchFromESI(allianceId: number): Promise<any | null> {
 
     return response.data;
   } catch (error) {
-    console.error(`ESI fetch failed for alliance ${allianceId}:`, error);
+    logger.error(`ESI fetch failed for alliance ${allianceId}`, {
+      error: String(error),
+    });
     return null;
   }
 }

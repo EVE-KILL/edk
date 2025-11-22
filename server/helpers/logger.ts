@@ -62,7 +62,7 @@ function log(context: LogContext): void {
     output += formatData(data);
   }
 
-  console.log(output);
+  process.stdout.write(output + '\n');
 }
 
 export const logger = {

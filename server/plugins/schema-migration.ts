@@ -9,6 +9,7 @@ import { join } from 'path';
 import { createHash } from 'crypto';
 import { database } from '../helpers/database';
 import chalk from 'chalk';
+import { logger } from '../helpers/logger';
 
 /**
  * Schema Migration Plugin for Postgres
@@ -134,7 +135,9 @@ async function loadChecksumsFromDb(): Promise<FileChecksums> {
     }
     return checksums;
   } catch (e) {
-    console.error(chalk.yellow('⚠️  Failed to load checksums from DB:'), e);
+    logger.error(chalk.yellow('⚠️  Failed to load checksums from DB:'), {
+      error: String(e),
+    });
     return {};
   }
 }
@@ -151,7 +154,7 @@ async function saveChecksumToDb(
         // This is expected for the migration that creates the table
         return;
       }
-      console.warn(
+      logger.warn(
         chalk.yellow(
           `⚠️  Cannot save checksum for ${filename}: 'migrations' table does not exist yet.`
         )
@@ -164,10 +167,9 @@ async function saveChecksumToDb(
             VALUES (${filename}, ${checksum}, ${success})
         `;
   } catch (e) {
-    console.error(
-      chalk.red(`Failed to save checksum for ${filename} to DB:`),
-      e
-    );
+    logger.error(chalk.red(`Failed to save checksum for ${filename} to DB:`), {
+      error: String(e),
+    });
   }
 }
 
@@ -377,7 +379,7 @@ async function syncTableSchema(statement: string) {
       const existingCol = currentColumnMap.get(col.name.toLowerCase());
 
       if (!existingCol) {
-        console.log(
+        logger.info(
           chalk.yellow(
             `⚠️  Column '${col.name}' missing in table '${tableName}', adding it...`
           )
@@ -393,7 +395,7 @@ async function syncTableSchema(statement: string) {
           } else {
             // Cannot add NOT NULL without default to populated table easily
             // So we skip NOT NULL constraint for now or warn
-            console.warn(
+            logger.warn(
               chalk.yellow(
                 `   Warning: Adding NOT NULL column '${col.name}' without default value. Constraint might be omitted.`
               )
@@ -404,7 +406,7 @@ async function syncTableSchema(statement: string) {
         }
 
         await database.sql.unsafe(alterSql);
-        console.log(chalk.green(`   ✓ Added column '${col.name}'`));
+        logger.info(chalk.green(`   ✓ Added column '${col.name}'`));
       } else {
         // Check for type mismatches (simplified check)
         // Note: comparing SQL types is hard because of aliases (int vs integer, varchar vs character varying)
@@ -440,32 +442,31 @@ async function syncTableSchema(statement: string) {
             continue;
           }
 
-          console.warn(
+          logger.warn(
             chalk.yellow(
               `⚠️  Column '${col.name}' in table '${tableName}' has type mismatch.`
             )
           );
-          console.warn(
+          logger.warn(
             chalk.gray(`   Defined: ${col.type}, Database: ${existingCol.type}`)
           );
-          console.warn(
+          logger.warn(
             chalk.gray(`   Automatic type migration is skipped for safety.`)
           );
         }
       }
     }
   } catch (e) {
-    console.error(
-      chalk.red(`Failed to sync schema for table ${tableName}:`),
-      e
-    );
+    logger.error(chalk.red(`Failed to sync schema for table ${tableName}:`), {
+      error: String(e),
+    });
     throw e; // Re-throw to stop migration
   }
 }
 
 export async function migrateSchema() {
   try {
-    console.log(chalk.blue('🔧 Starting schema migration...'));
+    logger.info(chalk.blue('🔧 Starting schema migration...'));
 
     // Ensure .data directory exists
     if (!existsSync(DATA_DIR)) {
@@ -474,7 +475,7 @@ export async function migrateSchema() {
 
     // Check if migrations directory exists
     if (!existsSync(MIGRATIONS_DIR)) {
-      console.error(
+      logger.error(
         chalk.red(`❌ Migrations directory not found: ${MIGRATIONS_DIR}`)
       );
       return;
@@ -486,18 +487,18 @@ export async function migrateSchema() {
       .sort();
 
     if (migrationFiles.length === 0) {
-      console.error(chalk.red('❌ No migration files found in db/ directory'));
+      logger.error(chalk.red('❌ No migration files found in db/ directory'));
       return;
     }
 
-    console.log(
+    logger.info(
       chalk.cyan(`📁 Found ${migrationFiles.length} migration files`)
     );
 
     // Ensure we have a database connection
     const connected = await database.ping();
     if (!connected) {
-      console.error(
+      logger.error(
         chalk.red('❌ Postgres not connected, skipping schema migration')
       );
       return;
@@ -540,15 +541,15 @@ export async function migrateSchema() {
 
     // If no files need migration, skip
     if (filesToMigrate.length === 0) {
-      console.log(chalk.green(`✅ Schema is up to date (no changes detected)`));
+      logger.info(chalk.green(`✅ Schema is up to date (no changes detected)`));
       return;
     }
 
-    console.log(
+    logger.info(
       chalk.yellow(`ℹ️  ${filesToMigrate.length} file(s) need migration`)
     );
 
-    console.log(chalk.blue('🔄 Applying schema migration...\n'));
+    logger.info(chalk.blue('🔄 Applying schema migration...\n'));
 
     let totalSuccessCount = 0;
     let totalErrorCount = 0;
@@ -564,7 +565,7 @@ export async function migrateSchema() {
         const statements = splitSqlStatements(content);
 
         if (statements.length === 0) {
-          console.log(
+          logger.info(
             chalk.yellow(`⚠ ${file}`) + chalk.gray(` (0ms, empty file)`)
           );
           await saveChecksumToDb(file, currentChecksums[file], true);
@@ -607,7 +608,7 @@ export async function migrateSchema() {
             ? `${fileElapsedTime}ms`
             : `${(fileElapsedTime / 1000).toFixed(2)}s`;
 
-        console.log(
+        logger.info(
           chalk.green(`✓ ${file}`) +
             chalk.gray(
               ` (${timeStr}, ${statements.length} statement${statements.length === 1 ? '' : 's'})`
@@ -627,16 +628,16 @@ export async function migrateSchema() {
             ? `${fileElapsedTime}ms`
             : `${(fileElapsedTime / 1000).toFixed(2)}s`;
 
-        console.log(chalk.red(`✗ ${file}`) + chalk.gray(` (${timeStr})`));
-        console.error(chalk.red(`   ❌ ${errorMessage.substring(0, 150)}`));
+        logger.info(chalk.red(`✗ ${file}`) + chalk.gray(` (${timeStr})`));
+        logger.error(chalk.red(`   ❌ ${errorMessage.substring(0, 150)}`));
         totalErrorCount++;
       }
     }
 
-    console.log(''); // Empty line
+    logger.info(''); // Empty line
 
     if (totalErrorCount === 0) {
-      console.log(
+      logger.info(
         chalk.green(
           `✅ Schema migration completed successfully (${totalSuccessCount} files)`
         )
@@ -650,14 +651,16 @@ export async function migrateSchema() {
         );
       } catch (e) {}
     } else {
-      console.log(
+      logger.info(
         chalk.yellow(
           `⚠️  Schema migration completed with errors (${totalSuccessCount} successful, ${totalErrorCount} failed)`
         )
       );
     }
   } catch (error) {
-    console.error(chalk.red('❌ Schema migration failed:'), error);
+    logger.error(chalk.red('❌ Schema migration failed:'), {
+      error: String(error),
+    });
   }
 }
 
