@@ -1,8 +1,18 @@
+import { z } from 'zod';
+import { validate } from '~/server/utils/validation';
 import type { H3Event } from 'h3'
 import { render, normalizeKillRow } from '../helpers/templates'
 import { getFollowedEntitiesLosses, countFollowedEntitiesLosses } from '../models/killlist'
 
 export default defineEventHandler(async (event: H3Event) => {
+  const { query } = await validate(event, {
+    query: z.object({
+      page: z.coerce.number().int().positive().optional().default(1),
+    }),
+  });
+
+  const { page } = query;
+
   const pageContext = {
     title: 'Losses | EVE-KILL',
     description: 'Losses for followed entities',
@@ -16,8 +26,6 @@ export default defineEventHandler(async (event: H3Event) => {
   const hasEntities = charIds.length > 0 || corpIds.length > 0 || allyIds.length > 0
 
   // Get pagination parameters
-  const query = getQuery(event)
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1)
   const perPage = 30
 
   let killmails: any[] = []

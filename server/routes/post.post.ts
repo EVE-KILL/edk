@@ -1,26 +1,29 @@
+import { z } from 'zod';
+import { validate } from '~/server/utils/validation';
 import type { H3Event } from 'h3'
 import { fetchAndStoreKillmail } from '../fetchers/killmail'
 import { enqueueJobMany, QueueType } from '../helpers/queue'
 
-// Regex for ESI URLs
-const ESI_REGEX = /killmails\/(\d+)\/([a-zA-Z0-9]+)/
-
 export default defineEventHandler(async (event: H3Event) => {
-  const body = await readBody(event)
-  const data = body?.data
+  const { body } = await validate(event, {
+    body: z.object({
+      data: z.string().url().refine(val => /killmails\/\d+\/[a-zA-Z0-9]+/.test(val), {
+        message: 'Invalid ESI URL format',
+      }),
+    }),
+  });
 
-  if (!data) {
-    return { error: 'No data provided' }
-  }
+  const { data } = body;
 
   // Extract ID and Hash
-  const match = data.match(ESI_REGEX)
+  const match = data.match(/killmails\/(\d+)\/([a-zA-Z0-9]+)/);
   if (!match) {
-    return { error: 'Invalid ESI URL format' }
+    // This should not happen due to the regex refine in the validation schema
+    return { error: 'Invalid ESI URL format' };
   }
 
-  const killmailId = parseInt(match[1])
-  const hash = match[2]
+  const killmailId = parseInt(match[1]);
+  const hash = match[2];
 
   try {
     const result = await fetchAndStoreKillmail(killmailId, hash)

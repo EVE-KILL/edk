@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { validate } from '~/server/utils/validation';
 import type { H3Event } from 'h3'
 import { getSolarSystem, getSystemStats } from '../../models/solarSystems'
 import { getRegion } from '../../models/regions'
@@ -6,10 +8,17 @@ import { getTopByKills } from '../../models/topBoxes'
 import { normalizeKillRow, render } from '../../helpers/templates'
 
 export default defineEventHandler(async (event: H3Event) => {
-  const id = Number(event.context.params?.id)
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid System ID' })
-  }
+  const { params, query } = await validate(event, {
+    params: z.object({
+      id: z.coerce.number().int().positive(),
+    }),
+    query: z.object({
+      page: z.coerce.number().int().positive().optional().default(1),
+    }),
+  });
+
+  const { id } = params;
+  const { page } = query;
 
   // Fetch system info
   const system = await getSolarSystem(id)
@@ -28,8 +37,6 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   // Get pagination parameters
-  const query = getQuery(event)
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1)
   const perPage = 50
 
   // Fetch stats and killmails in parallel

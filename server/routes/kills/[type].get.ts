@@ -1,6 +1,5 @@
-/**
- * Filtered kills page - shows kills filtered by type (solo, big, nullsec, etc.)
- */
+import { z } from 'zod';
+import { validate } from '~/server/utils/validation';
 import type { H3Event } from 'h3'
 import { timeAgo } from '../../helpers/time'
 import { render, normalizeKillRow } from '../../helpers/templates'
@@ -233,25 +232,23 @@ function getTitleForType(type: KillType): string {
 }
 
 export default defineEventHandler(async (event: H3Event) => {
-  const type = getRouterParam(event, 'type') as string | undefined
+  const { params, query } = await validate(event, {
+    params: z.object({
+      type: z.string().refine(val => VALID_KILL_TYPES.includes(val as KillType)),
+    }),
+    query: z.object({
+      page: z.coerce.number().int().positive().optional().default(1),
+    }),
+  });
 
-  // Validate the type
-  if (!type || !VALID_KILL_TYPES.includes(type as KillType)) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Invalid kill type'
-    })
-  }
-
-  const killType = type as KillType
+  const { type: killType } = params;
+  const { page } = query;
 
   // Get pagination parameters
-  const query = getQuery(event)
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1)
   const perPage = 30
 
   // Build filters based on the type
-  const filters = buildFiltersForType(killType)
+  const filters = buildFiltersForType(killType as KillType)
 
   const conditionsForTopBoxes = buildKilllistConditions(filters, 'k')
 
@@ -358,12 +355,12 @@ export default defineEventHandler(async (event: H3Event) => {
   return render(
     'pages/kills',
     {
-      title: getTitleForType(killType),
-      description: `Browse ${getTitleForType(killType).toLowerCase()} on EDK`,
+      title: getTitleForType(killType as KillType),
+      description: `Browse ${getTitleForType(killType as KillType).toLowerCase()} on EDK`,
       keywords: 'eve online, killmail, pvp, kills'
     },
     {
-      title: getTitleForType(killType),
+      title: getTitleForType(killType as KillType),
       recentKillmails,
       pagination,
       topCharactersFormatted,

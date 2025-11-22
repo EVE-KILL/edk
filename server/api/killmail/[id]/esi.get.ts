@@ -1,3 +1,6 @@
+import { z } from 'zod';
+import { validate } from '~/server/utils/validation';
+
 /**
  * GET /api/killmail/{id}/esi
  *
@@ -7,32 +10,22 @@
  * @returns ESI formatted killmail data
  */
 export default defineEventHandler(async (event: any) => {
-  const id = getRouterParam(event, 'id')
+  const { params } = await validate(event, {
+    params: z.object({
+      id: z.coerce.number().int().positive(),
+    }),
+  });
 
-  if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing killmail ID'
-    })
-  }
+  const { id } = params;
 
-  const killmailId = parseInt(id, 10)
-
-  if (isNaN(killmailId)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid killmail ID - must be a number'
-    })
-  }
-
-  const killmail = await getKillmail(killmailId)
+  const killmail = await getKillmail(id);
 
   if (!killmail) {
     throw createError({
       statusCode: 404,
-      statusMessage: `Killmail with ID ${killmailId} not found`
-    })
+      statusMessage: `Killmail with ID ${id} not found`,
+    });
   }
 
-  return killmail
-})
+  return killmail;
+});

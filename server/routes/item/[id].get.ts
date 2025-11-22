@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { validate } from '~/server/utils/validation';
 import type { H3Event } from 'h3'
 import { TypeQueries } from '../../models/types'
 import { getGroup } from '../../models/groups'
@@ -5,10 +7,13 @@ import { getCategory } from '../../models/categories'
 import { render } from '../../helpers/templates'
 
 export default defineEventHandler(async (event: H3Event) => {
-  const id = Number(event.context.params?.id)
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid Item ID' })
-  }
+  const { params } = await validate(event, {
+    params: z.object({
+      id: z.coerce.number().int().positive(),
+    }),
+  });
+
+  const { id } = params;
 
   // Fetch item info
   const item = await TypeQueries.getType(id)
