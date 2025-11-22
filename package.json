@@ -45,6 +45,7 @@
     "typescript": "^5.9.3",
     "typesense": "^2.1.0",
     "unbzip2-stream": "^1.4.3",
+    "unstorage": "^1.17.3",
     "zod": "^4.1.12"
   }
 }
