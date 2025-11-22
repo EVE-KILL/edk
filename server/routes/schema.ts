@@ -1,6 +1,8 @@
 import { defineEventHandler } from 'h3'
 import { database } from '../helpers/database'
 
+import { handleError } from '../utils/error'
+
 export default defineEventHandler(async (event) => {
   try {
     // Get migration history
@@ -27,29 +29,19 @@ export default defineEventHandler(async (event) => {
     // Get actual row counts and sizes for each table
     const tables = await Promise.all(
       tableNames.map(async (table) => {
-        try {
-          const [rowCountResult] = await database.sql<{count: number}[]>`
+        const [rowCountResult] = await database.sql<{count: number}[]>`
             SELECT count(*) as count FROM ${database.sql(table.name)}
           `
-          // In Postgres, getting exact size usually involves pg_total_relation_size
-          const [sizeResult] = await database.sql<{size: number}[]>`
+        // In Postgres, getting exact size usually involves pg_total_relation_size
+        const [sizeResult] = await database.sql<{size: number}[]>`
             SELECT pg_total_relation_size(${table.name}) as size
           `
 
-          return {
-            name: table.name,
-            engine: 'Postgres',
-            total_rows: Number(rowCountResult?.count) || 0,
-            total_bytes: Number(sizeResult?.size) || 0
-          }
-        } catch (err) {
-          console.error(`Error getting stats for ${table.name}:`, err)
-          return {
-            name: table.name,
-            engine: 'Postgres',
-            total_rows: 0,
-            total_bytes: 0
-          }
+        return {
+          name: table.name,
+          engine: 'Postgres',
+          total_rows: Number(rowCountResult?.count) || 0,
+          total_bytes: Number(sizeResult?.size) || 0
         }
       })
     )
@@ -80,12 +72,6 @@ export default defineEventHandler(async (event) => {
       timestamp: new Date().toISOString()
     }
   } catch (error) {
-    console.error('Schema status error:', error)
-
-    return {
-      status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    }
+    return handleError(event, error)
   }
 })

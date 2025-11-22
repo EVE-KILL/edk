@@ -2,6 +2,8 @@ import { defineEventHandler } from 'h3'
 import { database } from '../helpers/database'
 import { cache } from '../helpers/cache'
 
+import { handleError } from '../utils/error'
+
 export default defineEventHandler(async (event) => {
   try {
     // Test Postgres connection
@@ -15,12 +17,8 @@ export default defineEventHandler(async (event) => {
     // Get some basic Postgres info
     let dbInfo: any = null
     if (dbConnected) {
-      try {
-        const [result] = await database.sql<{version: string}[]>`SELECT version() as version`
-        dbInfo = result
-      } catch (error) {
-        console.error('Failed to get Postgres version:', error)
-      }
+      const [result] = await database.sql<{version: string}[]>`SELECT version() as version`
+      dbInfo = result
     }
 
     return {
@@ -38,12 +36,6 @@ export default defineEventHandler(async (event) => {
       timestamp: new Date().toISOString()
     }
   } catch (error) {
-    console.error('Health check error:', error)
-
-    return {
-      status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    }
+    return handleError(event, error)
   }
 })

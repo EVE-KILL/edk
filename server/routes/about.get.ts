@@ -2,14 +2,15 @@ import { defineEventHandler } from 'h3'
 import { database } from '../helpers/database'
 import { logger } from '../helpers/logger'
 import { render } from '../helpers/templates'
+import { handleError } from '../utils/error'
 
 export default defineEventHandler(async (event) => {
-  const pageContext = {
-    title: 'About - EVE Killboard',
-    activeNav: 'about'
-  }
-
   try {
+    const pageContext = {
+      title: 'About - EVE Killboard',
+      activeNav: 'about'
+    }
+
     // Get stats sequentially to avoid connection issues
     const totalKills = await getTotalKillmailCount()
     logger.info('About page stats', { totalKills })
@@ -62,16 +63,7 @@ export default defineEventHandler(async (event) => {
     // Render template
     return render('pages/about.hbs', pageContext, data, event)
   } catch (error) {
-    logger.error('Error loading about page', {
-      error: error instanceof Error ? error.message : String(error)
-    })
-
-    // Return minimal page on error
-    const data = {
-      error: 'Failed to load statistics'
-    }
-
-    return render('pages/about.hbs', pageContext, data, event)
+    return handleError(event, error)
   }
 })
 

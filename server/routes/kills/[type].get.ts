@@ -232,165 +232,154 @@ function getTitleForType(type: KillType): string {
   return titles[type] || 'Kills'
 }
 
+import { handleError } from '../../utils/error'
+
 export default defineEventHandler(async (event: H3Event) => {
-  const type = getRouterParam(event, 'type') as string | undefined
+  try {
+    const type = getRouterParam(event, 'type') as string | undefined
 
-  // Validate the type
-  if (!type || !VALID_KILL_TYPES.includes(type as KillType)) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Invalid kill type'
+    // Validate the type
+    if (!type || !VALID_KILL_TYPES.includes(type as KillType)) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Invalid kill type'
+      })
+    }
+
+    const killType = type as KillType
+
+    // Get pagination parameters
+    const query = getQuery(event)
+    const page = Math.max(1, Number.parseInt(query.page as string) || 1)
+    const perPage = 30
+
+    // Build filters based on the type
+    const filters = buildFiltersForType(killType)
+
+    const conditionsForTopBoxes = buildKilllistConditions(filters, 'k')
+
+    // Fetch killmails and count in parallel using model functions
+    const [killmailsData, totalKillmails] = await Promise.all([
+      getFilteredKillsWithNames(filters, page, perPage),
+      countFilteredKills(filters)
+    ])
+
+    const totalPages = Math.ceil(totalKillmails / perPage)
+
+    // Format killmail data for template
+    const recentKillmails = killmailsData.map(km => {
+      const normalized = normalizeKillRow(km)
+      return {
+        ...normalized,
+        killmailTimeRelative: timeAgo(new Date(km.killmailTime ?? normalized.killmailTime))
+      }
     })
+
+    // Get Top Boxes data using model functions with conditions
+    const [topSystems, topRegions, topCharacters, topCorporations, topAlliances] = await Promise.all([
+      getTopSystemsFiltered(conditionsForTopBoxes, 10),
+      getTopRegionsFiltered(conditionsForTopBoxes, 10),
+      getTopCharactersFiltered(conditionsForTopBoxes, 10),
+      getTopCorporationsFiltered(conditionsForTopBoxes, 10),
+      getTopAlliancesFiltered(conditionsForTopBoxes, 10)
+    ])
+
+    // Get Most Valuable Kills for this filter
+    // Note: Using the filtered killmails function with ordering by value
+    const mostValuableKillsData = await getFilteredKillsWithNames({ ...filters, minValue: undefined }, 1, 6)
+    // Sort by value descending (in case the query doesn't)
+    mostValuableKillsData.sort((a, b) => b.totalValue - a.totalValue)
+
+    const mostValuableKills = mostValuableKillsData.map(k => {
+      const normalized = normalizeKillRow(k)
+      const killmailTimeRaw: unknown = k.killmailTime ?? normalized.killmailTime
+      const killmailTimeValue = killmailTimeRaw instanceof Date
+        ? killmailTimeRaw.toISOString()
+        : String(killmailTimeRaw)
+      return {
+        ...normalized,
+        totalValue: k.totalValue ?? normalized.totalValue,
+        killmailTime: killmailTimeValue
+      }
+    })
+
+    // Format top boxes data for partial
+    const topCharactersFormatted = topCharacters.map(c => ({
+      name: c.name,
+      kills: c.kills,
+      imageType: 'character',
+      imageId: c.id,
+      link: `/character/${c.id}`
+    }))
+
+    const topCorporationsFormatted = topCorporations.map(c => ({
+      name: c.name,
+      kills: c.kills,
+      imageType: 'corporation',
+      imageId: c.id,
+      link: `/corporation/${c.id}`
+    }))
+
+    const topAlliancesFormatted = topAlliances.map(a => ({
+      name: a.name,
+      kills: a.kills,
+      imageType: 'alliance',
+      imageId: a.id,
+      link: `/alliance/${a.id}`
+    }))
+
+    const topSystemsFormatted = topSystems.map(s => ({
+      name: s.name,
+      kills: s.kills,
+      imageType: 'system',
+      imageId: s.id,
+      link: `/system/${s.id}`
+    }))
+
+    const topRegionsFormatted = topRegions.map(r => ({
+      name: r.name,
+      kills: r.kills,
+      imageType: 'region',
+      imageId: r.id,
+      link: `/region/${r.id}`
+    }))
+
+    // Pagination
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      pages: generatePageNumbers(page, totalPages),
+      hasPrev: page > 1,
+      hasNext: page < totalPages,
+      prevPage: page - 1,
+      nextPage: page + 1,
+      showFirst: page > 3 && totalPages > 5,
+      showLast: page < totalPages - 2 && totalPages > 5
+    }
+
+    // Render the template
+    return render(
+      'pages/kills',
+      {
+        title: getTitleForType(killType),
+        description: `Browse ${getTitleForType(killType).toLowerCase()} on EDK`,
+        keywords: 'eve online, killmail, pvp, kills'
+      },
+      {
+        title: getTitleForType(killType),
+        recentKillmails,
+        pagination,
+        topCharactersFormatted,
+        topCorporationsFormatted,
+        topAlliancesFormatted,
+        topSystemsFormatted,
+        topRegionsFormatted,
+        mostValuableKills
+      }
+    )
+  } catch (error) {
+    return handleError(event, error)
   }
-
-  const killType = type as KillType
-
-  // Get pagination parameters
-  const query = getQuery(event)
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1)
-  const perPage = 30
-
-  // Build filters based on the type
-  const filters = buildFiltersForType(killType)
-
-  const conditionsForTopBoxes = buildKilllistConditions(filters, 'k')
-
-  // Fetch killmails and count in parallel using model functions
-  const [killmailsData, totalKillmails] = await Promise.all([
-    getFilteredKillsWithNames(filters, page, perPage),
-    countFilteredKills(filters)
-  ])
-
-  const totalPages = Math.ceil(totalKillmails / perPage)
-
-  // Format killmail data for template
-  const recentKillmails = killmailsData.map(km => {
-    const normalized = normalizeKillRow(km)
-    return {
-      ...normalized,
-      killmailTimeRelative: timeAgo(new Date(km.killmailTime ?? normalized.killmailTime))
-    }
-  })
-
-  // Get Top Boxes data using model functions with conditions
-  const [topSystems, topRegions, topCharacters, topCorporations, topAlliances] = await Promise.all([
-    getTopSystemsFiltered(conditionsForTopBoxes, 10),
-    getTopRegionsFiltered(conditionsForTopBoxes, 10),
-    getTopCharactersFiltered(conditionsForTopBoxes, 10),
-    getTopCorporationsFiltered(conditionsForTopBoxes, 10),
-    getTopAlliancesFiltered(conditionsForTopBoxes, 10)
-  ])
-
-  // Get Most Valuable Kills for this filter
-  // Note: Using the filtered killmails function with ordering by value
-  const mostValuableKillsData = await getFilteredKillsWithNames({...filters, minValue: undefined}, 1, 6)
-  // Sort by value descending (in case the query doesn't)
-  mostValuableKillsData.sort((a, b) => b.totalValue - a.totalValue)
-
-  const mostValuableKills = mostValuableKillsData.map(k => {
-    const normalized = normalizeKillRow(k)
-    const killmailTimeRaw: unknown = k.killmailTime ?? normalized.killmailTime
-    const killmailTimeValue = killmailTimeRaw instanceof Date
-      ? killmailTimeRaw.toISOString()
-      : String(killmailTimeRaw)
-    return {
-      ...normalized,
-      totalValue: k.totalValue ?? normalized.totalValue,
-      killmailTime: killmailTimeValue
-    }
-  })
-
-  // Format top boxes data for partial
-  const topCharactersFormatted = topCharacters.map(c => ({
-    name: c.name,
-    kills: c.kills,
-    imageType: 'character',
-    imageId: c.id,
-    link: `/character/${c.id}`
-  }))
-
-  const topCorporationsFormatted = topCorporations.map(c => ({
-    name: c.name,
-    kills: c.kills,
-    imageType: 'corporation',
-    imageId: c.id,
-    link: `/corporation/${c.id}`
-  }))
-
-  const topAlliancesFormatted = topAlliances.map(a => ({
-    name: a.name,
-    kills: a.kills,
-    imageType: 'alliance',
-    imageId: a.id,
-    link: `/alliance/${a.id}`
-  }))
-
-  const topSystemsFormatted = topSystems.map(s => ({
-    name: s.name,
-    kills: s.kills,
-    imageType: 'system',
-    imageId: s.id,
-    link: `/system/${s.id}`
-  }))
-
-  const topRegionsFormatted = topRegions.map(r => ({
-    name: r.name,
-    kills: r.kills,
-    imageType: 'region',
-    imageId: r.id,
-    link: `/region/${r.id}`
-  }))
-
-  // Pagination
-  const pagination = {
-    currentPage: page,
-    totalPages,
-    pages: generatePageNumbers(page, totalPages),
-    hasPrev: page > 1,
-    hasNext: page < totalPages,
-    prevPage: page - 1,
-    nextPage: page + 1,
-    showFirst: page > 3 && totalPages > 5,
-    showLast: page < totalPages - 2 && totalPages > 5
-  }
-
-  // Render the template
-  return render(
-    'pages/kills',
-    {
-      title: getTitleForType(killType),
-      description: `Browse ${getTitleForType(killType).toLowerCase()} on EDK`,
-      keywords: 'eve online, killmail, pvp, kills'
-    },
-    {
-      title: getTitleForType(killType),
-      recentKillmails,
-      pagination,
-      topCharactersFormatted,
-      topCorporationsFormatted,
-      topAlliancesFormatted,
-      topSystemsFormatted,
-      topRegionsFormatted,
-      mostValuableKills
-    }
-  )
 })
 
-// Helper function to generate page numbers
-function generatePageNumbers(currentPage: number, totalPages: number): number[] {
-  const pages: number[] = []
-  const maxVisible = 5
-
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2))
-  let endPage = Math.min(totalPages, startPage + maxVisible - 1)
-
-  if (endPage - startPage + 1 < maxVisible) {
-    startPage = Math.max(1, endPage - maxVisible + 1)
-  }
-
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i)
-  }
-
-  return pages
-}
+import { generatePageNumbers } from '../../utils/pagination'
