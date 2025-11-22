@@ -1,4 +1,5 @@
 import { database } from '../helpers/database';
+import { cache } from '../helpers/cache';
 
 /**
  * Top Boxes Model
@@ -20,6 +21,11 @@ export interface TopBoxWithName {
 /**
  * Get top entities by kills for a period
  */
+type FilterEntity = {
+  type: 'alliance' | 'corporation' | 'system' | 'region';
+  id: number;
+};
+
 export async function getTopByKills(
   periodType: 'hour' | 'day' | 'week' | 'month',
   entityType:
@@ -29,8 +35,19 @@ export async function getTopByKills(
     | 'ship'
     | 'system'
     | 'region',
-  limit: number = 10
+  limit: number = 10,
+  filter?: FilterEntity | any
 ): Promise<TopBoxWithName[]> {
+  const filterEntity =
+    filter && 'type' in filter && 'id' in filter ? filter : null;
+  const whereClause = filterEntity ? null : filter;
+
+  const cacheKey = `topbox:${periodType}:${entityType}:filter:${filterEntity?.type}:${filterEntity?.id}`;
+  const cached = await cache.get(cacheKey);
+  if (cached) {
+    return JSON.parse(cached);
+  }
+
   const end = new Date();
   const start = new Date();
 
@@ -81,7 +98,35 @@ export async function getTopByKills(
     return [];
   }
 
-  return await database.sql<TopBoxWithName[]>`
+  const conditions = [
+    database.sql`k."killmailTime" >= ${start}`,
+    database.sql`k."killmailTime" <= ${end}`,
+    database.sql`${groupCol} > 0`,
+  ];
+
+  if (filterEntity) {
+    switch (filterEntity.type) {
+      case 'alliance':
+        conditions.push(
+          database.sql`(k."victimAllianceId" = ${filterEntity.id} OR k."topAttackerAllianceId" = ${filterEntity.id})`
+        );
+        break;
+      case 'system':
+        conditions.push(database.sql`k."solarSystemId" = ${filterEntity.id}`);
+        break;
+      case 'region':
+        conditions.push(
+          database.sql`k."solarSystemId" IN (SELECT "solarSystemId" FROM "solarSystems" WHERE "regionId" = ${filterEntity.id})`
+        );
+        break;
+    }
+  } else if (whereClause) {
+    conditions.push(whereClause);
+  }
+
+  const where = database.sql`WHERE ${database.sql(conditions, ' AND ')}`;
+
+  const result = await database.sql<TopBoxWithName[]>`
     SELECT
        ${groupCol} as id,
        COALESCE(${nameCol}, 'Unknown') as name,
@@ -92,28 +137,30 @@ export async function getTopByKills(
        0 as points
      FROM killmails k
      ${joinClause}
-     WHERE k."killmailTime" >= ${start}
-       AND k."killmailTime" <= ${end}
-       AND ${groupCol} > 0
+     ${where}
      GROUP BY ${groupCol}, ${nameCol}
      ORDER BY "iskDestroyed" DESC, kills DESC
      LIMIT ${limit}
   `;
+
+  await cache.set(cacheKey, JSON.stringify(result), 300);
+
+  return result;
 }
 
 /**
  * Get top entities by points (for ranking)
  */
 export async function getTopByPoints(
-  _periodType: 'hour' | 'day' | 'week' | 'month',
-  _entityType:
+  periodType: 'hour' | 'day' | 'week' | 'month',
+  entityType:
     | 'character'
     | 'corporation'
     | 'alliance'
     | 'ship'
     | 'system'
     | 'region',
-  _limit: number = 10
+  limit: number = 10
 ): Promise<TopBoxWithName[]> {
   // Points not implemented without aggregations, return empty
   return [];
@@ -123,15 +170,15 @@ export async function getTopByPoints(
  * Get stats for a specific entity
  */
 export async function getEntityTopBoxStats(
-  _entityId: number,
-  _entityType:
+  entityId: number,
+  entityType:
     | 'character'
     | 'corporation'
     | 'alliance'
     | 'ship'
     | 'system'
     | 'region',
-  _periodType: 'hour' | 'day' | 'week' | 'month'
+  periodType: 'hour' | 'day' | 'week' | 'month'
 ): Promise<TopBoxWithName | null> {
   return null;
 }

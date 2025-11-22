@@ -1,6 +1,5 @@
-import { z } from 'zod';
-import { validate } from '~/utils/validation';
 import type { H3Event } from 'h3';
+import { database } from '../../helpers/database';
 import { getRegion, getRegionStats } from '../../models/regions';
 import {
   getFilteredKillsWithNames,
@@ -10,17 +9,10 @@ import { getTopByKills } from '../../models/topBoxes';
 import { normalizeKillRow, render } from '../../helpers/templates';
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { params, query } = await validate(event, {
-    params: z.object({
-      id: z.coerce.number().int().positive(),
-    }),
-    query: z.object({
-      page: z.coerce.number().int().positive().optional().default(1),
-    }),
-  });
-
-  const { id } = params;
-  const { page } = query;
+  const id = Number(event.context.params?.id);
+  if (!id || isNaN(id)) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid Region ID' });
+  }
 
   // Fetch region info
   const region = await getRegion(id);
@@ -36,10 +28,12 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   // Get pagination parameters
+  const query = getQuery(event);
+  const page = Math.max(1, Number.parseInt(query.page as string) || 1);
   const perPage = 50;
 
   // Fetch stats and killmails in parallel
-  // TODO: Filter top lists by region
+  const filter = { type: 'region', id };
   const [
     stats,
     killmailsData,
@@ -49,11 +43,11 @@ export default defineEventHandler(async (event: H3Event) => {
     topAlliances,
   ] = await Promise.all([
     getRegionStats(id),
-    getFilteredKillsWithNames({ regionId: id }, page, perPage), // We need to ensure getFilteredKillsWithNames supports regionId
+    getFilteredKillsWithNames({ regionId: id }, page, perPage),
     countFilteredKills({ regionId: id }),
-    getTopByKills('week', 'character', 10),
-    getTopByKills('week', 'corporation', 10),
-    getTopByKills('week', 'alliance', 10),
+    getTopByKills('week', 'character', 10, filter),
+    getTopByKills('week', 'corporation', 10, filter),
+    getTopByKills('week', 'alliance', 10, filter),
   ]);
 
   const totalPages = Math.ceil(totalKillmails / perPage);

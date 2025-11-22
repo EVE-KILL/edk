@@ -1,6 +1,5 @@
-import { z } from 'zod';
-import { validate } from '~/utils/validation';
 import type { H3Event } from 'h3';
+import { database } from '../../helpers/database';
 import { getSolarSystem, getSystemStats } from '../../models/solarSystems';
 import { getRegion } from '../../models/regions';
 import {
@@ -11,17 +10,10 @@ import { getTopByKills } from '../../models/topBoxes';
 import { normalizeKillRow, render } from '../../helpers/templates';
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { params, query } = await validate(event, {
-    params: z.object({
-      id: z.coerce.number().int().positive(),
-    }),
-    query: z.object({
-      page: z.coerce.number().int().positive().optional().default(1),
-    }),
-  });
-
-  const { id } = params;
-  const { page } = query;
+  const id = Number(event.context.params?.id);
+  if (!id || isNaN(id)) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid System ID' });
+  }
 
   // Fetch system info
   const system = await getSolarSystem(id);
@@ -40,9 +32,12 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   // Get pagination parameters
+  const query = getQuery(event);
+  const page = Math.max(1, Number.parseInt(query.page as string) || 1);
   const perPage = 50;
 
   // Fetch stats and killmails in parallel
+  const filter = { type: 'system', id };
   const [
     stats,
     killmailsData,
@@ -54,9 +49,9 @@ export default defineEventHandler(async (event: H3Event) => {
     getSystemStats(id),
     getFilteredKillsWithNames({ solarSystemId: id }, page, perPage),
     countFilteredKills({ solarSystemId: id }),
-    getTopByKills('week', 'character', 10), // TODO: these are global top 10, not system specific. System specific top 10 needs implementation.
-    getTopByKills('week', 'corporation', 10),
-    getTopByKills('week', 'alliance', 10),
+    getTopByKills('week', 'character', 10, filter),
+    getTopByKills('week', 'corporation', 10, filter),
+    getTopByKills('week', 'alliance', 10, filter),
   ]);
 
   const totalPages = Math.ceil(totalKillmails / perPage);
