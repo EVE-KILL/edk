@@ -57,7 +57,7 @@ export default {
 
     logger.info(`Found ${dateEntries.length} days to process, with a total of ${totalKillmails} killmails.`);
 
-    for (const { date, count } of dateEntries) {
+    for (const { date } of dateEntries) {
         const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
 
         let success = false;

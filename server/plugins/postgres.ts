@@ -2,7 +2,7 @@ import postgres from 'postgres'
 
 let postgresClient: postgres.Sql | null = null
 
-export default async (nitroApp: any) => {
+export default async (_nitroApp: any) => {
   // Initialize Postgres client
   const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
 

@@ -2,7 +2,7 @@ import { defineEventHandler } from 'h3'
 import { database } from '../helpers/database'
 import { cache } from '../helpers/cache'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (_event) => {
   try {
     // Test Postgres connection
     const dbConnected = await database.ping()

@@ -36,9 +36,9 @@ export interface EntityActivityDaily {
  * Get activity for a specific entity and date
  */
 export async function getEntityActivity(
-  entityId: number,
-  entityType: 'character' | 'corporation' | 'alliance',
-  activityDate: Date
+  _entityId: number,
+  _entityType: 'character' | 'corporation' | 'alliance',
+  _activityDate: Date
 ): Promise<EntityActivityDaily | null> {
   // Return null for now to avoid heavy queries on base tables
   return null
@@ -159,9 +159,9 @@ export async function getEntityActivitySummary(
  * Get entities with activity on a specific date
  */
 export async function getActiveEntitiesOnDate(
-  entityType: 'character' | 'corporation' | 'alliance',
-  activityDate: Date,
-  limit: number = 100
+  _entityType: 'character' | 'corporation' | 'alliance',
+  _activityDate: Date,
+  _limit: number = 100
 ): Promise<EntityActivityDaily[]> {
   return []
 }

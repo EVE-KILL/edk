@@ -91,9 +91,9 @@ export async function getTopByKills(
  * Get top entities by points (for ranking)
  */
 export async function getTopByPoints(
-  periodType: 'hour' | 'day' | 'week' | 'month',
-  entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
-  limit: number = 10
+  _periodType: 'hour' | 'day' | 'week' | 'month',
+  _entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
+  _limit: number = 10
 ): Promise<TopBoxWithName[]> {
     // Points not implemented without aggregations, return empty
   return []
@@ -103,9 +103,9 @@ export async function getTopByPoints(
  * Get stats for a specific entity
  */
 export async function getEntityTopBoxStats(
-  entityId: number,
-  entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
-  periodType: 'hour' | 'day' | 'week' | 'month'
+  _entityId: number,
+  _entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
+  _periodType: 'hour' | 'day' | 'week' | 'month'
 ): Promise<TopBoxWithName | null> {
   return null
 }

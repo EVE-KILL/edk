@@ -574,7 +574,7 @@ export async function migrateSchema() {
     }
 }
 
-export default async (nitroApp: any) => {
+export default async (_nitroApp: any) => {
   // Wait a bit to ensure the database helper is initialized
   setTimeout(migrateSchema, 1000) // Wait 1 second for database connection to be established
 }

@@ -23,11 +23,7 @@ jobs:
       run: bun install
 
     - name: Type check
-      run: bun run type-check || echo "No type-check script found, running tsc directly"
-      continue-on-error: true
-
-    - name: Run TypeScript compiler
-      run: bunx tsc --noEmit
+      run: bun run type-check
 
     - name: Build project
       run: bun run build

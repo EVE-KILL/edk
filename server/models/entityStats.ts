@@ -250,10 +250,10 @@ export async function getTopEntitiesByKills(
  * Get top entities by efficiency
  */
 export async function getTopEntitiesByEfficiency(
-  entityType: 'character' | 'corporation' | 'alliance',
-  periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
-  minKills: number = 10,
-  limit: number = 100
+  _entityType: 'character' | 'corporation' | 'alliance',
+  _periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
+  _minKills: number = 10,
+  _limit: number = 100
 ): Promise<EntityStats[]> {
   return []
 }

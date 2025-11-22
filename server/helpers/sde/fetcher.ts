@@ -308,7 +308,9 @@ export class SDEFetcher {
       // If query fails, assume not imported
       return false
     }
-  }  /**
+  }
+
+  /**
    * Mark a table as imported for the current build
    */
   private async markTableAsImported(tableName: string, buildNumber: number, rowCount: number): Promise<void> {
@@ -357,7 +359,9 @@ export class SDEFetcher {
       console.warn('⚠️  Failed to optimize tables:', error)
       // Don't throw - optimization is not critical
     }
-  }  /**
+  }
+
+  /**
    * Import mapSolarSystems table into ClickHouse
    */
   async importMapSolarSystems(buildNumber?: number): Promise<void> {
@@ -613,7 +617,6 @@ export class SDEFetcher {
       transform?: (value: any) => any
     }>,
     buildNumber?: number,
-    forceReimport?: boolean,
     sourceTableName?: string,
     primaryKey?: string
   ): Promise<number> {
@@ -704,7 +707,6 @@ export class SDEFetcher {
       config.name,
       config.mappings,
       buildNumber,
-      undefined,
       config.sourceName,
       config.primaryKey
     )
