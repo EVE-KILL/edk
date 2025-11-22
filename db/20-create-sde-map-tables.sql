@@ -13,8 +13,7 @@ CREATE TABLE IF NOT EXISTS regions (
     "positionY" DOUBLE PRECISION,
     "positionZ" DOUBLE PRECISION,
     "wormholeClassId" INTEGER,
-    "updatedAt" TIMESTAMP DEFAULT NOW(),
-    "version" INTEGER
+    "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
 -- Constellations table
@@ -28,12 +27,11 @@ CREATE TABLE IF NOT EXISTS constellations (
     "positionZ" DOUBLE PRECISION,
     "solarSystemIds" INTEGER[],
     "wormholeClassId" INTEGER,
-    "updatedAt" TIMESTAMP DEFAULT NOW(),
-    "version" INTEGER
+    "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
 -- Solar Systems table
-CREATE TABLE IF NOT EXISTS solarSystems (
+CREATE TABLE IF NOT EXISTS solarsystems (
     "solarSystemId" INTEGER PRIMARY KEY,
     "name" VARCHAR(255),
     "constellationId" INTEGER,
@@ -57,8 +55,7 @@ CREATE TABLE IF NOT EXISTS solarSystems (
     "starId" INTEGER,
     "visualEffect" VARCHAR(255),
     "wormholeClassId" INTEGER,
-    "updatedAt" TIMESTAMP DEFAULT NOW(),
-    "version" INTEGER
+    "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
 -- Stargates table
@@ -71,8 +68,7 @@ CREATE TABLE IF NOT EXISTS stargates (
     "positionX" DOUBLE PRECISION,
     "positionY" DOUBLE PRECISION,
     "positionZ" DOUBLE PRECISION,
-    "typeId" INTEGER,
-    "version" INTEGER
+    "typeId" INTEGER
 );
 
 -- Stars table
@@ -85,8 +81,7 @@ CREATE TABLE IF NOT EXISTS stars (
     "luminosity" REAL,
     "radius" BIGINT,
     "spectralClass" VARCHAR(255),
-    "temperature" INTEGER,
-    "version" INTEGER
+    "temperature" INTEGER
 );
 
 -- Planets table
@@ -98,8 +93,7 @@ CREATE TABLE IF NOT EXISTS planets (
     "celestialIndex" INTEGER,
     "positionX" DOUBLE PRECISION,
     "positionY" DOUBLE PRECISION,
-    "positionZ" DOUBLE PRECISION,
-    "version" INTEGER
+    "positionZ" DOUBLE PRECISION
 );
 
 -- Moons table
@@ -112,8 +106,7 @@ CREATE TABLE IF NOT EXISTS moons (
     "celestialIndex" INTEGER,
     "positionX" DOUBLE PRECISION,
     "positionY" DOUBLE PRECISION,
-    "positionZ" DOUBLE PRECISION,
-    "version" INTEGER
+    "positionZ" DOUBLE PRECISION
 );
 
 -- Asteroid Belts table
@@ -125,6 +118,5 @@ CREATE TABLE IF NOT EXISTS asteroidBelts (
     "celestialIndex" INTEGER,
     "positionX" DOUBLE PRECISION,
     "positionY" DOUBLE PRECISION,
-    "positionZ" DOUBLE PRECISION,
-    "version" INTEGER
+    "positionZ" DOUBLE PRECISION
 );

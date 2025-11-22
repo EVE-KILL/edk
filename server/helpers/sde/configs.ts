@@ -82,6 +82,42 @@ export const mapMoonsConfig: TableConfig = {
   ],
 };
 
+export const mapSolarSystemsConfig: TableConfig = {
+  name: 'solarsystems',
+  sourceName: 'mapSolarSystems',
+  primaryKey: 'solarSystemId',
+  mappings: [
+    { source: '_key', target: 'solarSystemId', type: 'number', required: true },
+    {
+      source: 'name',
+      target: 'name',
+      type: 'string',
+      transform: (v) => extractLanguageField(v, 'en'),
+    },
+    { source: 'constellationID', target: 'constellationId', type: 'number' },
+    { source: 'regionID', target: 'regionId', type: 'number' },
+    { source: 'border', target: 'border', type: 'boolean' },
+    { source: 'corridor', target: 'corridor', type: 'boolean' },
+    { source: 'factionId', target: 'factionId', type: 'number' },
+    { source: 'fringe', target: 'fringe', type: 'boolean' },
+    { source: 'hub', target: 'hub', type: 'boolean' },
+    { source: 'international', target: 'international', type: 'boolean' },
+    { source: 'luminosity', target: 'luminosity', type: 'number' },
+    { source: 'planetIds', target: 'planetIds', type: 'array' },
+    { source: 'position.x', target: 'positionX', type: 'number' },
+    { source: 'position.y', target: 'positionY', type: 'number' },
+    { source: 'position.z', target: 'positionZ', type: 'number' },
+    { source: 'radius', target: 'radius', type: 'number' },
+    { source: 'regional', target: 'regional', type: 'boolean' },
+    { source: 'securityClass', target: 'securityClass', type: 'string' },
+    { source: 'securityStatus', target: 'securityStatus', type: 'number' },
+    { source: 'stargateIds', target: 'stargateIds', type: 'array' },
+    { source: 'starId', target: 'starId', type: 'number' },
+    { source: 'visualEffect', target: 'visualEffect', type: 'string' },
+    { source: 'wormholeClassId', target: 'wormholeClassId', type: 'number' },
+  ],
+};
+
 export const mapAsteroidBeltsConfig: TableConfig = {
   name: 'asteroidBelts',
   sourceName: 'mapAsteroidBelts',
@@ -650,12 +686,41 @@ export const mapRegionsConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
+    { source: 'constellationIDs', target: 'constellationIds', type: 'array' },
     {
       source: 'description',
       target: 'description',
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
+    { source: 'factionID', target: 'factionId', type: 'number' },
+    { source: 'nebulaID', target: 'nebulaId', type: 'number' },
+    { source: 'position.x', target: 'positionX', type: 'number' },
+    { source: 'position.y', target: 'positionY', type: 'number' },
+    { source: 'position.z', target: 'positionZ', type: 'number' },
+    { source: 'wormholeClassID', target: 'wormholeClassId', type: 'number' },
+  ],
+};
+
+export const mapConstellationsConfig: TableConfig = {
+  name: 'constellations',
+  sourceName: 'mapConstellations',
+  primaryKey: 'constellationId',
+  mappings: [
+    { source: '_key', target: 'constellationId', type: 'number', required: true },
+    {
+      source: 'name',
+      target: 'name',
+      type: 'string',
+      transform: (v) => extractLanguageField(v, 'en'),
+    },
+    { source: 'regionID', target: 'regionId', type: 'number' },
+    { source: 'factionID', target: 'factionId', type: 'number' },
+    { source: 'position.x', target: 'positionX', type: 'number' },
+    { source: 'position.y', target: 'positionY', type: 'number' },
+    { source: 'position.z', target: 'positionZ', type: 'number' },
+    { source: 'solarSystemIDs', target: 'solarSystemIds', type: 'array' },
+    { source: 'wormholeClassID', target: 'wormholeClassId', type: 'number' },
   ],
 };
 
@@ -703,26 +768,7 @@ export const skinMaterialsConfig: TableConfig = {
   ],
 };
 
-export const mapConstellationsConfig: TableConfig = {
-  name: 'constellations',
-  sourceName: 'mapConstellations',
-  primaryKey: 'constellationId',
-  mappings: [
-    {
-      source: '_key',
-      target: 'constellationId',
-      type: 'number',
-      required: true,
-    },
-    {
-      source: 'name',
-      target: 'name',
-      type: 'string',
-      transform: (v) => extractLanguageField(v, 'en'),
-    },
-    { source: 'regionId', target: 'regionId', type: 'number' },
-  ],
-};
+
 
 export const planetSchematicsConfig: TableConfig = {
   name: 'planetSchematics',
@@ -832,13 +878,14 @@ export const dbuffCollectionsConfig: TableConfig = {
  */
 export const ALL_TABLE_CONFIGS = [
   // Map tables
+  mapRegionsConfig,
+  mapConstellationsConfig,
+  mapSolarSystemsConfig,
   mapStargatesConfig,
   mapStarsConfig,
   mapPlanetsConfig,
   mapMoonsConfig,
   mapAsteroidBeltsConfig,
-  mapRegionsConfig,
-  mapConstellationsConfig,
   // Item/Type tables
   typesConfig,
   groupsConfig,

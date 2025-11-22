@@ -28,27 +28,29 @@ export default defineEventHandler(async (event) => {
       .documents()
       .search(searchParameters);
 
-    const groupedResults: Record<string, any[]> = {};
+    const results: any[] = [];
 
     for (const group of searchResult.grouped_hits || []) {
       const type = group.group_key[0];
-      if (type) {
-        groupedResults[type] = group.hits.map((hit) => {
-          const doc = hit.document as any;
-          const rawId = doc.id as string;
-          const entityId =
-            typeof rawId === 'string' ? rawId.replace(`${type}-`, '') : rawId;
-          return {
-            id: doc.id,
-            entityId,
-            name: doc.name,
-            type: doc.type,
-          };
+      if (!type) continue;
+
+      for (const hit of group.hits) {
+        const doc = hit.document as any;
+        const rawId = doc.id as string;
+        const entityId =
+          typeof rawId === 'string' ? rawId.replace(`${type}-`, '') : rawId;
+
+        results.push({
+          id: entityId,
+          entityId,
+          name: doc.name,
+          type: doc.type ?? type,
+          rawId: rawId,
         });
       }
     }
 
-    return groupedResults;
+    return { results };
   } catch (error: any) {
     logger.error('Typesense search error:', { err: error });
 

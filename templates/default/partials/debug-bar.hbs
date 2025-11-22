@@ -1,0 +1,727 @@
+<style>
+  .debug-bar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100vh;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: #e0e0e0;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    border-left: 2px solid #404040;
+  }
+
+  .debug-bar-header {
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    padding: 15px 20px;
+    border-bottom: 2px solid #404040;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .debug-bar-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4CAF50;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .debug-bar-toggle {
+    background: #333;
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s;
+  }
+
+  .debug-bar-toggle:hover {
+    background: #444;
+  }
+
+  .debug-bar-stats {
+    display: flex;
+    justify-content: space-around;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid #404040;
+  }
+
+  .debug-stat {
+    text-align: center;
+    flex: 1;
+  }
+
+  .debug-stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #4CAF50;
+    display: block;
+  }
+
+  .debug-stat-label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    margin-top: 4px;
+    display: block;
+  }
+
+  .debug-bar-tabs {
+    display: flex;
+    background: #222;
+    border-bottom: 2px solid #404040;
+  }
+
+  .debug-tab {
+    flex: 1;
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    color: #999;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    border-bottom: 3px solid transparent;
+  }
+
+  .debug-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ccc;
+  }
+
+  .debug-tab.active {
+    color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
+    border-bottom-color: #4CAF50;
+  }
+
+  .debug-bar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+  }
+
+  .debug-tab-panel {
+    display: none;
+  }
+
+  .debug-tab-panel.active {
+    display: block;
+  }
+
+  .debug-span {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+    position: relative;
+  }
+
+  .debug-span-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .debug-span-name {
+    font-weight: 600;
+    color: #fff;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+  }
+
+  .debug-span-duration {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
+  .debug-span-bar {
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 6px;
+    background: linear-gradient(90deg, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0.4));
+  }
+
+  .debug-span-category-database { border-left: 3px solid #2196F3; }
+  .debug-span-category-cache { border-left: 3px solid #9C27B0; }
+  .debug-span-category-search { border-left: 3px solid #FF9800; }
+  .debug-span-category-http { border-left: 3px solid #f44336; }
+  .debug-span-category-template { border-left: 3px solid #4CAF50; }
+  .debug-span-category-application { border-left: 3px solid #673AB7; }
+  .debug-span-category-other { border-left: 3px solid #607D8B; }
+
+  .debug-category-icon {
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+    margin-right: 4px;
+  }
+
+  .debug-sql-query {
+    font-family: monospace;
+    font-size: 10px;
+    color: #888;
+    cursor: pointer;
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+    margin-top: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .debug-sql-query:hover {
+    background: rgba(0, 0, 0, 0.5);
+    color: #aaa;
+  }
+
+  .debug-sql-query.expanded {
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .debug-sql-query.copied::after {
+    content: '✓ Copied!';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #4CAF50;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    animation: fadeOut 2s forwards;
+  }
+
+  @keyframes fadeOut {
+    0%, 50% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  .debug-query {
+    font-family: monospace;
+    font-size: 10px;
+    color: #888;
+    cursor: pointer;
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+    margin-top: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .debug-sql-query:hover {
+    background: rgba(0, 0, 0, 0.5);
+    color: #aaa;
+  }
+
+  .debug-sql-query.expanded {
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .debug-sql-query.copied::after {
+    content: '✓ Copied!';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #4CAF50;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    animation: fadeOut 2s forwards;
+  }
+
+  @keyframes fadeOut {
+    0%, 50% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  .debug-badge {
+    background: #4CAF50;
+    color: #000;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .debug-badge-warning {
+    background: #FF9800;
+  }
+
+  .debug-badge-danger {
+    background: #f44336;
+  }
+
+  .debug-query {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    border-left: 2px solid #2196F3;
+  }
+
+  .debug-query-sql {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #90CAF9;
+    word-break: break-all;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+
+  .debug-query-time {
+    font-size: 11px;
+    color: #999;
+  }
+
+  .debug-bar::-webkit-scrollbar,
+  .debug-bar-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .debug-bar::-webkit-scrollbar-track,
+  .debug-bar-content::-webkit-scrollbar-track {
+    background: #1a1a1a;
+  }
+
+  .debug-bar::-webkit-scrollbar-thumb,
+  .debug-bar-content::-webkit-scrollbar-thumb {
+    background: #404040;
+    border-radius: 4px;
+  }
+
+  .debug-bar::-webkit-scrollbar-thumb:hover,
+  .debug-bar-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+</style>
+
+<div class='debug-bar' id='debug-bar'>
+  <div class='debug-bar-header'>
+    <h3 class='debug-bar-title'>
+      <span>⚡</span> Debug Panel
+    </h3>
+    <button class='debug-bar-toggle' onclick='document.getElementById("debug-bar").style.display="none"'>✕</button>
+  </div>
+
+  <div class='debug-bar-stats'>
+    <div class='debug-stat'>
+      <span class='debug-stat-value'>{{performance.totalTime}}ms</span>
+      <span class='debug-stat-label'>Total Time</span>
+    </div>
+    <div class='debug-stat'>
+      <span class='debug-stat-value'>{{performance.queryCount}}</span>
+      <span class='debug-stat-label'>Queries</span>
+    </div>
+    <div class='debug-stat'>
+      <span class='debug-stat-value'>{{performance.dbTime}}ms</span>
+      <span class='debug-stat-label'>Avg Query</span>
+    </div>
+  </div>
+
+  <div class='debug-bar-tabs'>
+    <button class='debug-tab active' onclick='switchDebugTab(event, "overview")'>Overview</button>
+    <button class='debug-tab' onclick='switchDebugTab(event, "categories")'>Categories</button>
+    <button class='debug-tab' onclick='switchDebugTab(event, "timeline")'>Timeline</button>
+    <button class='debug-tab' onclick='switchDebugTab(event, "websocket")' id='debug-ws-tab' style='display: none;'>WebSocket</button>
+  </div>
+
+  <div class='debug-bar-content'>
+    <!-- Overview Tab -->
+    <div class='debug-tab-panel active' id='debug-panel-overview'>
+      <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>Performance Summary</h4>
+
+      <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #4CAF50;'>
+        <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Total Request Time</strong></div>
+        <div style='font-size: 20px; color: #4CAF50; font-weight: bold;'>{{performance.totalTime}}ms</div>
+      </div>
+
+      <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #2196F3;'>
+        <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Database Performance</strong></div>
+        <div style='font-size: 13px; color: #90CAF9;'>
+          {{performance.queryCount}} queries<br>
+          {{performance.dbTimeTotal}}ms total<br>
+          {{performance.dbTime}}ms average
+        </div>
+      </div>
+
+      <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 4px; border-left: 3px solid #FF9800;'>
+        <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Application Time</strong></div>
+        <div style='font-size: 13px; color: #FFB74D;'>{{performance.appTime}}ms</div>
+      </div>
+    </div>
+
+    <!-- Categories Tab -->
+    <div class='debug-tab-panel' id='debug-panel-categories'>
+      <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>Performance by Category</h4>
+
+      {{#if performance.categoryBreakdown}}
+        {{#if (gt performance.categoryBreakdown.database.count 0)}}
+        <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #2196F3;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🗄️ Database</strong></div>
+          <div style='font-size: 13px; color: #90CAF9;'>
+            {{performance.categoryBreakdown.database.count}} operations<br>
+            {{performance.categoryBreakdown.database.total}}ms total<br>
+            {{performance.categoryBreakdown.database.avg}}ms average
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if (gt performance.categoryBreakdown.cache.count 0)}}
+        <div style='background: rgba(156, 39, 176, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #9C27B0;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>💾 Cache (Redis)</strong></div>
+          <div style='font-size: 13px; color: #CE93D8;'>
+            {{performance.categoryBreakdown.cache.count}} operations<br>
+            {{performance.categoryBreakdown.cache.total}}ms total<br>
+            {{performance.categoryBreakdown.cache.avg}}ms average
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if (gt performance.categoryBreakdown.search.count 0)}}
+        <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #FF9800;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🔍 Search (Typesense)</strong></div>
+          <div style='font-size: 13px; color: #FFB74D;'>
+            {{performance.categoryBreakdown.search.count}} operations<br>
+            {{performance.categoryBreakdown.search.total}}ms total<br>
+            {{performance.categoryBreakdown.search.avg}}ms average
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if (gt performance.categoryBreakdown.http.count 0)}}
+        <div style='background: rgba(244, 67, 54, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #f44336;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🌐 HTTP Requests</strong></div>
+          <div style='font-size: 13px; color: #EF9A9A;'>
+            {{performance.categoryBreakdown.http.count}} requests<br>
+            {{performance.categoryBreakdown.http.total}}ms total<br>
+            {{performance.categoryBreakdown.http.avg}}ms average
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if (gt performance.categoryBreakdown.template.count 0)}}
+        <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #4CAF50;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🎨 Template Rendering</strong></div>
+          <div style='font-size: 13px; color: #A5D6A7;'>
+            {{performance.categoryBreakdown.template.count}} operations<br>
+            {{performance.categoryBreakdown.template.total}}ms total<br>
+            {{performance.categoryBreakdown.template.avg}}ms average
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if (gt performance.categoryBreakdown.application.count 0)}}
+        <div style='background: rgba(103, 58, 183, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #673AB7;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>⚙️ Application Code</strong></div>
+          <div style='font-size: 13px; color: #B39DDB;'>
+            {{performance.categoryBreakdown.application.count}} operations<br>
+            {{performance.categoryBreakdown.application.total}}ms total<br>
+            {{performance.categoryBreakdown.application.avg}}ms average
+          </div>
+        </div>
+        {{/if}}
+      {{else}}
+        <div style='text-align: center; padding: 40px 20px; color: #666;'>
+          <div style='font-size: 40px; margin-bottom: 10px;'>📊</div>
+          <div>No category data available</div>
+        </div>
+      {{/if}}
+    </div>
+
+    <!-- Timeline Tab -->
+    <div class='debug-tab-panel' id='debug-panel-timeline'>
+      <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>Operation Timeline</h4>
+
+      {{#if performance.spans}}
+        <div style='margin-bottom: 15px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-size: 11px; color: #999;'>
+          <div style='display: flex; justify-content: space-between; margin-bottom: 4px;'>
+            <span>Total operations:</span>
+            <strong style='color: #4CAF50;'>{{performance.spans.length}}</strong>
+          </div>
+          <div style='display: flex; justify-content: space-between;'>
+            <span>Total duration (top-level):</span>
+            <strong style='color: #4CAF50;'>{{performance.trackedTotalTime}}ms</strong>
+          </div>
+        </div>
+
+        {{#each performance.spans}}
+        <div class='debug-span debug-span-category-{{this.category}}' style='{{#if (eq this.depth 1)}}margin-left: 20px; border-left: 2px solid rgba(76, 175, 80, 0.3); padding-left: 8px;{{else if (gte this.depth 2)}}margin-left: 40px; border-left: 2px solid rgba(76, 175, 80, 0.2); padding-left: 8px;{{/if}}'>
+          <div class='debug-span-header'>
+            <div class='debug-span-name'>
+              <span class='debug-category-icon'>{{#if (eq this.category "database")}}🗄️{{else if (eq this.category "cache")}}💾{{else if (eq this.category "search")}}🔍{{else if (eq this.category "http")}}🌐{{else if (eq this.category "template")}}🎨{{else if (eq this.category "application")}}⚙️{{else}}📦{{/if}}</span>
+              {{#if (eq this.depth 1)}}↳ {{else if (gte this.depth 2)}}  ↳ {{/if}}{{this.name}}
+            </div>
+            <span class='debug-span-duration debug-badge {{#if (gt this.duration 50)}}debug-badge-danger{{else if (gt this.duration 20)}}debug-badge-warning{{/if}}'>
+              {{this.duration}}ms
+            </span>
+          </div>
+          {{#if this.metadata}}
+          <div style='font-size: 10px; color: #666; margin-top: 4px;'>
+            {{#with this.metadata}}
+              {{#if url}}<div>URL: {{url}}</div>{{/if}}
+              {{#if path}}<div>Path: {{path}}</div>{{/if}}
+              {{#if sql}}<div class='debug-sql-query' onclick='toggleSQL(this)' title='Click to expand/copy'>{{sql}}</div>{{/if}}
+            {{/with}}
+          </div>
+          {{/if}}
+        </div>
+        {{/each}}
+      {{else}}
+        <div style='text-align: center; padding: 40px 20px; color: #666;'>
+          <div style='font-size: 40px; margin-bottom: 10px;'>⏱️</div>
+          <div>No operations recorded</div>
+        </div>
+      {{/if}}
+    </div>
+
+    <!-- WebSocket Tab -->
+    <div class='debug-tab-panel' id='debug-panel-websocket'>
+      <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>WebSocket Statistics</h4>
+
+      <div id='ws-not-connected' style='text-align: center; padding: 40px 20px; color: #666;'>
+        <div style='font-size: 40px; margin-bottom: 10px;'>🔌</div>
+        <div>No WebSocket connection detected</div>
+      </div>
+
+      <div id='ws-stats-container' style='display: none;'>
+        <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #4CAF50;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Connection Status</strong></div>
+          <div style='font-size: 13px; color: #A5D6A7;'>
+            Status: <span id='ws-status' style='font-weight: bold;'>●</span><br>
+            Connected: <span id='ws-connected-time'>-</span><br>
+            Reconnects: <span id='ws-reconnect-count'>0</span>
+          </div>
+        </div>
+
+        <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #2196F3;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Subscriptions</strong></div>
+          <div style='font-size: 13px; color: #90CAF9;'>
+            Topics: <span id='ws-topics'>-</span><br>
+            <div id='ws-topics-list' style='margin-top: 6px; font-size: 11px; color: #64B5F6;'></div>
+          </div>
+        </div>
+
+        <div style='background: rgba(156, 39, 176, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #9C27B0;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Message Stats</strong></div>
+          <div style='font-size: 13px; color: #CE93D8;'>
+            Total received: <span id='ws-msg-total'>0</span><br>
+            Killmails: <span id='ws-msg-killmails'>0</span><br>
+            Last message: <span id='ws-msg-last'>-</span>
+          </div>
+        </div>
+
+        <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #FF9800;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Recent Messages</strong></div>
+          <div id='ws-recent-messages' style='font-size: 11px; color: #FFB74D; max-height: 200px; overflow-y: auto;'>
+            <div style='color: #999; font-style: italic;'>No messages yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function switchDebugTab(event, tabName) {
+  // Hide all panels
+  const panels = document.querySelectorAll('.debug-tab-panel');
+  panels.forEach(panel => panel.classList.remove('active'));
+
+  // Deactivate all tabs
+  const tabs = document.querySelectorAll('.debug-tab');
+  tabs.forEach(tab => tab.classList.remove('active'));
+
+  // Show selected panel
+  document.getElementById('debug-panel-' + tabName).classList.add('active');
+
+  // Activate clicked tab
+  event.target.classList.add('active');
+}
+
+function toggleSQL(element) {
+  if (element.classList.contains('expanded')) {
+    // Second click: copy to clipboard
+    const text = element.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      element.classList.add('copied');
+      setTimeout(() => element.classList.remove('copied'), 2000);
+    });
+  } else {
+    // First click: expand
+    element.classList.add('expanded');
+  }
+}
+
+// WebSocket debugging support
+window.debugWS = {
+  enabled: false,
+  stats: {
+    connected: false,
+    connectedAt: null,
+    reconnectCount: 0,
+    topics: [],
+    messagesTotal: 0,
+    messagesKillmails: 0,
+    lastMessageTime: null,
+    recentMessages: []
+  },
+  
+  enable() {
+    this.enabled = true;
+    document.getElementById('debug-ws-tab').style.display = 'block';
+  },
+  
+  setConnected(isConnected) {
+    this.stats.connected = isConnected;
+    if (isConnected) {
+      this.stats.connectedAt = new Date();
+      document.getElementById('ws-not-connected').style.display = 'none';
+      document.getElementById('ws-stats-container').style.display = 'block';
+    }
+    this.updateUI();
+  },
+  
+  setReconnectCount(count) {
+    this.stats.reconnectCount = count;
+    this.updateUI();
+  },
+  
+  setTopics(topics) {
+    this.stats.topics = topics || [];
+    this.updateUI();
+  },
+  
+  addMessage(type, data) {
+    this.stats.messagesTotal++;
+    this.stats.lastMessageTime = new Date();
+    
+    if (type === 'killmail') {
+      this.stats.messagesKillmails++;
+      const killmailId = data?.killmailId || '?';
+      const victimName = data?.victim?.character?.name || data?.victim?.corporation?.name || 'Unknown';
+      const shipName = data?.victim?.ship?.name || 'Unknown Ship';
+      this.stats.recentMessages.unshift({
+        time: new Date(),
+        type,
+        text: `KM #${killmailId}: ${victimName} (${shipName})`
+      });
+    } else {
+      this.stats.recentMessages.unshift({
+        time: new Date(),
+        type,
+        text: type
+      });
+    }
+    
+    // Keep only last 10 messages
+    if (this.stats.recentMessages.length > 10) {
+      this.stats.recentMessages = this.stats.recentMessages.slice(0, 10);
+    }
+    
+    this.updateUI();
+  },
+  
+  updateUI() {
+    if (!this.enabled) return;
+    
+    // Status
+    const statusEl = document.getElementById('ws-status');
+    if (statusEl) {
+      statusEl.textContent = this.stats.connected ? '🟢 Connected' : '🔴 Disconnected';
+      statusEl.style.color = this.stats.connected ? '#4CAF50' : '#f44336';
+    }
+    
+    // Connected time
+    const connTimeEl = document.getElementById('ws-connected-time');
+    if (connTimeEl && this.stats.connectedAt) {
+      const duration = Math.floor((new Date() - this.stats.connectedAt) / 1000);
+      connTimeEl.textContent = duration + 's ago';
+    }
+    
+    // Reconnect count
+    const reconnectEl = document.getElementById('ws-reconnect-count');
+    if (reconnectEl) {
+      reconnectEl.textContent = this.stats.reconnectCount;
+    }
+    
+    // Topics
+    const topicsEl = document.getElementById('ws-topics');
+    if (topicsEl) {
+      topicsEl.textContent = this.stats.topics.length;
+    }
+    
+    const topicsListEl = document.getElementById('ws-topics-list');
+    if (topicsListEl && this.stats.topics.length > 0) {
+      topicsListEl.innerHTML = this.stats.topics.map(t => 
+        `<div style="padding: 2px 0;">• ${t}</div>`
+      ).join('');
+    }
+    
+    // Message stats
+    const msgTotalEl = document.getElementById('ws-msg-total');
+    if (msgTotalEl) {
+      msgTotalEl.textContent = this.stats.messagesTotal;
+    }
+    
+    const msgKillmailsEl = document.getElementById('ws-msg-killmails');
+    if (msgKillmailsEl) {
+      msgKillmailsEl.textContent = this.stats.messagesKillmails;
+    }
+    
+    const msgLastEl = document.getElementById('ws-msg-last');
+    if (msgLastEl && this.stats.lastMessageTime) {
+      const ago = Math.floor((new Date() - this.stats.lastMessageTime) / 1000);
+      msgLastEl.textContent = ago < 60 ? ago + 's ago' : Math.floor(ago / 60) + 'm ago';
+    }
+    
+    // Recent messages
+    const recentEl = document.getElementById('ws-recent-messages');
+    if (recentEl && this.stats.recentMessages.length > 0) {
+      recentEl.innerHTML = this.stats.recentMessages.map(msg => {
+        const timeAgo = Math.floor((new Date() - msg.time) / 1000);
+        const timeStr = timeAgo < 60 ? timeAgo + 's' : Math.floor(timeAgo / 60) + 'm';
+        return `<div style="padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <span style="color: #999; font-size: 10px;">[${timeStr} ago]</span> ${msg.text}
+        </div>`;
+      }).join('');
+    }
+  }
+};
+
+// Auto-refresh UI every second
+setInterval(() => {
+  if (window.debugWS.enabled && window.debugWS.stats.connected) {
+    window.debugWS.updateUI();
+  }
+}, 1000);
+</script>

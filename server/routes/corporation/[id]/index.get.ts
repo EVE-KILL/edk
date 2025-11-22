@@ -12,6 +12,7 @@ import {
 import { getEntityStats } from '../../../models/entityStats';
 import { getMostValuableKillsByCorporation } from '../../../models/mostValuableKills';
 import { getTopByKills } from '../../../models/topBoxes';
+import { track } from '../../../utils/performance-decorators';
 
 import { handleError } from '../../../utils/error';
 
@@ -27,7 +28,9 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Fetch corporation basic info using model
-    const corporationData = await getCorporationWithAlliance(corporationId);
+    const corporationData = await track('corporation:fetch_basic_info', 'application', async () => {
+      return await getCorporationWithAlliance(corporationId);
+    });
 
     if (!corporationData) {
       throw createError({
@@ -44,14 +47,16 @@ export default defineEventHandler(async (event: H3Event) => {
       topCorps,
       topAlliances,
       mostValuable,
-    ] = await Promise.all([
-      getEntityStats(corporationId, 'corporation', 'all'),
-      getTopByKills('week', 'system', 10),
-      getTopByKills('week', 'region', 10),
-      getTopByKills('week', 'corporation', 10),
-      getTopByKills('week', 'alliance', 10),
-      getMostValuableKillsByCorporation(corporationId, 'all', 6),
-    ]);
+    ] = await track('corporation:fetch_stats', 'application', async () => {
+      return await Promise.all([
+        getEntityStats(corporationId, 'corporation', 'all'),
+        getTopByKills('week', 'system', 10),
+        getTopByKills('week', 'region', 10),
+        getTopByKills('week', 'corporation', 10),
+        getTopByKills('week', 'alliance', 10),
+        getMostValuableKillsByCorporation(corporationId, 'all', 6),
+      ]);
+    });
 
     // Get pagination parameters
     const query = getQuery(event);
@@ -59,10 +64,12 @@ export default defineEventHandler(async (event: H3Event) => {
     const perPage = 30;
 
     // Fetch paginated killmails using model function
-    const [killmails, totalKillmails] = await Promise.all([
-      getEntityKillmails(corporationId, 'corporation', 'all', page, perPage),
-      countEntityKillmails(corporationId, 'corporation', 'all'),
-    ]);
+    const [killmails, totalKillmails] = await track('corporation:fetch_killmails', 'application', async () => {
+      return await Promise.all([
+        getEntityKillmails(corporationId, 'corporation', 'all', page, perPage),
+        countEntityKillmails(corporationId, 'corporation', 'all'),
+      ]);
+    });
 
     const totalPages = Math.ceil(totalKillmails / perPage);
 
@@ -164,6 +171,11 @@ export default defineEventHandler(async (event: H3Event) => {
         mostValuableKills: transformedMostValuable,
         recentKillmails,
         pagination,
+        wsFilter: {
+          type: 'corporation',
+          id: corporationId,
+          mode: 'all',
+        },
       }
     );
   } catch (error) {
@@ -171,4 +183,4 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 });
 
-import { generatePageNumbers } from '../../../utils/pagination';
+import { generatePageNumbers } from '../../../helpers/pagination';

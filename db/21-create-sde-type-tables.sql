@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS categories (
     "categoryId" INTEGER PRIMARY KEY,
     "name" VARCHAR(255),
     "iconId" INTEGER,
-    "published" BOOLEAN,
-    "version" INTEGER
+    "published" BOOLEAN
 );
 
 -- Groups table
@@ -16,8 +15,7 @@ CREATE TABLE IF NOT EXISTS groups (
     "name" VARCHAR(255),
     "categoryId" INTEGER,
     "iconId" INTEGER,
-    "published" BOOLEAN,
-    "version" INTEGER
+    "published" BOOLEAN
 );
 
 -- Types table
@@ -38,8 +36,7 @@ CREATE TABLE IF NOT EXISTS types (
     "raceId" INTEGER,
     "radius" DOUBLE PRECISION,
     "soundId" INTEGER,
-    "volume" DOUBLE PRECISION,
-    "version" INTEGER
+    "volume" DOUBLE PRECISION
 );
 
 -- Market Groups table
@@ -49,8 +46,7 @@ CREATE TABLE IF NOT EXISTS marketGroups (
     "description" TEXT,
     "iconId" INTEGER,
     "hasTypes" BOOLEAN,
-    "parentGroupId" INTEGER,
-    "version" INTEGER
+    "parentGroupId" INTEGER
 );
 
 -- Meta Groups table
@@ -58,6 +54,5 @@ CREATE TABLE IF NOT EXISTS metaGroups (
     "metaGroupId" INTEGER PRIMARY KEY,
     "name" VARCHAR(255),
     "description" TEXT,
-    "iconId" INTEGER,
-    "version" INTEGER
+    "iconId" INTEGER
 );

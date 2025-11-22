@@ -21,10 +21,10 @@ export interface Planet {
  * Get a single planet by ID
  */
 export async function getPlanet(planetId: number): Promise<Planet | null> {
-  const [row] = await database.sql<Planet[]>`
-    SELECT * FROM planets WHERE planetId = ${planetId}
-  `;
-  return row || null;
+  return database.findOne<Planet>(
+    'SELECT * FROM planets WHERE "planetId" = :planetId',
+    { planetId }
+  );
 }
 
 /**
@@ -33,9 +33,10 @@ export async function getPlanet(planetId: number): Promise<Planet | null> {
 export async function getPlanetsBySystem(
   solarSystemId: number
 ): Promise<Planet[]> {
-  return await database.sql<Planet[]>`
-    SELECT * FROM planets WHERE solarSystemId = ${solarSystemId} ORDER BY celestialIndex
-  `;
+  return database.find<Planet>(
+    'SELECT * FROM planets WHERE "solarSystemId" = :solarSystemId ORDER BY "celestialIndex"',
+    { solarSystemId }
+  );
 }
 
 /**
@@ -45,21 +46,23 @@ export async function searchPlanets(
   namePattern: string,
   limit: number = 10
 ): Promise<Planet[]> {
-  return await database.sql<Planet[]>`
-    SELECT * FROM planets
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<Planet>(
+    `SELECT * FROM planets
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }
 
 /**
  * Get planet name by ID
  */
 export async function getPlanetName(planetId: number): Promise<string | null> {
-  const [result] = await database.sql<{ name: string }[]>`
-    SELECT name FROM planets WHERE planetId = ${planetId}
-  `;
+  const result = await database.findOne<{ name: string }>(
+    'SELECT name FROM planets WHERE "planetId" = :planetId',
+    { planetId }
+  );
   return result?.name || null;
 }
 
@@ -67,8 +70,8 @@ export async function getPlanetName(planetId: number): Promise<string | null> {
  * Count total planets
  */
 export async function countPlanets(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM planets
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM planets'
+  );
   return Number(result?.count || 0);
 }

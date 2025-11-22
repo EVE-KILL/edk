@@ -4,42 +4,33 @@ import { logger } from './logger';
 /**
  * Partition Management Helper
  *
- * Creates and manages monthly partitions for killmails, attackers, and items tables.
- * Partitions range from December 2007 (first EVE killmail) through current + 3 months.
+ * Creates and manages yearly partitions for killmails, attackers, and items tables.
+ * Partitions range from 2007 (first EVE killmail) through current + 1 year.
  */
 
 interface PartitionInfo {
   tableName: string;
   year: number;
-  month: number;
 }
 
 /**
- * Generate partition name (e.g., "killmails_2024_11")
+ * Generate partition name (e.g., "killmails_2024")
  */
 function getPartitionName(
   tableName: string,
-  year: number,
-  month: number
+  year: number
 ): string {
-  const monthStr = month.toString().padStart(2, '0');
-  return `${tableName}_${year}_${monthStr}`;
+  return `${tableName}_${year}`;
 }
 
 /**
- * Get date range for a partition (YYYY-MM-01 to YYYY-MM+1-01)
+ * Get date range for a partition (YYYY-01-01 to YYYY+1-01-01)
  */
 function getPartitionRange(
-  year: number,
-  month: number
+  year: number
 ): { start: string; end: string } {
-  const monthStr = month.toString().padStart(2, '0');
-  const start = `${year}-${monthStr}-01`;
-
-  const endMonth = month === 12 ? 1 : month + 1;
-  const endYear = month === 12 ? year + 1 : year;
-  const endMonthStr = endMonth.toString().padStart(2, '0');
-  const end = `${endYear}-${endMonthStr}-01`;
+  const start = `${year}-01-01`;
+  const end = `${year + 1}-01-01`;
 
   return { start, end };
 }
@@ -48,15 +39,16 @@ function getPartitionRange(
  * Check if a partition exists
  */
 async function partitionExists(partitionName: string): Promise<boolean> {
-  const result = await database.sql<{ exists: boolean }[]>`
-    SELECT EXISTS (
-      SELECT 1 FROM pg_class c
-      JOIN pg_namespace n ON n.oid = c.relnamespace
-      WHERE c.relname = ${partitionName}
-      AND n.nspname = 'public'
-    ) as exists
-  `;
-  return result[0]?.exists || false;
+  const result = await database.findOne<{ exists: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1 FROM pg_class c
+       JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE c.relname = :partitionName
+         AND n.nspname = 'public'
+     ) as exists`,
+    { partitionName }
+  );
+  return result?.exists || false;
 }
 
 /**
@@ -64,21 +56,22 @@ async function partitionExists(partitionName: string): Promise<boolean> {
  */
 export async function createPartition(
   tableName: string,
-  year: number,
-  month: number
+  year: number
 ): Promise<boolean> {
-  const partitionName = getPartitionName(tableName, year, month);
+  const partitionName = getPartitionName(tableName, year);
   const exists = await partitionExists(partitionName);
 
   if (exists) {
     return false;
   }
 
-  const { start, end } = getPartitionRange(year, month);
+  const { start, end } = getPartitionRange(year);
 
-  await database.sql.unsafe(`
-    CREATE TABLE IF NOT EXISTS ${partitionName}
-    PARTITION OF ${tableName}
+  // Use unsafe query because partition ranges don't work well with prepared statements
+  const sql = database.sql;
+  await sql.unsafe(`
+    CREATE TABLE IF NOT EXISTS "${partitionName}"
+    PARTITION OF "${tableName}"
     FOR VALUES FROM ('${start}') TO ('${end}')
   `);
 
@@ -87,38 +80,19 @@ export async function createPartition(
 }
 
 /**
- * Create partitions for a table from start date to end date
+ * Create partitions for a table from start year to end year
  */
 export async function createPartitionsForTable(
   tableName: string,
   startYear: number,
-  startMonth: number,
-  endYear: number,
-  endMonth: number
+  endYear: number
 ): Promise<number> {
-  let currentYear = startYear;
-  let currentMonth = startMonth;
   let created = 0;
 
-  while (
-    currentYear < endYear ||
-    (currentYear === endYear && currentMonth <= endMonth)
-  ) {
-    const wasCreated = await createPartition(
-      tableName,
-      currentYear,
-      currentMonth
-    );
+  for (let year = startYear; year <= endYear; year++) {
+    const wasCreated = await createPartition(tableName, year);
     if (wasCreated) {
       created++;
-    }
-
-    // Move to next month
-    if (currentMonth === 12) {
-      currentMonth = 1;
-      currentYear++;
-    } else {
-      currentMonth++;
     }
   }
 
@@ -127,7 +101,7 @@ export async function createPartitionsForTable(
 
 /**
  * Create all missing partitions for killmails, attackers, and items
- * From December 2007 through current + 3 months
+ * From 2007 through current + 1 year
  */
 export async function createMissingPartitions(): Promise<{
   killmails: number;
@@ -135,40 +109,28 @@ export async function createMissingPartitions(): Promise<{
   items: number;
 }> {
   const startYear = 2007;
-  const startMonth = 12;
-
-  // Calculate end date (now + 3 months)
-  const targetDate = new Date();
-  targetDate.setMonth(targetDate.getMonth() + 3);
-  const endYear = targetDate.getFullYear();
-  const endMonth = targetDate.getMonth() + 1; // getMonth() is 0-indexed
+  const endYear = new Date().getFullYear() + 1; // Current year + 1
 
   logger.info(
-    `Creating partitions from ${startYear}-${startMonth} to ${endYear}-${endMonth}...`
+    `Creating partitions from ${startYear} to ${endYear}...`
   );
 
   const killmailsCreated = await createPartitionsForTable(
     'killmails',
     startYear,
-    startMonth,
-    endYear,
-    endMonth
+    endYear
   );
 
   const attackersCreated = await createPartitionsForTable(
     'attackers',
     startYear,
-    startMonth,
-    endYear,
-    endMonth
+    endYear
   );
 
   const itemsCreated = await createPartitionsForTable(
     'items',
     startYear,
-    startMonth,
-    endYear,
-    endMonth
+    endYear
   );
 
   return {

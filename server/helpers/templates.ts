@@ -699,8 +699,9 @@ async function resolveTemplatePath(templatePath: string): Promise<string> {
  * Register all partials and components from the templates directory
  */
 async function registerPartials() {
-  // In development, always re-register to pick up changes
-  if (partialsRegistered && process.env.NODE_ENV === 'production') return;
+  // In dev mode, always re-scan to pick up new files
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (partialsRegistered && !isDev) return;
 
   const theme = getTheme();
   const templatesDir = join(process.cwd(), 'templates', theme);
@@ -716,6 +717,9 @@ async function registerPartials() {
           const partialPath = join(partialsDir, file);
           const partialContent = await readFile(partialPath, 'utf-8');
           Handlebars.registerPartial(partialName, partialContent);
+          if (isDev) {
+            logger.debug(`Registered partial: ${partialName}`);
+          }
         }
       }
     } catch (error) {
@@ -734,6 +738,9 @@ async function registerPartials() {
           const componentPath = join(componentsDir, file);
           const componentContent = await readFile(componentPath, 'utf-8');
           Handlebars.registerPartial(componentName, componentContent);
+          if (isDev) {
+            logger.debug(`Registered component: ${componentName}`);
+          }
         }
       }
     } catch (error) {
@@ -741,7 +748,9 @@ async function registerPartials() {
     }
   }
 
-  partialsRegistered = true;
+  if (!isDev) {
+    partialsRegistered = true;
+  }
 }
 
 /**
@@ -771,10 +780,8 @@ async function loadTemplate(
   // Compile template
   const template = Handlebars.compile(templateSource);
 
-  // Cache compiled template (in production)
-  if (process.env.NODE_ENV === 'production') {
-    templateCache.set(cacheKey, template);
-  }
+  // Cache compiled template in all environments
+  templateCache.set(cacheKey, template);
 
   return template;
 }
@@ -804,9 +811,15 @@ export async function render(
   useLayout: boolean = true,
   layoutPath: string = 'layouts/main.hbs'
 ): Promise<string> {
+  // Track template rendering
+  const performance = event?.context?.performance || requestContext.getStore()?.performance;
+  const renderSpanId = performance?.startSpan(`template:render`, 'template', { templatePath });
+
   try {
     // Load main content template
+    const loadSpanId = performance?.startSpan(`template:load:${templatePath}`, 'template');
     const contentTemplate = await loadTemplate(templatePath);
+    if (loadSpanId) performance?.endSpan(loadSpanId);
 
     // Merge page context with defaults
     const page: DefaultPageContext = {
@@ -828,16 +841,22 @@ export async function render(
         imageServerUrl:
           process.env.IMAGE_SERVER_URL || 'https://images.evetech.net',
       },
+      version: process.env.npm_package_version || '0.1.0',
+      buildDate: process.env.BUILD_DATE || new Date().toISOString().split('T')[0],
     };
 
     // Add performance data if available
-    const performance = requestContext.getStore()?.performance;
     if (performance) {
-      context.performance = performance.getSummary();
+      const summary = performance.getSummary();
+      context.performance = summary;
+      // Show debug bar in development mode
+      context.debug = process.env.NODE_ENV !== 'production';
     }
 
     // Render content
+    const execSpanId = performance?.startSpan(`template:execute:${templatePath}`, 'template');
     const bodyHtml = contentTemplate(context);
+    if (execSpanId) performance?.endSpan(execSpanId);
 
     // If layout is disabled, return just the content
     if (!useLayout) {
@@ -847,17 +866,22 @@ export async function render(
           'Cache-Control': 'public, max-age=60',
         });
       }
+      if (renderSpanId) performance?.endSpan(renderSpanId);
       return bodyHtml;
     }
 
     // Load layout template
+    const layoutLoadSpanId = performance?.startSpan(`template:load:${layoutPath}`, 'template');
     const layoutTemplate = await loadTemplate(layoutPath);
+    if (layoutLoadSpanId) performance?.endSpan(layoutLoadSpanId);
 
     // Render layout with body content
+    const layoutExecSpanId = performance?.startSpan(`template:execute:${layoutPath}`, 'template');
     const html = layoutTemplate({
       ...context,
       body: bodyHtml,
     });
+    if (layoutExecSpanId) performance?.endSpan(layoutExecSpanId);
 
     // Set response headers if event provided
     if (event) {
@@ -867,8 +891,10 @@ export async function render(
       });
     }
 
+    if (renderSpanId) performance?.endSpan(renderSpanId);
     return html;
   } catch (error) {
+    if (renderSpanId) performance?.endSpan(renderSpanId);
     const theme = getTheme();
     logger.error('Template rendering error', {
       templatePath,

@@ -58,32 +58,33 @@ export async function getEntityActivityRange(
 
   // Attempting a simplified aggregation for kills only (ignoring hours/unique opponents for perf)
 
-  let entityCol = '';
-  if (entityType === 'character') entityCol = 'topAttackerCharacterId';
-  else if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
-  else entityCol = 'topAttackerAllianceId';
+  let entityCol = 'topAttackerCharacterId';
+  if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
+  else if (entityType === 'alliance') entityCol = 'topAttackerAllianceId';
+  const entityColumn = database.identifier(entityCol);
 
   // Use Postgres date_trunc
-  return await database.sql<EntityActivityDaily[]>`
-        SELECT
-          ${entityId} as "entityId",
-          ${entityType} as "entityType",
-          date_trunc('day', "killmailTime") as "activityDate",
-          count(*) as kills,
-          0 as losses,
-          sum("totalValue") as "iskDestroyed",
-          0 as "iskLost",
-          0 as "activeHours",
-          0 as "uniqueVictims",
-          0 as "uniqueAttackers",
-          sum(case when solo then 1 else 0 end) as "soloKills",
-          0 as "gangKills"
-        FROM killmails
-        WHERE ${database.sql(entityCol)} = ${entityId}
-          AND "killmailTime" >= ${startDate} AND "killmailTime" <= ${endDate}
-        GROUP BY 3
-        ORDER BY 3 ASC
-    `;
+  return database.find<EntityActivityDaily>(
+    `SELECT
+        :entityId as "entityId",
+        :entityType as "entityType",
+        date_trunc('day', "killmailTime") as "activityDate",
+        count(*) as kills,
+        0 as losses,
+        sum("totalValue") as "iskDestroyed",
+        0 as "iskLost",
+        0 as "activeHours",
+        0 as "uniqueVictims",
+        0 as "uniqueAttackers",
+        sum(case when solo then 1 else 0 end) as "soloKills",
+        0 as "gangKills"
+      FROM killmails
+      WHERE ${entityColumn} = :entityId
+        AND "killmailTime" >= :startDate AND "killmailTime" <= :endDate
+      GROUP BY 3
+      ORDER BY 3 ASC`,
+    { entityId, entityType, startDate, endDate }
+  );
 }
 
 /**
@@ -126,23 +127,21 @@ export async function getEntityActivitySummary(
   endDate: Date
 ) {
   // Simplified summary from killmails table (kills only for now)
-  let entityCol = '';
-  if (entityType === 'character') entityCol = 'topAttackerCharacterId';
-  else if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
-  else entityCol = 'topAttackerAllianceId';
+  let entityCol = 'topAttackerCharacterId';
+  if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
+  else if (entityType === 'alliance') entityCol = 'topAttackerAllianceId';
+  const entityColumn = database.identifier(entityCol);
 
-  const [result] = await database.sql<
-    {
-      totalKills: number;
-      totalLosses: number;
-      totalIskDestroyed: number;
-      totalIskLost: number;
-      activeDays: number;
-      totalSoloKills: number;
-      totalGangKills: number;
-    }[]
-  >`
-    SELECT
+  return database.findOne<{
+    totalKills: number;
+    totalLosses: number;
+    totalIskDestroyed: number;
+    totalIskLost: number;
+    activeDays: number;
+    totalSoloKills: number;
+    totalGangKills: number;
+  }>(
+    `SELECT
        count(*) as "totalKills",
        0 as "totalLosses",
        coalesce(sum("totalValue"), 0) as "totalIskDestroyed",
@@ -151,10 +150,10 @@ export async function getEntityActivitySummary(
        sum(case when solo then 1 else 0 end) as "totalSoloKills",
        0 as "totalGangKills"
      FROM killmails
-     WHERE ${database.sql(entityCol)} = ${entityId}
-       AND "killmailTime" >= ${startDate} AND "killmailTime" <= ${endDate}
-  `;
-  return result;
+     WHERE ${entityColumn} = :entityId
+       AND "killmailTime" >= :startDate AND "killmailTime" <= :endDate`,
+    { entityId, startDate, endDate }
+  );
 }
 
 /**
@@ -190,22 +189,21 @@ export async function getEntityMostActiveHours(
   startDate: Date,
   endDate: Date
 ): Promise<{ hour: number; activityCount: number }[]> {
-  let entityCol = '';
-  if (entityType === 'character') entityCol = 'topAttackerCharacterId';
-  else if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
-  else entityCol = 'topAttackerAllianceId';
+  let entityCol = 'topAttackerCharacterId';
+  if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
+  else if (entityType === 'alliance') entityCol = 'topAttackerAllianceId';
+  const entityColumn = database.identifier(entityCol);
 
   // Query to count which hours have the most activity using EXTRACT(HOUR FROM ...)
-  const result = await database.sql<{ hour: number; activityCount: number }[]>`
-    SELECT
+  return database.find<{ hour: number; activityCount: number }>(
+    `SELECT
        EXTRACT(HOUR FROM "killmailTime") as hour,
        count(*) as "activityCount"
      FROM killmails
-     WHERE ${database.sql(entityCol)} = ${entityId}
-       AND "killmailTime" >= ${startDate} AND "killmailTime" <= ${endDate}
+     WHERE ${entityColumn} = :entityId
+       AND "killmailTime" >= :startDate AND "killmailTime" <= :endDate
      GROUP BY hour
-     ORDER BY "activityCount" DESC
-  `;
-
-  return result;
+     ORDER BY "activityCount" DESC`,
+    { entityId, startDate, endDate }
+  );
 }

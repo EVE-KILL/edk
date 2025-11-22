@@ -5,6 +5,8 @@
  * Used for all EVE-KILL and ESI API requests
  */
 
+import { requestContext } from '../utils/request-context';
+
 export interface FetcherOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   headers?: Record<string, string>;
@@ -50,6 +52,24 @@ function getBackoffDelay(attempt: number): number {
  * - Error handling
  */
 export async function fetcher<T = any>(
+  url: string,
+  options: FetcherOptions = {}
+): Promise<FetcherResponse<T>> {
+  const performance = requestContext.getStore()?.performance;
+  const spanId = performance?.startSpan(
+    `HTTP ${options.method || 'GET'} ${new URL(url).hostname}`,
+    'http',
+    { url, method: options.method || 'GET' }
+  );
+
+  try {
+    return await _fetcherImpl(url, options);
+  } finally {
+    if (spanId) performance?.endSpan(spanId);
+  }
+}
+
+async function _fetcherImpl<T = any>(
   url: string,
   options: FetcherOptions = {}
 ): Promise<FetcherResponse<T>> {

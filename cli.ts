@@ -186,6 +186,7 @@ async function main(): Promise<void> {
 
   if (process.argv.length < 3) {
     program.outputHelp();
+    process.exit(0);
   } else {
     await program.parseAsync(process.argv);
   }

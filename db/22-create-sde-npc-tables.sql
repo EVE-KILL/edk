@@ -12,8 +12,7 @@ CREATE TABLE IF NOT EXISTS npcCorporations (
     "stationId" INTEGER,
     "taxRate" REAL,
     "tickerName" VARCHAR(255),
-    "deleted" BOOLEAN,
-    "version" INTEGER
+    "deleted" BOOLEAN
 );
 
 -- NPC Stations table
@@ -32,8 +31,7 @@ CREATE TABLE IF NOT EXISTS npcStations (
     "positionZ" DOUBLE PRECISION,
     "reprocessingEfficiency" REAL,
     "reprocessingStationsTake" REAL,
-    "useOperationName" BOOLEAN,
-    "version" INTEGER
+    "useOperationName" BOOLEAN
 );
 
 -- NPC Characters table (for generated kill reports)
@@ -45,6 +43,5 @@ CREATE TABLE IF NOT EXISTS npcCharacters (
     "bloodlineId" INTEGER,
     "ancestryId" INTEGER,
     "gender" INTEGER,
-    "raceId" INTEGER,
-    "version" INTEGER
+    "raceId" INTEGER
 );

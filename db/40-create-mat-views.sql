@@ -1,12 +1,11 @@
 -- Drop existing views in reverse order of dependency
 SET client_min_messages TO WARNING;
-DROP MATERIALIZED VIEW IF EXISTS top_characters_weekly;
-DROP MATERIALIZED VIEW IF EXISTS top_corporations_weekly;
-DROP MATERIALIZED VIEW IF EXISTS top_alliances_weekly;
-DROP MATERIALIZED VIEW IF EXISTS top_systems_weekly;
-DROP MATERIALIZED VIEW IF EXISTS top_regions_weekly;
-DROP MATERIALIZED VIEW IF EXISTS kill_list;
-DROP VIEW IF EXISTS kill_list;
+DROP MATERIALIZED VIEW IF EXISTS top_characters_weekly CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS top_corporations_weekly CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS top_alliances_weekly CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS top_systems_weekly CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS top_regions_weekly CASCADE;
+DROP VIEW IF EXISTS kill_list CASCADE;
 SET client_min_messages TO NOTICE;
 
 -- Add indexes to base tables to optimize kill_list view queries
@@ -108,7 +107,7 @@ SELECT
 FROM kill_list
 WHERE "killmailTime" >= NOW() - INTERVAL '7 days' AND "attackerCharacterId" IS NOT NULL
 GROUP BY "attackerCharacterId", "attackerCharacterName"
-ORDER BY "iskDestroyed" DESC
+ORDER BY kills DESC
 LIMIT 10;
 -- The unique index is REQUIRED for REFRESH MATERIALIZED VIEW CONCURRENTLY.
 CREATE UNIQUE INDEX IF NOT EXISTS top_characters_weekly_id_idx ON top_characters_weekly(id);
@@ -122,7 +121,7 @@ SELECT
 FROM kill_list
 WHERE "killmailTime" >= NOW() - INTERVAL '7 days' AND "attackerCorporationId" IS NOT NULL
 GROUP BY "attackerCorporationId", "attackerCorporationName"
-ORDER BY "iskDestroyed" DESC
+ORDER BY kills DESC
 LIMIT 10;
 -- The unique index is REQUIRED for REFRESH MATERIALIZED VIEW CONCURRENTLY.
 CREATE UNIQUE INDEX IF NOT EXISTS top_corporations_weekly_id_idx ON top_corporations_weekly(id);
@@ -136,7 +135,7 @@ SELECT
 FROM kill_list
 WHERE "killmailTime" >= NOW() - INTERVAL '7 days' AND "attackerAllianceId" IS NOT NULL
 GROUP BY "attackerAllianceId", "attackerAllianceName"
-ORDER BY "iskDestroyed" DESC
+ORDER BY kills DESC
 LIMIT 10;
 -- The unique index is REQUIRED for REFRESH MATERIALIZED VIEW CONCURRENTLY.
 CREATE UNIQUE INDEX IF NOT EXISTS top_alliances_weekly_id_idx ON top_alliances_weekly(id);
@@ -150,7 +149,7 @@ SELECT
 FROM kill_list
 WHERE "killmailTime" >= NOW() - INTERVAL '7 days'
 GROUP BY "solarSystemId", "solarSystemName"
-ORDER BY "iskDestroyed" DESC
+ORDER BY kills DESC
 LIMIT 10;
 -- The unique index is REQUIRED for REFRESH MATERIALIZED VIEW CONCURRENTLY.
 CREATE UNIQUE INDEX IF NOT EXISTS top_systems_weekly_id_idx ON top_systems_weekly(id);
@@ -164,7 +163,7 @@ SELECT
 FROM kill_list
 WHERE "killmailTime" >= NOW() - INTERVAL '7 days'
 GROUP BY "regionId", "regionName"
-ORDER BY "iskDestroyed" DESC
+ORDER BY kills DESC
 LIMIT 10;
 -- The unique index is REQUIRED for REFRESH MATERIALIZED VIEW CONCURRENTLY.
 CREATE UNIQUE INDEX IF NOT EXISTS top_regions_weekly_id_idx ON top_regions_weekly(id);

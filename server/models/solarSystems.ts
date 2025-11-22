@@ -39,10 +39,10 @@ export interface SolarSystem {
 export async function getSolarSystem(
   solarSystemId: number
 ): Promise<SolarSystem | null> {
-  const [row] = await database.sql<SolarSystem[]>`
-    SELECT * FROM solarSystems WHERE "solarSystemId" = ${solarSystemId}
-  `;
-  return row || null;
+  return database.findOne<SolarSystem>(
+    'SELECT * FROM "solarSystems" WHERE "solarSystemId" = :solarSystemId',
+    { solarSystemId }
+  );
 }
 
 /**
@@ -51,9 +51,10 @@ export async function getSolarSystem(
 export async function getSolarSystemsByRegion(
   regionId: number
 ): Promise<SolarSystem[]> {
-  return await database.sql<SolarSystem[]>`
-    SELECT * FROM solarSystems WHERE "regionId" = ${regionId} ORDER BY name
-  `;
+  return database.find<SolarSystem>(
+    'SELECT * FROM "solarSystems" WHERE "regionId" = :regionId ORDER BY name',
+    { regionId }
+  );
 }
 
 /**
@@ -62,9 +63,10 @@ export async function getSolarSystemsByRegion(
 export async function getSolarSystemsByConstellation(
   constellationId: number
 ): Promise<SolarSystem[]> {
-  return await database.sql<SolarSystem[]>`
-    SELECT * FROM solarSystems WHERE "constellationId" = ${constellationId} ORDER BY name
-  `;
+  return database.find<SolarSystem>(
+    'SELECT * FROM "solarSystems" WHERE "constellationId" = :constellationId ORDER BY name',
+    { constellationId }
+  );
 }
 
 /**
@@ -74,12 +76,13 @@ export async function searchSolarSystems(
   namePattern: string,
   limit: number = 10
 ): Promise<SolarSystem[]> {
-  return await database.sql<SolarSystem[]>`
-    SELECT * FROM solarSystems
-     WHERE name ILIKE ${`%${namePattern}%`}
-     ORDER BY name
-     LIMIT ${limit}
-  `;
+  return database.find<SolarSystem>(
+    `SELECT * FROM "solarSystems"
+       WHERE name ILIKE :pattern
+       ORDER BY name
+       LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }
 
 /**
@@ -88,9 +91,10 @@ export async function searchSolarSystems(
 export async function getSolarSystemName(
   solarSystemId: number
 ): Promise<string | null> {
-  const [result] = await database.sql<{ name: string }[]>`
-    SELECT name FROM solarSystems WHERE "solarSystemId" = ${solarSystemId}
-  `;
+  const result = await database.findOne<{ name: string }>(
+    'SELECT name FROM "solarSystems" WHERE "solarSystemId" = :solarSystemId',
+    { solarSystemId }
+  );
   return result?.name || null;
 }
 
@@ -101,38 +105,39 @@ export async function getSecurityClassSystems(
   regionId: number,
   securityClass: 'A' | 'B' | 'C'
 ): Promise<SolarSystem[]> {
-  return await database.sql<SolarSystem[]>`
-    SELECT * FROM solarSystems
-     WHERE "regionId" = ${regionId} AND "securityClass" = ${securityClass}
-     ORDER BY "securityStatus" DESC
-  `;
+  return database.find<SolarSystem>(
+    `SELECT * FROM "solarSystems"
+       WHERE "regionId" = :regionId AND "securityClass" = :securityClass
+       ORDER BY "securityStatus" DESC`,
+    { regionId, securityClass }
+  );
 }
 
 /**
  * Get trade hubs
  */
 export async function getTradeHubs(): Promise<SolarSystem[]> {
-  return await database.sql<SolarSystem[]>`
-    SELECT * FROM solarSystems WHERE hub = 1 ORDER BY "regionId", name
-  `;
+  return database.find<SolarSystem>(
+    'SELECT * FROM "solarSystems" WHERE hub = 1 ORDER BY "regionId", name'
+  );
 }
 
 /**
  * Get hub systems
  */
 export async function getHubSystems(): Promise<SolarSystem[]> {
-  return await database.sql<SolarSystem[]>`
-    SELECT * FROM solarSystems WHERE hub = 1 ORDER BY "regionId", name
-  `;
+  return database.find<SolarSystem>(
+    'SELECT * FROM "solarSystems" WHERE hub = 1 ORDER BY "regionId", name'
+  );
 }
 
 /**
  * Count total solar systems
  */
 export async function countSolarSystems(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM solarSystems
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM "solarSystems"'
+  );
   return Number(result?.count || 0);
 }
 
@@ -140,13 +145,14 @@ export async function countSolarSystems(): Promise<number> {
  * Get stats for a solar system
  */
 export async function getSystemStats(solarSystemId: number): Promise<any> {
-  const [result] = await database.sql<any[]>`
-    SELECT
+  const result = await database.findOne<{ kills: number; iskDestroyed: number }>(
+    `SELECT
       count(*) as kills,
-      sum("totalValue") as iskDestroyed
+      sum("totalValue") as "iskDestroyed"
     FROM killmails
-    WHERE "solarSystemId" = ${solarSystemId}
-  `;
+    WHERE "solarSystemId" = :solarSystemId`,
+    { solarSystemId }
+  );
 
   return {
     kills: Number(result?.kills ?? 0),

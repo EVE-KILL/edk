@@ -27,10 +27,10 @@ export interface Bloodline {
 export async function getBloodline(
   bloodlineId: number
 ): Promise<Bloodline | null> {
-  const [row] = await database.sql<Bloodline[]>`
-    SELECT * FROM bloodlines WHERE bloodlineId = ${bloodlineId}
-  `;
-  return row || null;
+  return database.findOne<Bloodline>(
+    'SELECT * FROM bloodlines WHERE "bloodlineId" = :bloodlineId',
+    { bloodlineId }
+  );
 }
 
 /**
@@ -39,16 +39,17 @@ export async function getBloodline(
 export async function getBloodlinesByRace(
   raceId: number
 ): Promise<Bloodline[]> {
-  return await database.sql<Bloodline[]>`
-    SELECT * FROM bloodlines WHERE raceId = ${raceId} ORDER BY name
-  `;
+  return database.find<Bloodline>(
+    'SELECT * FROM bloodlines WHERE "raceId" = :raceId ORDER BY name',
+    { raceId }
+  );
 }
 
 /**
  * Get all bloodlines
  */
 export async function getAllBloodlines(): Promise<Bloodline[]> {
-  return await database.sql<Bloodline[]>`
-    SELECT * FROM bloodlines ORDER BY raceId, name
-  `;
+  return database.find<Bloodline>(
+    'SELECT * FROM bloodlines ORDER BY "raceId", name'
+  );
 }

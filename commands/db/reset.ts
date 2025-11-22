@@ -9,13 +9,14 @@ async function action() {
     await purgeDatabase();
     await migrateSchema();
     logger.success('✅ Database reset complete.');
+    process.exit(0);
   } catch (error) {
     logger.error('❌ Database reset failed:', {
       error: error instanceof Error ? error.message : String(error),
     });
     process.exit(1);
   } finally {
-    await database.sql.end();
+    await database.close();
   }
 }
 

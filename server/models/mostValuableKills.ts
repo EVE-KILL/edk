@@ -109,16 +109,18 @@ export async function getMostValuableKillsByPeriod(
   limit: number = 50
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);
+  const selectClause = getSelectClause(periodType);
 
-  return await database.sql<MostValuableKill[]>`
-    SELECT
-      ${database.sql.unsafe(getSelectClause(periodType))}
-    ${database.sql.unsafe(JOIN_CLAUSE)}
-    WHERE k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
+  return database.find<MostValuableKill>(
+    `SELECT
+      ${selectClause}
+    ${JOIN_CLAUSE}
+    WHERE k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
       AND k."attackerCount" > 0
     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
-    LIMIT ${limit}
-  `;
+    LIMIT :limit`,
+    { hoursAgo, limit }
+  );
 }
 
 /**
@@ -130,15 +132,17 @@ export async function getMostValuableKillsByCharacter(
   limit: number = 50
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);
+  const selectClause = getSelectClause(periodType);
 
-  return await database.sql<MostValuableKill[]>`
-    SELECT ${database.sql.unsafe(getSelectClause(periodType))}
-     ${database.sql.unsafe(JOIN_CLAUSE)}
-     WHERE k."victimCharacterId" = ${characterId}
-       AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
+  return database.find<MostValuableKill>(
+    `SELECT ${selectClause}
+     ${JOIN_CLAUSE}
+     WHERE k."victimCharacterId" = :characterId
+       AND k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
-     LIMIT ${limit}
-  `;
+     LIMIT :limit`,
+    { characterId, hoursAgo, limit }
+  );
 }
 
 /**
@@ -150,15 +154,17 @@ export async function getMostValuableKillsByCorporation(
   limit: number = 50
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);
+  const selectClause = getSelectClause(periodType);
 
-  return await database.sql<MostValuableKill[]>`
-    SELECT ${database.sql.unsafe(getSelectClause(periodType))}
-     ${database.sql.unsafe(JOIN_CLAUSE)}
-     WHERE k."victimCorporationId" = ${corporationId}
-       AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
+  return database.find<MostValuableKill>(
+    `SELECT ${selectClause}
+     ${JOIN_CLAUSE}
+     WHERE k."victimCorporationId" = :corporationId
+       AND k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
-     LIMIT ${limit}
-  `;
+     LIMIT :limit`,
+    { corporationId, hoursAgo, limit }
+  );
 }
 
 /**
@@ -170,15 +176,17 @@ export async function getMostValuableKillsByAlliance(
   limit: number = 50
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);
+  const selectClause = getSelectClause(periodType);
 
-  return await database.sql<MostValuableKill[]>`
-    SELECT ${database.sql.unsafe(getSelectClause(periodType))}
-     ${database.sql.unsafe(JOIN_CLAUSE)}
-     WHERE k."victimAllianceId" = ${allianceId}
-       AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
+  return database.find<MostValuableKill>(
+    `SELECT ${selectClause}
+     ${JOIN_CLAUSE}
+     WHERE k."victimAllianceId" = :allianceId
+       AND k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
-     LIMIT ${limit}
-  `;
+     LIMIT :limit`,
+    { allianceId, hoursAgo, limit }
+  );
 }
 
 /**
@@ -189,13 +197,15 @@ export async function getMostValuableSoloKills(
   limit: number = 50
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);
+  const selectClause = getSelectClause(periodType);
 
-  return await database.sql<MostValuableKill[]>`
-    SELECT ${database.sql.unsafe(getSelectClause(periodType))}
-     ${database.sql.unsafe(JOIN_CLAUSE)}
+  return database.find<MostValuableKill>(
+    `SELECT ${selectClause}
+     ${JOIN_CLAUSE}
      WHERE k.solo = true
-       AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
+       AND k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
-     LIMIT ${limit}
-  `;
+     LIMIT :limit`,
+    { hoursAgo, limit }
+  );
 }

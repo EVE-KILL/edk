@@ -235,7 +235,7 @@ export class SDEFetcher {
     await this.ensureDirectories();
 
     // Get latest build info
-    const { buildNumber, url } = await getLatestBuild();
+    const { buildNumber, url } = await this.getLatestBuild();
 
     // Load existing metadata
     let metadata = await this.loadMetadata();
@@ -310,12 +310,13 @@ export class SDEFetcher {
     buildNumber: number
   ): Promise<boolean> {
     try {
-      const [result] = await database.sql<any[]>`
-        SELECT "configValue" FROM config
-         WHERE "configKey" = ${`sde_imported_${tableName}`} AND "buildNumber" = ${buildNumber}
-         LIMIT 1
-      `;
-      return result !== undefined;
+      const result = await database.findOne<{ configValue: string }>(
+        `SELECT "configValue" FROM config
+           WHERE "configKey" = :configKey AND "buildNumber" = :buildNumber
+           LIMIT 1`,
+        { configKey: `sde_imported_${tableName}`, buildNumber }
+      );
+      return result !== null;
     } catch (error) {
       // If query fails, assume not imported
       return false;
@@ -391,7 +392,9 @@ export class SDEFetcher {
 
       for (const table of tables) {
         // Use VACUUM ANALYZE for Postgres
-        await database.sql.unsafe(`VACUUM ANALYZE "${table.toLowerCase()}"`);
+        await database.execute(
+          `VACUUM ANALYZE ${database.identifier(table.toLowerCase())}`
+        );
       }
       console.log(`   ✓ Optimized ${tables.length} SDE tables`);
     } catch (error) {
@@ -473,7 +476,6 @@ export class SDEFetcher {
           visualEffect: row.visualEffect || '',
           wormholeClassId: row.wormholeClassID || null,
           updatedAt: new Date(),
-          version: Math.floor(Date.now() / 1000),
         };
 
         records.push(record);
@@ -556,7 +558,6 @@ export class SDEFetcher {
           positionZ: parseNumber(row.position?.z),
           wormholeClassId: row.wormholeClassID || null,
           updatedAt: new Date(),
-          version: Math.floor(Date.now() / 1000),
         };
 
         records.push(record);
@@ -632,7 +633,6 @@ export class SDEFetcher {
           solarSystemIds: row.solarSystemIDs || [],
           wormholeClassId: row.wormholeClassID || null,
           updatedAt: new Date(),
-          version: Math.floor(Date.now() / 1000),
         };
 
         records.push(record);
@@ -666,6 +666,30 @@ export class SDEFetcher {
     } catch (error) {
       console.error('❌ Error importing mapConstellations:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Post-process map tables to populate missing relationships
+   * Must be called after importing regions, constellations, and solarsystems
+   */
+  async postProcessMapTables(): Promise<void> {
+    console.log('🔧 Post-processing map tables...');
+
+    try {
+      // Populate regionId in solarsystems from constellations
+      const result = await database.execute(
+        `UPDATE solarsystems ss
+         SET "regionId" = c."regionId"
+         FROM constellations c
+         WHERE ss."constellationId" = c."constellationId"
+         AND ss."regionId" IS NULL`
+      );
+
+      console.log(`   ✓ Updated regionId in solarsystems (${result.count || 0} rows)`);
+    } catch (error) {
+      console.error('⚠️  Error post-processing map tables:', error);
+      // Don't throw - this is not critical
     }
   }
 
@@ -737,9 +761,6 @@ export class SDEFetcher {
               : this.convertValue(value, mapping.type);
           }
         }
-
-        // Add version field for ReplacingMergeTree (use current timestamp)
-        record.version = Math.floor(Date.now() / 1000);
 
         records.push(record);
         imported++;

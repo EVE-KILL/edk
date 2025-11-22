@@ -9,8 +9,7 @@ CREATE TABLE IF NOT EXISTS factions (
     "shortDescription" TEXT,
     "corporationId" INTEGER,
     "militiaCorporationId" INTEGER,
-    "solarSystemId" INTEGER,
-    "version" INTEGER
+    "solarSystemId" INTEGER
 );
 
 -- Races table
@@ -18,8 +17,7 @@ CREATE TABLE IF NOT EXISTS races (
     "raceId" INTEGER PRIMARY KEY,
     "name" VARCHAR(255),
     "description" TEXT,
-    "iconId" INTEGER,
-    "version" INTEGER
+    "iconId" INTEGER
 );
 
 -- Bloodlines table
@@ -35,8 +33,7 @@ CREATE TABLE IF NOT EXISTS bloodlines (
     "intelligence" INTEGER,
     "memory" INTEGER,
     "perception" INTEGER,
-    "willpower" INTEGER,
-    "version" INTEGER
+    "willpower" INTEGER
 );
 
 -- Ancestries table
@@ -46,6 +43,5 @@ CREATE TABLE IF NOT EXISTS ancestries (
     "bloodlineId" INTEGER,
     "description" TEXT,
     "iconId" INTEGER,
-    "shortDescription" TEXT,
-    "version" INTEGER
+    "shortDescription" TEXT
 );

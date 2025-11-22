@@ -51,19 +51,20 @@ dev-tmux: $(DATA_FLAG)
 	@bun cli db:partitions
 	@bun cli search:seed
 	@command -v tmux >/dev/null 2>&1 || { echo "tmux is required for dev-tmux"; exit 1; }
-	@SESSION=edk-dev; \
-		tmux has-session -t $$SESSION 2>/dev/null && tmux kill-session -t $$SESSION; \
-		tmux new-session -d -s $$SESSION "bun --bun run dev"; \
-		tmux split-window -h -t $$SESSION:0 "bun ws"; \
-		tmux split-window -v -t $$SESSION:0.0 "bun queue"; \
-		tmux split-window -v -t $$SESSION:0.1 "bun cronjobs"; \
-		tmux split-window -v -t $$SESSION:0.3 "bun cli listeners:redisq"; \
-		tmux select-layout -t $$SESSION:0 tiled; \
-		tmux attach -t $$SESSION
+		@SESSION=edk-dev; \
+			tmux has-session -t $$SESSION 2>/dev/null && tmux kill-session -t $$SESSION; \
+			tmux new-session -d -s $$SESSION "bash -lc 'trap : INT; bun --bun run dev; trap - INT; exec bash'"; \
+			tmux set-option -t $$SESSION mouse on; \
+			tmux split-window -h -t $$SESSION:0 "bash -lc 'trap : INT; bun ws; trap - INT; exec bash'"; \
+			tmux split-window -v -t $$SESSION:0.0 "bash -lc 'trap : INT; bun queue; trap - INT; exec bash'"; \
+			tmux split-window -v -t $$SESSION:0.1 "bash -lc 'trap : INT; bun cronjobs; trap - INT; exec bash'"; \
+			tmux split-window -v -t $$SESSION:0.3 "bash -lc 'trap : INT; bun cli listeners:redisq; trap - INT; exec bash'"; \
+			tmux select-layout -t $$SESSION:0 tiled; \
+			tmux attach -t $$SESSION
 
 dev: dev-tmux
 
-wait-for-services: ## Wait for PostgreSQL and Redis to be ready
+wait-for-services: ## Wait for PostgreSQL, Redis, and Typesense to be ready
 	@echo "Waiting for PostgreSQL to be ready..."
 	@until docker-compose exec postgres pg_isready -U edk_user -d edk > /dev/null 2>&1; do \
 		sleep 1; \
@@ -74,3 +75,8 @@ wait-for-services: ## Wait for PostgreSQL and Redis to be ready
 		sleep 1; \
 	done
 	@echo "Redis is ready."
+	@echo "Waiting for Typesense to be ready..."
+	@until curl -s http://localhost:8108/health > /dev/null 2>&1; do \
+		sleep 1; \
+	done
+	@echo "Typesense is ready."

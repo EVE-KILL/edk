@@ -14,6 +14,8 @@ Self-hosted, EVE Online killboard built with Bun, Nitro, PostgreSQL, Redis, and 
 - Docker + Docker Compose (provides Postgres, Redis, Typesense)
 - `tmux` (required only for `make dev`)
 
+**Note**: If you're using your own PostgreSQL server (not Docker), you must set `max_locks_per_transaction = 200` in `postgresql.conf` due to the partitioned table structure (60+ partitions). The Docker setup handles this automatically.
+
 ## Quick start
 
 1: Copy envs and edit as needed:

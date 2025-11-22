@@ -69,8 +69,10 @@ export default {
       }
 
       logger.success(`Inspected ${chalk.green(count.toString())} records`);
+      process.exit(0);
     } catch (error) {
       logger.error('Error:', { error: String(error) });
+      process.exit(1);
     }
   },
 };

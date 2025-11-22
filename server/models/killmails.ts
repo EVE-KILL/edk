@@ -201,23 +201,26 @@ export async function getKillmail(
   killmailId: number
 ): Promise<ESIKillmail | null> {
   // Get main killmail record
-  const [killmail] = await database.sql<any[]>`
-    SELECT * FROM killmails WHERE "killmailId" = ${killmailId}
-  `;
+  const killmail = await database.findOne<any>(
+    'SELECT * FROM killmails WHERE "killmailId" = :killmailId',
+    { killmailId }
+  );
 
   if (!killmail) {
     return null;
   }
 
   // Get attackers
-  const attackers = await database.sql<any[]>`
-    SELECT * FROM attackers WHERE "killmailId" = ${killmailId}
-  `;
+  const attackers = await database.find<any>(
+    'SELECT * FROM attackers WHERE "killmailId" = :killmailId',
+    { killmailId }
+  );
 
   // Get items
-  const items = await database.sql<any[]>`
-    SELECT * FROM items WHERE "killmailId" = ${killmailId}
-  `;
+  const items = await database.find<any>(
+    'SELECT * FROM items WHERE "killmailId" = :killmailId',
+    { killmailId }
+  );
 
   // Convert Unix timestamp back to ISO string
   // ClickHouse DateTime is returned as a string "YYYY-MM-DD HH:MM:SS"
@@ -339,11 +342,11 @@ export async function storeKillmail(
       solo: solo ?? false,
       awox: awox ?? false,
 
-      createdAt: new Date(nowUnix * 1000),
+      createdAt: new Date(nowUnix * 1000).toISOString(),
     };
 
     // Insert killmail
-    await database.insert('killmails', killmailRecord);
+    await database.bulkInsert('killmails', [killmailRecord]);
     logger.info(
       `[Killmail] Stored killmail ${esiData.killmail_id} with hash ${killmailHash}`
     );
@@ -360,7 +363,7 @@ export async function storeKillmail(
       securityStatus: attacker.security_status ?? null,
       shipTypeId: attacker.ship_type_id ?? null,
       weaponTypeId: attacker.weapon_type_id ?? null,
-      createdAt: new Date(nowUnix * 1000),
+      createdAt: new Date(nowUnix * 1000).toISOString(),
     }));
 
     if (attackerRecords.length > 0) {
@@ -377,7 +380,7 @@ export async function storeKillmail(
         quantityDropped: item.quantity_dropped ?? 0,
         quantityDestroyed: item.quantity_destroyed ?? 0,
         singleton: item.singleton ?? 0,
-        createdAt: new Date(nowUnix * 1000),
+        createdAt: new Date(nowUnix * 1000).toISOString(),
       }));
 
       await database.bulkInsert('items', itemRecords);
@@ -454,7 +457,7 @@ export async function storeKillmailsBulk(
         npc: npc ?? false,
         solo: solo ?? false,
         awox: awox ?? false,
-        createdAt: new Date(nowUnix * 1000),
+        createdAt: new Date(nowUnix * 1000).toISOString(),
       };
     });
 
@@ -479,7 +482,7 @@ export async function storeKillmailsBulk(
         securityStatus: attacker.security_status ?? null,
         shipTypeId: attacker.ship_type_id ?? null,
         weaponTypeId: attacker.weapon_type_id ?? null,
-        createdAt: new Date(nowUnix * 1000),
+        createdAt: new Date(nowUnix * 1000).toISOString(),
       }))
     );
 
@@ -506,7 +509,7 @@ export async function storeKillmailsBulk(
         quantityDropped: item.quantity_dropped ?? 0,
         quantityDestroyed: item.quantity_destroyed ?? 0,
         singleton: item.singleton ?? 0,
-        createdAt: new Date(nowUnix * 1000),
+        createdAt: new Date(nowUnix * 1000).toISOString(),
       }));
     });
 
@@ -590,8 +593,8 @@ export interface SiblingKillmail {
 export async function getKillmailDetails(
   killmailId: number
 ): Promise<KillmailDetails | null> {
-  const [row] = await database.sql<KillmailDetails[]>`
-    SELECT
+  return database.findOne<KillmailDetails>(
+    `SELECT
       k."killmailId" as "killmailId",
       k."killmailTime" as "killmailTime",
       k."victimDamageTaken" as "victimDamageTaken",
@@ -641,10 +644,10 @@ export async function getKillmailDetails(
     LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
     LEFT JOIN regions reg ON sys."regionId" = reg."regionId"
 
-    WHERE k."killmailId" = ${killmailId}
-    LIMIT 1
-  `;
-  return row || null;
+    WHERE k."killmailId" = :killmailId
+    LIMIT 1`,
+    { killmailId }
+  );
 }
 
 /**
@@ -653,8 +656,8 @@ export async function getKillmailDetails(
 export async function getKillmailItems(
   killmailId: number
 ): Promise<KillmailItem[]> {
-  return await database.sql<KillmailItem[]>`
-    SELECT
+  return database.find<KillmailItem>(
+    `SELECT
       i."itemTypeId",
       t.name,
       i."quantityDropped",
@@ -673,9 +676,10 @@ export async function getKillmailItems(
       AND "priceDate" = (SELECT max("priceDate") FROM prices WHERE "regionId" = 10000002)
       ORDER BY "typeId"
     ) p ON i."itemTypeId" = p."typeId"
-    WHERE i."killmailId" = ${killmailId}
-    AND i."itemTypeId" IS NOT NULL
-  `;
+    WHERE i."killmailId" = :killmailId
+    AND i."itemTypeId" IS NOT NULL`,
+    { killmailId }
+  );
 }
 
 /**
@@ -684,8 +688,8 @@ export async function getKillmailItems(
 export async function getKillmailAttackers(
   killmailId: number
 ): Promise<KillmailAttacker[]> {
-  return await database.sql<KillmailAttacker[]>`
-    SELECT
+  return database.find<KillmailAttacker>(
+    `SELECT
       a."characterId",
       coalesce(c.name, nc.name, 'Unknown') as "characterName",
       a."corporationId",
@@ -710,9 +714,10 @@ export async function getKillmailAttackers(
     LEFT JOIN alliances a_alliance ON a."allianceId" = a_alliance."allianceId"
     LEFT JOIN types t ON a."shipTypeId" = t."typeId"
     LEFT JOIN types w ON a."weaponTypeId" = w."typeId"
-    WHERE a."killmailId" = ${killmailId}
-    ORDER BY a."damageDone" DESC
-  `;
+    WHERE a."killmailId" = :killmailId
+    ORDER BY a."damageDone" DESC`,
+    { killmailId }
+  );
 }
 
 /**
@@ -729,8 +734,8 @@ export async function getSiblingKillmails(
     return [];
   }
 
-  return await database.sql<SiblingKillmail[]>`
-    SELECT
+  return database.find<SiblingKillmail>(
+    `SELECT
       k."killmailId" as "killmailId",
       k."killmailTime" as "killmailTime",
       coalesce(vc.name, vnpc.name, 'Unknown') as "victimCharacterName",
@@ -743,13 +748,14 @@ export async function getSiblingKillmails(
     LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
     LEFT JOIN npcCharacters vnpc ON k."victimCharacterId" = vnpc."characterId"
     LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
-    WHERE k."victimCharacterId" = ${victimCharacterId}
-      AND k."killmailTime" >= ${startTime}::timestamp
-      AND k."killmailTime" <= ${endTime}::timestamp
-      AND k."killmailId" != ${excludeKillmailId}
+    WHERE k."victimCharacterId" = :victimCharacterId
+      AND k."killmailTime" >= :startTime::timestamp
+      AND k."killmailTime" <= :endTime::timestamp
+      AND k."killmailId" != :excludeKillmailId
     ORDER BY k."killmailTime" DESC
-    LIMIT ${limit}
-  `;
+    LIMIT :limit`,
+    { victimCharacterId, startTime, endTime, excludeKillmailId, limit }
+  );
 }
 
 /**
@@ -758,8 +764,9 @@ export async function getSiblingKillmails(
  * @returns True if killmail exists
  */
 export async function killmailExists(killmailId: number): Promise<boolean> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM killmails WHERE "killmailId" = ${killmailId}
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM killmails WHERE "killmailId" = :killmailId',
+    { killmailId }
+  );
   return Number(result?.count || 0) > 0;
 }

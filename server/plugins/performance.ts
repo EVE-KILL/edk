@@ -1,33 +1,44 @@
 import { defineNitroPlugin } from 'nitropack/runtime';
 import { PerformanceTracker } from '../helpers/performance';
-import { requestContext } from '../utils/request-context';
-import { getQuery, getRequestHeader } from 'h3';
 
 export default defineNitroPlugin((nitroApp) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Skip all performance tracking in production
+  if (isProduction) {
+    return;
+  }
+
+  // Initialize performance tracker at the very start of the request
+  // The tracker is stored in event.context and later propagated to AsyncLocalStorage by middleware
   nitroApp.hooks.hook('request', (event) => {
-    const accept = getRequestHeader(event, 'accept');
-    if (!accept || !accept.includes('text/html')) {
-      return;
-    }
+    const performance = new PerformanceTracker(true);
 
-    const query = getQuery(event);
-    const debug = query.debug === 'true';
-    const performance = new PerformanceTracker(debug);
-
-    requestContext.enterWith({ performance });
+    // Store in event.context - this is the primary storage mechanism
+    event.context.performance = performance;
   });
 
+  // Finalize timing just before response is sent
+  nitroApp.hooks.hook('beforeResponse', (event) => {
+    const performance = event.context?.performance;
+    if (performance) {
+      // Mark the end of request processing
+      performance.mark('response_ready');
+    }
+  });
+
+  // Log performance metrics after response is sent
   nitroApp.hooks.hook('afterResponse', (event) => {
-    const performance = requestContext.getStore()?.performance;
+    const performance = event.context?.performance;
     if (performance) {
       const summary = performance.getSummary();
       logger.info(
-        `[Request Performance] URL: ${event.node.req.url} | Total: ${summary.totalTime}ms | DB: ${summary.dbTime}ms (${summary.queryCount} queries)`
+        `[Request Performance] URL: ${event.path} | Total: ${summary.totalTime}ms | DB: ${summary.dbTime}ms (${summary.queryCount} queries)`
       );
 
       if (summary.queries.length > 0) {
         for (const q of summary.queries) {
-          logger.info(`  [DB Query] ${q.query} | ${q.duration}ms`);
+          logger.debug(`  [DB Query] ${q.query} | ${q.duration}ms`);
         }
       }
     }

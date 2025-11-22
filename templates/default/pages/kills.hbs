@@ -78,7 +78,7 @@
   <div class="killlist-main">
     <!-- Pagination (Top) -->
     {{#if data.pagination}}
-        {{> partials/pagination pagination=data.pagination baseUrl="/kills"}}
+        {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
     {{/if}}
 
     <!-- Killmails List -->
@@ -88,7 +88,7 @@
 
     <!-- Pagination (Bottom) -->
     {{#if data.pagination}}
-        {{> partials/pagination pagination=data.pagination baseUrl="/kills"}}
+        {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
     {{/if}}
   </div>
 </div>

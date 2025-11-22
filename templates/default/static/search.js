@@ -19,6 +19,57 @@
     };
   }
 
+  function extractEntityId(rawId, type) {
+    if (rawId == null) return rawId;
+
+    const prefix = `${type}-`;
+    if (typeof rawId === 'string' && rawId.startsWith(prefix)) {
+      return rawId.slice(prefix.length);
+    }
+
+    return rawId;
+  }
+
+  function normalizeResults(data) {
+    if (!data) return [];
+
+    if (Array.isArray(data.results)) {
+      return data.results.map((item) => {
+        const type = item.type;
+        const entityId = extractEntityId(item.entityId ?? item.id, type);
+        return { ...item, id: entityId ?? item.id, entityId, type };
+      });
+    }
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (typeof data === 'object') {
+      const flat = [];
+      Object.entries(data).forEach(([type, items]) => {
+        if (Array.isArray(items)) {
+          items.forEach((item) => {
+            const itemType = item.type || type;
+            const entityId = extractEntityId(
+              item.entityId ?? item.id,
+              itemType
+            );
+            flat.push({
+              ...item,
+              type: itemType,
+              id: entityId ?? item.id,
+              entityId,
+            });
+          });
+        }
+      });
+      return flat;
+    }
+
+    return [];
+  }
+
   // Perform search
   async function performSearch(query) {
     if (query.trim().length < 2) {
@@ -49,7 +100,8 @@
       }
 
       const data = await response.json();
-      displayResults(data.results || []);
+      const results = normalizeResults(data);
+      displayResults(results);
     } catch (error) {
       if (error.name === 'AbortError') {
         // Request was cancelled, ignore
@@ -118,7 +170,8 @@
         html += `<div class="search-group-header">${typeLabels[type]}</div>`;
 
         grouped[type].forEach((result) => {
-          const url = typeUrls[type] + result.id;
+          const entityId = result.entityId ?? result.id;
+          const url = typeUrls[type] + entityId;
           const ticker = result.ticker ? ` [${result.ticker}]` : '';
           const description = result.description
             ? `<span class="search-item-description">${result.description}</span>`

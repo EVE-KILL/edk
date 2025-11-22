@@ -78,9 +78,9 @@ export default defineEventHandler(async (event) => {
  * Get total killmail count
  */
 async function getTotalKillmailCount(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM killmails
-  `;
+  const result = await database.findOne<{ count: number }>(
+    `SELECT count(*) as count FROM killmails`
+  );
   return Number(result?.count) || 0;
 }
 
@@ -88,9 +88,9 @@ async function getTotalKillmailCount(): Promise<number> {
  * Get total ISK destroyed across all killmails
  */
 async function getTotalISKDestroyed(): Promise<number> {
-  const [result] = await database.sql<{ sum: number }[]>`
-    SELECT sum("totalValue") as sum FROM killmails
-  `;
+  const result = await database.findOne<{ sum: number }>(
+    `SELECT sum("totalValue") as sum FROM killmails`
+  );
   return Number(result?.sum) || 0;
 }
 
@@ -100,20 +100,17 @@ async function getTotalISKDestroyed(): Promise<number> {
 async function getUniqueEntityCount(
   type: 'character' | 'corporation' | 'alliance'
 ): Promise<number> {
-  let result;
-  if (type === 'character') {
-    [result] = await database.sql<
-      { count: number }[]
-    >`SELECT count(DISTINCT "victimCharacterId") as count FROM killmails WHERE "victimCharacterId" > 0`;
-  } else if (type === 'corporation') {
-    [result] = await database.sql<
-      { count: number }[]
-    >`SELECT count(DISTINCT "victimCorporationId") as count FROM killmails WHERE "victimCorporationId" > 0`;
-  } else {
-    [result] = await database.sql<
-      { count: number }[]
-    >`SELECT count(DISTINCT "victimAllianceId") as count FROM killmails WHERE "victimAllianceId" > 0`;
-  }
+  const columnName =
+    type === 'character'
+      ? 'victimCharacterId'
+      : type === 'corporation'
+        ? 'victimCorporationId'
+        : 'victimAllianceId';
+
+  const column = database.identifier(columnName);
+  const result = await database.findOne<{ count: number }>(
+    `SELECT count(DISTINCT ${column}) as count FROM killmails WHERE ${column} > 0`
+  );
 
   return Number(result?.count) || 0;
 }
@@ -122,9 +119,9 @@ async function getUniqueEntityCount(
  * Get count of solo kills (killmails with only 1 attacker)
  */
 async function getSoloKillsCount(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM killmails WHERE solo = true
-  `;
+  const result = await database.findOne<{ count: number }>(
+    `SELECT count(*) as count FROM killmails WHERE solo = true`
+  );
   return Number(result?.count) || 0;
 }
 
@@ -132,9 +129,9 @@ async function getSoloKillsCount(): Promise<number> {
  * Get average attackers per killmail
  */
 async function getAverageAttackersPerKill(): Promise<number> {
-  const [result] = await database.sql<{ avg: number }[]>`
-    SELECT avg("attackerCount") as avg FROM killmails
-  `;
+  const result = await database.findOne<{ avg: number }>(
+    `SELECT avg("attackerCount") as avg FROM killmails`
+  );
   return Number(result?.avg) || 0;
 }
 
@@ -144,15 +141,17 @@ async function getAverageAttackersPerKill(): Promise<number> {
 async function getActivityStats(
   hours: number
 ): Promise<{ pilots: number; kills: number }> {
-  const [pilotsResult] = await database.sql<{ count: number }[]>`
-      SELECT count(DISTINCT "victimCharacterId") as count FROM killmails
-       WHERE "killmailTime" >= NOW() - (${hours} || ' hours')::interval
-    `;
+  const pilotsResult = await database.findOne<{ count: number }>(
+    `SELECT count(DISTINCT "victimCharacterId") as count FROM killmails
+     WHERE "killmailTime" >= NOW() - (:hours || ' hours')::interval`,
+    { hours }
+  );
 
-  const [killsResult] = await database.sql<{ count: number }[]>`
-      SELECT count(*) as count FROM killmails
-       WHERE "killmailTime" >= NOW() - (${hours} || ' hours')::interval
-    `;
+  const killsResult = await database.findOne<{ count: number }>(
+    `SELECT count(*) as count FROM killmails
+     WHERE "killmailTime" >= NOW() - (:hours || ' hours')::interval`,
+    { hours }
+  );
 
   return {
     pilots: Number(pilotsResult?.count) || 0,
@@ -166,8 +165,8 @@ async function getActivityStats(
 async function getTopCharactersByKills(
   limit: number = 5
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  return await database.sql<{ id: number; name: string; kills: number }[]>`
-    SELECT
+  return database.find<{ id: number; name: string; kills: number }>(
+    `SELECT
       km."topAttackerCharacterId" as id,
       COALESCE(c.name, nc.name, 'Unknown') as name,
       count(*) as kills
@@ -177,8 +176,9 @@ async function getTopCharactersByKills(
     WHERE km."topAttackerCharacterId" > 0
     GROUP BY km."topAttackerCharacterId", c.name, nc.name
     ORDER BY kills DESC
-    LIMIT ${limit}
-  `;
+    LIMIT :limit`,
+    { limit }
+  );
 }
 
 /**
@@ -187,8 +187,8 @@ async function getTopCharactersByKills(
 async function getTopCorporationsByKills(
   limit: number = 5
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  return await database.sql<{ id: number; name: string; kills: number }[]>`
-    SELECT
+  return database.find<{ id: number; name: string; kills: number }>(
+    `SELECT
       km."topAttackerCorporationId" as id,
       COALESCE(c.name, nc.name, 'Unknown') as name,
       count(*) as kills
@@ -198,8 +198,9 @@ async function getTopCorporationsByKills(
     WHERE km."topAttackerCorporationId" > 0
     GROUP BY km."topAttackerCorporationId", c.name, nc.name
     ORDER BY kills DESC
-    LIMIT ${limit}
-  `;
+    LIMIT :limit`,
+    { limit }
+  );
 }
 
 /**
@@ -208,8 +209,8 @@ async function getTopCorporationsByKills(
 async function getTopAlliancesByKills(
   limit: number = 5
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  return await database.sql<{ id: number; name: string; kills: number }[]>`
-    SELECT
+  return database.find<{ id: number; name: string; kills: number }>(
+    `SELECT
       km."topAttackerAllianceId" as id,
       COALESCE(a.name, 'Unknown') as name,
       count(*) as kills
@@ -218,8 +219,9 @@ async function getTopAlliancesByKills(
     WHERE km."topAttackerAllianceId" > 0
     GROUP BY km."topAttackerAllianceId", a.name
     ORDER BY kills DESC
-    LIMIT ${limit}
-  `;
+    LIMIT :limit`,
+    { limit }
+  );
 }
 
 /**
@@ -228,8 +230,8 @@ async function getTopAlliancesByKills(
 async function getMostDestroyedShips(
   limit: number = 5
 ): Promise<Array<{ id: number; name: string; count: number }>> {
-  return await database.sql<{ id: number; name: string; count: number }[]>`
-    SELECT
+  return database.find<{ id: number; name: string; count: number }>(
+    `SELECT
       km."victimShipTypeId" as id,
       COALESCE(t.name, 'Unknown Ship') as name,
       count(*) as count
@@ -238,8 +240,9 @@ async function getMostDestroyedShips(
     WHERE km."victimShipTypeId" > 0
     GROUP BY km."victimShipTypeId", t.name
     ORDER BY count DESC
-    LIMIT ${limit}
-  `;
+    LIMIT :limit`,
+    { limit }
+  );
 }
 
 /**
@@ -248,8 +251,8 @@ async function getMostDestroyedShips(
 async function getMostDangerousSystems(
   limit: number = 5
 ): Promise<Array<{ id: number; name: string; count: number }>> {
-  return await database.sql<{ id: number; name: string; count: number }[]>`
-    SELECT
+  return database.find<{ id: number; name: string; count: number }>(
+    `SELECT
       km."solarSystemId" as id,
       COALESCE(sys.name, 'Unknown') as name,
       count(*) as count
@@ -258,6 +261,7 @@ async function getMostDangerousSystems(
     WHERE km."solarSystemId" > 0
     GROUP BY km."solarSystemId", sys.name
     ORDER BY count DESC
-    LIMIT ${limit}
-  `;
+    LIMIT :limit`,
+    { limit }
+  );
 }

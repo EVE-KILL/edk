@@ -1,8 +1,8 @@
-import { enqueueJob } from '../server/helpers/queue';
-import { QueueType } from '../server/helpers/queue';
-import { killmailExists } from '../server/models/killmails';
+import { enqueueJob } from '../../server/helpers/queue';
+import { QueueType } from '../../server/helpers/queue';
+import { killmailExists } from '../../server/models/killmails';
 import chalk from 'chalk';
-import { logger } from '../server/helpers/logger';
+import { logger } from '../../server/helpers/logger';
 
 /**
  * EVE-KILL WebSocket Listener Command

@@ -25,19 +25,17 @@ export interface Region {
  * Get a single region by ID
  */
 export async function getRegion(regionId: number): Promise<Region | null> {
-  const [row] = await database.sql<Region[]>`
-    SELECT * FROM regions WHERE "regionId" = ${regionId}
-  `;
-  return row || null;
+  return database.findOne<Region>(
+    'SELECT * FROM regions WHERE "regionId" = :regionId',
+    { regionId }
+  );
 }
 
 /**
  * Get all regions
  */
 export async function getAllRegions(): Promise<Region[]> {
-  return await database.sql<Region[]>`
-    SELECT * FROM regions ORDER BY name
-  `;
+  return database.find<Region>('SELECT * FROM regions ORDER BY name');
 }
 
 /**
@@ -47,21 +45,23 @@ export async function searchRegions(
   namePattern: string,
   limit: number = 10
 ): Promise<Region[]> {
-  return await database.sql<Region[]>`
-    SELECT * FROM regions
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<Region>(
+    `SELECT * FROM regions
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }
 
 /**
  * Get region name by ID
  */
 export async function getRegionName(regionId: number): Promise<string | null> {
-  const [row] = await database.sql<{ name: string }[]>`
-    SELECT name FROM regions WHERE "regionId" = ${regionId}
-  `;
+  const row = await database.findOne<{ name: string }>(
+    'SELECT name FROM regions WHERE "regionId" = :regionId',
+    { regionId }
+  );
   return row?.name || null;
 }
 
@@ -71,18 +71,19 @@ export async function getRegionName(regionId: number): Promise<string | null> {
 export async function getRegionsByFaction(
   factionId: number
 ): Promise<Region[]> {
-  return await database.sql<Region[]>`
-    SELECT * FROM regions WHERE factionId = ${factionId} ORDER BY name
-  `;
+  return database.find<Region>(
+    'SELECT * FROM regions WHERE "factionId" = :factionId ORDER BY name',
+    { factionId }
+  );
 }
 
 /**
  * Count total regions
  */
 export async function countRegions(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM regions
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM regions'
+  );
   return Number(result?.count || 0);
 }
 
@@ -90,14 +91,15 @@ export async function countRegions(): Promise<number> {
  * Get stats for a region
  */
 export async function getRegionStats(regionId: number): Promise<any> {
-  const [result] = await database.sql<any[]>`
-    SELECT
+  const result = await database.findOne<{ kills: number; iskDestroyed: number }>(
+    `SELECT
       count(k."killmailId") as kills,
-      sum(k."totalValue") as iskDestroyed
+      sum(k."totalValue") as "iskDestroyed"
     FROM killmails k
-    INNER JOIN solarSystems s ON k."solarSystemId" = s."solarSystemId"
-    WHERE s."regionId" = ${regionId}
-  `;
+    INNER JOIN "solarSystems" s ON k."solarSystemId" = s."solarSystemId"
+    WHERE s."regionId" = :regionId`,
+    { regionId }
+  );
 
   return {
     kills: Number(result?.kills ?? 0),

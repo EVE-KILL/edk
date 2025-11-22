@@ -23,10 +23,10 @@ export interface AsteroidBelt {
 export async function getAsteroidBelt(
   asteroidBeltId: number
 ): Promise<AsteroidBelt | null> {
-  const [row] = await database.sql<AsteroidBelt[]>`
-    SELECT * FROM asteroidBelts WHERE asteroidBeltId = ${asteroidBeltId}
-  `;
-  return row || null;
+  return database.findOne<AsteroidBelt>(
+    'SELECT * FROM "asteroidBelts" WHERE "asteroidBeltId" = :asteroidBeltId',
+    { asteroidBeltId }
+  );
 }
 
 /**
@@ -35,9 +35,10 @@ export async function getAsteroidBelt(
 export async function getAsteroidBeltsBySystem(
   solarSystemId: number
 ): Promise<AsteroidBelt[]> {
-  return await database.sql<AsteroidBelt[]>`
-    SELECT * FROM asteroidBelts WHERE solarSystemId = ${solarSystemId} ORDER BY celestialIndex
-  `;
+  return database.find<AsteroidBelt>(
+    'SELECT * FROM "asteroidBelts" WHERE "solarSystemId" = :solarSystemId ORDER BY "celestialIndex"',
+    { solarSystemId }
+  );
 }
 
 /**
@@ -47,10 +48,11 @@ export async function searchAsteroidBelts(
   namePattern: string,
   limit: number = 10
 ): Promise<AsteroidBelt[]> {
-  return await database.sql<AsteroidBelt[]>`
-    SELECT * FROM asteroidBelts
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<AsteroidBelt>(
+    `SELECT * FROM "asteroidBelts"
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }

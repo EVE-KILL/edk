@@ -108,6 +108,11 @@ export default defineEventHandler(async (event: H3Event) => {
         ...entityData,
         killmails,
         pagination,
+        wsFilter: {
+          type: 'character',
+          id: characterId,
+          mode: 'losses',
+        },
       }
     );
   } catch (error) {
@@ -115,4 +120,4 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 });
 
-import { generatePageNumbers } from '../../../utils/pagination';
+import { generatePageNumbers } from '../../../helpers/pagination';

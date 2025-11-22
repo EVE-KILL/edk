@@ -18,9 +18,10 @@ export interface Config {
  * Get a config value by key
  */
 export async function getConfig(key: string): Promise<string | null> {
-  const [row] = await database.sql<{ configValue: string }[]>`
-    SELECT "configValue" FROM config WHERE "configKey" = ${key}
-  `;
+  const row = await database.findOne<{ configValue: string }>(
+    'SELECT "configValue" FROM config WHERE "configKey" = :key',
+    { key }
+  );
   return row?.configValue ?? null;
 }
 
@@ -30,30 +31,30 @@ export async function getConfig(key: string): Promise<string | null> {
 export async function setConfig(key: string, value: string): Promise<void> {
   const now = new Date();
 
-  await database.sql`
-    INSERT INTO config ("configKey", "configValue", "updatedAt")
-    VALUES (${key}, ${value}, ${now})
-    ON CONFLICT ("configKey")
-    DO UPDATE SET
-      "configValue" = ${value},
-      "updatedAt" = ${now}
-  `;
+  await database.execute(
+    `INSERT INTO config ("configKey", "configValue", "updatedAt")
+     VALUES (:key, :value, :now)
+     ON CONFLICT ("configKey")
+     DO UPDATE SET
+       "configValue" = :value,
+       "updatedAt" = :now`,
+    { key, value, now }
+  );
 }
 
 /**
  * Get all config entries
  */
 export async function getAllConfig(): Promise<Config[]> {
-  return await database.sql<Config[]>`
-    SELECT * FROM config ORDER BY "configKey"
-  `;
+  return database.find<Config>('SELECT * FROM config ORDER BY "configKey"');
 }
 
 /**
  * Delete a config entry
  */
 export async function deleteConfig(key: string): Promise<void> {
-  await database.sql`
-    DELETE FROM config WHERE "configKey" = ${key}
-  `;
+  await database.execute(
+    'DELETE FROM config WHERE "configKey" = :key',
+    { key }
+  );
 }

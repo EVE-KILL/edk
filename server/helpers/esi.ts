@@ -6,6 +6,7 @@
  */
 
 import { fetcher, FetcherOptions, FetcherResponse } from './fetcher';
+import { requestContext } from '../utils/request-context';
 
 const ESI_SERVER = process.env.ESI_SERVER_URL || 'https://esi.evetech.net';
 let errorLimitRemain = 100;
@@ -50,7 +51,14 @@ export function fetchESI<T = any>(
     headers?: Record<string, string>;
   } = {}
 ): Promise<FetcherResponse<T>> {
-  return new Promise((resolve, reject) => {
+  const performance = requestContext.getStore()?.performance;
+  const spanId = performance?.startSpan(
+    `ESI ${path}`,
+    'http',
+    { path, method: options.method || 'GET' }
+  );
+
+  const promise = new Promise<FetcherResponse<T>>((resolve, reject) => {
     const executeRequest = async () => {
       if (!canMakeRequest()) {
         setTimeout(() => executeRequest(), errorLimitReset * 1000);
@@ -79,9 +87,11 @@ export function fetchESI<T = any>(
           return;
         }
 
+        if (spanId) performance?.endSpan(spanId);
         resolve(response);
         setTimeout(processQueue, 100); // Small delay between requests
       } catch (error) {
+        if (spanId) performance?.endSpan(spanId);
         reject(error);
         setTimeout(processQueue, 100);
       }
@@ -92,4 +102,6 @@ export function fetchESI<T = any>(
       processQueue();
     }
   });
+
+  return promise;
 }

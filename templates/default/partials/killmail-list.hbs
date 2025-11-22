@@ -91,7 +91,7 @@
 
         <div class="kb-kl-col kb-kl-col--value">
             <div class="kb-kl-info kb-kl-info--value">
-        {{#if totalValue}}
+        {{#if (gt totalValue 0)}}
           <div class="kb-kl-value" data-total-value="{{killmailId}}">{{abbreviateISK totalValue}}</div>
                 {{else}}
           <div class="kb-kl-value--unknown" data-total-value="{{killmailId}}">N/A</div>
@@ -373,6 +373,33 @@
   if (!killmailList) {
     console.log('No killmail list found, skipping WebSocket setup');
   } else {
+    // Client-side kill type filters to match server filters for websocket updates
+    const SHIP_GROUPS = {
+      big: [547, 485, 513, 902, 941, 30, 659],
+      frigates: [324, 893, 25, 831, 237],
+      destroyers: [420, 541],
+      cruisers: [906, 26, 833, 358, 894, 832, 963],
+      battlecruisers: [419, 540],
+      battleships: [27, 898, 900],
+      capitals: [547, 485],
+      freighters: [513, 902],
+      supercarriers: [659],
+      titans: [30],
+      citadels: [1657, 1406, 1404, 1408, 2017, 2016],
+      t1: [419, 27, 29, 547, 26, 420, 25, 28, 941, 463, 237, 31],
+      t2: [
+        324, 898, 906, 540, 830, 893, 543, 541, 833, 358, 894, 831, 902, 832,
+        900, 834, 380
+      ],
+      t3: [963, 1305]
+    };
+
+    const WORMHOLE_REGION_MIN = 11000001;
+    const WORMHOLE_REGION_MAX = 11000033;
+    const ABYSSAL_REGION_MIN = 12000000;
+    const ABYSSAL_REGION_MAX = 13000000;
+    const POCHVEN_REGION_ID = 10000070;
+
     const filterType = killmailList.dataset.wsFilterType; // 'character', 'corporation', 'alliance', 'killType'
     const filterId = killmailList.dataset.wsFilterId;
     const filterMode = killmailList.dataset.wsFilterMode; // 'all', 'kills', 'losses'
@@ -385,6 +412,12 @@
       ws.onopen = () => {
         console.log('✅ WebSocket connected');
         reconnectInterval = 1000;
+        
+        // Enable debug panel WebSocket tab
+        if (window.debugWS) {
+          window.debugWS.enable();
+          window.debugWS.setConnected(true);
+        }
 
         // Subscribe based on filter configuration
         let topics = ['all']; // Default to all
@@ -424,6 +457,11 @@
 
         console.log('📡 Subscribing to topics:', topics);
         ws.send(JSON.stringify({ type: 'subscribe', topics }));
+        
+        // Update debug panel with topics
+        if (window.debugWS) {
+          window.debugWS.setTopics(topics);
+        }
       };
 
       ws.onmessage = (event) => {
@@ -432,10 +470,23 @@
 
           if (message.type === 'subscribed') {
             console.log('✅ Subscribed to topics:', message.topics);
+            if (window.debugWS) {
+              window.debugWS.setTopics(message.topics);
+            }
           } else if (message.type === 'killmail' && message.data) {
+            if (window.debugWS) {
+              window.debugWS.addMessage('killmail', message.data);
+            }
             handleNewKillmail(message.data);
           } else if (message.type === 'ping') {
             ws.send(JSON.stringify({ type: 'pong' }));
+            if (window.debugWS) {
+              window.debugWS.addMessage('ping', null);
+            }
+          } else {
+            if (window.debugWS) {
+              window.debugWS.addMessage(message.type, message);
+            }
           }
         } catch (error) {
           console.error('❌ Error processing message:', error);
@@ -444,6 +495,10 @@
 
       ws.onclose = (event) => {
         console.log('🔴 WebSocket disconnected:', event.code, event.reason);
+        if (window.debugWS) {
+          window.debugWS.setConnected(false);
+          window.debugWS.setReconnectCount((window.debugWS.stats.reconnectCount || 0) + 1);
+        }
         setTimeout(connect, reconnectInterval);
         reconnectInterval = Math.min(reconnectInterval * 2, MAX_RECONNECT_INTERVAL);
       };
@@ -498,6 +553,10 @@
           console.log('🚫 Filtered out killmail', killmail.killmailId);
           return;
         }
+      } else if (filterType === 'killType' && filterTopic) {
+        if (!matchesKillTypeFilter(killmail, filterTopic)) {
+          return;
+        }
       }
 
       // Check if killmail is newer than the most recent one in the list
@@ -541,16 +600,19 @@
       };
       killmailRow.style.cursor = 'pointer';
 
-      // Format value
-      const formattedValue = new Intl.NumberFormat('en-US', {
-        notation: 'compact',
-        maximumFractionDigits: 1
-      }).format(killmail.totalValue);
+      const totalValueNumber = Number(killmail.totalValue ?? 0);
+      const hasValue = Number.isFinite(totalValueNumber) && totalValueNumber > 0;
+      const formattedValue = hasValue
+        ? new Intl.NumberFormat('en-US', {
+            notation: 'compact',
+            maximumFractionDigits: 1
+          }).format(totalValueNumber)
+        : 'N/A';
 
       killmailRow.innerHTML = `
         <div class="kb-kl-col kb-kl-col--ship">
           <div class="kb-kl-ship">
-            <img src="https://images.evetech.net/types/${killmail.victim.ship.typeId}/icon?size=64" class="kb-kl-ship-icon" alt="${killmail.victim.ship.name}" loading="lazy">
+            <img src="https://images.evetech.net/types/${killmail.victim.ship.id}/icon?size=64" class="kb-kl-ship-icon" alt="${killmail.victim.ship.name}" loading="lazy">
             <div class="kb-kl-info kb-kl-info--ship">
               <div class="kb-kl-info__primary">${killmail.victim.ship.name}</div>
               <div class="kb-kl-info__secondary">${killmail.victim.ship.group}</div>
@@ -593,13 +655,13 @@
         </div>
         <div class="kb-kl-col kb-kl-col--location">
           <div class="kb-kl-info">
-            <div class="kb-kl-info__primary">${killmail.solarSystem.name}</div>
-            <div class="kb-kl-info__secondary">${killmail.solarSystem.region}</div>
+            <div class="kb-kl-info__primary">${killmail.solarSystem?.name || 'Unknown'}</div>
+            <div class="kb-kl-info__secondary">${killmail.regionName || 'Unknown'}</div>
           </div>
         </div>
         <div class="kb-kl-col kb-kl-col--value">
           <div class="kb-kl-info kb-kl-info--value">
-            <div class="kb-kl-value">${formattedValue}</div>
+            <div class="kb-kl-value${hasValue ? '' : ' kb-kl-value--unknown'}">${formattedValue}</div>
             <div class="kb-kl-info__secondary kb-kl-attackers-count">(${killmail.attackerCount})</div>
           </div>
         </div>
@@ -624,6 +686,71 @@
       }
 
       console.log('✅ Added killmail to list:', killmail.killmailId);
+    }
+
+    function matchesKillTypeFilter(killmail, topic) {
+      const groupId = killmail?.victim?.ship?.groupId;
+      const totalValue = Number(killmail?.totalValue ?? 0);
+      const security = Number(killmail?.securityStatus ?? 0);
+      const regionId = Number(killmail?.regionId ?? 0);
+
+      switch (topic) {
+        case 'latest':
+          return true;
+        case 'big':
+          return SHIP_GROUPS.big.includes(groupId);
+        case 'solo':
+          return !!killmail?.solo;
+        case 'npc':
+          return !!killmail?.npc;
+        case 'awox':
+          return !!killmail?.awox;
+        case 'highsec':
+          return security >= 0.45;
+        case 'lowsec':
+          return security >= 0 && security < 0.45;
+        case 'nullsec':
+          return security < 0 && (regionId < WORMHOLE_REGION_MIN || regionId > WORMHOLE_REGION_MAX);
+        case 'w-space':
+          return regionId >= WORMHOLE_REGION_MIN && regionId <= WORMHOLE_REGION_MAX;
+        case 'abyssal':
+          return regionId >= ABYSSAL_REGION_MIN && regionId <= ABYSSAL_REGION_MAX;
+        case 'pochven':
+          return regionId === POCHVEN_REGION_ID;
+        case '5b':
+          return totalValue >= 5_000_000_000;
+        case '10b':
+          return totalValue >= 10_000_000_000;
+        case 'frigates':
+          return SHIP_GROUPS.frigates.includes(groupId);
+        case 'destroyers':
+          return SHIP_GROUPS.destroyers.includes(groupId);
+        case 'cruisers':
+          return SHIP_GROUPS.cruisers.includes(groupId);
+        case 'battlecruisers':
+          return SHIP_GROUPS.battlecruisers.includes(groupId);
+        case 'battleships':
+          return SHIP_GROUPS.battleships.includes(groupId);
+        case 'capitals':
+          return SHIP_GROUPS.capitals.includes(groupId);
+        case 'freighters':
+          return SHIP_GROUPS.freighters.includes(groupId);
+        case 'supercarriers':
+          return SHIP_GROUPS.supercarriers.includes(groupId);
+        case 'titans':
+          return SHIP_GROUPS.titans.includes(groupId);
+        case 'citadels':
+        case 'structures':
+          return SHIP_GROUPS.citadels.includes(groupId);
+        case 't1':
+          return SHIP_GROUPS.t1.includes(groupId);
+        case 't2':
+          return SHIP_GROUPS.t2.includes(groupId);
+        case 't3':
+          return SHIP_GROUPS.t3.includes(groupId);
+        default:
+          return true;
+      }
     }
 
     // Start connection

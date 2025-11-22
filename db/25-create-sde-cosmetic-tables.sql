@@ -7,8 +7,7 @@ CREATE TABLE IF NOT EXISTS skins (
     "name" VARCHAR(255),
     "description" TEXT,
     "iconId" INTEGER,
-    "internalName" VARCHAR(255),
-    "version" INTEGER
+    "internalName" VARCHAR(255)
 );
 
 -- Station Operations table (for station services)
@@ -24,6 +23,5 @@ CREATE TABLE IF NOT EXISTS stationOperations (
     "manufacturingFactor" REAL,
     "ratio" REAL,
     "researchFactor" REAL,
-    "stationType" VARCHAR(255),
-    "version" INTEGER
+    "stationType" VARCHAR(255)
 );

@@ -1,4 +1,4 @@
-<div class='fixed-bottom bg-dark text-white p-3' style='opacity: 0.9;'>
+<div class='fixed-bottom bg-dark text-white p-3' style='opacity: 0.9; max-height: 80vh; overflow-y: auto;'>
   <div class='container-fluid'>
     <div class='row'>
       <div class='col'>
@@ -11,17 +11,45 @@
       </div>
       <div class='col'>
         <strong>DB Time:</strong>
-        {{performance.dbTime}}ms ({{performance.queryCount}}
-        queries)
+        {{performance.dbTime}}ms avg ({{performance.dbTimeTotal}}ms total, {{performance.queryCount}} queries)
       </div>
     </div>
+
+    {{#if performance.marks}}
     <hr />
     <div class='row'>
       <div class='col'>
-        <ul class='list-unstyled'>
+        <h6>Performance Timeline</h6>
+        <table class='table table-sm table-dark'>
+          <thead>
+            <tr>
+              <th>Operation</th>
+              <th>Duration</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each performance.marks}}
+            <tr>
+              <td>{{this.name}}</td>
+              <td>{{#if this.duration}}<span class='badge bg-info'>{{this.duration}}ms</span>{{else}}-{{/if}}</td>
+              <td>{{this.timestamp}}ms</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {{/if}}
+
+    <hr />
+    <div class='row'>
+      <div class='col'>
+        <h6>Database Queries</h6>
+        <ul class='list-unstyled' style='max-height: 300px; overflow-y: auto;'>
           {{#each performance.queries}}
-            <li>
-              <code>{{this.query}}</code>
+            <li style='margin-bottom: 10px;'>
+              <code style='font-size: 11px;'>{{this.query}}</code>
               <span class='badge bg-primary'>{{this.duration}}ms</span>
             </li>
           {{/each}}

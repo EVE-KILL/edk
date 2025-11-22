@@ -23,10 +23,10 @@ export interface NPCCharacter {
 export async function getNPCCharacter(
   characterId: number
 ): Promise<NPCCharacter | null> {
-  const [row] = await database.sql<NPCCharacter[]>`
-    SELECT * FROM npcCharacters WHERE characterId = ${characterId}
-  `;
-  return row || null;
+  return database.findOne<NPCCharacter>(
+    'SELECT * FROM "npcCharacters" WHERE "characterId" = :characterId',
+    { characterId }
+  );
 }
 
 /**
@@ -35,9 +35,10 @@ export async function getNPCCharacter(
 export async function getNPCCharactersByCorporation(
   corporationId: number
 ): Promise<NPCCharacter[]> {
-  return await database.sql<NPCCharacter[]>`
-    SELECT * FROM npcCharacters WHERE corporationId = ${corporationId} ORDER BY name
-  `;
+  return database.find<NPCCharacter>(
+    'SELECT * FROM "npcCharacters" WHERE "corporationId" = :corporationId ORDER BY name',
+    { corporationId }
+  );
 }
 
 /**
@@ -46,9 +47,10 @@ export async function getNPCCharactersByCorporation(
 export async function getNPCCharactersByBloodline(
   bloodlineId: number
 ): Promise<NPCCharacter[]> {
-  return await database.sql<NPCCharacter[]>`
-    SELECT * FROM npcCharacters WHERE bloodlineId = ${bloodlineId} ORDER BY name
-  `;
+  return database.find<NPCCharacter>(
+    'SELECT * FROM "npcCharacters" WHERE "bloodlineId" = :bloodlineId ORDER BY name',
+    { bloodlineId }
+  );
 }
 
 /**
@@ -58,12 +60,13 @@ export async function searchNPCCharacters(
   namePattern: string,
   limit: number = 10
 ): Promise<NPCCharacter[]> {
-  return await database.sql<NPCCharacter[]>`
-    SELECT * FROM npcCharacters
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<NPCCharacter>(
+    `SELECT * FROM "npcCharacters"
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }
 
 /**
@@ -72,9 +75,10 @@ export async function searchNPCCharacters(
 export async function getNPCCharacterName(
   characterId: number
 ): Promise<string | null> {
-  const [result] = await database.sql<{ name: string }[]>`
-    SELECT name FROM npcCharacters WHERE characterId = ${characterId}
-  `;
+  const result = await database.findOne<{ name: string }>(
+    'SELECT name FROM "npcCharacters" WHERE "characterId" = :characterId',
+    { characterId }
+  );
   return result?.name || null;
 }
 
@@ -82,8 +86,8 @@ export async function getNPCCharacterName(
  * Count total NPC characters
  */
 export async function countNPCCharacters(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM npcCharacters
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM "npcCharacters"'
+  );
   return Number(result?.count || 0);
 }

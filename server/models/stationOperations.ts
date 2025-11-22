@@ -27,19 +27,19 @@ export interface StationOperation {
 export async function getStationOperation(
   operationId: number
 ): Promise<StationOperation | null> {
-  const [row] = await database.sql<StationOperation[]>`
-    SELECT * FROM stationOperations WHERE operationId = ${operationId}
-  `;
-  return row || null;
+  return database.findOne<StationOperation>(
+    'SELECT * FROM "stationOperations" WHERE "operationId" = :operationId',
+    { operationId }
+  );
 }
 
 /**
  * Get all station operations
  */
 export async function getAllStationOperations(): Promise<StationOperation[]> {
-  return await database.sql<StationOperation[]>`
-    SELECT * FROM stationOperations ORDER BY name
-  `;
+  return database.find<StationOperation>(
+    'SELECT * FROM "stationOperations" ORDER BY name'
+  );
 }
 
 /**
@@ -48,9 +48,10 @@ export async function getAllStationOperations(): Promise<StationOperation[]> {
 export async function getStationOperationsByType(
   stationType: string
 ): Promise<StationOperation[]> {
-  return await database.sql<StationOperation[]>`
-    SELECT * FROM stationOperations WHERE stationType = ${stationType} ORDER BY name
-  `;
+  return database.find<StationOperation>(
+    'SELECT * FROM "stationOperations" WHERE "stationType" = :stationType ORDER BY name',
+    { stationType }
+  );
 }
 
 /**
@@ -60,12 +61,13 @@ export async function searchStationOperations(
   namePattern: string,
   limit: number = 10
 ): Promise<StationOperation[]> {
-  return await database.sql<StationOperation[]>`
-    SELECT * FROM stationOperations
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<StationOperation>(
+    `SELECT * FROM "stationOperations"
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }
 
 /**
@@ -74,9 +76,10 @@ export async function searchStationOperations(
 export async function getStationOperationName(
   operationId: number
 ): Promise<string | null> {
-  const [result] = await database.sql<{ name: string }[]>`
-    SELECT name FROM stationOperations WHERE operationId = ${operationId}
-  `;
+  const result = await database.findOne<{ name: string }>(
+    'SELECT name FROM "stationOperations" WHERE "operationId" = :operationId',
+    { operationId }
+  );
   return result?.name || null;
 }
 
@@ -84,8 +87,8 @@ export async function getStationOperationName(
  * Count total station operations
  */
 export async function countStationOperations(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM stationOperations
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM "stationOperations"'
+  );
   return Number(result?.count || 0);
 }

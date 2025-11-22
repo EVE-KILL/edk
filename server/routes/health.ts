@@ -21,10 +21,9 @@ export default defineEventHandler(async (event) => {
     // Get some basic Postgres info
     let dbInfo: any = null;
     if (dbConnected) {
-      const [result] = await database.sql<
-        { version: string }[]
-      >`SELECT version() as version`;
-      dbInfo = result;
+      dbInfo = await database.findOne<{ version: string }>(
+        `SELECT version() as version`
+      );
     }
 
     return {

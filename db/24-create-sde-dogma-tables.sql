@@ -15,8 +15,7 @@ CREATE TABLE IF NOT EXISTS dogmaAttributes (
     "stackable" BOOLEAN,
     "tooltipDescription" TEXT,
     "tooltipTitle" VARCHAR(255),
-    "unitId" INTEGER,
-    "version" INTEGER
+    "unitId" INTEGER
 );
 
 -- Dogma Effects table
@@ -43,6 +42,5 @@ CREATE TABLE IF NOT EXISTS dogmaEffects (
     "rangeAttributeId" INTEGER,
     "resistanceAttributeId" INTEGER,
     "softPenetrationAttributeId" INTEGER,
-    "trackingSpeedAttributeId" INTEGER,
-    "version" INTEGER
+    "trackingSpeedAttributeId" INTEGER
 );

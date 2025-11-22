@@ -7,10 +7,10 @@ export const description = 'Collects database connection metrics';
 
 export const action = async () => {
   if (process.env.NODE_ENV !== 'test') {
-    const result = await database.sql<
-      { count: number }[]
-    >`SELECT count(*) as count FROM pg_stat_activity`;
-    const count = result[0]?.count || 0;
+    const result = await database.findOne<{ count: number }>(
+      `SELECT count(*) as count FROM pg_stat_activity`
+    );
+    const count = result?.count || 0;
     activeConnectionsGauge.set(count);
   }
 };

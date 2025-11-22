@@ -9,48 +9,68 @@ export default {
     console.log('Seeding search index...');
 
     try {
+      // Test Typesense connection first
+      try {
+        await typesense.collections().retrieve();
+        console.log('✅ Connected to Typesense');
+      } catch (error: any) {
+        console.error('❌ Failed to connect to Typesense:', error.message);
+        console.error('Make sure Typesense is running (docker-compose up -d typesense)');
+        await database.close();
+        process.exit(1);
+      }
+
       try {
         await typesense.collections('search').delete();
+        console.log('Deleted existing search collection');
       } catch (error) {
         // Ignore if collection doesn't exist
       }
 
       await typesense.collections().create(searchCollectionSchema);
+      console.log('Created search collection');
 
       // Fetch data from database
       console.log('Fetching characters...');
-      const characters =
-        await database.sql`SELECT "characterId" as id, name FROM characters WHERE name IS NOT NULL`;
+      const characters = await database.find<{ id: number; name: string }>(
+        `SELECT "characterId" as id, name FROM characters WHERE name IS NOT NULL`
+      );
       console.log(`Found ${characters.length} characters`);
 
       console.log('Fetching corporations...');
-      const corporations =
-        await database.sql`SELECT "corporationId" as id, name FROM corporations WHERE name IS NOT NULL`;
+      const corporations = await database.find<{ id: number; name: string }>(
+        `SELECT "corporationId" as id, name FROM corporations WHERE name IS NOT NULL`
+      );
       console.log(`Found ${corporations.length} corporations`);
 
       console.log('Fetching alliances...');
-      const alliances =
-        await database.sql`SELECT "allianceId" as id, name FROM alliances WHERE name IS NOT NULL`;
+      const alliances = await database.find<{ id: number; name: string }>(
+        `SELECT "allianceId" as id, name FROM alliances WHERE name IS NOT NULL`
+      );
       console.log(`Found ${alliances.length} alliances`);
 
       console.log('Fetching ship types...');
-      const shipTypes =
-        await database.sql`SELECT "typeId" as id, name FROM types WHERE name IS NOT NULL AND "published" = true`;
+      const shipTypes = await database.find<{ id: number; name: string }>(
+        `SELECT "typeId" as id, name FROM types WHERE name IS NOT NULL AND "published" = true`
+      );
       console.log(`Found ${shipTypes.length} ship types`);
 
       console.log('Fetching solar systems...');
-      const systems =
-        await database.sql`SELECT "solarSystemId" as id, name FROM solarSystems WHERE name IS NOT NULL`;
+      const systems = await database.find<{ id: number; name: string }>(
+        `SELECT "solarSystemId" as id, name FROM solarSystems WHERE name IS NOT NULL`
+      );
       console.log(`Found ${systems.length} solar systems`);
 
       console.log('Fetching constellations...');
-      const constellations =
-        await database.sql`SELECT "constellationId" as id, name FROM constellations WHERE name IS NOT NULL`;
+      const constellations = await database.find<{ id: number; name: string }>(
+        `SELECT "constellationId" as id, name FROM constellations WHERE name IS NOT NULL`
+      );
       console.log(`Found ${constellations.length} constellations`);
 
       console.log('Fetching regions...');
-      const regions =
-        await database.sql`SELECT "regionId" as id, name FROM regions WHERE name IS NOT NULL`;
+      const regions = await database.find<{ id: number; name: string }>(
+        `SELECT "regionId" as id, name FROM regions WHERE name IS NOT NULL`
+      );
       console.log(`Found ${regions.length} regions`);
 
       // Build documents array - Typesense requires id to be a string
@@ -135,8 +155,10 @@ export default {
       console.log('✅ Search index seeded successfully!');
     } catch (error) {
       console.error('Error seeding search index:', error);
+      process.exit(1);
     } finally {
       await database.close();
+      process.exit(0);
     }
   },
 };

@@ -103,6 +103,7 @@ export default {
     }
 
     logger.success('Price backfill complete.');
+    process.exit(0);
   },
 };
 
@@ -140,16 +141,11 @@ async function processDate(date: string) {
         if (batch.length === 0) return;
 
         try {
-          await database.sql`
-                INSERT INTO prices ${database.sql(batch)}
-                ON CONFLICT ("typeId", "regionId", "priceDate")
-                DO UPDATE SET
-                    "averagePrice" = excluded."averagePrice",
-                    "highestPrice" = excluded."highestPrice",
-                    "lowestPrice" = excluded."lowestPrice",
-                    "orderCount" = excluded."orderCount",
-                    "volume" = excluded."volume"
-            `;
+          await database.bulkUpsert('prices', batch, [
+            'typeId',
+            'regionId',
+            'priceDate',
+          ]);
           insertCount += batch.length;
         } catch (error) {
           logger.error(`Error inserting batch for ${date}:`, { error });

@@ -53,8 +53,10 @@ export default {
 
       logger.success('Killmail reconstructed successfully!');
       logger.debug('Result:', killmail);
+      process.exit(0);
     } catch (error) {
       logger.error('Error fetching killmail:', { error: String(error) });
+      process.exit(1);
     }
   },
 };

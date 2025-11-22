@@ -1,7 +1,7 @@
-import { logger } from '../server/helpers/logger';
-import { database } from '../server/helpers/database';
-import { enqueueJobMany } from '../server/helpers/queue';
-import { QueueType } from '../server/helpers/queue';
+import { logger } from '../../server/helpers/logger';
+import { database } from '../../server/helpers/database';
+import { enqueueJobMany } from '../../server/helpers/queue';
+import { QueueType } from '../../server/helpers/queue';
 
 export default {
   description: 'Backfill killmails from zKillboard history API',
@@ -87,9 +87,12 @@ export default {
 
           if (killmailData.length > 0) {
             const killmailIds = killmailData.map((k) => k.killmailId);
-            const existingIdsResult = await database.sql<
-              { killmailId: number }[]
-            >`SELECT "killmailId" FROM killmails WHERE "killmailId" = ANY(${killmailIds})`;
+            const existingIdsResult = await database.find<{
+              killmailId: number;
+            }>(
+              `SELECT "killmailId" FROM killmails WHERE "killmailId" IN (:killmailIds)`,
+              { killmailIds }
+            );
             const existingIds = new Set(
               existingIdsResult.map((row) => row.killmailId)
             );
@@ -147,5 +150,6 @@ export default {
     }
 
     logger.success('zKillboard backfill complete.');
+    process.exit(0);
   },
 };

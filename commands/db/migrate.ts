@@ -11,7 +11,8 @@ async function action() {
     logger.error('Migration failed:', { error });
     process.exit(1);
   } finally {
-    await database.sql.end();
+    await database.close();
+    process.exit(0);
   }
 }
 

@@ -19,28 +19,26 @@ export interface Category {
 export async function getCategory(
   categoryId: number
 ): Promise<Category | null> {
-  const [row] = await database.sql<Category[]>`
-    SELECT * FROM categories WHERE categoryId = ${categoryId}
-  `;
-  return row || null;
+  return database.findOne<Category>(
+    'SELECT * FROM categories WHERE "categoryId" = :categoryId',
+    { categoryId }
+  );
 }
 
 /**
  * Get all published categories
  */
 export async function getPublishedCategories(): Promise<Category[]> {
-  return await database.sql<Category[]>`
-    SELECT * FROM categories WHERE published = 1 ORDER BY name
-  `;
+  return database.find<Category>(
+    'SELECT * FROM categories WHERE published = 1 ORDER BY name'
+  );
 }
 
 /**
  * Get all categories
  */
 export async function getAllCategories(): Promise<Category[]> {
-  return await database.sql<Category[]>`
-    SELECT * FROM categories ORDER BY name
-  `;
+  return database.find<Category>('SELECT * FROM categories ORDER BY name');
 }
 
 /**
@@ -50,10 +48,11 @@ export async function searchCategories(
   namePattern: string,
   limit: number = 10
 ): Promise<Category[]> {
-  return await database.sql<Category[]>`
-    SELECT * FROM categories
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<Category>(
+    `SELECT * FROM categories
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }

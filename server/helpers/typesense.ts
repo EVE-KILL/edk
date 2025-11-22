@@ -1,4 +1,5 @@
 import { Configuration, Client } from 'typesense';
+import { requestContext } from '../utils/request-context';
 
 export const searchCollectionSchema = {
   name: 'search',
@@ -33,36 +34,43 @@ let searchCollectionEnsured = false;
  * Ensure the search collection exists before writing to it
  */
 export async function ensureSearchCollection(): Promise<void> {
-  if (searchCollectionEnsured) {
-    return;
-  }
+  const performance = requestContext.getStore()?.performance;
+  const spanId = performance?.startSpan('typesense:ensure_collection', 'search');
 
   try {
-    await typesense.collections('search').retrieve();
-    searchCollectionEnsured = true;
-    return;
-  } catch (error: any) {
-    if (error?.httpStatus && error.httpStatus !== 404) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to check Typesense search collection:', error);
-      }
-      throw error;
-    }
-  }
-
-  try {
-    await typesense.collections().create(searchCollectionSchema);
-    searchCollectionEnsured = true;
-  } catch (error: any) {
-    if (error?.httpStatus === 409) {
-      searchCollectionEnsured = true;
+    if (searchCollectionEnsured) {
       return;
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Failed to create Typesense search collection:', error);
+    try {
+      await typesense.collections('search').retrieve();
+      searchCollectionEnsured = true;
+      return;
+    } catch (error: any) {
+      if (error?.httpStatus && error.httpStatus !== 404) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to check Typesense search collection:', error);
+        }
+        throw error;
+      }
     }
-    throw error;
+
+    try {
+      await typesense.collections().create(searchCollectionSchema);
+      searchCollectionEnsured = true;
+    } catch (error: any) {
+      if (error?.httpStatus === 409) {
+        searchCollectionEnsured = true;
+        return;
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to create Typesense search collection:', error);
+      }
+      throw error;
+    }
+  } finally {
+    if (spanId) performance?.endSpan(spanId);
   }
 }
 
@@ -81,6 +89,9 @@ export async function updateSearchEntity(
     | 'constellation'
     | 'region'
 ): Promise<void> {
+  const performance = requestContext.getStore()?.performance;
+  const spanId = performance?.startSpan('typesense:upsert', 'search', { type, id });
+
   try {
     await ensureSearchCollection();
 
@@ -107,5 +118,7 @@ export async function updateSearchEntity(
     if (process.env.NODE_ENV === 'development') {
       console.error(`Failed to update search index for ${type} ${id}:`, error);
     }
+  } finally {
+    if (spanId) performance?.endSpan(spanId);
   }
 }

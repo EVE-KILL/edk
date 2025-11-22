@@ -29,13 +29,13 @@ export async function action() {
     logger.success('[Health Check] ✓ Database connection OK');
 
     // Get table counts (estimates)
-    const tables = await database.sql<{ name: string; total_rows: number }[]>`
-      SELECT
-        relname as name,
-        n_live_tup as "total_rows"
-      FROM pg_stat_user_tables
-      ORDER BY n_live_tup DESC
-    `;
+    const tables = await database.find<{ name: string; total_rows: number }>(
+      `SELECT
+         relname as name,
+         n_live_tup as "total_rows"
+       FROM pg_stat_user_tables
+       ORDER BY n_live_tup DESC`
+    );
 
     logger.info('[Health Check] Table statistics:');
     for (const table of tables) {

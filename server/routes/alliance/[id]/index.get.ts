@@ -12,6 +12,7 @@ import {
 import { getEntityStats } from '../../../models/entityStats';
 import { getMostValuableKillsByAlliance } from '../../../models/mostValuableKills';
 import { getTopByKills } from '../../../models/topBoxes';
+import { track } from '../../../utils/performance-decorators';
 
 import { handleError } from '../../../utils/error';
 
@@ -27,7 +28,9 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Fetch alliance basic info using model
-    const allianceData = await getAlliance(allianceId);
+    const allianceData = await track('alliance:fetch_basic_info', 'application', async () => {
+      return await getAlliance(allianceId);
+    });
 
     if (!allianceData) {
       throw createError({
@@ -44,14 +47,16 @@ export default defineEventHandler(async (event: H3Event) => {
       topCorps,
       topAlliances,
       mostValuable,
-    ] = await Promise.all([
-      getEntityStats(allianceId, 'alliance', 'all'),
-      getTopByKills('week', 'system', 10),
-      getTopByKills('week', 'region', 10),
-      getTopByKills('week', 'corporation', 10),
-      getTopByKills('week', 'alliance', 10),
-      getMostValuableKillsByAlliance(allianceId, 'all', 6),
-    ]);
+    ] = await track('alliance:fetch_stats', 'application', async () => {
+      return await Promise.all([
+        getEntityStats(allianceId, 'alliance', 'all'),
+        getTopByKills('week', 'system', 10),
+        getTopByKills('week', 'region', 10),
+        getTopByKills('week', 'corporation', 10),
+        getTopByKills('week', 'alliance', 10),
+        getMostValuableKillsByAlliance(allianceId, 'all', 6),
+      ]);
+    });
 
     // TODO: Implement top systems/regions/corporations/alliances stats
 
@@ -61,10 +66,12 @@ export default defineEventHandler(async (event: H3Event) => {
     const perPage = 30;
 
     // Fetch paginated killmails using model function
-    const [killmails, totalKillmails] = await Promise.all([
-      getEntityKillmails(allianceId, 'alliance', 'all', page, perPage),
-      countEntityKillmails(allianceId, 'alliance', 'all'),
-    ]);
+    const [killmails, totalKillmails] = await track('alliance:fetch_killmails', 'application', async () => {
+      return await Promise.all([
+        getEntityKillmails(allianceId, 'alliance', 'all', page, perPage),
+        countEntityKillmails(allianceId, 'alliance', 'all'),
+      ]);
+    });
 
     const totalPages = Math.ceil(totalKillmails / perPage);
 
@@ -160,6 +167,11 @@ export default defineEventHandler(async (event: H3Event) => {
         mostValuableKills: transformedMostValuable,
         recentKillmails,
         pagination,
+        wsFilter: {
+          type: 'alliance',
+          id: allianceId,
+          mode: 'all',
+        },
       }
     );
   } catch (error) {
@@ -167,4 +179,4 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 });
 
-import { generatePageNumbers } from '../../../utils/pagination';
+import { generatePageNumbers } from '../../../helpers/pagination';

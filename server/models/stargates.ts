@@ -24,10 +24,10 @@ export interface Stargate {
 export async function getStargate(
   stargateId: number
 ): Promise<Stargate | null> {
-  const [row] = await database.sql<Stargate[]>`
-    SELECT * FROM stargates WHERE "stargateId" = ${stargateId}
-  `;
-  return row || null;
+  return database.findOne<Stargate>(
+    'SELECT * FROM stargates WHERE "stargateId" = :stargateId',
+    { stargateId }
+  );
 }
 
 /**
@@ -36,9 +36,10 @@ export async function getStargate(
 export async function getStargatesBySystem(
   solarSystemId: number
 ): Promise<Stargate[]> {
-  return await database.sql<Stargate[]>`
-    SELECT * FROM stargates WHERE "solarSystemId" = ${solarSystemId} ORDER BY name
-  `;
+  return database.find<Stargate>(
+    'SELECT * FROM stargates WHERE "solarSystemId" = :solarSystemId ORDER BY name',
+    { solarSystemId }
+  );
 }
 
 /**
@@ -47,9 +48,13 @@ export async function getStargatesBySystem(
 export async function getStargateDestination(
   stargateId: number
 ): Promise<{ gateId: number; systemId: number } | null> {
-  const [result] = await database.sql<any[]>`
-    SELECT "destinationGateId", "destinationSolarSystemId" FROM stargates WHERE "stargateId" = ${stargateId}
-  `;
+  const result = await database.findOne<{
+    destinationGateId: number;
+    destinationSolarSystemId: number;
+  }>(
+    'SELECT "destinationGateId", "destinationSolarSystemId" FROM stargates WHERE "stargateId" = :stargateId',
+    { stargateId }
+  );
   return result
     ? {
         gateId: result.destinationGateId,
@@ -65,12 +70,13 @@ export async function searchStargates(
   namePattern: string,
   limit: number = 10
 ): Promise<Stargate[]> {
-  return await database.sql<Stargate[]>`
-    SELECT * FROM stargates
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<Stargate>(
+    `SELECT * FROM stargates
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }
 
 /**
@@ -79,9 +85,10 @@ export async function searchStargates(
 export async function getStargateName(
   stargateId: number
 ): Promise<string | null> {
-  const [result] = await database.sql<{ name: string }[]>`
-    SELECT name FROM stargates WHERE "stargateId" = ${stargateId}
-  `;
+  const result = await database.findOne<{ name: string }>(
+    'SELECT name FROM stargates WHERE "stargateId" = :stargateId',
+    { stargateId }
+  );
   return result?.name || null;
 }
 
@@ -89,8 +96,8 @@ export async function getStargateName(
  * Count total stargates
  */
 export async function countStargates(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM stargates
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM stargates'
+  );
   return Number(result?.count || 0);
 }

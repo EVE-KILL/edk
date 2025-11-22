@@ -119,24 +119,23 @@ export async function getEntityStats(
 ): Promise<EntityStats | null> {
   const { start, end } = getDateRange(periodType);
 
-  let killsWhere;
-  let lossesWhere;
+  let killsColumn = 'topAttackerCharacterId';
+  let lossesColumn = 'victimCharacterId';
 
-  if (entityType === 'character') {
-    killsWhere = database.sql`"topAttackerCharacterId" = ${entityId}`;
-    lossesWhere = database.sql`"victimCharacterId" = ${entityId}`;
-  } else if (entityType === 'corporation') {
-    killsWhere = database.sql`"topAttackerCorporationId" = ${entityId}`;
-    lossesWhere = database.sql`"victimCorporationId" = ${entityId}`;
-  } else {
-    // alliance
-    killsWhere = database.sql`"topAttackerAllianceId" = ${entityId}`;
-    lossesWhere = database.sql`"victimAllianceId" = ${entityId}`;
+  if (entityType === 'corporation') {
+    killsColumn = 'topAttackerCorporationId';
+    lossesColumn = 'victimCorporationId';
+  } else if (entityType === 'alliance') {
+    killsColumn = 'topAttackerAllianceId';
+    lossesColumn = 'victimAllianceId';
   }
 
+  const killsIdentifier = database.identifier(killsColumn);
+  const lossesIdentifier = database.identifier(lossesColumn);
+
   // Combine Kills and Losses stats in one go using CTEs
-  const [result] = await database.sql<any[]>`
-    WITH kills_data AS (
+  const result = await database.findOne<any>(
+    `WITH kills_data AS (
       SELECT
         count(*) as kills,
         sum("totalValue") as "iskDestroyed",
@@ -144,8 +143,8 @@ export async function getEntityStats(
         sum(case when npc then 1 else 0 end) as "npcKills",
         max("killmailTime") as "lastKillTime"
       FROM killmails
-      WHERE ${killsWhere}
-      AND "killmailTime" >= ${start}::timestamp AND "killmailTime" <= ${end}::timestamp
+      WHERE ${killsIdentifier} = :entityId
+      AND "killmailTime" >= :start::timestamp AND "killmailTime" <= :end::timestamp
     ),
     losses_data AS (
       SELECT
@@ -155,13 +154,13 @@ export async function getEntityStats(
         sum(case when npc then 1 else 0 end) as "npcLosses",
         max("killmailTime") as "lastLossTime"
       FROM killmails
-      WHERE ${lossesWhere}
-      AND "killmailTime" >= ${start}::timestamp AND "killmailTime" <= ${end}::timestamp
+      WHERE ${lossesIdentifier} = :entityId
+      AND "killmailTime" >= :start::timestamp AND "killmailTime" <= :end::timestamp
     )
     SELECT
-      ${entityId} as "entityId",
-      ${entityType} as "entityType",
-      ${periodType} as "periodType",
+      :entityId as "entityId",
+      :entityType as "entityType",
+      :periodType as "periodType",
       COALESCE(k.kills, 0) as kills,
       COALESCE(l.losses, 0) as losses,
       COALESCE(k."iskDestroyed", 0) as "iskDestroyed",
@@ -177,8 +176,9 @@ export async function getEntityStats(
       0 as "topSystemKills",
       k."lastKillTime" as "lastKillTime",
       l."lastLossTime" as "lastLossTime"
-    FROM kills_data k, losses_data l
-  `;
+    FROM kills_data k, losses_data l`,
+    { entityId, entityType, periodType, start, end }
+  );
 
   return result ? calculateDerivedStats(result) : null;
 }
@@ -236,27 +236,28 @@ export async function getTopEntitiesByKills(
 ): Promise<EntityStats[]> {
   const { start, end } = getDateRange(periodType);
 
-  let groupCol = '';
-  if (entityType === 'character') groupCol = 'topAttackerCharacterId';
-  else if (entityType === 'corporation') groupCol = 'topAttackerCorporationId';
-  else groupCol = 'topAttackerAllianceId';
+  let groupCol = 'topAttackerCharacterId';
+  if (entityType === 'corporation') groupCol = 'topAttackerCorporationId';
+  else if (entityType === 'alliance') groupCol = 'topAttackerAllianceId';
+  const groupIdentifier = database.identifier(groupCol);
 
-  const results = await database.sql<any[]>`
-    SELECT
-      ${database.sql(groupCol)} as "entityId",
-      ${entityType} as "entityType",
-      ${periodType} as "periodType",
+  const results = await database.find<any>(
+    `SELECT
+      ${groupIdentifier} as "entityId",
+      :entityType as "entityType",
+      :periodType as "periodType",
       count(*) as kills,
       0 as losses,
       sum("totalValue") as "iskDestroyed",
       0 as "iskLost"
     FROM killmails
-    WHERE ${database.sql(groupCol)} IS NOT NULL AND ${database.sql(groupCol)} > 0
-    AND "killmailTime" >= ${start}::timestamp AND "killmailTime" <= ${end}::timestamp
-    GROUP BY ${database.sql(groupCol)}
+    WHERE ${groupIdentifier} IS NOT NULL AND ${groupIdentifier} > 0
+    AND "killmailTime" >= :start::timestamp AND "killmailTime" <= :end::timestamp
+    GROUP BY ${groupIdentifier}
     ORDER BY kills DESC
-    LIMIT ${limit}
-  `;
+    LIMIT :limit`,
+    { entityType, periodType, start, end, limit }
+  );
   return results.map((r) => calculateDerivedStats(r));
 }
 

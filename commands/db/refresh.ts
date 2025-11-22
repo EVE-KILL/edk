@@ -14,7 +14,9 @@ const materializedViews = [
 
 async function refreshView(viewName: string) {
   logger.info(`Refreshing materialized view: ${viewName}`);
-  await database.sql`REFRESH MATERIALIZED VIEW CONCURRENTLY ${database.sql(viewName)};`;
+  await database.execute(
+    `REFRESH MATERIALIZED VIEW CONCURRENTLY ${database.identifier(viewName)}`
+  );
   logger.info(`Successfully refreshed materialized view: ${viewName}`);
 }
 
@@ -24,11 +26,12 @@ async function action() {
       await refreshView(view);
     }
     logger.success('✅ All materialized views refreshed.');
+    process.exit(0);
   } catch (error) {
     logger.error('❌ Failed to refresh materialized views.', { error });
     process.exit(1);
   } finally {
-    await database.sql.end();
+    await database.close();
   }
 }
 

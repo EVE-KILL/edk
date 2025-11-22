@@ -12,6 +12,7 @@ import {
   getKillmailAttackers,
   getSiblingKillmails,
 } from '../../models/killmails';
+import { track } from '../../utils/performance-decorators';
 
 // Item slot mapping - which flag number corresponds to which slot
 const SLOT_MAPPING: Record<number, string> = {
@@ -132,8 +133,13 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const id = parseInt(killmailId, 10);
 
-    // Fetch killmail details using model
-    const killmail = await getKillmailDetails(id);
+    // Fetch killmail data
+    const [killmail, itemsWithDetails] = await track('killmail:fetch_data', 'application', async () => {
+      return await Promise.all([
+        getKillmailDetails(id),
+        getKillmailItems(id),
+      ]);
+    });
 
     if (!killmail) {
       throw createError({
@@ -142,10 +148,8 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
-    // Fetch all items for this killmail with prices using model
-    const itemsWithDetails = await getKillmailItems(id);
-
     // Organize items by slot
+    const { itemsBySlot, fittingWheelDestroyed, fittingWheelDropped, totalDestroyed, totalDropped, totalValue, fitValue } = await track('killmail:organize_items', 'application', async () => {
     const itemsBySlot: ItemsBySlot = {
       highSlots: [],
       medSlots: [],
@@ -228,49 +232,53 @@ export default defineEventHandler(async (event: H3Event) => {
       totalValue += itemValue;
     }
 
+    return { itemsBySlot, fittingWheelDestroyed, fittingWheelDropped, totalDestroyed, totalDropped, totalValue, fitValue };
+    });
+
     // Calculate base stats (before attackers are fetched)
     const shipValue = killmail.victimShipValue || 0;
     const itemsValue = totalValue;
     const totalKillValue = shipValue + itemsValue;
 
-    // Fetch all attackers for this killmail using model
-    const attackers = await getKillmailAttackers(id);
+    // Fetch attackers and siblings in parallel
+    const [attackers, siblings] = await track('killmail:fetch_attackers_siblings', 'application', async () => {
+      const killmailDate = new Date(killmail.killmailTime);
+      const startDate = new Date(killmailDate.getTime() - 60 * 60 * 1000);
+      const endDate = new Date(killmailDate.getTime() + 60 * 60 * 1000);
+
+      const formatDateTime = (date: Date): string => {
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      };
+
+      return await Promise.all([
+        getKillmailAttackers(id),
+        getSiblingKillmails(
+          killmail.victimCharacterId || 0,
+          formatDateTime(startDate),
+          formatDateTime(endDate),
+          id,
+          20
+        ),
+      ]);
+    });
 
     // Calculate stats after attackers are fetched
     const finalBlowAttacker = attackers.find((a) => a.finalBlow === 1);
     const topDamageAttacker = attackers[0] || null;
     const totalDamage = attackers.reduce((sum, a) => sum + a.damageDone, 0);
 
-    // Fetch sibling killmails (same victim character within 1 hour)
-    const killmailDate = new Date(killmail.killmailTime);
-    const startDate = new Date(killmailDate.getTime() - 60 * 60 * 1000);
-    const endDate = new Date(killmailDate.getTime() + 60 * 60 * 1000);
-
-    // Convert to ClickHouse DateTime format: YYYY-MM-DD HH:MM:SS
-    const formatDateTime = (date: Date): string => {
-      const year = date.getUTCFullYear();
-      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(date.getUTCDate()).padStart(2, '0');
-      const hours = String(date.getUTCHours()).padStart(2, '0');
-      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-      const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    };
-
-    const siblings = await getSiblingKillmails(
-      killmail.victimCharacterId || 0,
-      formatDateTime(startDate),
-      formatDateTime(endDate),
-      id,
-      20
-    );
-
     // Format data for template
     const victimName = killmail.victimCharacterName || 'Unknown';
     const shipName = killmail.victimShipName || 'Unknown';
     const valueBillion = (totalKillValue / 1_000_000_000).toFixed(2);
 
-    const templateData = {
+    const templateData = await track('killmail:build_template_data', 'application', async () => ({
       killmail: {
         id: killmail.killmailId,
         killmailId: killmail.killmailId,
@@ -461,7 +469,7 @@ export default defineEventHandler(async (event: H3Event) => {
           }
         : null,
       totalDamage,
-    };
+    }));
 
     return render(
       'pages/killmail',

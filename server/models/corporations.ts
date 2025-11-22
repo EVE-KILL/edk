@@ -29,10 +29,10 @@ export interface Corporation {
 export async function getCorporation(
   corporationId: number
 ): Promise<Corporation | null> {
-  const [row] = await database.sql<Corporation[]>`
-    SELECT * FROM corporations WHERE corporationId = ${corporationId}
-  `;
-  return row || null;
+  return database.findOne<Corporation>(
+    'SELECT * FROM corporations WHERE "corporationId" = :corporationId',
+    { corporationId }
+  );
 }
 
 /**
@@ -43,9 +43,10 @@ export async function getCorporations(
 ): Promise<Corporation[]> {
   if (corporationIds.length === 0) return [];
 
-  return await database.sql<Corporation[]>`
-    SELECT * FROM corporations WHERE corporationId = ANY(${corporationIds})
-  `;
+  return database.find<Corporation>(
+    'SELECT * FROM corporations WHERE "corporationId" = ANY(:corporationIds)',
+    { corporationIds }
+  );
 }
 
 /**
@@ -55,12 +56,13 @@ export async function searchCorporations(
   searchTerm: string,
   limit: number = 20
 ): Promise<Corporation[]> {
-  return await database.sql<Corporation[]>`
-    SELECT * FROM corporations
-    WHERE name ILIKE ${`%${searchTerm}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<Corporation>(
+    `SELECT * FROM corporations
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${searchTerm}%`, limit }
+  );
 }
 
 /**
@@ -69,9 +71,10 @@ export async function searchCorporations(
 export async function getCorporationName(
   corporationId: number
 ): Promise<string | null> {
-  const [result] = await database.sql<{ name: string }[]>`
-    SELECT name FROM corporations WHERE corporationId = ${corporationId}
-  `;
+  const result = await database.findOne<{ name: string }>(
+    'SELECT name FROM corporations WHERE "corporationId" = :corporationId',
+    { corporationId }
+  );
   return result?.name || null;
 }
 
@@ -81,9 +84,10 @@ export async function getCorporationName(
 export async function getCorporationTicker(
   corporationId: number
 ): Promise<string | null> {
-  const [result] = await database.sql<{ ticker: string }[]>`
-    SELECT ticker FROM corporations WHERE corporationId = ${corporationId}
-  `;
+  const result = await database.findOne<{ ticker: string }>(
+    'SELECT ticker FROM corporations WHERE "corporationId" = :corporationId',
+    { corporationId }
+  );
   return result?.ticker || null;
 }
 
@@ -93,9 +97,10 @@ export async function getCorporationTicker(
 export async function getCorporationsByAlliance(
   allianceId: number
 ): Promise<Corporation[]> {
-  return await database.sql<Corporation[]>`
-    SELECT * FROM corporations WHERE allianceId = ${allianceId}
-  `;
+  return database.find<Corporation>(
+    'SELECT * FROM corporations WHERE "allianceId" = :allianceId',
+    { allianceId }
+  );
 }
 
 /**
@@ -104,9 +109,10 @@ export async function getCorporationsByAlliance(
 export async function getCorporationsByCEO(
   characterId: number
 ): Promise<Corporation[]> {
-  return await database.sql<Corporation[]>`
-    SELECT * FROM corporations WHERE ceoId = ${characterId}
-  `;
+  return database.find<Corporation>(
+    'SELECT * FROM corporations WHERE "ceoId" = :characterId',
+    { characterId }
+  );
 }
 
 /**
@@ -115,18 +121,19 @@ export async function getCorporationsByCEO(
 export async function getCorporationsByCreator(
   characterId: number
 ): Promise<Corporation[]> {
-  return await database.sql<Corporation[]>`
-    SELECT * FROM corporations WHERE creatorId = ${characterId}
-  `;
+  return database.find<Corporation>(
+    'SELECT * FROM corporations WHERE "creatorId" = :characterId',
+    { characterId }
+  );
 }
 
 /**
  * Count total corporations
  */
 export async function countCorporations(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM corporations
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM corporations'
+  );
   return Number(result?.count || 0);
 }
 
@@ -136,9 +143,10 @@ export async function countCorporations(): Promise<number> {
 export async function countCorporationsInAlliance(
   allianceId: number
 ): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM corporations WHERE allianceId = ${allianceId}
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM corporations WHERE "allianceId" = :allianceId',
+    { allianceId }
+  );
   return Number(result?.count || 0);
 }
 
@@ -238,9 +246,10 @@ export async function storeCorporationsBulk(
 export async function corporationExists(
   corporationId: number
 ): Promise<boolean> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM corporations WHERE corporationId = ${corporationId}
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM corporations WHERE "corporationId" = :corporationId',
+    { corporationId }
+  );
   return Number(result?.count) > 0;
 }
 
@@ -256,16 +265,14 @@ export async function getCorporationWithAlliance(
   allianceName: string | null;
   allianceTicker: string | null;
 } | null> {
-  const [row] = await database.sql<
-    {
-      name: string;
-      ticker: string;
-      allianceId: number | null;
-      allianceName: string | null;
-      allianceTicker: string | null;
-    }[]
-  >`
-    SELECT
+  return database.findOne<{
+    name: string;
+    ticker: string;
+    allianceId: number | null;
+    allianceName: string | null;
+    allianceTicker: string | null;
+  }>(
+    `SELECT
       c.name as name,
       c.ticker as ticker,
       c."allianceId" as "allianceId",
@@ -273,8 +280,8 @@ export async function getCorporationWithAlliance(
       alliance.ticker as "allianceTicker"
     FROM corporations c
     LEFT JOIN alliances alliance ON c."allianceId" = alliance."allianceId"
-    WHERE c."corporationId" = ${corporationId}
-    LIMIT 1
-  `;
-  return row || null;
+    WHERE c."corporationId" = :corporationId
+    LIMIT 1`,
+    { corporationId }
+  );
 }

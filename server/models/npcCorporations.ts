@@ -25,10 +25,10 @@ export interface NPCCorporation {
 export async function getNPCCorporation(
   corporationId: number
 ): Promise<NPCCorporation | null> {
-  const [row] = await database.sql<NPCCorporation[]>`
-    SELECT * FROM npccorporations WHERE "corporationId" = ${corporationId}
-  `;
-  return row || null;
+  return database.findOne<NPCCorporation>(
+    'SELECT * FROM npccorporations WHERE "corporationId" = :corporationId',
+    { corporationId }
+  );
 }
 
 /**
@@ -37,18 +37,19 @@ export async function getNPCCorporation(
 export async function getNPCCorporationsByFaction(
   factionId: number
 ): Promise<NPCCorporation[]> {
-  return await database.sql<NPCCorporation[]>`
-    SELECT * FROM npccorporations WHERE "factionId" = ${factionId} ORDER BY name
-  `;
+  return database.find<NPCCorporation>(
+    'SELECT * FROM npccorporations WHERE "factionId" = :factionId ORDER BY name',
+    { factionId }
+  );
 }
 
 /**
  * Get active (non-deleted) NPC corporations
  */
 export async function getActiveNPCCorporations(): Promise<NPCCorporation[]> {
-  return await database.sql<NPCCorporation[]>`
-    SELECT * FROM npccorporations WHERE deleted = false ORDER BY name
-  `;
+  return database.find<NPCCorporation>(
+    'SELECT * FROM npccorporations WHERE deleted = false ORDER BY name'
+  );
 }
 
 /**
@@ -58,12 +59,13 @@ export async function searchNPCCorporations(
   namePattern: string,
   limit: number = 10
 ): Promise<NPCCorporation[]> {
-  return await database.sql<NPCCorporation[]>`
-    SELECT * FROM npccorporations
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<NPCCorporation>(
+    `SELECT * FROM npccorporations
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }
 
 /**
@@ -72,9 +74,10 @@ export async function searchNPCCorporations(
 export async function getNPCCorporationName(
   corporationId: number
 ): Promise<string | null> {
-  const [result] = await database.sql<{ name: string }[]>`
-    SELECT name FROM npccorporations WHERE "corporationId" = ${corporationId}
-  `;
+  const result = await database.findOne<{ name: string }>(
+    'SELECT name FROM npccorporations WHERE "corporationId" = :corporationId',
+    { corporationId }
+  );
   return result?.name || null;
 }
 
@@ -82,8 +85,8 @@ export async function getNPCCorporationName(
  * Count total NPC corporations
  */
 export async function countNPCCorporations(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM npccorporations
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM npccorporations'
+  );
   return Number(result?.count || 0);
 }

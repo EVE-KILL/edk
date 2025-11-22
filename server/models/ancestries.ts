@@ -21,10 +21,10 @@ export interface Ancestry {
 export async function getAncestry(
   ancestryId: number
 ): Promise<Ancestry | null> {
-  const [row] = await database.sql<Ancestry[]>`
-    SELECT * FROM ancestries WHERE ancestryId = ${ancestryId}
-  `;
-  return row || null;
+  return database.findOne<Ancestry>(
+    'SELECT * FROM ancestries WHERE "ancestryId" = :ancestryId',
+    { ancestryId }
+  );
 }
 
 /**
@@ -33,18 +33,19 @@ export async function getAncestry(
 export async function getAncestriesByBloodline(
   bloodlineId: number
 ): Promise<Ancestry[]> {
-  return await database.sql<Ancestry[]>`
-    SELECT * FROM ancestries WHERE bloodlineId = ${bloodlineId} ORDER BY name
-  `;
+  return database.find<Ancestry>(
+    'SELECT * FROM ancestries WHERE "bloodlineId" = :bloodlineId ORDER BY name',
+    { bloodlineId }
+  );
 }
 
 /**
  * Get all ancestries
  */
 export async function getAllAncestries(): Promise<Ancestry[]> {
-  return await database.sql<Ancestry[]>`
-    SELECT * FROM ancestries ORDER BY bloodlineId, name
-  `;
+  return database.find<Ancestry>(
+    'SELECT * FROM ancestries ORDER BY "bloodlineId", name'
+  );
 }
 
 /**
@@ -54,10 +55,11 @@ export async function searchAncestries(
   namePattern: string,
   limit: number = 10
 ): Promise<Ancestry[]> {
-  return await database.sql<Ancestry[]>`
-    SELECT * FROM ancestries
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<Ancestry>(
+    `SELECT * FROM ancestries
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }

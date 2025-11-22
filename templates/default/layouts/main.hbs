@@ -314,7 +314,7 @@
                     <td><a href="/">Home</a></td>
                     <td class="nav-dropdown">
                         <div class="nav-dropdown-wrapper">
-                            <a href="/kills">Kills</a>
+                            <a href="/kills/latest">Kills</a>
                             <div class="nav-dropdown-content multi-column">
                                 <div class="dropdown-section-header">Main</div>
                                 <a href="/kills/latest">Latest</a>
@@ -415,18 +415,22 @@
             <p style="color: #555; margin: 5px 0 0 0; font-size: 9px;">
                 Page loaded in {{performance.totalTime}}ms
                 {{#if performance.queryCount}}
-                | {{performance.queryCount}} {{#ifEquals performance.queryCount 1}}query{{else}}queries{{/ifEquals}} ({{performance.queryTime}}ms)
+                | {{performance.queryCount}} {{#ifEquals performance.queryCount 1}}query{{else}}queries{{/ifEquals}} ({{performance.dbTime}}ms avg)
                 {{/if}}
                 {{#if performance.templateTime}}
                 | Template: {{performance.templateTime}}ms
                 {{/if}}
-                {{#if performance.cacheHit}}
-                | Cached
+                {{#if performance.layoutRenderTime}}
+                | Layout: {{performance.layoutRenderTime}}ms
                 {{/if}}
             </p>
             {{/if}}
         </footer>
     </div>
+
+    {{#if debug}}
+    {{> partials/debug-bar}}
+    {{/if}}
 
     <!-- Scripts -->
     <script type="text/javascript">

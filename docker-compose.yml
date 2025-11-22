@@ -8,6 +8,8 @@ services:
       - 'postgres'
       - '-c'
       - 'default_toast_compression=lz4'
+      - '-c'
+      - 'max_locks_per_transaction=200'
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-edk}
       POSTGRES_USER: ${POSTGRES_USER:-edk_user}
@@ -46,10 +48,6 @@ services:
       - edk_network
     restart: unless-stopped
 
-networks:
-  edk_network:
-    driver: bridge
-
   prometheus:
     image: prom/prometheus
     container_name: edk_prometheus
@@ -73,3 +71,7 @@ networks:
     networks:
       - edk_network
     restart: unless-stopped
+
+networks:
+  edk_network:
+    driver: bridge

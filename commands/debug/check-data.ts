@@ -24,9 +24,10 @@ export default {
 
     try {
       // Check killmail
-      const killmail = await database.sql<any[]>`
-        SELECT * FROM killmails WHERE "killmailId" = ${killmailId}
-      `;
+      const killmail = await database.find<any>(
+        `SELECT * FROM killmails WHERE "killmailId" = :killmailId`,
+        { killmailId }
+      );
 
       logger.success(
         `Killmail exists: ${killmail.length > 0 ? chalk.green('✓') : chalk.red('✗')}`,
@@ -34,9 +35,10 @@ export default {
       );
 
       // Check attackers
-      const attackers = await database.sql<{ count: number }[]>`
-        SELECT COUNT(*) as count FROM attackers WHERE "killmailId" = ${killmailId}
-      `;
+      const attackers = await database.find<{ count: number }>(
+        `SELECT COUNT(*) as count FROM attackers WHERE "killmailId" = :killmailId`,
+        { killmailId }
+      );
 
       logger.success(
         `Attackers count: ${chalk.blue((attackers[0]?.count || 0).toString())}`,
@@ -44,16 +46,19 @@ export default {
       );
 
       // Check items
-      const items = await database.sql<{ count: number }[]>`
-        SELECT COUNT(*) as count FROM items WHERE "killmailId" = ${killmailId}
-      `;
+      const items = await database.find<{ count: number }>(
+        `SELECT COUNT(*) as count FROM items WHERE "killmailId" = :killmailId`,
+        { killmailId }
+      );
 
       logger.success(
         `Items count: ${chalk.blue((items[0]?.count || 0).toString())}`,
         items
       );
+      process.exit(0);
     } catch (error) {
       logger.error('Error:', { error: String(error) });
+      process.exit(1);
     }
   },
 };

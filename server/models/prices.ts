@@ -48,9 +48,8 @@ export async function getPrice(
   date?: string
 ): Promise<Price | null> {
   const queryDate = date || new Date().toISOString().split('T')[0];
-
-  const [row] = await database.sql<Price[]>`
-    SELECT
+  return database.findOne<Price>(
+    `SELECT
       "typeId",
       "regionId",
       TO_CHAR("priceDate", 'YYYY-MM-DD') as "priceDate",
@@ -61,14 +60,13 @@ export async function getPrice(
       "volume",
       TO_CHAR("updatedAt", 'YYYY-MM-DD HH24:MI:SS') as "updatedAt"
     FROM prices
-    WHERE "typeId" = ${typeId}
-      AND "regionId" = ${regionId}
-      AND "priceDate" = ${queryDate}
+    WHERE "typeId" = :typeId
+      AND "regionId" = :regionId
+      AND "priceDate" = :queryDate
     ORDER BY "updatedAt" DESC
-    LIMIT 1
-  `;
-
-  return row || null;
+    LIMIT 1`,
+    { typeId, regionId, queryDate }
+  );
 }
 
 /**
@@ -83,8 +81,8 @@ export async function getPriceHistory(
   regionId: number = 10000002,
   days: number = 14
 ): Promise<Price[]> {
-  return await database.sql<Price[]>`
-    SELECT
+  return database.find<Price>(
+    `SELECT
       "typeId",
       "regionId",
       TO_CHAR("priceDate", 'YYYY-MM-DD') as "priceDate",
@@ -95,11 +93,12 @@ export async function getPriceHistory(
       "volume",
       TO_CHAR("updatedAt", 'YYYY-MM-DD HH24:MI:SS') as "updatedAt"
     FROM prices
-    WHERE "typeId" = ${typeId}
-      AND "regionId" = ${regionId}
-      AND "priceDate" >= CURRENT_DATE - (${days} || ' days')::interval
-    ORDER BY "priceDate" DESC
-  `;
+    WHERE "typeId" = :typeId
+      AND "regionId" = :regionId
+      AND "priceDate" >= CURRENT_DATE - (:days || ' days')::interval
+    ORDER BY "priceDate" DESC`,
+    { typeId, regionId, days }
+  );
 }
 
 /**
@@ -112,8 +111,8 @@ export async function getLatestPrice(
   typeId: number,
   regionId: number = 10000002
 ): Promise<Price | null> {
-  const [row] = await database.sql<Price[]>`
-    SELECT
+  return database.findOne<Price>(
+    `SELECT
       "typeId",
       "regionId",
       TO_CHAR("priceDate", 'YYYY-MM-DD') as "priceDate",
@@ -124,13 +123,12 @@ export async function getLatestPrice(
       "volume",
       TO_CHAR("updatedAt", 'YYYY-MM-DD HH24:MI:SS') as "updatedAt"
     FROM prices
-    WHERE "typeId" = ${typeId}
-      AND "regionId" = ${regionId}
+    WHERE "typeId" = :typeId
+      AND "regionId" = :regionId
     ORDER BY "priceDate" DESC, "updatedAt" DESC
-    LIMIT 1
-  `;
-
-  return row || null;
+    LIMIT 1`,
+    { typeId, regionId }
+  );
 }
 
 /**
@@ -184,13 +182,14 @@ export async function hasRecentPrice(
   regionId: number = 10000002,
   maxAgeDays: number = 3
 ): Promise<boolean> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count
+  const result = await database.findOne<{ count: number }>(
+    `SELECT count(*) as count
     FROM prices
-    WHERE "typeId" = ${typeId}
-      AND "regionId" = ${regionId}
-      AND "priceDate" >= CURRENT_DATE - (${maxAgeDays} || ' days')::interval
-  `;
+    WHERE "typeId" = :typeId
+      AND "regionId" = :regionId
+      AND "priceDate" >= CURRENT_DATE - (:maxAgeDays || ' days')::interval`,
+    { typeId, regionId, maxAgeDays }
+  );
 
   return Number(result?.count || 0) > 0;
 }
@@ -208,29 +207,32 @@ export async function getLatestPricesForTypes(
     return new Map();
   }
 
-  let dateClause = database.sql``;
+  let dateClause = '';
+  const params: Record<string, unknown> = { regionId, typeIds };
   if (asOfDate) {
     const dateString =
       typeof asOfDate === 'string'
         ? asOfDate.split('T')[0]
         : asOfDate.toISOString().split('T')[0];
 
-    dateClause = database.sql`AND "priceDate" <= ${dateString}`;
+    dateClause = 'AND "priceDate" <= :dateString';
+    params.dateString = dateString;
   }
 
-  // Postgres specific: Get latest price per typeId using DISTINCT ON
-  const rows = await database.sql<
-    { typeId: number; averagePrice: number | null }[]
-  >`
-    SELECT DISTINCT ON ("typeId")
+  const rows = await database.find<{
+    typeId: number;
+    averagePrice: number | null;
+  }>(
+    `SELECT DISTINCT ON ("typeId")
       "typeId",
       "averagePrice"
     FROM prices
-    WHERE "regionId" = ${regionId}
-      AND "typeId" = ANY(${typeIds})
+    WHERE "regionId" = :regionId
+      AND "typeId" = ANY(:typeIds)
       ${dateClause}
-    ORDER BY "typeId", "priceDate" DESC
-  `;
+    ORDER BY "typeId", "priceDate" DESC`,
+    params
+  );
 
   const priceMap = new Map<number, number>();
   for (const row of rows) {

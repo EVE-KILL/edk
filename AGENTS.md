@@ -47,6 +47,11 @@ This file contains instructions and context for AI agents working on this codeba
 
 - Use `postgres.js` template literals for safe dynamic queries.
 - Construct arrays of fragments for dynamic filters rather than concatenating strings.
+- **Never** pass an array of condition fragments to `database.sql(array,'...')` with `'AND'` (including the leading/trailing spaces) or similar separators expecting it to join the fragments. postgres.js treats the array entries as identifiers and calls `str.replace` on them, which blows up at runtime and also causes our DB proxy to try to execute partial fragments, triggering Postgres syntax errors. Instead, filter out falsy fragments and reduce the remaining `sql`` blocks manually, for example:
+
+```ts
+sql`${left} AND ${right}`
+```
 
 ## Testing
 

@@ -1,30 +1,19 @@
 import { Worker, Job } from 'bullmq';
-import { fetchESI as defaultFetchESI } from '../server/helpers/esi';
-import {
-  storeKillmail as defaultStoreKillmail,
-  type ESIKillmail,
-} from '../server/models/killmails';
-import { fetchAndStoreCharacter as defaultFetchAndStoreCharacter } from '../server/fetchers/character';
-import { fetchAndStoreCorporation as defaultFetchAndStoreCorporation } from '../server/fetchers/corporation';
-import { fetchAndStoreAlliance as defaultFetchAndStoreAlliance } from '../server/fetchers/alliance';
-import { fetchPrices as defaultFetchPrices } from '../server/fetchers/price';
-import { storePrices as defaultStorePrices } from '../server/models/prices';
+import { fetchESI } from '../server/helpers/esi';
+import { storeKillmail, type ESIKillmail } from '../server/models/killmails';
+import { fetchAndStoreCharacter } from '../server/fetchers/character';
+import { fetchAndStoreCorporation } from '../server/fetchers/corporation';
+import { fetchAndStoreAlliance } from '../server/fetchers/alliance';
+import { fetchPrices } from '../server/fetchers/price';
+import { storePrices } from '../server/models/prices';
+import { createRedisClient } from '../server/helpers/redis';
+import { database } from '../server/helpers/database';
 
 export const name = 'killmail';
 
 interface KillmailJobData {
   killmailId: number;
   hash: string;
-}
-
-interface KillmailProcessorDependencies {
-  fetchESI: typeof defaultFetchESI;
-  storeKillmail: typeof defaultStoreKillmail;
-  fetchAndStoreCharacter: typeof defaultFetchAndStoreCharacter;
-  fetchAndStoreCorporation: typeof defaultFetchAndStoreCorporation;
-  fetchAndStoreAlliance: typeof defaultFetchAndStoreAlliance;
-  fetchPrices: typeof defaultFetchPrices;
-  storePrices: typeof defaultStorePrices;
 }
 
 /**
@@ -41,28 +30,8 @@ interface KillmailProcessorDependencies {
  * entities and prices are already in the database, allowing the materialized
  * view to be fully populated with names and values.
  */
-export async function processor(
-  job: Job<KillmailJobData>,
-  dependencies: KillmailProcessorDependencies = {
-    fetchESI: defaultFetchESI,
-    storeKillmail: defaultStoreKillmail,
-    fetchAndStoreCharacter: defaultFetchAndStoreCharacter,
-    fetchAndStoreCorporation: defaultFetchAndStoreCorporation,
-    fetchAndStoreAlliance: defaultFetchAndStoreAlliance,
-    fetchPrices: defaultFetchPrices,
-    storePrices: defaultStorePrices,
-  }
-): Promise<void> {
+export async function processor(job: Job<KillmailJobData>): Promise<void> {
   const { killmailId, hash } = job.data;
-  const {
-    fetchESI,
-    storeKillmail,
-    fetchAndStoreCharacter,
-    fetchAndStoreCorporation,
-    fetchAndStoreAlliance,
-    fetchPrices,
-    storePrices,
-  } = dependencies;
 
   console.log(`[killmail] Processing killmail ${killmailId}...`);
 
@@ -176,6 +145,10 @@ export async function processor(
     console.log(`[killmail] ${killmailId}: Storing killmail...`);
     await storeKillmail(killmail, hash);
 
+    // Step 6: Publish to Redis for WebSocket broadcast
+    console.log(`[killmail] ${killmailId}: Publishing to WebSocket...`);
+    await publishKillmailToWebSocket(killmailId);
+
     console.log(`✅ [killmail] Successfully processed killmail ${killmailId}`);
   } catch (error) {
     console.error(
@@ -183,6 +156,154 @@ export async function processor(
       error
     );
     throw error; // Re-throw to trigger retry
+  }
+}
+
+/**
+ * Publish killmail to Redis for WebSocket broadcast
+ * Fetches the killmail with all entity names from kill_list view
+ */
+async function publishKillmailToWebSocket(killmailId: number): Promise<void> {
+  try {
+    // Query kill_list view for full killmail data with entity names
+    const [killmail] = await database.sql<any[]>`
+      SELECT
+        "killmailId",
+        "killmailTime",
+        "solarSystemId",
+        "solarSystemName",
+        "regionId",
+        "regionName",
+        security,
+        "victimCharacterId",
+        "victimCharacterName",
+        "victimCorporationId",
+        "victimCorporationName",
+        "victimCorporationTicker",
+        "victimAllianceId",
+        "victimAllianceName",
+        "victimAllianceTicker",
+        "victimShipTypeId",
+        "victimShipName",
+        "victimShipGroup",
+        "victimShipGroupId",
+        "victimDamageTaken",
+        "attackerCharacterId",
+        "attackerCharacterName",
+        "attackerCorporationId",
+        "attackerCorporationName",
+        "attackerCorporationTicker",
+        "attackerAllianceId",
+        "attackerAllianceName",
+        "attackerAllianceTicker",
+        "attackerShipTypeId",
+        "attackerShipName",
+        "totalValue",
+        "attackerCount",
+        npc,
+        solo,
+        awox
+      FROM kill_list
+      WHERE "killmailId" = ${killmailId}
+    `;
+
+    if (!killmail) {
+      console.warn(
+        `⚠️  [killmail] ${killmailId}: Not found in kill_list view`
+      );
+      return;
+    }
+
+    // Format for WebSocket (nested structure expected by handlers)
+    const websocketData = {
+      killmailId: killmail.killmailId,
+      killmailTime: killmail.killmailTime,
+      solarSystemId: killmail.solarSystemId,
+      regionId: killmail.regionId,
+      regionName: killmail.regionName,
+      securityStatus: killmail.security,
+      totalValue: killmail.totalValue,
+      attackerCount: killmail.attackerCount,
+      npc: killmail.npc,
+      solo: killmail.solo,
+      awox: killmail.awox,
+      solarSystem: {
+        id: killmail.solarSystemId,
+        name: killmail.solarSystemName,
+        regionId: killmail.regionId,
+        securityStatus: killmail.security,
+      },
+      victim: {
+        character: killmail.victimCharacterId
+          ? {
+              id: killmail.victimCharacterId,
+              name: killmail.victimCharacterName,
+            }
+          : null,
+        corporation: {
+          id: killmail.victimCorporationId,
+          name: killmail.victimCorporationName,
+          ticker: killmail.victimCorporationTicker,
+        },
+        alliance: killmail.victimAllianceId
+          ? {
+              id: killmail.victimAllianceId,
+              name: killmail.victimAllianceName,
+              ticker: killmail.victimAllianceTicker,
+            }
+          : null,
+        ship: {
+          id: killmail.victimShipTypeId,
+          name: killmail.victimShipName,
+          group: killmail.victimShipGroup,
+          groupId: killmail.victimShipGroupId,
+        },
+        damageTaken: killmail.victimDamageTaken,
+      },
+      attackers: [
+        {
+          character: killmail.attackerCharacterId
+            ? {
+                id: killmail.attackerCharacterId,
+                name: killmail.attackerCharacterName,
+              }
+            : null,
+          corporation: killmail.attackerCorporationId
+            ? {
+                id: killmail.attackerCorporationId,
+                name: killmail.attackerCorporationName,
+                ticker: killmail.attackerCorporationTicker,
+              }
+            : null,
+          alliance: killmail.attackerAllianceId
+            ? {
+                id: killmail.attackerAllianceId,
+                name: killmail.attackerAllianceName,
+                ticker: killmail.attackerAllianceTicker,
+              }
+            : null,
+          ship: killmail.attackerShipTypeId
+            ? {
+                id: killmail.attackerShipTypeId,
+                name: killmail.attackerShipName,
+              }
+            : null,
+        },
+      ],
+    };
+
+    // Publish to Redis
+    const redis = createRedisClient();
+    await redis.publish('killmails', JSON.stringify(websocketData));
+    await redis.quit();
+
+    console.log(`[killmail] ${killmailId}: Published to WebSocket`);
+  } catch (error) {
+    console.error(
+      `⚠️  [killmail] ${killmailId}: Failed to publish to WebSocket:`,
+      error
+    );
+    // Don't throw - this is not critical for the queue processing
   }
 }
 

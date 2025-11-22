@@ -66,13 +66,14 @@ export async function getEntityReport(
   entityType: 'character' | 'corporation' | 'alliance',
   reportDate: Date
 ): Promise<KillmailReport | null> {
-  const [row] = await database.sql<KillmailReport[]>`
-    SELECT * FROM killmail_reports
-     WHERE "entityId" = ${entityId}
-       AND "entityType" = ${entityType}
-       AND "reportDate" = ${reportDate.toISOString().split('T')[0]}
-  `;
-  return row || null;
+  const date = reportDate.toISOString().split('T')[0];
+  return database.findOne<KillmailReport>(
+    `SELECT * FROM killmail_reports
+      WHERE "entityId" = :entityId
+        AND "entityType" = :entityType
+        AND "reportDate" = :date`,
+    { entityId, entityType, date }
+  );
 }
 
 /**
@@ -84,13 +85,16 @@ export async function getEntityReportRange(
   startDate: Date,
   endDate: Date
 ): Promise<KillmailReport[]> {
-  return await database.sql<KillmailReport[]>`
-    SELECT * FROM killmail_reports
-     WHERE "entityId" = ${entityId}
-       AND "entityType" = ${entityType}
-       AND "reportDate" BETWEEN ${startDate.toISOString().split('T')[0]} AND ${endDate.toISOString().split('T')[0]}
-     ORDER BY "reportDate" DESC
-  `;
+  const start = startDate.toISOString().split('T')[0];
+  const end = endDate.toISOString().split('T')[0];
+  return database.find<KillmailReport>(
+    `SELECT * FROM killmail_reports
+      WHERE "entityId" = :entityId
+        AND "entityType" = :entityType
+        AND "reportDate" BETWEEN :start AND :end
+      ORDER BY "reportDate" DESC`,
+    { entityId, entityType, start, end }
+  );
 }
 
 /**
@@ -101,13 +105,14 @@ export async function getRecentEntityReports(
   entityType: 'character' | 'corporation' | 'alliance',
   days: number = 7
 ): Promise<KillmailReport[]> {
-  return await database.sql<KillmailReport[]>`
-    SELECT * FROM killmail_reports
-     WHERE "entityId" = ${entityId}
-       AND "entityType" = ${entityType}
-       AND "reportDate" >= CURRENT_DATE - (${days} || ' days')::interval
-     ORDER BY "reportDate" DESC
-  `;
+  return database.find<KillmailReport>(
+    `SELECT * FROM killmail_reports
+      WHERE "entityId" = :entityId
+        AND "entityType" = :entityType
+        AND "reportDate" >= CURRENT_DATE - (:days || ' days')::interval
+      ORDER BY "reportDate" DESC`,
+    { entityId, entityType, days }
+  );
 }
 
 /**
@@ -123,13 +128,14 @@ export async function getEntityMonthlyReports(
   const endOfMonth = new Date(year, month, 0); // Day 0 = last day of previous month
   const endDate = `${year}-${String(month).padStart(2, '0')}-${endOfMonth.getDate()}`;
 
-  return await database.sql<KillmailReport[]>`
-    SELECT * FROM killmail_reports
-     WHERE "entityId" = ${entityId}
-       AND "entityType" = ${entityType}
-       AND "reportDate" BETWEEN ${startDate} AND ${endDate}
-     ORDER BY "reportDate" ASC
-  `;
+  return database.find<KillmailReport>(
+    `SELECT * FROM killmail_reports
+      WHERE "entityId" = :entityId
+        AND "entityType" = :entityType
+        AND "reportDate" BETWEEN :startDate AND :endDate
+      ORDER BY "reportDate" ASC`,
+    { entityId, entityType, startDate, endDate }
+  );
 }
 
 /**
@@ -141,18 +147,18 @@ export async function getEntityAggregatedStats(
   startDate: Date,
   endDate: Date
 ) {
-  const [result] = await database.sql<
-    {
-      kills: number;
-      losses: number;
-      iskDestroyed: number;
-      iskLost: number;
-      efficiency: number;
-      soloKills: number;
-      soloLosses: number;
-    }[]
-  >`
-    SELECT
+  const start = startDate.toISOString().split('T')[0];
+  const end = endDate.toISOString().split('T')[0];
+  return database.findOne<{
+    kills: number;
+    losses: number;
+    iskDestroyed: number;
+    iskLost: number;
+    efficiency: number;
+    soloKills: number;
+    soloLosses: number;
+  }>(
+    `SELECT
        sum(kills) as kills,
        sum(losses) as losses,
        sum("iskDestroyed") as "iskDestroyed",
@@ -161,11 +167,11 @@ export async function getEntityAggregatedStats(
        sum("soloKills") as "soloKills",
        sum("soloLosses") as "soloLosses"
      FROM killmail_reports
-     WHERE "entityId" = ${entityId}
-       AND "entityType" = ${entityType}
-       AND "reportDate" BETWEEN ${startDate.toISOString().split('T')[0]} AND ${endDate.toISOString().split('T')[0]}
-  `;
-  return result;
+     WHERE "entityId" = :entityId
+       AND "entityType" = :entityType
+       AND "reportDate" BETWEEN :start AND :end`,
+    { entityId, entityType, start, end }
+  );
 }
 
 /**

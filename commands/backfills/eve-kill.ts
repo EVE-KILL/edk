@@ -1,16 +1,16 @@
-import { logger } from '../server/helpers/logger';
-import { database } from '../server/helpers/database';
-import { enqueueJobMany } from '../server/helpers/queue';
-import { QueueType } from '../server/helpers/queue';
-import { storeKillmailsBulk } from '../server/models/killmails';
-import { storeCharactersBulk } from '../server/models/characters';
-import { storeCorporationsBulk } from '../server/models/corporations';
-import { storeAlliancesBulk } from '../server/models/alliances';
-import { storePrices } from '../server/models/prices';
+import { logger } from '../../server/helpers/logger';
+import { database } from '../../server/helpers/database';
+import { enqueueJobMany } from '../../server/helpers/queue';
+import { QueueType } from '../../server/helpers/queue';
+import { storeKillmailsBulk } from '../../server/models/killmails';
+import { storeCharactersBulk } from '../../server/models/characters';
+import { storeCorporationsBulk } from '../../server/models/corporations';
+import { storeAlliancesBulk } from '../../server/models/alliances';
+import { storePrices } from '../../server/models/prices';
 import type {
   ESIKillmail,
   KillmailValueBreakdown,
-} from '../server/models/killmails';
+} from '../../server/models/killmails';
 
 export default {
   description: 'Backfill killmails from eve-kill.com API for followed entities',
@@ -202,10 +202,14 @@ export default {
 
       // Check which killmails already exist (batch query)
       const killmailIds = killmails.map((k) => k.killmail_id);
-      const existingIds = await database.sql<{ killmailId: number }[]>`
-        SELECT "killmailId" FROM killmails WHERE "killmailId" = ANY(${killmailIds})
-      `;
-      const existingIdsSet = new Set(existingIds.map((row) => row.killmailId));
+      let existingIdsSet = new Set<number>();
+      if (killmailIds.length > 0) {
+        const existingIds = await database.find<{ killmailId: number }>(
+          `SELECT "killmailId" FROM killmails WHERE "killmailId" IN (:killmailIds)`,
+          { killmailIds }
+        );
+        existingIdsSet = new Set(existingIds.map((row) => row.killmailId));
+      }
 
       // Filter out existing killmails
       const newKillmails = killmails.filter(
@@ -297,6 +301,7 @@ export default {
       totalTime: `${totalTime.toFixed(2)}s`,
       avgRate: `${(processed / totalTime).toFixed(2)}/s`,
     });
+    process.exit(0);
   },
 };
 
@@ -420,10 +425,17 @@ async function filterExistingRecords<T>(
     const chunk = records.slice(i, i + chunkSize);
     const ids = chunk.map(getId);
 
-    const rows = await database.sql<{ id: number }[]>`
-      SELECT ${database.sql(idColumn)} AS id FROM ${database.sql(table)}
-       WHERE ${database.sql(idColumn)} = ANY(${ids})
-    `;
+    if (ids.length === 0) {
+      continue;
+    }
+
+    const rows = await database.find<{ id: number }>(
+      `SELECT ${database.identifier(idColumn)} AS id FROM ${database.identifier(
+        table
+      )}
+         WHERE ${database.identifier(idColumn)} IN (:ids)`,
+      { ids }
+    );
 
     for (const row of rows) {
       existingIds.add(Number(row.id));

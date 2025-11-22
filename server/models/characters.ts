@@ -35,29 +35,28 @@ export async function getCharacterInfo(
   characterId: number
 ): Promise<CharacterInfo | null> {
   // First get character name from characters table
-  const [character] = await database.sql<{ name: string }[]>`
-    SELECT name
+  const character = await database.findOne<{ name: string }>(
+    `SELECT name
     FROM characters
-    WHERE characterId = ${characterId}
-    LIMIT 1
-  `;
+    WHERE "characterId" = :characterId
+    LIMIT 1`,
+    { characterId }
+  );
 
   if (!character || !character.name) {
     return null;
   }
 
   // Get latest corporation/alliance info from most recent killmail activity
-  const [corpAllianceQuery] = await database.sql<
-    {
-      corporationId: number | null;
-      corporationName: string | null;
-      corporationTicker: string | null;
-      allianceId: number | null;
-      allianceName: string | null;
-      allianceTicker: string | null;
-    }[]
-  >`
-    SELECT
+  const corpAllianceQuery = await database.findOne<{
+    corporationId: number | null;
+    corporationName: string | null;
+    corporationTicker: string | null;
+    allianceId: number | null;
+    allianceName: string | null;
+    allianceTicker: string | null;
+  }>(
+    `SELECT
       corporationId,
       corporationName,
       corporationTicker,
@@ -66,37 +65,38 @@ export async function getCharacterInfo(
       allianceTicker
     FROM (
       SELECT
-        a.corporationId as "corporationId",
+        a."corporationId" as "corporationId",
         corp.name as "corporationName",
         corp.ticker as "corporationTicker",
-        a.allianceId as "allianceId",
+        a."allianceId" as "allianceId",
         alliance.ticker as "allianceName",
         alliance.ticker as "allianceTicker",
-        k.killmailTime as "lastSeen"
+        k."killmailTime" as "lastSeen"
       FROM attackers a
       LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
       LEFT JOIN corporations corp ON a."corporationId" = corp."corporationId"
       LEFT JOIN alliances alliance ON a."allianceId" = alliance."allianceId"
-      WHERE a."characterId" = ${characterId}
+      WHERE a."characterId" = :characterId
 
       UNION ALL
 
       SELECT
-        k.victimCorporationId as "corporationId",
+        k."victimCorporationId" as "corporationId",
         corp.name as "corporationName",
         corp.ticker as "corporationTicker",
-        k.victimAllianceId as "allianceId",
+        k."victimAllianceId" as "allianceId",
         alliance.name as "allianceName",
         alliance.ticker as "allianceTicker",
         k."killmailTime" as "lastSeen"
       FROM killmails k
       LEFT JOIN corporations corp ON k."victimCorporationId" = corp."corporationId"
       LEFT JOIN alliances alliance ON k."victimAllianceId" = alliance."allianceId"
-      WHERE k."victimCharacterId" = ${characterId}
+      WHERE k."victimCharacterId" = :characterId
     ) as sub
     ORDER BY "lastSeen" DESC
-    LIMIT 1
-  `;
+    LIMIT 1`,
+    { characterId }
+  );
 
   // Build corporation object
   let corporation: CharacterInfo['corporation'] = null;
@@ -123,59 +123,58 @@ export async function getCharacterInfo(
   }
 
   // Get statistics
-  const [stats] = await database.sql<
-    {
-      kills: number;
-      losses: number;
-      iskDestroyed: number;
-      iskLost: number;
-    }[]
-  >`
-    WITH
+  const stats = await database.findOne<{
+    kills: number;
+    losses: number;
+    iskDestroyed: number;
+    iskLost: number;
+  }>(
+    `WITH
       kills_stats AS (
         SELECT
           count(*) as kills,
-          sum(k.victimDamageTaken * COALESCE(p.averagePrice, 0)) +
+          sum(k."victimDamageTaken" * COALESCE(p."averagePrice", 0)) +
           sum(i.totalValue) as "iskDestroyed"
         FROM attackers a
-        LEFT JOIN killmails k ON a.killmailId = k.killmailId
-        LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND k.killmailTime::date = p.priceDate
+        LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+        LEFT JOIN prices p ON k."victimShipTypeId" = p."typeId" AND k."killmailTime"::date = p."priceDate"
         LEFT JOIN (
           SELECT
-            items.killmailId as killmailId,
-            sum((quantityDestroyed + quantityDropped) * COALESCE(prices.averagePrice, 0)) as totalValue
+            items."killmailId" as "killmailId",
+            sum(("quantityDestroyed" + "quantityDropped") * COALESCE(prices."averagePrice", 0)) as totalValue
           FROM items
-          LEFT JOIN killmails km ON items.killmailId = km.killmailId
-          LEFT JOIN prices ON items.itemTypeId = prices.typeId AND km.killmailTime::date = prices.priceDate
-          GROUP BY items.killmailId
-        ) i ON k.killmailId = i.killmailId
-        WHERE a.characterId = ${characterId}
+          LEFT JOIN killmails km ON items."killmailId" = km."killmailId"
+          LEFT JOIN prices ON items."itemTypeId" = prices."typeId" AND km."killmailTime"::date = prices."priceDate"
+          GROUP BY items."killmailId"
+        ) i ON k."killmailId" = i."killmailId"
+        WHERE a."characterId" = :characterId
       ),
       losses_stats AS (
         SELECT
           count(*) as losses,
-          sum(k.victimDamageTaken * COALESCE(p.averagePrice, 0)) +
+          sum(k."victimDamageTaken" * COALESCE(p."averagePrice", 0)) +
           sum(i.totalValue) as "iskLost"
         FROM killmails k
-        LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND k.killmailTime::date = p.priceDate
+        LEFT JOIN prices p ON k."victimShipTypeId" = p."typeId" AND k."killmailTime"::date = p."priceDate"
         LEFT JOIN (
           SELECT
-            items.killmailId as killmailId,
-            sum((quantityDestroyed + quantityDropped) * COALESCE(prices.averagePrice, 0)) as totalValue
+            items."killmailId" as "killmailId",
+            sum(("quantityDestroyed" + "quantityDropped") * COALESCE(prices."averagePrice", 0)) as totalValue
           FROM items
-          LEFT JOIN killmails km ON items.killmailId = km.killmailId
-          LEFT JOIN prices ON items.itemTypeId = prices.typeId AND km.killmailTime::date = prices.priceDate
-          GROUP BY items.killmailId
-        ) i ON k.killmailId = i.killmailId
-        WHERE k.victimCharacterId = ${characterId}
+          LEFT JOIN killmails km ON items."killmailId" = km."killmailId"
+          LEFT JOIN prices ON items."itemTypeId" = prices."typeId" AND km."killmailTime"::date = prices."priceDate"
+          GROUP BY items."killmailId"
+        ) i ON k."killmailId" = i."killmailId"
+        WHERE k."victimCharacterId" = :characterId
       )
     SELECT
       kills_stats.kills as kills,
       losses_stats.losses as losses,
       kills_stats."iskDestroyed" as "iskDestroyed",
       losses_stats."iskLost" as "iskLost"
-    FROM kills_stats, losses_stats
-  `;
+    FROM kills_stats, losses_stats`,
+    { characterId }
+  );
 
   const kills = Number(stats?.kills) || 0;
   const losses = Number(stats?.losses) || 0;
@@ -221,34 +220,34 @@ export interface ShipGroupStats {
 export async function getShipGroupStatsByCharacter(
   characterId: number
 ): Promise<ShipGroupStats[]> {
-  const stats = await database.sql<ShipGroupStats[]>`
-    WITH
+  const stats = await database.find<ShipGroupStats>(
+    `WITH
       killed_stats AS (
         SELECT
-          g.groupId as "groupId",
+          g."groupId" as "groupId",
           g.name as "groupName",
           count(*) as killed
         FROM attackers a
-        LEFT JOIN killmails k ON a.killmailId = k.killmailId
-        LEFT JOIN types t ON k.victimShipTypeId = t.typeId
-        LEFT JOIN groups g ON t.groupId = g.groupId
-        WHERE a.characterId = ${characterId}
-          AND k.killmailTime >= NOW() - INTERVAL '30 days'
-          AND g.groupId IS NOT NULL
-        GROUP BY g.groupId, g.name
+        LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+        LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
+        LEFT JOIN groups g ON t."groupId" = g."groupId"
+        WHERE a."characterId" = :characterId
+          AND k."killmailTime" >= NOW() - INTERVAL '30 days'
+          AND g."groupId" IS NOT NULL
+        GROUP BY g."groupId", g.name
       ),
       lost_stats AS (
         SELECT
-          g.groupId as "groupId",
+          g."groupId" as "groupId",
           g.name as "groupName",
           count(*) as lost
         FROM killmails k
-        LEFT JOIN types t ON k.victimShipTypeId = t.typeId
-        LEFT JOIN groups g ON t.groupId = g.groupId
-        WHERE k.victimCharacterId = ${characterId}
-          AND k.killmailTime >= NOW() - INTERVAL '30 days'
-          AND g.groupId IS NOT NULL
-        GROUP BY g.groupId, g.name
+        LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
+        LEFT JOIN groups g ON t."groupId" = g."groupId"
+        WHERE k."victimCharacterId" = :characterId
+          AND k."killmailTime" >= NOW() - INTERVAL '30 days'
+          AND g."groupId" IS NOT NULL
+        GROUP BY g."groupId", g.name
       )
     SELECT
       coalesce(killed_stats."groupId", lost_stats."groupId") as "groupId",
@@ -258,8 +257,9 @@ export async function getShipGroupStatsByCharacter(
     FROM killed_stats
     FULL OUTER JOIN lost_stats ON killed_stats."groupId" = lost_stats."groupId"
     ORDER BY (coalesce(killed_stats.killed, 0) + coalesce(lost_stats.lost, 0)) DESC
-    LIMIT 100
-  `;
+    LIMIT 100`,
+    { characterId }
+  );
 
   return stats;
 }
@@ -286,91 +286,92 @@ export async function getTop10StatsByCharacter(
   characterId: number
 ): Promise<CharacterTopBoxStats> {
   // Top ships killed
-  const ships = await database.sql<CharacterTopEntity[]>`
-    SELECT
-      t.typeId as id,
+  const ships = await database.find<CharacterTopEntity>(
+    `SELECT
+      t."typeId" as id,
       t.name as name,
       count(*) as kills
     FROM attackers a
-    LEFT JOIN killmails k ON a.killmailId = k.killmailId
-    LEFT JOIN types t ON k.victimShipTypeId = t.typeId
-    WHERE a.characterId = ${characterId}
-      AND k.killmailTime >= NOW() - INTERVAL '7 days'
-      AND t.typeId IS NOT NULL
-    GROUP BY t.typeId, t.name
+    LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+    LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
+    WHERE a."characterId" = :characterId
+      AND k."killmailTime" >= NOW() - INTERVAL '7 days'
+      AND t."typeId" IS NOT NULL
+    GROUP BY t."typeId", t.name
     ORDER BY kills DESC
-    LIMIT 10
-  `;
+    LIMIT 10`,
+    { characterId }
+  );
 
-  // Top systems
-  const systems = await database.sql<CharacterTopEntity[]>`
-    SELECT
-      sys.solarSystemId as id,
+  const systems = await database.find<CharacterTopEntity>(
+    `SELECT
+      sys."solarSystemId" as id,
       sys.name as name,
       count(*) as kills
     FROM attackers a
-    LEFT JOIN killmails k ON a.killmailId = k.killmailId
-    LEFT JOIN solarSystems sys ON k.solarSystemId = sys.solarSystemId
-    WHERE a.characterId = ${characterId}
-      AND k.killmailTime >= NOW() - INTERVAL '7 days'
-      AND sys.solarSystemId IS NOT NULL
-    GROUP BY sys.solarSystemId, sys.name
+    LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+    LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
+    WHERE a."characterId" = :characterId
+      AND k."killmailTime" >= NOW() - INTERVAL '7 days'
+      AND sys."solarSystemId" IS NOT NULL
+    GROUP BY sys."solarSystemId", sys.name
     ORDER BY kills DESC
-    LIMIT 10
-  `;
+    LIMIT 10`,
+    { characterId }
+  );
 
-  // Top regions
-  const regions = await database.sql<CharacterTopEntity[]>`
-    SELECT
-      reg.regionId as id,
+  const regions = await database.find<CharacterTopEntity>(
+    `SELECT
+      reg."regionId" as id,
       reg.name as name,
       count(*) as kills
     FROM attackers a
-    LEFT JOIN killmails k ON a.killmailId = k.killmailId
-    LEFT JOIN solarSystems sys ON k.solarSystemId = sys.solarSystemId
-    LEFT JOIN regions reg ON sys.regionId = reg.regionId
-    WHERE a.characterId = ${characterId}
-      AND k.killmailTime >= NOW() - INTERVAL '7 days'
-      AND reg.regionId IS NOT NULL
-    GROUP BY reg.regionId, reg.name
+    LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+    LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
+    LEFT JOIN regions reg ON sys."regionId" = reg."regionId"
+    WHERE a."characterId" = :characterId
+      AND k."killmailTime" >= NOW() - INTERVAL '7 days'
+      AND reg."regionId" IS NOT NULL
+    GROUP BY reg."regionId", reg.name
     ORDER BY kills DESC
-    LIMIT 10
-  `;
+    LIMIT 10`,
+    { characterId }
+  );
 
-  // Top corporations killed
-  const corporations = await database.sql<CharacterTopEntity[]>`
-    SELECT
-      corp.corporationId as id,
+  const corporations = await database.find<CharacterTopEntity>(
+    `SELECT
+      corp."corporationId" as id,
       corp.name as name,
       count(*) as kills
     FROM attackers a
-    LEFT JOIN killmails k ON a.killmailId = k.killmailId
-    LEFT JOIN npcCorporations corp ON k.victimCorporationId = corp.corporationId
-    WHERE a.characterId = ${characterId}
-      AND k.killmailTime >= NOW() - INTERVAL '7 days'
-      AND corp.corporationId IS NOT NULL
-    GROUP BY corp.corporationId, corp.name
+    LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+    LEFT JOIN npcCorporations corp ON k."victimCorporationId" = corp."corporationId"
+    WHERE a."characterId" = :characterId
+      AND k."killmailTime" >= NOW() - INTERVAL '7 days'
+      AND corp."corporationId" IS NOT NULL
+    GROUP BY corp."corporationId", corp.name
     ORDER BY kills DESC
-    LIMIT 10
-  `;
+    LIMIT 10`,
+    { characterId }
+  );
 
-  // Top alliances killed
-  const alliances = await database.sql<CharacterTopEntity[]>`
-    SELECT
-      alliance.corporationId as id,
+  const alliances = await database.find<CharacterTopEntity>(
+    `SELECT
+      alliance."corporationId" as id,
       alliance.name as name,
       count(*) as kills
     FROM attackers a
-    LEFT JOIN killmails k ON a.killmailId = k.killmailId
-    LEFT JOIN npcCorporations alliance ON k.victimAllianceId = alliance.corporationId
-    WHERE a.characterId = ${characterId}
-      AND k.killmailTime >= NOW() - INTERVAL '7 days'
-      AND alliance.corporationId IS NOT NULL
-      AND k.victimAllianceId IS NOT NULL
-    GROUP BY alliance.corporationId, alliance.name
+    LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+    LEFT JOIN npcCorporations alliance ON k."victimAllianceId" = alliance."corporationId"
+    WHERE a."characterId" = :characterId
+      AND k."killmailTime" >= NOW() - INTERVAL '7 days'
+      AND alliance."corporationId" IS NOT NULL
+      AND k."victimAllianceId" IS NOT NULL
+    GROUP BY alliance."corporationId", alliance.name
     ORDER BY kills DESC
-    LIMIT 10
-  `;
+    LIMIT 10`,
+    { characterId }
+  );
 
   return {
     ships,
@@ -426,85 +427,78 @@ export async function getCharacterKillmails(
   offset: number = 0,
   type: 'all' | 'kills' | 'losses' = 'all'
 ): Promise<CharacterKillmailRow[]> {
-  const baseQuery = database.sql`
+  const baseQuery = `
     SELECT
-      k.killmailId as killmail_id,
-      k.killmailTime as killmail_time,
-      k.victimShipTypeId as victim_ship_type_id,
+      k."killmailId" as killmail_id,
+      k."killmailTime" as killmail_time,
+      k."victimShipTypeId" as victim_ship_type_id,
       t.name as victim_ship_name,
       g.name as victim_ship_group,
-      k.victimCharacterId as victim_characterId,
+      k."victimCharacterId" as victim_characterId,
       c.name as victim_character_name,
-      k.victimCorporationId as victim_corporationId,
+      k."victimCorporationId" as victim_corporationId,
       corp.name as victim_corporation_name,
       corp.ticker as victim_corporation_ticker,
-      k.victimAllianceId as victim_allianceId,
+      k."victimAllianceId" as victim_allianceId,
       all.name as victim_alliance_name,
       all.ticker as victim_alliance_ticker,
-      k.topAttackerCharacterId as attacker_characterId,
+      k."topAttackerCharacterId" as attacker_characterId,
       ac.name as attacker_character_name,
-      k.topAttackerCorporationId as attacker_corporationId,
+      k."topAttackerCorporationId" as attacker_corporationId,
       acorp.name as attacker_corporation_name,
       acorp.ticker as attacker_corporation_ticker,
-      k.topAttackerAllianceId as attacker_allianceId,
+      k."topAttackerAllianceId" as attacker_allianceId,
       aall.name as attacker_alliance_name,
       aall.ticker as attacker_alliance_ticker,
-      k.solarSystemId as solar_system_id,
+      k."solarSystemId" as solar_system_id,
       sys.name as solar_system_name,
-      sys.securityStatus as solar_system_security,
-      sys.regionId as region_id,
+      sys."securityStatus" as solar_system_security,
+      sys."regionId" as region_id,
       reg.name as region_name,
-      (k.victimDamageTaken * COALESCE(p.averagePrice, 0)) as ship_value,
-      k.totalValue as total_value,
-      k.attackerCount as attacker_count
+      (k."victimDamageTaken" * COALESCE(p."averagePrice", 0)) as ship_value,
+      k."totalValue" as total_value,
+      k."attackerCount" as attacker_count
     FROM killmails k
-    LEFT JOIN types t ON k.victimShipTypeId = t.typeId
-    LEFT JOIN groups g ON t.groupId = g.groupId
-    LEFT JOIN characters c ON k.victimCharacterId = c.characterId
-    LEFT JOIN corporations corp ON k.victimCorporationId = corp.corporationId
-    LEFT JOIN alliances all ON k.victimAllianceId = all.allianceId
-    LEFT JOIN characters ac ON k.topAttackerCharacterId = ac.characterId
-    LEFT JOIN corporations acorp ON k.topAttackerCorporationId = acorp.corporationId
-    LEFT JOIN alliances aall ON k.topAttackerAllianceId = aall.allianceId
-    LEFT JOIN solarSystems sys ON k.solarSystemId = sys.solarSystemId
-    LEFT JOIN regions reg ON sys.regionId = reg.regionId
-    LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND k.killmailTime::date = p.priceDate
-  `;
+    LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
+    LEFT JOIN groups g ON t."groupId" = g."groupId"
+    LEFT JOIN characters c ON k."victimCharacterId" = c."characterId"
+    LEFT JOIN corporations corp ON k."victimCorporationId" = corp."corporationId"
+    LEFT JOIN alliances all ON k."victimAllianceId" = all."allianceId"
+    LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
+    LEFT JOIN corporations acorp ON k."topAttackerCorporationId" = acorp."corporationId"
+    LEFT JOIN alliances aall ON k."topAttackerAllianceId" = aall."allianceId"
+    LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
+    LEFT JOIN regions reg ON sys."regionId" = reg."regionId"
+    LEFT JOIN prices p ON k."victimShipTypeId" = p."typeId" AND k."killmailTime"::date = p."priceDate"`;
 
-  let whereClause;
+  let whereClause = '';
   if (type === 'kills') {
-    // Character was an attacker (check attackers table)
-    whereClause = database.sql`
-      AND k.killmailId IN (
-        SELECT killmailId
+    whereClause = `AND k."killmailId" IN (
+        SELECT "killmailId"
         FROM attackers
-        WHERE characterId = ${characterId}
-      )
-    `;
+        WHERE "characterId" = :characterId
+      )`;
   } else if (type === 'losses') {
-    // Character was the victim
-    whereClause = database.sql`AND k.victimCharacterId = ${characterId}`;
+    whereClause = 'AND k."victimCharacterId" = :characterId';
   } else {
-    // All: either attacker or victim
-    whereClause = database.sql`
-      AND (
-        k.victimCharacterId = ${characterId}
-        OR k.killmailId IN (
-          SELECT killmailId
+    whereClause = `AND (
+        k."victimCharacterId" = :characterId
+        OR k."killmailId" IN (
+          SELECT "killmailId"
           FROM attackers
-          WHERE characterId = ${characterId}
+          WHERE "characterId" = :characterId
         )
-      )
-    `;
+      )`;
   }
 
-  return await database.sql<CharacterKillmailRow[]>`
-    ${baseQuery}
+  return database.find<CharacterKillmailRow>(
+    `${baseQuery}
     WHERE 1=1
       ${whereClause}
-    ORDER BY k.killmailTime DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `;
+    ORDER BY k."killmailTime" DESC
+    LIMIT :limit OFFSET :offset`,
+    { characterId, limit, offset }
+  );
 }
 
 /**
@@ -516,36 +510,33 @@ export async function getCharacterKillmailCount(
   characterId: number,
   type: 'all' | 'kills' | 'losses' = 'all'
 ): Promise<number> {
-  let whereClause;
+  let whereClause = '';
   if (type === 'kills') {
-    whereClause = database.sql`
-      AND killmailId IN (
-        SELECT killmailId
+    whereClause = `AND "killmailId" IN (
+        SELECT "killmailId"
         FROM attackers
-        WHERE characterId = ${characterId}
-      )
-    `;
+        WHERE "characterId" = :characterId
+      )`;
   } else if (type === 'losses') {
-    whereClause = database.sql`AND victimCharacterId = ${characterId}`;
+    whereClause = 'AND "victimCharacterId" = :characterId';
   } else {
-    whereClause = database.sql`
-      AND (
-        victimCharacterId = ${characterId}
-        OR killmailId IN (
-          SELECT killmailId
+    whereClause = `AND (
+        "victimCharacterId" = :characterId
+        OR "killmailId" IN (
+          SELECT "killmailId"
           FROM attackers
-          WHERE characterId = ${characterId}
+          WHERE "characterId" = :characterId
         )
-      )
-    `;
+      )`;
   }
 
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count
+  const result = await database.findOne<{ count: number }>(
+    `SELECT count(*) as count
     FROM killmails
     WHERE 1=1
-      ${whereClause}
-  `;
+      ${whereClause}`,
+    { characterId }
+  );
 
   return Number(result?.count || 0);
 }
@@ -573,10 +564,10 @@ export interface Character {
 export async function getCharacter(
   characterId: number
 ): Promise<Character | null> {
-  const [row] = await database.sql<Character[]>`
-    SELECT * FROM characters WHERE characterId = ${characterId}
-  `;
-  return row || null;
+  return database.findOne<Character>(
+    'SELECT * FROM characters WHERE "characterId" = :characterId',
+    { characterId }
+  );
 }
 
 /**
@@ -587,9 +578,10 @@ export async function getCharacters(
 ): Promise<Character[]> {
   if (characterIds.length === 0) return [];
 
-  return await database.sql<Character[]>`
-    SELECT * FROM characters WHERE characterId = ANY(${characterIds})
-  `;
+  return database.find<Character>(
+    'SELECT * FROM characters WHERE "characterId" = ANY(:characterIds)',
+    { characterIds }
+  );
 }
 
 /**
@@ -599,12 +591,13 @@ export async function searchCharacters(
   searchTerm: string,
   limit: number = 20
 ): Promise<Character[]> {
-  return await database.sql<Character[]>`
-    SELECT * FROM characters
-    WHERE name ILIKE ${`%${searchTerm}%`}
+  return database.find<Character>(
+    `SELECT * FROM characters
+    WHERE name ILIKE :pattern
     ORDER BY name
-    LIMIT ${limit}
-  `;
+    LIMIT :limit`,
+    { pattern: `%${searchTerm}%`, limit }
+  );
 }
 
 /**
@@ -613,9 +606,10 @@ export async function searchCharacters(
 export async function getCharacterName(
   characterId: number
 ): Promise<string | null> {
-  const [result] = await database.sql<{ name: string }[]>`
-    SELECT name FROM characters WHERE characterId = ${characterId}
-  `;
+  const result = await database.findOne<{ name: string }>(
+    'SELECT name FROM characters WHERE "characterId" = :characterId',
+    { characterId }
+  );
   return result?.name || null;
 }
 
@@ -638,8 +632,8 @@ export interface CharacterWithCorporationAndAlliance {
 export async function getCharacterWithCorporationAndAlliance(
   characterId: number
 ): Promise<CharacterWithCorporationAndAlliance | null> {
-  const [row] = await database.sql<CharacterWithCorporationAndAlliance[]>`
-    SELECT
+  return database.findOne<CharacterWithCorporationAndAlliance>(
+    `SELECT
       c.name as name,
       c."corporationId" as "corporationId",
       corp.name as "corporationName",
@@ -650,10 +644,10 @@ export async function getCharacterWithCorporationAndAlliance(
     FROM characters c
     LEFT JOIN corporations corp ON c."corporationId" = corp."corporationId"
     LEFT JOIN alliances alliance ON corp."allianceId" = alliance."allianceId"
-    WHERE c."characterId" = ${characterId}
-    LIMIT 1
-  `;
-  return row || null;
+    WHERE c."characterId" = :characterId
+    LIMIT 1`,
+    { characterId }
+  );
 }
 
 /**
@@ -738,8 +732,9 @@ export async function storeCharactersBulk(
  * Check if character exists
  */
 export async function characterExists(characterId: number): Promise<boolean> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM characters WHERE characterId = ${characterId}
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM characters WHERE "characterId" = :characterId',
+    { characterId }
+  );
   return Number(result?.count) > 0;
 }

@@ -7,7 +7,6 @@ import { render, normalizeKillRow } from '../../helpers/templates';
 import {
   getFilteredKillsWithNames,
   countFilteredKills,
-  buildKilllistConditions,
   type KilllistFilters,
 } from '../../models/killlist';
 import {
@@ -17,6 +16,7 @@ import {
   getTopCorporationsFiltered,
   getTopAlliancesFiltered,
 } from '../../models/topBoxes';
+import { track } from '../../utils/performance-decorators';
 
 // Ship group IDs for filtering
 const SHIP_GROUPS = {
@@ -67,6 +67,7 @@ const VALID_KILL_TYPES = [
   'pochven',
   '5b',
   '10b',
+  'awox',
   'frigates',
   'destroyers',
   'cruisers',
@@ -107,6 +108,10 @@ function buildFiltersForType(type: KillType): KilllistFilters {
 
     case 'npc':
       filters.isNpc = true;
+      break;
+
+    case 'awox':
+      filters.isAwox = true;
       break;
 
     case 'highsec':
@@ -264,13 +269,13 @@ export default defineEventHandler(async (event: H3Event) => {
     // Build filters based on the type
     const filters = buildFiltersForType(killType);
 
-    const conditionsForTopBoxes = buildKilllistConditions(filters, 'k');
-
     // Fetch killmails and count in parallel using model functions
-    const [killmailsData, totalKillmails] = await Promise.all([
-      getFilteredKillsWithNames(filters, page, perPage),
-      countFilteredKills(filters),
-    ]);
+    const [killmailsData, totalKillmails] = await track(`kills:fetch_${killType}`, 'application', async () => {
+      return await Promise.all([
+        getFilteredKillsWithNames(filters, page, perPage),
+        countFilteredKills(filters),
+      ]);
+    });
 
     const totalPages = Math.ceil(totalKillmails / perPage);
 
@@ -293,11 +298,11 @@ export default defineEventHandler(async (event: H3Event) => {
       topCorporations,
       topAlliances,
     ] = await Promise.all([
-      getTopSystemsFiltered(conditionsForTopBoxes, 10),
-      getTopRegionsFiltered(conditionsForTopBoxes, 10),
-      getTopCharactersFiltered(conditionsForTopBoxes, 10),
-      getTopCorporationsFiltered(conditionsForTopBoxes, 10),
-      getTopAlliancesFiltered(conditionsForTopBoxes, 10),
+      getTopSystemsFiltered(filters, 10),
+      getTopRegionsFiltered(filters, 10),
+      getTopCharactersFiltered(filters, 10),
+      getTopCorporationsFiltered(filters, 10),
+      getTopAlliancesFiltered(filters, 10),
     ]);
 
     // Get Most Valuable Kills for this filter
@@ -379,6 +384,8 @@ export default defineEventHandler(async (event: H3Event) => {
       showLast: page < totalPages - 2 && totalPages > 5,
     };
 
+    const baseUrl = `/kills/${killType}`;
+
     // Render the template
     return render(
       'pages/kills',
@@ -389,6 +396,7 @@ export default defineEventHandler(async (event: H3Event) => {
       },
       {
         title: getTitleForType(killType),
+        baseUrl,
         recentKillmails,
         pagination,
         topCharactersFormatted,
@@ -397,6 +405,11 @@ export default defineEventHandler(async (event: H3Event) => {
         topSystemsFormatted,
         topRegionsFormatted,
         mostValuableKills,
+        wsFilter: {
+          type: 'killType',
+          topic: killType,
+          mode: 'kills',
+        },
       }
     );
   } catch (error) {
@@ -404,4 +417,4 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 });
 
-import { generatePageNumbers } from '../../utils/pagination';
+import { generatePageNumbers } from '../../helpers/pagination';

@@ -89,10 +89,10 @@ FROM killmails k
 export async function getKillmailESI(
   killmailId: number
 ): Promise<KillmailESI | null> {
-  const [row] = await database.sql<KillmailESI[]>`
-    ${database.sql.unsafe(BASE_QUERY)} WHERE k."killmailId" = ${killmailId}
-  `;
-  return row || null;
+  return database.findOne<KillmailESI>(
+    `${BASE_QUERY} WHERE k."killmailId" = :killmailId`,
+    { killmailId }
+  );
 }
 
 /**
@@ -103,11 +103,12 @@ export async function getKillmailsESI(
 ): Promise<KillmailESI[]> {
   if (killmailIds.length === 0) return [];
 
-  return await database.sql<KillmailESI[]>`
-    ${database.sql.unsafe(BASE_QUERY)}
-     WHERE k."killmailId" = ANY(${killmailIds})
-     ORDER BY k."killmailTime" DESC
-  `;
+  return database.find<KillmailESI>(
+    `${BASE_QUERY}
+     WHERE k."killmailId" = ANY(:killmailIds)
+     ORDER BY k."killmailTime" DESC`,
+    { killmailIds }
+  );
 }
 
 /**
@@ -116,19 +117,21 @@ export async function getKillmailsESI(
 export async function getRecentKillmailsESI(
   limit: number = 50
 ): Promise<KillmailESI[]> {
-  return await database.sql<KillmailESI[]>`
-    ${database.sql.unsafe(BASE_QUERY)}
+  return database.find<KillmailESI>(
+    `${BASE_QUERY}
      ORDER BY k."killmailTime" DESC, k."killmailId" DESC
-     LIMIT ${limit}
-  `;
+     LIMIT :limit`,
+    { limit }
+  );
 }
 
 /**
  * Check if killmail exists
  */
 export async function killmailESIExists(killmailId: number): Promise<boolean> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM killmails WHERE "killmailId" = ${killmailId}
-  `;
+  const result = await database.findOne<{ count: number }>(
+    `SELECT count(*) as count FROM killmails WHERE "killmailId" = :killmailId`,
+    { killmailId }
+  );
   return Number(result?.count || 0) > 0;
 }

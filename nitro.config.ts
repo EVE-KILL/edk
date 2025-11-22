@@ -38,6 +38,14 @@ export default defineNitroConfig({
   future: {
     nativeSWR: true,
   },
+  storage: {
+    redis: {
+      driver: 'redis',
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      password: process.env.REDIS_PASSWORD || 'redis_password',
+    },
+  },
   routeRules: {
     '/api/killmail/*/esi': {
       cache: { maxAge: 3600, staleMaxAge: 3600, base: 'redis' },

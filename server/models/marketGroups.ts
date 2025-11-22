@@ -21,10 +21,10 @@ export interface MarketGroup {
 export async function getMarketGroup(
   marketGroupId: number
 ): Promise<MarketGroup | null> {
-  const [row] = await database.sql<MarketGroup[]>`
-    SELECT * FROM marketGroups WHERE marketGroupId = ${marketGroupId}
-  `;
-  return row || null;
+  return database.findOne<MarketGroup>(
+    'SELECT * FROM "marketGroups" WHERE "marketGroupId" = :marketGroupId',
+    { marketGroupId }
+  );
 }
 
 /**
@@ -33,27 +33,28 @@ export async function getMarketGroup(
 export async function getMarketGroupsByParent(
   parentGroupId: number
 ): Promise<MarketGroup[]> {
-  return await database.sql<MarketGroup[]>`
-    SELECT * FROM marketGroups WHERE parentGroupId = ${parentGroupId} ORDER BY name
-  `;
+  return database.find<MarketGroup>(
+    'SELECT * FROM "marketGroups" WHERE "parentGroupId" = :parentGroupId ORDER BY name',
+    { parentGroupId }
+  );
 }
 
 /**
  * Get root market groups
  */
 export async function getRootMarketGroups(): Promise<MarketGroup[]> {
-  return await database.sql<MarketGroup[]>`
-    SELECT * FROM marketGroups WHERE parentGroupId IS NULL ORDER BY name
-  `;
+  return database.find<MarketGroup>(
+    'SELECT * FROM "marketGroups" WHERE "parentGroupId" IS NULL ORDER BY name'
+  );
 }
 
 /**
  * Get market groups that have types
  */
 export async function getMarketGroupsWithTypes(): Promise<MarketGroup[]> {
-  return await database.sql<MarketGroup[]>`
-    SELECT * FROM marketGroups WHERE hasTypes = 1 ORDER BY name
-  `;
+  return database.find<MarketGroup>(
+    'SELECT * FROM "marketGroups" WHERE "hasTypes" = 1 ORDER BY name'
+  );
 }
 
 /**
@@ -63,12 +64,13 @@ export async function searchMarketGroups(
   namePattern: string,
   limit: number = 10
 ): Promise<MarketGroup[]> {
-  return await database.sql<MarketGroup[]>`
-    SELECT * FROM marketGroups
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<MarketGroup>(
+    `SELECT * FROM "marketGroups"
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }
 
 /**
@@ -77,9 +79,10 @@ export async function searchMarketGroups(
 export async function getMarketGroupName(
   marketGroupId: number
 ): Promise<string | null> {
-  const [result] = await database.sql<{ name: string }[]>`
-    SELECT name FROM marketGroups WHERE marketGroupId = ${marketGroupId}
-  `;
+  const result = await database.findOne<{ name: string }>(
+    'SELECT name FROM "marketGroups" WHERE "marketGroupId" = :marketGroupId',
+    { marketGroupId }
+  );
   return result?.name || null;
 }
 
@@ -87,8 +90,8 @@ export async function getMarketGroupName(
  * Count total market groups
  */
 export async function countMarketGroups(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM marketGroups
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM "marketGroups"'
+  );
   return Number(result?.count || 0);
 }

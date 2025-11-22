@@ -2,6 +2,9 @@ import { sdeFetcher as defaultSdeFetcher } from '../../server/helpers/sde/fetche
 import chalk from 'chalk';
 import { logger } from '../../server/helpers/logger';
 import {
+  mapRegionsConfig,
+  mapConstellationsConfig,
+  mapSolarSystemsConfig,
   mapStargatesConfig,
   mapStarsConfig,
   mapPlanetsConfig,
@@ -46,19 +49,19 @@ export default {
     },
   ],
 
-  async action(options: any, sdeFetcher: SdeFetcher = defaultSdeFetcher) {
+  async action(options: any) {
     const forceReimport = options.force || false;
 
     if (forceReimport) {
       logger.warn('FORCE REIMPORT MODE ENABLED');
-      sdeFetcher.enableForceReimport();
+      defaultSdeFetcher.enableForceReimport();
     }
 
     logger.info('Starting SDE sync and import...');
 
     try {
       // Sync (download if needed, extract)
-      const metadata = await sdeFetcher.sync();
+      const metadata = await defaultSdeFetcher.sync();
 
       logger.success('SDE sync completed!');
       logger.info('Metadata:', {
@@ -72,7 +75,7 @@ export default {
       });
 
       // List available tables
-      const tables = await sdeFetcher.listExtractedTables();
+      const tables = await defaultSdeFetcher.listExtractedTables();
       logger.info(
         `Available tables: ${chalk.yellow(tables.length.toString())} total`
       );
@@ -94,56 +97,60 @@ export default {
       // Import tables
       logger.info('Importing tables...');
 
-      // First batch - already implemented with special handling
-      await sdeFetcher.importMapSolarSystems(metadata.buildNumber);
-      await sdeFetcher.importMapRegions(metadata.buildNumber);
-      await sdeFetcher.importMapConstellations(metadata.buildNumber);
+      // Map tables (order matters: regions → constellations → systems)
+      await defaultSdeFetcher.importConfiguredTable(mapRegionsConfig);
+      await defaultSdeFetcher.importConfiguredTable(mapConstellationsConfig);
+      await defaultSdeFetcher.importConfiguredTable(mapSolarSystemsConfig);
 
-      // Map tables
-      await sdeFetcher.importConfiguredTable(mapStargatesConfig);
-      await sdeFetcher.importConfiguredTable(mapStarsConfig);
-      await sdeFetcher.importConfiguredTable(mapPlanetsConfig);
-      await sdeFetcher.importConfiguredTable(mapMoonsConfig);
-      await sdeFetcher.importConfiguredTable(mapAsteroidBeltsConfig);
+      // Post-process map tables to populate missing relationships
+      await defaultSdeFetcher.postProcessMapTables();
+
+      // Continue with other map tables
+      await defaultSdeFetcher.importConfiguredTable(mapStargatesConfig);
+      await defaultSdeFetcher.importConfiguredTable(mapStarsConfig);
+      await defaultSdeFetcher.importConfiguredTable(mapPlanetsConfig);
+      await defaultSdeFetcher.importConfiguredTable(mapMoonsConfig);
+      await defaultSdeFetcher.importConfiguredTable(mapAsteroidBeltsConfig);
 
       // Item/Type tables
-      await sdeFetcher.importConfiguredTable(typesConfig);
-      await sdeFetcher.importConfiguredTable(groupsConfig);
-      await sdeFetcher.importConfiguredTable(categoriesConfig);
+      await defaultSdeFetcher.importConfiguredTable(typesConfig);
+      await defaultSdeFetcher.importConfiguredTable(groupsConfig);
+      await defaultSdeFetcher.importConfiguredTable(categoriesConfig);
 
       // NPC tables
-      await sdeFetcher.importConfiguredTable(npcCorporationsConfig);
-      await sdeFetcher.importConfiguredTable(npcStationsConfig);
-      await sdeFetcher.importConfiguredTable(stationOperationsConfig);
-      await sdeFetcher.importConfiguredTable(npcCharactersConfig);
+      await defaultSdeFetcher.importConfiguredTable(npcCorporationsConfig);
+      await defaultSdeFetcher.importConfiguredTable(npcStationsConfig);
+      await defaultSdeFetcher.importConfiguredTable(stationOperationsConfig);
+      await defaultSdeFetcher.importConfiguredTable(npcCharactersConfig);
 
       // Character attributes
-      await sdeFetcher.importConfiguredTable(factionsConfig);
-      await sdeFetcher.importConfiguredTable(racesConfig);
-      await sdeFetcher.importConfiguredTable(bloodlinesConfig);
-      await sdeFetcher.importConfiguredTable(ancestriesConfig);
+      await defaultSdeFetcher.importConfiguredTable(factionsConfig);
+      await defaultSdeFetcher.importConfiguredTable(racesConfig);
+      await defaultSdeFetcher.importConfiguredTable(bloodlinesConfig);
+      await defaultSdeFetcher.importConfiguredTable(ancestriesConfig);
 
       // Market/Meta tables
-      await sdeFetcher.importConfiguredTable(marketGroupsConfig);
-      await sdeFetcher.importConfiguredTable(metaGroupsConfig);
-      await sdeFetcher.importConfiguredTable(skinsConfig);
+      await defaultSdeFetcher.importConfiguredTable(marketGroupsConfig);
+      await defaultSdeFetcher.importConfiguredTable(metaGroupsConfig);
+      await defaultSdeFetcher.importConfiguredTable(skinsConfig);
 
       // Dogma tables
-      await sdeFetcher.importConfiguredTable(dogmaAttributesConfig);
-      await sdeFetcher.importConfiguredTable(dogmaEffectsConfig);
+      await defaultSdeFetcher.importConfiguredTable(dogmaAttributesConfig);
+      await defaultSdeFetcher.importConfiguredTable(dogmaEffectsConfig);
 
       // Optimize materialized views
-      await sdeFetcher.optimizeViews();
+      await defaultSdeFetcher.optimizeViews();
 
       // Clean up old downloads
-      await sdeFetcher.cleanup();
+      await defaultSdeFetcher.cleanup();
 
       // Disable force reimport if it was enabled
       if (forceReimport) {
-        sdeFetcher.disableForceReimport();
+        defaultSdeFetcher.disableForceReimport();
       }
 
       logger.success('All done!');
+      process.exit(0);
     } catch (error) {
       logger.error('Error:', { error: String(error) });
       process.exit(1);

@@ -38,46 +38,46 @@ export interface DogmaEffect {
 export async function getDogmaEffect(
   effectId: number
 ): Promise<DogmaEffect | null> {
-  const [row] = await database.sql<DogmaEffect[]>`
-    SELECT * FROM dogmaEffects WHERE effectId = ${effectId}
-  `;
-  return row || null;
+  return database.findOne<DogmaEffect>(
+    'SELECT * FROM "dogmaEffects" WHERE "effectId" = :effectId',
+    { effectId }
+  );
 }
 
 /**
  * Get all published dogma effects
  */
 export async function getPublishedDogmaEffects(): Promise<DogmaEffect[]> {
-  return await database.sql<DogmaEffect[]>`
-    SELECT * FROM dogmaEffects WHERE published = 1 ORDER BY name
-  `;
+  return database.find<DogmaEffect>(
+    'SELECT * FROM "dogmaEffects" WHERE published = 1 ORDER BY name'
+  );
 }
 
 /**
  * Get offensive dogma effects
  */
 export async function getOffensiveDogmaEffects(): Promise<DogmaEffect[]> {
-  return await database.sql<DogmaEffect[]>`
-    SELECT * FROM dogmaEffects WHERE isOffensive = 1 ORDER BY name
-  `;
+  return database.find<DogmaEffect>(
+    'SELECT * FROM "dogmaEffects" WHERE "isOffensive" = 1 ORDER BY name'
+  );
 }
 
 /**
  * Get assistance dogma effects
  */
 export async function getAssistanceDogmaEffects(): Promise<DogmaEffect[]> {
-  return await database.sql<DogmaEffect[]>`
-    SELECT * FROM dogmaEffects WHERE isAssistance = 1 ORDER BY name
-  `;
+  return database.find<DogmaEffect>(
+    'SELECT * FROM "dogmaEffects" WHERE "isAssistance" = 1 ORDER BY name'
+  );
 }
 
 /**
  * Get warp-safe dogma effects
  */
 export async function getWarpSafeDogmaEffects(): Promise<DogmaEffect[]> {
-  return await database.sql<DogmaEffect[]>`
-    SELECT * FROM dogmaEffects WHERE isWarpSafe = 1 ORDER BY name
-  `;
+  return database.find<DogmaEffect>(
+    'SELECT * FROM "dogmaEffects" WHERE "isWarpSafe" = 1 ORDER BY name'
+  );
 }
 
 /**
@@ -87,12 +87,13 @@ export async function searchDogmaEffects(
   namePattern: string,
   limit: number = 10
 ): Promise<DogmaEffect[]> {
-  return await database.sql<DogmaEffect[]>`
-    SELECT * FROM dogmaEffects
-    WHERE name ILIKE ${`%${namePattern}%`}
-    ORDER BY name
-    LIMIT ${limit}
-  `;
+  return database.find<DogmaEffect>(
+    `SELECT * FROM "dogmaEffects"
+     WHERE name ILIKE :pattern
+     ORDER BY name
+     LIMIT :limit`,
+    { pattern: `%${namePattern}%`, limit }
+  );
 }
 
 /**
@@ -101,9 +102,10 @@ export async function searchDogmaEffects(
 export async function getDogmaEffectName(
   effectId: number
 ): Promise<string | null> {
-  const [result] = await database.sql<{ name: string }[]>`
-    SELECT name FROM dogmaEffects WHERE effectId = ${effectId}
-  `;
+  const result = await database.findOne<{ name: string }>(
+    'SELECT name FROM "dogmaEffects" WHERE "effectId" = :effectId',
+    { effectId }
+  );
   return result?.name || null;
 }
 
@@ -111,8 +113,8 @@ export async function getDogmaEffectName(
  * Count total dogma effects
  */
 export async function countDogmaEffects(): Promise<number> {
-  const [result] = await database.sql<{ count: number }[]>`
-    SELECT count(*) as count FROM dogmaEffects
-  `;
+  const result = await database.findOne<{ count: number }>(
+    'SELECT count(*) as count FROM "dogmaEffects"'
+  );
   return Number(result?.count || 0);
 }
