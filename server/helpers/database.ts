@@ -12,6 +12,14 @@ export class DatabaseHelper {
 
   constructor() {}
 
+  setUrl(url: string): void {
+    if (this._sql) {
+      this._sql.end();
+    }
+    process.env.DATABASE_URL = url;
+    this._sql = undefined; // Force re-initialization on next access
+  }
+
   get sql(): postgres.Sql {
     if (!this._sql) {
       // Initialize postgres client

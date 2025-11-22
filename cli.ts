@@ -65,7 +65,7 @@ async function loadCommandsRecursive(
           registerCommand(program, commandName, commandExport)
         }
       } catch (error) {
-        logger.error(`Failed to load command from ${fullPath}:`, { error: String(error) })
+        logger.error(`Failed to load command from ${fullPath}:`, { error: String(error), stack: error.stack })
       }
     }
   }

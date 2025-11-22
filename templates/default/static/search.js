@@ -46,7 +46,7 @@
             }
 
             const data = await response.json();
-            displayResults(data.results || []);
+            displayResults(data);
         } catch (error) {
             if (error.name === 'AbortError') {
                 // Request was cancelled, ignore
@@ -61,28 +61,12 @@
     }
 
     // Display search results
-    function displayResults(results) {
-        if (results.length === 0) {
+    function displayResults(grouped) {
+        if (Object.keys(grouped).length === 0) {
             searchResults.innerHTML = '<div class="search-no-results">No results found</div>';
             searchResults.style.display = 'block';
             return;
         }
-
-        // Group results by type
-        const grouped = {
-            character: [],
-            corporation: [],
-            alliance: [],
-            item: [],
-            system: [],
-            region: []
-        };
-
-        results.forEach(result => {
-            if (grouped[result.type]) {
-                grouped[result.type].push(result);
-            }
-        });
 
         let html = '';
 

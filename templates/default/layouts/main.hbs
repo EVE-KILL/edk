@@ -3,14 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="{{#if page.description}}{{page.description}}{{else}}EDK Killboard - Real-time killmail tracking{{/if}}" />
-    <meta name="keywords" content="{{#if page.keywords}}{{page.keywords}}{{else}}EDK, killboard, EVE Online, killmail{{/if}}" />
-    <title>{{#if page.title}}{{page.title}} - {{/if}}{{#if config.title}}{{config.title}}{{else}}EVE-KILL{{/if}}</title>
+    <meta name="description" content="EDK Killboard - {{#if config.title}}{{config.title}}{{else}}EDK{{/if}}" />
+    <meta name="keywords" content="EDK, killboard, EVE Online, killmail, {{#if config.title}}{{config.title}}, {{/if}}eve-kill" />
+    <title>{{#if title}}{{title}} - {{/if}}{{#if config.title}}{{config.title}}{{else}}EVE Kill{{/if}}</title>
 
     <link rel="stylesheet" type="text/css" href="/edk.css" />
 
-    <!-- Dropdown Menu & Search Styles -->
+    {{#if additionalCSS}}
+    {{#each additionalCSS}}
+    <link rel="stylesheet" type="text/css" href="{{this}}" />
+    {{/each}}
+    {{/if}}
+
+    <!-- Dropdown Menu Styles -->
     <style>
+        /* Soft Aesthetic Navigation Bar */
+        .navigation {
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid var(--color-border-dark);
+            border-bottom: 1px solid var(--color-border-dark);
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+
+        .navigation table {
+            width: 100%;
+            table-layout: fixed;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            margin: 0;
+            gap: 0;
+        }
+
+        .navigation td {
+            text-align: center;
+            position: relative;
+            padding: 0;
+            flex: 1;
+            background: transparent;
+            border: none;
+        }
+
+        .navigation td:not(:last-child) {
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .navigation td > a {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: color 0.2s ease, background-color 0.2s ease;
+        }
+
+        .navigation td > a:hover {
+            color: #4a9eff;
+            background-color: rgba(74, 158, 255, 0.08);
+        }
+
         /* Dropdown Styles */
         .nav-dropdown {
             overflow: visible;
@@ -112,7 +171,7 @@
             margin: 0;
         }
 
-        /* Search Box Styles */
+        /* Search Box Styles - Soft Aesthetic */
         .nav-search {
             position: relative;
             overflow: visible !important;
@@ -229,6 +288,8 @@
             color: #ef4444;
         }
     </style>
+
+    {{{headerContent}}}
 </head>
 <body>
     <!-- Popup container for modals -->
@@ -239,7 +300,7 @@
         <!-- Header / Banner -->
         <header>
             <h1>
-                {{#if config.title}}{{config.title}}{{else}}EVE-KILL{{/if}}
+                {{#if config.title}}{{config.title}}{{else}}EDK{{/if}}
             </h1>
             {{#if config.subtitle}}
             <p>{{config.subtitle}}</p>
@@ -251,10 +312,9 @@
             <table cellspacing="0" cellpadding="0">
                 <tr>
                     <td><a href="/">Home</a></td>
-                    <td><a href="/about">About</a></td>
                     <td class="nav-dropdown">
                         <div class="nav-dropdown-wrapper">
-                            <a href="/kills/latest">Kills</a>
+                            <a href="/kills">Kills</a>
                             <div class="nav-dropdown-content multi-column">
                                 <div class="dropdown-section-header">Main</div>
                                 <a href="/kills/latest">Latest</a>
@@ -291,7 +351,33 @@
                             </div>
                         </div>
                     </td>
-                    <td><a href="/entities">Entities</a></td>
+                    {{#if followedEntities.hasEntities}}
+                    <td class="nav-dropdown">
+                        <div class="nav-dropdown-wrapper">
+                            <a href="/entities">Entities</a>
+                            <div class="nav-dropdown-content">
+                                {{#if followedEntities.characterDetails.length}}
+                                <div class="dropdown-section-header">Characters</div>
+                                {{#each followedEntities.characterDetails}}
+                                <a href="/character/{{this.id}}">{{this.name}}</a>
+                                {{/each}}
+                                {{/if}}
+                                {{#if followedEntities.corporationDetails.length}}
+                                <div class="dropdown-section-header">Corporations</div>
+                                {{#each followedEntities.corporationDetails}}
+                                <a href="/corporation/{{this.id}}">{{this.name}} [{{this.ticker}}]</a>
+                                {{/each}}
+                                {{/if}}
+                                {{#if followedEntities.allianceDetails.length}}
+                                <div class="dropdown-section-header">Alliances</div>
+                                {{#each followedEntities.allianceDetails}}
+                                <a href="/alliance/{{this.id}}">{{this.name}} &lt;{{this.ticker}}&gt;</a>
+                                {{/each}}
+                                {{/if}}
+                            </div>
+                        </div>
+                    </td>
+                    {{/if}}
                     <td><a href="/post">Post</a></td>
                     <td class="nav-search">
                         <div class="search-container">
@@ -328,7 +414,13 @@
             <p style="color: #555; margin: 5px 0 0 0; font-size: 9px;">
                 Page loaded in {{performance.totalTime}}ms
                 {{#if performance.queryCount}}
-                | {{performance.queryCount}} {{#if (eq performance.queryCount 1)}}query{{else}}queries{{/if}} ({{performance.queryTime}}ms)
+                | {{performance.queryCount}} {{#ifEquals performance.queryCount 1}}query{{else}}queries{{/ifEquals}} ({{performance.queryTime}}ms)
+                {{/if}}
+                {{#if performance.templateTime}}
+                | Template: {{performance.templateTime}}ms
+                {{/if}}
+                {{#if performance.cacheHit}}
+                | Cached
                 {{/if}}
             </p>
             {{/if}}
@@ -354,33 +446,23 @@
                 row.style.cursor = 'pointer';
             });
         });
-
-        // Basic search functionality placeholder
-        document.addEventListener('DOMContentLoaded', function() {
-            var searchInput = document.getElementById('globalSearch');
-            var searchResults = document.getElementById('searchResults');
-
-            if (searchInput) {
-                searchInput.addEventListener('focus', function() {
-                    // Show search results on focus
-                    searchResults.style.display = 'block';
-                });
-
-                searchInput.addEventListener('blur', function() {
-                    // Hide search results on blur (with delay for clicks)
-                    setTimeout(function() {
-                        searchResults.style.display = 'none';
-                    }, 200);
-                });
-            }
-        });
     </script>
 
-    <!-- Fitting Wheel Script -->
-    <script src="/fitting-wheel.js" type="text/javascript"></script>
-
-    {{#if performance}}
-      {{> "partials/debug-bar"}}
+    {{#if additionalJS}}
+    {{#each additionalJS}}
+    <script type="text/javascript" src="{{this}}"></script>
+    {{/each}}
     {{/if}}
+
+    <!-- Fitting Wheel Script -->
+    <script type="text/javascript" src="/fitting-wheel.js"></script>
+
+    <!-- Search Script -->
+    <script type="text/javascript" src="/search.js"></script>
+
+    <!-- Real-time Site Updates (Entity names, prices, killlist) -->
+    <script type="text/javascript" src="/site-updates.js"></script>
+
+    {{{footerContent}}}
 </body>
 </html>
