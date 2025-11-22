@@ -1,14 +1,20 @@
+import { z } from 'zod'
+import { withValidation, getValidated } from '~/server/utils/validation'
 import type { H3Event } from 'h3'
 import { TypeQueries } from '../../models/types'
 import { getGroup } from '../../models/groups'
 import { getCategory } from '../../models/categories'
 import { render } from '../../helpers/templates'
 
-export default defineEventHandler(async (event: H3Event) => {
-  const id = Number(event.context.params?.id)
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid Item ID' })
-  }
+export default withValidation({
+  params: z.object({
+    id: z.string().refine(val => !isNaN(parseInt(val, 10)), {
+      message: 'ID must be a number'
+    })
+  })
+})(defineEventHandler(async (event: H3Event) => {
+  const { params } = getValidated(event)
+  const id = parseInt(params.id, 10)
 
   // Fetch item info
   const item = await TypeQueries.getType(id)
@@ -54,4 +60,4 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   return render('pages/item-detail.hbs', pageContext, data, event)
-})
+}))

@@ -12,13 +12,11 @@ export class DatabaseHelper {
 
   constructor() {}
 
-  get sql(): postgres.Sql {
-    if (!this._sql) {
-      // Initialize postgres client
-      const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
-
-      // postgres.js manages the connection pool automatically
-      this._sql = postgres(url, {
+  setUrl(url: string) {
+    if (this._sql) {
+      this._sql.end()
+    }
+    this._sql = postgres(url, {
         max: 10, // Max connections
         idle_timeout: 20, // Idle connection timeout in seconds
         connect_timeout: 10, // Connection timeout
@@ -27,10 +25,17 @@ export class DatabaseHelper {
           // undefined
         }
       })
+  }
+
+  get sql(): postgres.Sql {
+    if (!this._sql) {
+      // Initialize postgres client
+      const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
+      this.setUrl(url)
     }
 
     // Get the raw SQL instance
-    const sqlInstance = this._sql
+    const sqlInstance = this._sql!
 
     // From here, we create a proxy to intercept query calls for performance tracking.
     // The handler retrieves the performance tracker from the current async context.

@@ -1,3 +1,5 @@
+import { z } from 'zod'
+import { withValidation, getValidated } from '~/server/utils/validation'
 import type { H3Event } from 'h3'
 import { timeAgo } from '../../../helpers/time'
 import { render, normalizeKillRow } from '../../../helpers/templates'
@@ -5,15 +7,21 @@ import { getEntityStats } from '../../../models/entityStats'
 import { getAlliance } from '../../../models/alliances'
 import { getEntityKillmails, countEntityKillmails } from '../../../models/killlist'
 
-export default defineEventHandler(async (event: H3Event) => {
-  const allianceId = Number.parseInt(getRouterParam(event, 'id') || '0')
-
-  if (!allianceId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid alliance ID'
+export default withValidation({
+  params: z.object({
+    id: z.string().refine(val => !isNaN(parseInt(val, 10)), {
+      message: 'ID must be a number'
     })
-  }
+  }),
+  query: z.object({
+    page: z.string().optional().default('1').refine(val => !isNaN(parseInt(val, 10)), {
+      message: 'Page must be a number'
+    })
+  })
+})(defineEventHandler(async (event: H3Event) => {
+  const { params, query } = getValidated(event)
+  const allianceId = parseInt(params.id, 10)
+  const page = parseInt(query.page || '1', 10)
 
   // Fetch alliance basic info using model
   const allianceData = await getAlliance(allianceId)
@@ -29,8 +37,6 @@ export default defineEventHandler(async (event: H3Event) => {
   const stats = await getEntityStats(allianceId, 'alliance')
 
   // Get pagination parameters
-  const query = getQuery(event)
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1)
   const perPage = 30
 
   // Fetch killmails where alliance was attacker (kills) using model
@@ -90,7 +96,7 @@ export default defineEventHandler(async (event: H3Event) => {
       pagination
     }
   )
-})
+}))
 
 // Helper function to generate page numbers
 function generatePageNumbers(currentPage: number, totalPages: number): number[] {

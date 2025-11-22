@@ -1,8 +1,6 @@
-/**
- * Killmail detail page
- * Shows complete killmail information including victim, attackers, items, and stats
- * Layout: 65% left (items/fitting wheel), 35% right (victim/attackers)
- */
+
+import { z } from 'zod'
+import { withValidation, getValidated } from '~/server/utils/validation'
 import type { H3Event } from 'h3'
 import { timeAgo } from '../../helpers/time'
 import { render } from '../../helpers/templates'
@@ -71,17 +69,15 @@ interface ItemsBySlot {
   other: ItemSlot[]
 }
 
-export default defineEventHandler(async (event: H3Event) => {
-  const killmailId = getRouterParam(event, 'id')
-
-  if (!killmailId) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Killmail not found'
+export default withValidation({
+  params: z.object({
+    id: z.string().refine(val => !isNaN(parseInt(val, 10)), {
+      message: 'ID must be a number'
     })
-  }
-
-  const id = parseInt(killmailId, 10)
+  })
+})(defineEventHandler(async (event: H3Event) => {
+  const { params } = getValidated(event)
+  const id = parseInt(params.id, 10)
 
   // Fetch killmail details using model
   const killmail = await getKillmailDetails(id)
@@ -374,4 +370,4 @@ export default defineEventHandler(async (event: H3Event) => {
     },
     templateData
   )
-})
+}))

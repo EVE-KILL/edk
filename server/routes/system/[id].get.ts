@@ -1,3 +1,5 @@
+import { z } from 'zod'
+import { withValidation, getValidated } from '~/server/utils/validation'
 import type { H3Event } from 'h3'
 import { getSolarSystem, getSystemStats } from '../../models/solarSystems'
 import { getRegion } from '../../models/regions'
@@ -5,11 +7,21 @@ import { getFilteredKillsWithNames, countFilteredKills } from '../../models/kill
 import { getTopByKills } from '../../models/topBoxes'
 import { normalizeKillRow, render } from '../../helpers/templates'
 
-export default defineEventHandler(async (event: H3Event) => {
-  const id = Number(event.context.params?.id)
-  if (!id || isNaN(id)) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid System ID' })
-  }
+export default withValidation({
+  params: z.object({
+    id: z.string().refine(val => !isNaN(parseInt(val, 10)), {
+      message: 'ID must be a number'
+    })
+  }),
+  query: z.object({
+    page: z.string().optional().default('1').refine(val => !isNaN(parseInt(val, 10)), {
+      message: 'Page must be a number'
+    })
+  })
+})(defineEventHandler(async (event: H3Event) => {
+  const { params, query } = getValidated(event)
+  const id = parseInt(params.id, 10)
+  const page = parseInt(query.page || '1', 10)
 
   // Fetch system info
   const system = await getSolarSystem(id)
@@ -28,8 +40,6 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   // Get pagination parameters
-  const query = getQuery(event)
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1)
   const perPage = 50
 
   // Fetch stats and killmails in parallel
@@ -92,4 +102,4 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   return render('pages/system-detail.hbs', pageContext, data, event)
-})
+}))

@@ -1,8 +1,19 @@
+import { z } from 'zod'
+import { withValidation, getValidated } from '~/server/utils/validation'
 import type { H3Event } from 'h3'
 import { render, normalizeKillRow } from '../helpers/templates'
 import { getFollowedEntitiesLosses, countFollowedEntitiesLosses } from '../models/killlist'
 
-export default defineEventHandler(async (event: H3Event) => {
+export default withValidation({
+  query: z.object({
+    page: z.string().optional().default('1').refine(val => !isNaN(parseInt(val, 10)), {
+      message: 'Page must be a number'
+    })
+  })
+})(defineEventHandler(async (event: H3Event) => {
+  const { query } = getValidated(event)
+  const page = parseInt(query.page || '1', 10)
+
   const pageContext = {
     title: 'Losses | EVE-KILL',
     description: 'Losses for followed entities',
@@ -16,8 +27,6 @@ export default defineEventHandler(async (event: H3Event) => {
   const hasEntities = charIds.length > 0 || corpIds.length > 0 || allyIds.length > 0
 
   // Get pagination parameters
-  const query = getQuery(event)
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1)
   const perPage = 30
 
   let killmails: any[] = []
@@ -50,4 +59,4 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   return render('pages/losses.hbs', pageContext, data, event)
-})
+}))

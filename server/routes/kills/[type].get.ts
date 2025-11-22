@@ -1,6 +1,6 @@
-/**
- * Filtered kills page - shows kills filtered by type (solo, big, nullsec, etc.)
- */
+import { z } from 'zod'
+import { withValidation, getValidated } from '~/server/utils/validation'
+import { generatePageNumbers } from '~/server/utils/pagination'
 import type { H3Event } from 'h3'
 import { timeAgo } from '../../helpers/time'
 import { render, normalizeKillRow } from '../../helpers/templates'
@@ -232,22 +232,23 @@ function getTitleForType(type: KillType): string {
   return titles[type] || 'Kills'
 }
 
-export default defineEventHandler(async (event: H3Event) => {
-  const type = getRouterParam(event, 'type') as string | undefined
-
-  // Validate the type
-  if (!type || !VALID_KILL_TYPES.includes(type as KillType)) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Invalid kill type'
+export default withValidation({
+  params: z.object({
+    type: z.string().refine(val => VALID_KILL_TYPES.includes(val as KillType), {
+      message: 'Invalid kill type'
     })
-  }
-
-  const killType = type as KillType
+  }),
+  query: z.object({
+    page: z.string().optional().default('1').refine(val => !isNaN(parseInt(val, 10)), {
+      message: 'Page must be a number'
+    })
+  })
+})(defineEventHandler(async (event: H3Event) => {
+  const { params, query } = getValidated(event)
+  const killType = params.type as KillType
+  const page = parseInt(query.page || '1', 10)
 
   // Get pagination parameters
-  const query = getQuery(event)
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1)
   const perPage = 30
 
   // Build filters based on the type
@@ -374,23 +375,4 @@ export default defineEventHandler(async (event: H3Event) => {
       mostValuableKills
     }
   )
-})
-
-// Helper function to generate page numbers
-function generatePageNumbers(currentPage: number, totalPages: number): number[] {
-  const pages: number[] = []
-  const maxVisible = 5
-
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2))
-  let endPage = Math.min(totalPages, startPage + maxVisible - 1)
-
-  if (endPage - startPage + 1 < maxVisible) {
-    startPage = Math.max(1, endPage - maxVisible + 1)
-  }
-
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i)
-  }
-
-  return pages
-}
+}))
