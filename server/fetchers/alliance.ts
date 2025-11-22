@@ -1,5 +1,6 @@
 import { fetchESI } from '../helpers/esi'
 import { storeAlliance as storeAllianceInDB, getAlliance } from '../models/alliances'
+import { updateSearchEntity } from '../helpers/typesense'
 
 /**
  * ESI Alliance Data - Fields we store
@@ -86,6 +87,9 @@ async function storeAlliance(allianceId: number, alliance: ESIAlliance): Promise
     name: alliance.name,
     ticker: alliance.ticker
   })
+
+  // Update search index
+  await updateSearchEntity(allianceId, alliance.name, 'alliance')
 }
 
 /**

@@ -87,12 +87,17 @@ export default defineEventHandler(async (event: H3Event) => {
     {
       title: `${corporationData.name} - Losses`,
       description: `Losses by ${corporationData.name}`,
-      keywords: 'eve online, corporation, killmail, losses, pvp'
+      keywords: 'eve online, corporation, losses, killmail, pvp'
     },
     {
       ...entityData,
       killmails,
-      pagination
+      pagination,
+      wsFilter: {
+        type: 'corporation',
+        id: corporationId.toString(),
+        mode: 'losses'
+      }
     }
   )
 })

@@ -1,3 +1,7 @@
+/**
+ * Search API endpoint
+ * Queries Typesense for characters, corporations, alliances, items, systems, etc.
+ */
 import { defineEventHandler, getQuery } from 'h3'
 import { typesense } from '~/helpers/typesense'
 import { logger } from '~/helpers/logger'
@@ -5,20 +9,20 @@ import { logger } from '~/helpers/logger'
 export default defineEventHandler(async (event) => {
   const { q, limit = '20' } = getQuery(event);
 
-  if (!q || typeof q !== 'string') {
-    event.res.statusCode = 400
-    return { error: 'Search query is required' }
+  if (!q || typeof q !== 'string' || q.trim().length < 2) {
+    return {}
   }
 
-  const searchParameters = {
-    q,
-    query_by: 'name',
-    per_page: parseInt(limit as string, 10),
-    group_by: 'type',
-    group_limit: 5,
-  };
-
   try {
+    const searchParameters = {
+      q: q.trim(),
+      query_by: 'name',
+      per_page: Math.min(parseInt(limit as string, 10), 50),
+      group_by: 'type',
+      group_limit: 5,
+      sort_by: 'name:asc'
+    };
+
     const searchResult = await typesense.collections('search').documents().search(searchParameters);
 
     const groupedResults: Record<string, any[]> = {};
@@ -26,14 +30,32 @@ export default defineEventHandler(async (event) => {
     for (const group of searchResult.grouped_hits || []) {
       const type = group.group_key[0];
       if (type) {
-        groupedResults[type] = group.hits.map((hit) => hit.document);
+        groupedResults[type] = group.hits.map((hit) => {
+          const doc = hit.document as any;
+          const rawId = doc.id as string;
+          const entityId = typeof rawId === 'string' ? rawId.replace(`${type}-`, '') : rawId;
+          return {
+            id: doc.id,
+            entityId,
+            name: doc.name,
+            type: doc.type
+          };
+        });
       }
     }
 
     return groupedResults;
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Typesense search error:', { err: error })
-    event.res.statusCode = 500
-    return { error: 'Search failed' }
+
+    // If collection doesn't exist, return empty results
+    if (error.httpStatus === 404) {
+      return {}
+    }
+
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Search failed'
+    })
   }
 })

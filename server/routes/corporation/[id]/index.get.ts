@@ -146,7 +146,12 @@ export default defineEventHandler(async (event: H3Event) => {
       top10Stats: top10,
       mostValuableKills: transformedMostValuable,
       recentKillmails,
-      pagination
+      pagination,
+      wsFilter: {
+        type: 'corporation',
+        id: corporationId.toString(),
+        mode: 'all'
+      }
     }
   )
 })

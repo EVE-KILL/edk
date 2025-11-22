@@ -1,6 +1,7 @@
 import { fetchESI } from '../helpers/esi'
 import { storeCorporation as storeCorporationInDB, getCorporation } from '../models/corporations'
 import { getNPCCorporation } from '../models/npcCorporations'
+import { updateSearchEntity } from '../helpers/typesense'
 
 /**
  * ESI Corporation Data - Fields we store
@@ -134,6 +135,9 @@ async function storeCorporation(corporationId: number, corporation: ESICorporati
     ticker: corporation.ticker,
     url: corporation.url
   })
+
+  // Update search index
+  await updateSearchEntity(corporationId, corporation.name, 'corporation')
 }
 
 /**

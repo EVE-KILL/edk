@@ -97,7 +97,7 @@
                 html += `<div class="search-group-header">${typeLabels[type]}</div>`;
 
                 grouped[type].forEach(result => {
-                    const url = typeUrls[type] + result.id;
+                    const url = typeUrls[type] + (result.entityId || result.id);
                     const ticker = result.ticker ? ` [${result.ticker}]` : '';
                     const description = result.description ? `<span class="search-item-description">${result.description}</span>` : '';
 

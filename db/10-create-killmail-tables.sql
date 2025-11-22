@@ -1,10 +1,17 @@
 -- ============================================================================
--- CORE KILLMAIL TABLES (OPTIMIZED)
+-- CORE KILLMAIL TABLES (OPTIMIZED WITH PARTITIONING)
+-- ============================================================================
+-- Tables are partitioned by year-month based on killmailTime to handle
+-- 90M+ killmails, 720M+ attackers, and 1B+ items efficiently.
 -- ============================================================================
 
+-- Suppress NOTICE messages for cleaner output
+SET client_min_messages TO WARNING;
+
 -- Killmails table - Core killmail records with victim information
+-- Partitioned by RANGE on killmailTime (monthly partitions)
 CREATE TABLE IF NOT EXISTS killmails (
-  "killmailId" INTEGER PRIMARY KEY,
+  "killmailId" INTEGER NOT NULL,
   "killmailTime" TIMESTAMP NOT NULL,
   "solarSystemId" INTEGER NOT NULL,
 
@@ -38,9 +45,12 @@ CREATE TABLE IF NOT EXISTS killmails (
   "solo" BOOLEAN DEFAULT false,
   "awox" BOOLEAN DEFAULT false,
 
-  "createdAt" TIMESTAMP DEFAULT NOW()
-);
+  "createdAt" TIMESTAMP DEFAULT NOW(),
 
+  PRIMARY KEY ("killmailId", "killmailTime")
+) PARTITION BY RANGE ("killmailTime");
+
+-- Create indexes on the parent table (will be inherited by partitions)
 CREATE INDEX IF NOT EXISTS "idx_killmails_solar_system" ON killmails ("solarSystemId");
 CREATE INDEX IF NOT EXISTS "idx_killmails_victim_character" ON killmails ("victimCharacterId");
 CREATE INDEX IF NOT EXISTS "idx_killmails_victim_corporation" ON killmails ("victimCorporationId");
@@ -51,9 +61,9 @@ CREATE INDEX IF NOT EXISTS "idx_killmails_total_value" ON killmails ("totalValue
 CREATE INDEX IF NOT EXISTS "idx_killmails_time" ON killmails ("killmailTime");
 
 
--- Attackers table
+-- Attackers table - Partitioned by RANGE on killmailTime (monthly partitions)
 CREATE TABLE IF NOT EXISTS attackers (
-  "id" SERIAL PRIMARY KEY,
+  "id" BIGSERIAL NOT NULL,
   "killmailId" INTEGER NOT NULL,
   "killmailTime" TIMESTAMP NOT NULL,
   "allianceId" INTEGER,
@@ -64,8 +74,10 @@ CREATE TABLE IF NOT EXISTS attackers (
   "securityStatus" REAL,
   "shipTypeId" INTEGER,
   "weaponTypeId" INTEGER,
-  "createdAt" TIMESTAMP DEFAULT NOW()
-);
+  "createdAt" TIMESTAMP DEFAULT NOW(),
+
+  PRIMARY KEY ("id", "killmailTime")
+) PARTITION BY RANGE ("killmailTime");
 
 CREATE INDEX IF NOT EXISTS "idx_attackers_killmail_id" ON attackers ("killmailId");
 CREATE INDEX IF NOT EXISTS "idx_attackers_character" ON attackers ("characterId");
@@ -77,9 +89,9 @@ CREATE INDEX IF NOT EXISTS "idx_attackers_final_blow" ON attackers ("finalBlow")
 CREATE INDEX IF NOT EXISTS "idx_attackers_time" ON attackers ("killmailTime");
 
 
--- Items table
+-- Items table - Partitioned by RANGE on killmailTime (monthly partitions)
 CREATE TABLE IF NOT EXISTS items (
-  "id" SERIAL PRIMARY KEY,
+  "id" BIGSERIAL NOT NULL,
   "killmailId" INTEGER NOT NULL,
   "killmailTime" TIMESTAMP NOT NULL,
   "flag" INTEGER,
@@ -87,10 +99,15 @@ CREATE TABLE IF NOT EXISTS items (
   "quantityDropped" INTEGER,
   "quantityDestroyed" INTEGER,
   "singleton" BOOLEAN,
-  "createdAt" TIMESTAMP DEFAULT NOW()
-);
+  "createdAt" TIMESTAMP DEFAULT NOW(),
+
+  PRIMARY KEY ("id", "killmailTime")
+) PARTITION BY RANGE ("killmailTime");
 
 CREATE INDEX IF NOT EXISTS "idx_items_killmail_id" ON items ("killmailId");
 CREATE INDEX IF NOT EXISTS "idx_items_item_type" ON items ("itemTypeId");
 CREATE INDEX IF NOT EXISTS "idx_items_flag" ON items ("flag");
 CREATE INDEX IF NOT EXISTS "idx_items_time" ON items ("killmailTime");
+
+-- Restore normal message level
+SET client_min_messages TO NOTICE;

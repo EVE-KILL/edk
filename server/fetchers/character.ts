@@ -1,5 +1,6 @@
 import { fetchESI } from '../helpers/esi'
 import { storeCharacter as storeCharacterInDB, getCharacter } from '../models/characters'
+import { updateSearchEntity } from '../helpers/typesense'
 
 /**
  * ESI Character Data - Fields we store
@@ -95,6 +96,9 @@ async function storeCharacter(characterId: number, character: ESICharacter): Pro
     raceId: character.race_id,
     securityStatus: character.security_status
   })
+
+  // Update search index
+  await updateSearchEntity(characterId, character.name, 'character')
 }
 
 /**

@@ -6,11 +6,12 @@ const logger = {
 }
 
 export const name = 'refresh-kill-list'
-export const description = 'Refreshes the kill_list materialized view'
-export const schedule = '*/5 * * * *' // Every 5 minutes
+export const description = '[DISABLED] kill_list is now a regular view, no refresh needed'
+export const schedule = '' // Disabled - kill_list is now a regular view, not materialized
 
 export const action = async () => {
-  logger.info('Refreshing kill_list materialized view...')
-  await database.sql`REFRESH MATERIALIZED VIEW CONCURRENTLY kill_list`
-  logger.info('Finished refreshing kill_list materialized view.')
+  // This cronjob is disabled because kill_list was converted from a materialized view
+  // to a regular view to avoid storing 90M+ rows of denormalized data.
+  // Regular views don't need to be refreshed - they query the base tables on demand.
+  logger.info('kill_list cronjob is disabled (kill_list is now a regular view)')
 }

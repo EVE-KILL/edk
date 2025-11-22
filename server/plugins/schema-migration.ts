@@ -386,6 +386,7 @@ async function syncTableSchema(statement: string) {
               'int4': 'integer',
               'int8': 'bigint',
               'serial': 'integer',
+              'bigserial': 'bigint',
               'varchar': 'character varying',
               'bool': 'boolean'
           }

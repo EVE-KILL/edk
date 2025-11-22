@@ -1,13 +1,44 @@
 -- Drop existing views in reverse order of dependency
+SET client_min_messages TO WARNING;
 DROP MATERIALIZED VIEW IF EXISTS top_characters_weekly;
 DROP MATERIALIZED VIEW IF EXISTS top_corporations_weekly;
 DROP MATERIALIZED VIEW IF EXISTS top_alliances_weekly;
 DROP MATERIALIZED VIEW IF EXISTS top_systems_weekly;
 DROP MATERIALIZED VIEW IF EXISTS top_regions_weekly;
 DROP MATERIALIZED VIEW IF EXISTS kill_list;
+DROP VIEW IF EXISTS kill_list;
+SET client_min_messages TO NOTICE;
 
--- Recreate kill_list with all necessary columns
-CREATE MATERIALIZED VIEW kill_list AS
+-- Add indexes to base tables to optimize kill_list view queries
+-- These indexes support the common query patterns: filtering by entity IDs, time-based queries, and aggregations
+
+-- Indexes for top attacker queries (kills by entity)
+CREATE INDEX IF NOT EXISTS idx_killmails_top_attacker_char ON killmails("topAttackerCharacterId", "killmailTime" DESC) WHERE "topAttackerCharacterId" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_killmails_top_attacker_corp ON killmails("topAttackerCorporationId", "killmailTime" DESC) WHERE "topAttackerCorporationId" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_killmails_top_attacker_ally ON killmails("topAttackerAllianceId", "killmailTime" DESC) WHERE "topAttackerAllianceId" IS NOT NULL;
+
+-- Composite indexes for victim queries (losses by entity) - time is already indexed separately
+CREATE INDEX IF NOT EXISTS idx_killmails_victim_char_time ON killmails("victimCharacterId", "killmailTime" DESC) WHERE "victimCharacterId" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_killmails_victim_corp_time ON killmails("victimCorporationId", "killmailTime" DESC);
+CREATE INDEX IF NOT EXISTS idx_killmails_victim_ally_time ON killmails("victimAllianceId", "killmailTime" DESC) WHERE "victimAllianceId" IS NOT NULL;
+
+-- Indexes for ship group filtering (big ships filter)
+CREATE INDEX IF NOT EXISTS idx_killmails_victim_ship_type_time ON killmails("victimShipTypeId", "killmailTime" DESC);
+
+-- Indexes for value filtering and sorting
+CREATE INDEX IF NOT EXISTS idx_killmails_value_time ON killmails("totalValue" DESC, "killmailTime" DESC);
+
+-- Indexes for flags (npc, solo, awox filters)
+CREATE INDEX IF NOT EXISTS idx_killmails_npc_time ON killmails("npc", "killmailTime" DESC) WHERE "npc" = true;
+CREATE INDEX IF NOT EXISTS idx_killmails_solo_time ON killmails("solo", "killmailTime" DESC) WHERE "solo" = true;
+
+-- Composite index for weekly aggregations (used by top_* materialized views)
+-- Note: Cannot use NOW() in index predicate (not immutable), so we index all rows
+CREATE INDEX IF NOT EXISTS idx_killmails_time_attackers ON killmails("killmailTime" DESC, "topAttackerCharacterId", "topAttackerCorporationId", "topAttackerAllianceId", "totalValue");
+
+-- Recreate kill_list as a regular VIEW (not materialized)
+-- This avoids storing 90M+ rows of denormalized data
+CREATE VIEW kill_list AS
 SELECT
     k."killmailId",
     k."killmailTime",
@@ -63,12 +94,11 @@ LEFT JOIN npccorporations anpc_corp ON k."topAttackerCorporationId" = anpc_corp.
 LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
 LEFT JOIN types aship ON k."topAttackerShipTypeId" = aship."typeId";
 
--- Add indexes to kill_list
--- The unique index is REQUIRED for REFRESH MATERIALIZED VIEW CONCURRENTLY.
-CREATE UNIQUE INDEX IF NOT EXISTS kill_list_killmail_id_idx ON kill_list("killmailId");
-CREATE INDEX IF NOT EXISTS kill_list_killmail_time_idx ON kill_list("killmailTime" DESC);
+-- Note: kill_list is now a regular view, not materialized.
+-- Indexes are on the base killmails table above.
+-- This avoids materializing 90M+ rows while still providing good query performance.
 
--- Create top stats views
+-- Create top stats materialized views (these are small - only 10 rows each)
 CREATE MATERIALIZED VIEW IF NOT EXISTS top_characters_weekly AS
 SELECT
     "attackerCharacterId" AS id,

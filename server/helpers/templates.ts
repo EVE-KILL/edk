@@ -24,6 +24,7 @@ export interface NormalizedKillmail {
       typeId: number;
       name: string;
       group: string;
+      groupId: number;
     };
     character: NormalizedKillmailEntity;
     corporation: NormalizedKillmailEntity;
@@ -34,13 +35,21 @@ export interface NormalizedKillmail {
     id: number;
     name: string;
     region: string;
+    securityStatus?: number;
   };
+  solarSystemId: number;
+  regionId: number;
+  regionName: string;
+  securityStatus?: number;
   shipValue: number;
   totalValue: number;
   attackerCount: number;
   isLoss: boolean;
   isSolo: boolean;
   isNpc: boolean;
+  solo: boolean;
+  npc: boolean;
+  awox: boolean;
 }
 
 export function normalizeKillRow(km: any): NormalizedKillmail {
@@ -58,6 +67,9 @@ export function normalizeKillRow(km: any): NormalizedKillmail {
     km.victimShipName ?? km.victim_ship_name ?? "Unknown Ship";
   const victimShipGroup =
     km.victimShipGroup ?? km.victim_ship_group ?? "Unknown";
+  const victimShipGroupId = Number(
+    km.victimShipGroupId ?? km.victim_ship_group_id ?? 0
+  );
 
   const victimCharacterId =
     km.victimCharacterId ?? km.victim_character_id ?? null;
@@ -207,6 +219,7 @@ export function normalizeKillRow(km: any): NormalizedKillmail {
         typeId: victimShipTypeId,
         name: victimShipName,
         group: victimShipGroup,
+        groupId: victimShipGroupId,
       },
       character: {
         id: victimCharacterId,
@@ -231,13 +244,21 @@ export function normalizeKillRow(km: any): NormalizedKillmail {
       id: km.solarSystemId ?? km.solar_system_id ?? 0,
       name: km.solarSystemName ?? km.solar_system_name ?? "Unknown System",
       region: km.regionName ?? km.region_name ?? "Unknown Region",
+      securityStatus: km.securityStatus ?? km.security_status ?? km.security ?? undefined,
     },
+    solarSystemId: km.solarSystemId ?? km.solar_system_id ?? 0,
+    regionId: km.regionId ?? km.region_id ?? 0,
+    regionName: km.regionName ?? km.region_name ?? "Unknown Region",
+    securityStatus: km.securityStatus ?? km.security_status ?? km.security ?? undefined,
     shipValue: km.shipValue ?? km.ship_value ?? 0,
     totalValue: km.totalValue ?? km.total_value ?? 0,
     attackerCount,
     isLoss: Boolean(km.isLoss ?? km.is_loss ?? false),
-    isSolo: Boolean(km.isSolo ?? km.is_solo ?? attackerCount === 1),
-    isNpc: Boolean(km.isNpc ?? km.is_npc ?? false),
+    isSolo: Boolean(km.isSolo ?? km.is_solo ?? km.solo ?? attackerCount === 1),
+    isNpc: Boolean(km.isNpc ?? km.is_npc ?? km.npc ?? false),
+    solo: Boolean(km.solo ?? km.is_solo ?? km.isSolo ?? attackerCount === 1),
+    npc: Boolean(km.npc ?? km.is_npc ?? km.isNpc ?? false),
+    awox: Boolean(km.awox ?? false),
   };
 }
 

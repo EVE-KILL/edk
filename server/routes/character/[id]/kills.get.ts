@@ -90,12 +90,17 @@ export default defineEventHandler(async (event: H3Event) => {
     {
       title: `${characterData.name} - Kills`,
       description: `Kills by ${characterData.name}`,
-      keywords: 'eve online, character, killmail, kills, pvp'
+      keywords: 'eve online, character, kills, killmail, pvp'
     },
     {
       ...entityData,
       killmails,
-      pagination
+      pagination,
+      wsFilter: {
+        type: 'character',
+        id: characterId.toString(),
+        mode: 'kills'
+      }
     }
   )
 })

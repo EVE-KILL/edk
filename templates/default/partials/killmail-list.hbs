@@ -1,4 +1,5 @@
-<div class="kb-kl-list">
+<div class="kb-kl-list"
+     {{#if wsFilter}}data-ws-filter-type="{{wsFilter.type}}" data-ws-filter-id="{{wsFilter.id}}" data-ws-filter-mode="{{wsFilter.mode}}" data-ws-filter-topic="{{wsFilter.topic}}"{{/if}}>
     {{#if (length killmails)}}
     <div class="kb-kl-row kb-kl-row--header">
         <div class="kb-kl-col kb-kl-col--ship">Ship type</div>
@@ -10,7 +11,7 @@
     </div>
 
     {{#each killmails}}
-  <div class="kb-kl-row{{#if isLoss}} kb-kl-row--loss{{/if}}" data-killmail-id="{{killmailId}}" onclick="window.location.href='/killmail/{{killmailId}}';" style="cursor: pointer;">
+  <div class="kb-kl-row{{#if isLoss}} kb-kl-row--loss{{/if}}" data-killmail-id="{{killmailId}}" data-killmail-time="{{killmailTime}}" onclick="window.location.href='/killmail/{{killmailId}}';" style="cursor: pointer;">
         <div class="kb-kl-col kb-kl-col--ship">
             <div class="kb-kl-ship">
         {{> partials/eve-image type="ship" id=victim.ship.typeId size=48 alt=victim.ship.name class="kb-kl-ship-icon"}}
@@ -356,3 +357,276 @@
   .kb-kl-col--time { flex: 0 0 100%; border-left: none; }
 }
 </style>
+
+<script type="module">
+  // WebSocket configuration
+  const WS_PORT = 3002;
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.hostname}:${WS_PORT}/ws`;
+
+  let ws;
+  let reconnectInterval = 1000;
+  const MAX_RECONNECT_INTERVAL = 30000;
+
+  // Get filter configuration from the killmail list
+  const killmailList = document.querySelector('.kb-kl-list');
+  if (!killmailList) {
+    console.log('No killmail list found, skipping WebSocket setup');
+  } else {
+    const filterType = killmailList.dataset.wsFilterType; // 'character', 'corporation', 'alliance', 'killType'
+    const filterId = killmailList.dataset.wsFilterId;
+    const filterMode = killmailList.dataset.wsFilterMode; // 'all', 'kills', 'losses'
+    const filterTopic = killmailList.dataset.wsFilterTopic; // For kill type pages
+
+    function connect() {
+      console.log('Connecting to WebSocket:', wsUrl);
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('✅ WebSocket connected');
+        reconnectInterval = 1000;
+
+        // Subscribe based on filter configuration
+        let topics = ['all']; // Default to all
+
+        if (filterType === 'killType' && filterTopic) {
+          // Kill type pages (latest, solo, big, etc.)
+          topics = [filterTopic];
+        } else if (filterType && filterId) {
+          // Build topic based on entity type and ID
+          if (filterType === 'character') {
+            if (filterMode === 'kills') {
+              topics = [`attacker.${filterId}`];
+            } else if (filterMode === 'losses') {
+              topics = [`victim.${filterId}`];
+            } else {
+              // Dashboard - both kills and losses
+              topics = [`victim.${filterId}`, `attacker.${filterId}`];
+            }
+          } else if (filterType === 'corporation') {
+            if (filterMode === 'kills') {
+              topics = [`attacker.${filterId}`];
+            } else if (filterMode === 'losses') {
+              topics = [`victim.${filterId}`];
+            } else {
+              topics = [`victim.${filterId}`, `attacker.${filterId}`];
+            }
+          } else if (filterType === 'alliance') {
+            if (filterMode === 'kills') {
+              topics = [`attacker.${filterId}`];
+            } else if (filterMode === 'losses') {
+              topics = [`victim.${filterId}`];
+            } else {
+              topics = [`victim.${filterId}`, `attacker.${filterId}`];
+            }
+          }
+        }
+
+        console.log('📡 Subscribing to topics:', topics);
+        ws.send(JSON.stringify({ type: 'subscribe', topics }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+
+          if (message.type === 'subscribed') {
+            console.log('✅ Subscribed to topics:', message.topics);
+          } else if (message.type === 'killmail' && message.data) {
+            handleNewKillmail(message.data);
+          } else if (message.type === 'ping') {
+            ws.send(JSON.stringify({ type: 'pong' }));
+          }
+        } catch (error) {
+          console.error('❌ Error processing message:', error);
+        }
+      };
+
+      ws.onclose = (event) => {
+        console.log('🔴 WebSocket disconnected:', event.code, event.reason);
+        setTimeout(connect, reconnectInterval);
+        reconnectInterval = Math.min(reconnectInterval * 2, MAX_RECONNECT_INTERVAL);
+      };
+
+      ws.onerror = (error) => {
+        console.error('⚠️  WebSocket error:', error);
+      };
+    }
+
+    function handleNewKillmail(killmail) {
+      // Additional client-side filtering for entity pages
+      if (filterType && filterId) {
+        const id = parseInt(filterId);
+        let shouldShow = false;
+
+        if (filterType === 'character') {
+          const isVictim = killmail.victim?.character?.id === id;
+          const isAttacker = killmail.attackers?.some(a => a.character?.id === id);
+
+          if (filterMode === 'kills') {
+            shouldShow = isAttacker && !isVictim;
+          } else if (filterMode === 'losses') {
+            shouldShow = isVictim;
+          } else {
+            shouldShow = isVictim || isAttacker;
+          }
+        } else if (filterType === 'corporation') {
+          const isVictim = killmail.victim?.corporation?.id === id;
+          const isAttacker = killmail.attackers?.some(a => a.corporation?.id === id);
+
+          if (filterMode === 'kills') {
+            shouldShow = isAttacker && !isVictim;
+          } else if (filterMode === 'losses') {
+            shouldShow = isVictim;
+          } else {
+            shouldShow = isVictim || isAttacker;
+          }
+        } else if (filterType === 'alliance') {
+          const isVictim = killmail.victim?.alliance?.id === id;
+          const isAttacker = killmail.attackers?.some(a => a.alliance?.id === id);
+
+          if (filterMode === 'kills') {
+            shouldShow = isAttacker && !isVictim;
+          } else if (filterMode === 'losses') {
+            shouldShow = isVictim;
+          } else {
+            shouldShow = isVictim || isAttacker;
+          }
+        }
+
+        if (!shouldShow) {
+          console.log('🚫 Filtered out killmail', killmail.killmailId);
+          return;
+        }
+      }
+
+      // Check if killmail is newer than the most recent one in the list
+      const firstKillmailRow = killmailList.querySelector('.kb-kl-row[data-killmail-time]');
+      if (firstKillmailRow) {
+        const mostRecentTime = new Date(firstKillmailRow.dataset.killmailTime);
+        const newKillmailTime = new Date(killmail.killmailTime);
+
+        if (newKillmailTime <= mostRecentTime) {
+          console.log('⏰ Killmail is not newer than most recent, skipping', {
+            new: killmail.killmailTime,
+            mostRecent: firstKillmailRow.dataset.killmailTime
+          });
+          return;
+        }
+      }
+
+      // Determine if this is a loss for the filtered entity (only for entity pages)
+      let isLoss = false;
+      if (filterType && filterType !== 'killType' && filterId) {
+        const id = parseInt(filterId);
+        if (filterType === 'character') {
+          isLoss = killmail.victim?.character?.id === id;
+        } else if (filterType === 'corporation') {
+          isLoss = killmail.victim?.corporation?.id === id;
+        } else if (filterType === 'alliance') {
+          isLoss = killmail.victim?.alliance?.id === id;
+        }
+      }
+
+      // Create new killmail row
+      const killmailRow = document.createElement('div');
+      killmailRow.classList.add('kb-kl-row');
+      if (isLoss) {
+        killmailRow.classList.add('kb-kl-row--loss');
+      }
+      killmailRow.dataset.killmailId = killmail.killmailId;
+      killmailRow.dataset.killmailTime = killmail.killmailTime;
+      killmailRow.onclick = () => {
+        window.location.href = `/killmail/${killmail.killmailId}`;
+      };
+      killmailRow.style.cursor = 'pointer';
+
+      // Format value
+      const formattedValue = new Intl.NumberFormat('en-US', {
+        notation: 'compact',
+        maximumFractionDigits: 1
+      }).format(killmail.totalValue);
+
+      killmailRow.innerHTML = `
+        <div class="kb-kl-col kb-kl-col--ship">
+          <div class="kb-kl-ship">
+            <img src="https://images.evetech.net/types/${killmail.victim.ship.typeId}/icon?size=64" class="kb-kl-ship-icon" alt="${killmail.victim.ship.name}" loading="lazy">
+            <div class="kb-kl-info kb-kl-info--ship">
+              <div class="kb-kl-info__primary">${killmail.victim.ship.name}</div>
+              <div class="kb-kl-info__secondary">${killmail.victim.ship.group}</div>
+            </div>
+          </div>
+        </div>
+        <div class="kb-kl-col kb-kl-col--victim">
+          <div class="kb-kl-info kb-kl-info--victim">
+            <div class="kb-kl-info__primary">
+              <a href="/character/${killmail.victim?.character?.id || 0}" class="kb-kl-info__link" onclick="event.stopPropagation();">${killmail.victim?.character?.name || 'Unknown'}</a>
+            </div>
+            <div class="kb-kl-info__secondary">
+              <a href="/corporation/${killmail.victim?.corporation?.id || 0}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.victim?.corporation?.name || 'Unknown'}</a>
+            </div>
+            ${killmail.victim.alliance ? `
+            <div class="kb-kl-info__secondary">
+              <a href="/alliance/${killmail.victim?.alliance?.id || 0}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.victim?.alliance?.name || 'Unknown'}</a>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+        <div class="kb-kl-col kb-kl-col--finalblow">
+          <div class="kb-kl-info kb-kl-info--finalblow">
+            ${killmail.attackers && killmail.attackers.length > 0 ? `
+              <div class="kb-kl-info__primary">
+                <a href="/character/${killmail.attackers[0].character?.id || 0}" class="kb-kl-info__link" onclick="event.stopPropagation();">${killmail.attackers[0].character?.name || 'Unknown'}</a>
+              </div>
+              <div class="kb-kl-info__secondary">
+                <a href="/corporation/${killmail.attackers[0].corporation?.id || 0}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.attackers[0].corporation?.name || 'Unknown'}</a>
+              </div>
+              ${killmail.attackers[0].alliance ? `
+              <div class="kb-kl-info__secondary">
+                <a href="/alliance/${killmail.attackers[0].alliance?.id || 0}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${killmail.attackers[0].alliance?.name || 'Unknown'}</a>
+              </div>
+              ` : ''}
+            ` : `
+              <div class="kb-kl-info__primary">Unknown</div>
+            `}
+          </div>
+        </div>
+        <div class="kb-kl-col kb-kl-col--location">
+          <div class="kb-kl-info">
+            <div class="kb-kl-info__primary">${killmail.solarSystem.name}</div>
+            <div class="kb-kl-info__secondary">${killmail.solarSystem.region}</div>
+          </div>
+        </div>
+        <div class="kb-kl-col kb-kl-col--value">
+          <div class="kb-kl-info kb-kl-info--value">
+            <div class="kb-kl-value">${formattedValue}</div>
+            <div class="kb-kl-info__secondary kb-kl-attackers-count">(${killmail.attackerCount})</div>
+          </div>
+        </div>
+        <div class="kb-kl-col kb-kl-col--time">
+          <span class="kb-kl-time">Just now</span>
+        </div>
+      `;
+
+      // Insert after header
+      const headerRow = killmailList.querySelector('.kb-kl-row--header');
+      if (headerRow) {
+        killmailList.insertBefore(killmailRow, headerRow.nextSibling);
+      } else {
+        killmailList.insertBefore(killmailRow, killmailList.firstChild);
+      }
+
+      // Keep list at max 30 items (+ 1 header)
+      const MAX_KILLMAILS = 30;
+      const rows = killmailList.querySelectorAll('.kb-kl-row:not(.kb-kl-row--header)');
+      if (rows.length > MAX_KILLMAILS) {
+        rows[rows.length - 1].remove();
+      }
+
+      console.log('✅ Added killmail to list:', killmail.killmailId);
+    }
+
+    // Start connection
+    connect();
+  }
+</script>

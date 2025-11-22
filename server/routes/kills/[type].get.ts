@@ -51,6 +51,7 @@ const VALID_KILL_TYPES = [
   'big',
   'solo',
   'npc',
+  'awox',
   'highsec',
   'lowsec',
   'nullsec',
@@ -99,6 +100,10 @@ function buildFiltersForType(type: KillType): KilllistFilters {
 
     case 'npc':
       filters.isNpc = true
+      break
+
+    case 'awox':
+      filters.isAwox = true
       break
 
     case 'highsec':
@@ -205,6 +210,7 @@ function getTitleForType(type: KillType): string {
     big: 'Big Kills',
     solo: 'Solo Kills',
     npc: 'NPC Kills',
+    awox: 'AWOX Kills',
     highsec: 'High-Sec Kills',
     lowsec: 'Low-Sec Kills',
     nullsec: 'Null-Sec Kills',
@@ -354,6 +360,37 @@ export default defineEventHandler(async (event: H3Event) => {
     showLast: page < totalPages - 2 && totalPages > 5
   }
 
+  // Map kill type to WebSocket topic
+  const wsTopicMap: Record<string, string> = {
+    'latest': 'latest',
+    'big': 'big',
+    'solo': 'solo',
+    'npc': 'npc',
+    'awox': 'awox',
+    'highsec': 'highsec',
+    'lowsec': 'lowsec',
+    'nullsec': 'nullsec',
+    'w-space': 'w-space',
+    'abyssal': 'abyssal',
+    'pochven': 'pochven',
+    '5b': '5b',
+    '10b': '10b',
+    'frigates': 'frigates',
+    'destroyers': 'destroyers',
+    'cruisers': 'cruisers',
+    'battlecruisers': 'battlecruisers',
+    'battleships': 'battleships',
+    'capitals': 'capitals',
+    'supercarriers': 'supercarriers',
+    'titans': 'titans',
+    'freighters': 'freighters',
+    'citadels': 'citadels',
+    'structures': 'structures',
+    't1': 't1',
+    't2': 't2',
+    't3': 't3'
+  }
+
   // Render the template
   return render(
     'pages/kills',
@@ -371,7 +408,11 @@ export default defineEventHandler(async (event: H3Event) => {
       topAlliancesFormatted,
       topSystemsFormatted,
       topRegionsFormatted,
-      mostValuableKills
+      mostValuableKills,
+      wsFilter: {
+        type: 'killType',
+        topic: wsTopicMap[killType] || 'all'
+      }
     }
   )
 })

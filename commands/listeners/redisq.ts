@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { enqueueJob } from '../../server/helpers/queue';
 import { QueueType } from '../../server/helpers/queue';
 import { killmailExists } from '../../server/models/killmails';

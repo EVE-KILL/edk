@@ -144,7 +144,12 @@ export default defineEventHandler(async (event: H3Event) => {
       top10Stats: top10,
       mostValuableKills: transformedMostValuable,
       recentKillmails,
-      pagination
+      pagination,
+      wsFilter: {
+        type: 'alliance',
+        id: allianceId.toString(),
+        mode: 'all'
+      }
     }
   )
 })
