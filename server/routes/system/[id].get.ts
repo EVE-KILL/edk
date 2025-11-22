@@ -34,14 +34,14 @@ export default defineEventHandler(async (event: H3Event) => {
   const perPage = 50
 
   // Fetch stats and killmails in parallel
-  const where = database.sql`k."solarSystemId" = ${id}`
+  const filter = { type: 'system', id }
   const [stats, killmailsData, totalKillmails, topCharacters, topCorporations, topAlliances] = await Promise.all([
     getSystemStats(id),
     getFilteredKillsWithNames({ solarSystemId: id }, page, perPage),
     countFilteredKills({ solarSystemId: id }),
-    getTopByKills('week', 'character', 10, where),
-    getTopByKills('week', 'corporation', 10, where),
-    getTopByKills('week', 'alliance', 10, where)
+    getTopByKills('week', 'character', 10, filter),
+    getTopByKills('week', 'corporation', 10, filter),
+    getTopByKills('week', 'alliance', 10, filter)
   ])
 
   const totalPages = Math.ceil(totalKillmails / perPage)

@@ -1,4 +1,5 @@
 import { database } from '../helpers/database'
+import { cache } from '../helpers/cache'
 
 /**
  * Top Boxes Model
@@ -20,12 +21,23 @@ export interface TopBoxWithName {
 /**
  * Get top entities by kills for a period
  */
+type FilterEntity = { type: 'alliance' | 'corporation' | 'system' | 'region', id: number }
+
 export async function getTopByKills(
   periodType: 'hour' | 'day' | 'week' | 'month',
   entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
   limit: number = 10,
-  whereClause?: any
+  filter?: FilterEntity | any
 ): Promise<TopBoxWithName[]> {
+  const filterEntity = filter && 'type' in filter && 'id' in filter ? filter : null
+  const whereClause = filterEntity ? null : filter
+
+  const cacheKey = `topbox:${periodType}:${entityType}:filter:${filterEntity?.type}:${filterEntity?.id}`
+  const cached = await cache.get(cacheKey)
+  if (cached) {
+    return JSON.parse(cached)
+  }
+
   const end = new Date()
   const start = new Date()
 
@@ -65,7 +77,7 @@ export async function getTopByKills(
     nameCol = database.sql`r.name`
     joinClause = database.sql`LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId" LEFT JOIN regions r ON ss."regionId" = r."regionId"`
   } else {
-      return []
+    return []
   }
 
   const conditions = [
@@ -74,13 +86,25 @@ export async function getTopByKills(
     database.sql`${groupCol} > 0`
   ]
 
-  if (whereClause) {
+  if (filterEntity) {
+    switch (filterEntity.type) {
+      case 'alliance':
+        conditions.push(database.sql`(k."victimAllianceId" = ${filterEntity.id} OR k."topAttackerAllianceId" = ${filterEntity.id})`)
+        break
+      case 'system':
+        conditions.push(database.sql`k."solarSystemId" = ${filterEntity.id}`)
+        break
+      case 'region':
+        conditions.push(database.sql`k."solarSystemId" IN (SELECT "solarSystemId" FROM "solarSystems" WHERE "regionId" = ${filterEntity.id})`)
+        break
+    }
+  } else if (whereClause) {
     conditions.push(whereClause)
   }
 
   const where = database.sql`WHERE ${database.sql(conditions, ' AND ')}`
 
-  return await database.sql<TopBoxWithName[]>`
+  const result = await database.sql<TopBoxWithName[]>`
     SELECT
        ${groupCol} as id,
        COALESCE(${nameCol}, 'Unknown') as name,
@@ -96,6 +120,10 @@ export async function getTopByKills(
      ORDER BY "iskDestroyed" DESC, kills DESC
      LIMIT ${limit}
   `
+
+  await cache.set(cacheKey, JSON.stringify(result), 300)
+
+  return result
 }
 
 /**

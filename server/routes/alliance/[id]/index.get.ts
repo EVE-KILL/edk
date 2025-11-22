@@ -32,13 +32,13 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   // Fetch all entity data in parallel
-  const where = database.sql`"victimAllianceId" = ${allianceId} OR "topAttackerAllianceId" = ${allianceId}`
+  const filter = { type: 'alliance', id: allianceId }
   const [stats, topSystems, topRegions, topCorps, topAlliances, mostValuable] = await Promise.all([
     getEntityStats(allianceId, 'alliance', 'all'),
-    getTopByKills('week', 'system', 10, where),
-    getTopByKills('week', 'region', 10, where),
-    getTopByKills('week', 'corporation', 10, where),
-    getTopByKills('week', 'alliance', 10, where),
+    getTopByKills('week', 'system', 10, filter),
+    getTopByKills('week', 'region', 10, filter),
+    getTopByKills('week', 'corporation', 10, filter),
+    getTopByKills('week', 'alliance', 10, filter),
     getMostValuableKillsByAlliance(allianceId, 'all', 6)
   ])
 
