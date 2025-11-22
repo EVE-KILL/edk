@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'bun:test';
 import { normalizeKillRow, render } from '../server/helpers/templates';
+import { env } from '../server/helpers/env'
 
 // Mock logger for tests since it's auto-imported in Nitro but not available in test context
 beforeAll(() => {
@@ -46,8 +47,8 @@ describe('Frontend Rendering & Helpers', () => {
     describe('Template Rendering', () => {
         it('should render a template without layout', async () => {
             // Set theme to test to use test fixtures
-            const originalTheme = process.env.THEME;
-            process.env.THEME = 'test';
+            const originalTheme = env.THEME;
+            env.THEME = 'test';
             
             try {
                 const html = await render(
@@ -67,17 +68,17 @@ describe('Frontend Rendering & Helpers', () => {
             } finally {
                 // Restore original theme
                 if (originalTheme !== undefined) {
-                    process.env.THEME = originalTheme;
+                    env.THEME = originalTheme;
                 } else {
-                    delete process.env.THEME;
+                    delete env.THEME;
                 }
             }
         });
 
         it('should render a template with layout', async () => {
             // Set theme to test to use test fixtures
-            const originalTheme = process.env.THEME;
-            process.env.THEME = 'test';
+            const originalTheme = env.THEME;
+            env.THEME = 'test';
             
             try {
                 const html = await render(
@@ -98,9 +99,9 @@ describe('Frontend Rendering & Helpers', () => {
             } finally {
                 // Restore original theme
                 if (originalTheme !== undefined) {
-                    process.env.THEME = originalTheme;
+                    env.THEME = originalTheme;
                 } else {
-                    delete process.env.THEME;
+                    delete env.THEME;
                 }
             }
         });

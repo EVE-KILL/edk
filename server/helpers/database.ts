@@ -1,3 +1,4 @@
+import { env } from './env'
 import postgres from 'postgres'
 import { requestContext } from '../utils/request-context'
 
@@ -15,7 +16,7 @@ export class DatabaseHelper {
   get sql(): postgres.Sql {
     if (!this._sql) {
       // Initialize postgres client
-      const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
+      const url = env.DATABASE_URL
 
       // postgres.js manages the connection pool automatically
       this._sql = postgres(url, {
@@ -226,6 +227,21 @@ export class DatabaseHelper {
       await this._sql.end()
       this._sql = undefined
     }
+  }
+
+  /**
+   * **For testing purposes only.**
+   * Overrides the database URL and forces a reconnection on next query.
+   */
+  public async setUrl(url: string): Promise<void> {
+    if (this._sql) {
+        await this._sql.end();
+    }
+    this._sql = postgres(url, {
+        max: 10,
+        idle_timeout: 20,
+        connect_timeout: 10,
+    });
   }
 
   /**

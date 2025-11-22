@@ -9,6 +9,7 @@
  *   bun cronjobs <job-name>   - Run a specific job immediately
  */
 
+import './server/helpers/env'
 import { readdirSync, statSync } from 'fs'
 import { join, parse } from 'path'
 import { CronJob, CronTime } from 'cron'

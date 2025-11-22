@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import { render, normalizeKillRow } from '../../helpers/templates'
 import { getFollowedEntitiesActivity, countFollowedEntitiesActivity } from '../../models/killlist'
+import { env } from '~/server/helpers/env'
 
 export default defineEventHandler(async (event: H3Event) => {
   const pageContext = {
@@ -9,9 +10,9 @@ export default defineEventHandler(async (event: H3Event) => {
     keywords: 'eve online, kills, tracking'
   }
 
-  const charIds = process.env.FOLLOWED_CHARACTER_IDS?.split(',').map(Number).filter(n => !isNaN(n) && n > 0) || []
-  const corpIds = process.env.FOLLOWED_CORPORATION_IDS?.split(',').map(Number).filter(n => !isNaN(n) && n > 0) || []
-  const allyIds = process.env.FOLLOWED_ALLIANCE_IDS?.split(',').map(Number).filter(n => !isNaN(n) && n > 0) || []
+  const charIds = env.FOLLOWED_CHARACTER_IDS?.split(',').map(Number).filter(n => !isNaN(n) && n > 0) || []
+  const corpIds = env.FOLLOWED_CORPORATION_IDS?.split(',').map(Number).filter(n => !isNaN(n) && n > 0) || []
+  const allyIds = env.FOLLOWED_ALLIANCE_IDS?.split(',').map(Number).filter(n => !isNaN(n) && n > 0) || []
 
   const hasEntities = charIds.length > 0 || corpIds.length > 0 || allyIds.length > 0
 

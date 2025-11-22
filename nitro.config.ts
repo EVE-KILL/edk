@@ -1,6 +1,7 @@
 import { defineNitroConfig } from "nitropack/config"
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { env } from './server/helpers/env'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -10,12 +11,12 @@ export default defineNitroConfig({
   compatibilityDate: "latest",
   srcDir: "server",
   minify: true,
-  sourceMap: process.env.NODE_ENV !== 'production',
+  sourceMap: env.NODE_ENV !== 'production',
   serveStatic: true,
   publicAssets: [
     {
       baseURL: '/',
-      dir: resolve(__dirname, `templates/${process.env.THEME || 'default'}/public`),
+      dir: resolve(__dirname, `templates/${env.THEME || 'default'}/public`),
       maxAge: 60 * 60 * 24 * 7 // 7 days
     }
   ],
@@ -48,9 +49,9 @@ export default defineNitroConfig({
   storage: {
     cache: {
       driver: 'redis',
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
+      host: env.REDIS_HOST,
+      port: env.REDIS_PORT,
+      password: env.REDIS_PASSWORD,
       db: 0
     }
   }

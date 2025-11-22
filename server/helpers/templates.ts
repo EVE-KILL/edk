@@ -1,3 +1,4 @@
+import { env } from "./env";
 import Handlebars from "handlebars";
 import { readFile, access, readdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -249,7 +250,7 @@ let partialsRegistered = false;
 
 // Get the current theme from environment
 function getTheme(): string {
-  return process.env.THEME || "default";
+  return env.THEME || "default";
 }
 
 // Default page context that's always available
@@ -627,7 +628,7 @@ function getDefaultData(): DefaultData {
   return {
     siteName: "EVE-KILL",
     year: new Date().getFullYear(),
-    env: process.env.NODE_ENV || "development",
+    env: env.NODE_ENV || "development",
   };
 }
 
@@ -700,7 +701,7 @@ async function resolveTemplatePath(templatePath: string): Promise<string> {
  */
 async function registerPartials() {
   // In development, always re-register to pick up changes
-  if (partialsRegistered && process.env.NODE_ENV === "production") return;
+  if (partialsRegistered && env.NODE_ENV === "production") return;
 
   const theme = getTheme();
   const templatesDir = join(process.cwd(), "templates", theme);
@@ -772,7 +773,7 @@ async function loadTemplate(
   const template = Handlebars.compile(templateSource);
 
   // Cache compiled template (in production)
-  if (process.env.NODE_ENV === "production") {
+  if (env.NODE_ENV === "production") {
     templateCache.set(cacheKey, template);
   }
 
@@ -821,11 +822,11 @@ export async function render(
       ...data,
       default: getDefaultData(),
       config: {
-        title: process.env.SITE_TITLE || "EVE-KILL",
-        subtitle: process.env.SITE_SUBTITLE || "Real-time Killmail Tracking",
+        title: env.SITE_TITLE || "EVE-KILL",
+        subtitle: env.SITE_SUBTITLE || "Real-time Killmail Tracking",
         copyright: `© ${new Date().getFullYear()}`,
-        showVersion: process.env.NODE_ENV === "development",
-        imageServerUrl: process.env.IMAGE_SERVER_URL || "https://images.evetech.net",
+        showVersion: env.NODE_ENV === "development",
+        imageServerUrl: env.IMAGE_SERVER_URL || "https://images.evetech.net",
       },
     };
 
@@ -876,7 +877,7 @@ export async function render(
     });
 
     // Return error page in development
-    if (process.env.NODE_ENV !== "production") {
+    if (env.NODE_ENV !== "production") {
       return `
         <!DOCTYPE html>
         <html>

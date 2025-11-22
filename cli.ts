@@ -1,3 +1,4 @@
+import './server/helpers/env'
 import { Command } from 'commander'
 import { readdir } from 'fs/promises'
 import { join } from 'path'

@@ -1,3 +1,4 @@
+import { env } from "../server/helpers/env";
 import { logger } from "../server/helpers/logger";
 import { database } from "../server/helpers/database";
 import { enqueueJobMany } from "../server/helpers/queue";
@@ -50,21 +51,21 @@ export default {
 
     // Get followed entities from environment variables
     const followedCharacterIds =
-      process.env.FOLLOWED_CHARACTER_IDS?.split(",")
+      env.FOLLOWED_CHARACTER_IDS?.split(",")
         .map((id) => id.trim())
         .filter((id) => id.length > 0)
         .map((id) => Number.parseInt(id))
         .filter((id) => !Number.isNaN(id)) || [];
 
     const followedCorporationIds =
-      process.env.FOLLOWED_CORPORATION_IDS?.split(",")
+      env.FOLLOWED_CORPORATION_IDS?.split(",")
         .map((id) => id.trim())
         .filter((id) => id.length > 0)
         .map((id) => Number.parseInt(id))
         .filter((id) => !Number.isNaN(id)) || [];
 
     const followedAllianceIds =
-      process.env.FOLLOWED_ALLIANCE_IDS?.split(",")
+      env.FOLLOWED_ALLIANCE_IDS?.split(",")
         .map((id) => id.trim())
         .filter((id) => id.length > 0)
         .map((id) => Number.parseInt(id))

@@ -7,14 +7,15 @@
 import { Worker, type Job } from 'bullmq'
 import type { QueueJobData } from '../server/helpers/queue'
 import { QueueType } from '../server/helpers/queue'
+import { env } from '../server/helpers/env'
 import { logger } from '../server/helpers/logger'
 import { fetchPrices } from '../server/fetchers/price'
 import { storePrices } from '../server/models/prices'
 
 const REDIS_CONFIG = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
+  host: env.REDIS_HOST,
+  port: env.REDIS_PORT,
+  password: env.REDIS_PASSWORD,
   db: 0
 }
 

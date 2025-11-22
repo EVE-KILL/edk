@@ -1,5 +1,6 @@
 import { defineEventHandler } from 'h3'
 import { database } from '../helpers/database'
+import { env } from '../helpers/env'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -66,7 +67,7 @@ export default defineEventHandler(async (event) => {
       database: {
         version: dbInfo?.version || 'unknown',
         uptime: dbInfo?.uptime || 0,
-        name: process.env.POSTGRES_DB || 'edk'
+        name: env.POSTGRES_DB || 'edk'
       },
       migrations: {
         total: migrations.length,
