@@ -1,17 +1,30 @@
 import { Worker, Job } from 'bullmq';
-import { fetchESI } from '../server/helpers/esi';
-import { storeKillmail, type ESIKillmail } from '../server/models/killmails';
-import { fetchAndStoreCharacter } from '../server/fetchers/character';
-import { fetchAndStoreCorporation } from '../server/fetchers/corporation';
-import { fetchAndStoreAlliance } from '../server/fetchers/alliance';
-import { fetchPrices } from '../server/fetchers/price';
-import { storePrices } from '../server/models/prices';
+import { fetchESI as defaultFetchESI } from '../server/helpers/esi';
+import {
+  storeKillmail as defaultStoreKillmail,
+  type ESIKillmail,
+} from '../server/models/killmails';
+import { fetchAndStoreCharacter as defaultFetchAndStoreCharacter } from '../server/fetchers/character';
+import { fetchAndStoreCorporation as defaultFetchAndStoreCorporation } from '../server/fetchers/corporation';
+import { fetchAndStoreAlliance as defaultFetchAndStoreAlliance } from '../server/fetchers/alliance';
+import { fetchPrices as defaultFetchPrices } from '../server/fetchers/price';
+import { storePrices as defaultStorePrices } from '../server/models/prices';
 
 export const name = 'killmail';
 
 interface KillmailJobData {
   killmailId: number;
   hash: string;
+}
+
+interface KillmailProcessorDependencies {
+  fetchESI: typeof defaultFetchESI;
+  storeKillmail: typeof defaultStoreKillmail;
+  fetchAndStoreCharacter: typeof defaultFetchAndStoreCharacter;
+  fetchAndStoreCorporation: typeof defaultFetchAndStoreCorporation;
+  fetchAndStoreAlliance: typeof defaultFetchAndStoreAlliance;
+  fetchPrices: typeof defaultFetchPrices;
+  storePrices: typeof defaultStorePrices;
 }
 
 /**
@@ -28,8 +41,28 @@ interface KillmailJobData {
  * entities and prices are already in the database, allowing the materialized
  * view to be fully populated with names and values.
  */
-export async function processor(job: Job<KillmailJobData>): Promise<void> {
+export async function processor(
+  job: Job<KillmailJobData>,
+  dependencies: KillmailProcessorDependencies = {
+    fetchESI: defaultFetchESI,
+    storeKillmail: defaultStoreKillmail,
+    fetchAndStoreCharacter: defaultFetchAndStoreCharacter,
+    fetchAndStoreCorporation: defaultFetchAndStoreCorporation,
+    fetchAndStoreAlliance: defaultFetchAndStoreAlliance,
+    fetchPrices: defaultFetchPrices,
+    storePrices: defaultStorePrices,
+  }
+): Promise<void> {
   const { killmailId, hash } = job.data;
+  const {
+    fetchESI,
+    storeKillmail,
+    fetchAndStoreCharacter,
+    fetchAndStoreCorporation,
+    fetchAndStoreAlliance,
+    fetchPrices,
+    storePrices,
+  } = dependencies;
 
   console.log(`[killmail] Processing killmail ${killmailId}...`);
 

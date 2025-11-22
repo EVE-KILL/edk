@@ -68,6 +68,29 @@ beforeAll(async () => {
     process.exit(1);
   }
 
+<<<<<<< HEAD
+  // 6. Setup global mocks for Nitro auto-imports
+  // @ts-ignore
+  global.defineEventHandler = (handler: any) => handler;
+  // @ts-ignore
+  global.getKillmail = async (killmailId: number) => {
+    if (killmailId === 1) {
+      return null;
+    }
+    const killmailModel = await import('../server/models/killmails');
+    return killmailModel.getKillmail(killmailId);
+  };
+  // @ts-ignore
+  global.getRouterParam = (event: any, param: string) =>
+    event.context.params[param];
+  // @ts-ignore
+  global.createError = (options: any) => {
+    const error = new Error(options.statusMessage);
+    // @ts-ignore
+    error.statusCode = options.statusCode;
+    return error;
+  };
+
   console.log('✅ Test Environment Ready.\n');
 });
 

@@ -1,4 +1,4 @@
-import { sdeFetcher } from '../../server/helpers/sde/fetcher';
+import { sdeFetcher as defaultSdeFetcher } from '../../server/helpers/sde/fetcher';
 import chalk from 'chalk';
 import { logger } from '../../server/helpers/logger';
 import {
@@ -25,6 +25,8 @@ import {
   dogmaEffectsConfig,
 } from '../../server/helpers/sde/configs';
 
+type SdeFetcher = typeof defaultSdeFetcher;
+
 /**
  * SDE Download Command
  *
@@ -44,7 +46,7 @@ export default {
     },
   ],
 
-  async action(options: any) {
+  async action(options: any, sdeFetcher: SdeFetcher = defaultSdeFetcher) {
     const forceReimport = options.force || false;
 
     if (forceReimport) {
