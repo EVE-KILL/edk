@@ -1,0 +1,31 @@
+{
+  "killmail_id": 123456789,
+  "killmail_time": "2024-01-01T12:00:00Z",
+  "solar_system_id": 30000142,
+  "victim": {
+    "character_id": 93260215,
+    "corporation_id": 1000001,
+    "alliance_id": 498125261,
+    "damage_taken": 5000,
+    "ship_type_id": 670,
+    "items": [
+      {
+        "item_type_id": 587,
+        "singleton": 0,
+        "quantity_destroyed": 1
+      }
+    ]
+  },
+  "attackers": [
+    {
+      "character_id": 95465495,
+      "corporation_id": 1000002,
+      "alliance_id": 498125261,
+      "damage_done": 5000,
+      "final_blow": true,
+      "security_status": 5,
+      "ship_type_id": 621,
+      "weapon_type_id": 2488
+    }
+  ]
+}

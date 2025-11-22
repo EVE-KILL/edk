@@ -63,4 +63,27 @@ try {
     process.exit(1);
 }
 
+import { defineEventHandler, getRouterParam, createError as h3CreateError } from 'h3'
+import * as killmailModel from '../server/models/killmails'
+
+// Mock Nitro's auto-imported functions
+// @ts-ignore
+global.defineEventHandler = (handler) => handler
+// @ts-ignore
+global.getKillmail = async (killmailId) => {
+  if (killmailId === 1) {
+    return null
+  }
+  return killmailModel.getKillmail(killmailId)
+}
+// @ts-ignore
+global.getRouterParam = (event, param) => event.context.params[param]
+// @ts-ignore
+global.createError = (options) => {
+  const error = new Error(options.statusMessage)
+  // @ts-ignore
+  error.statusCode = options.statusCode
+  return error
+}
+
 console.log('✅ Test Environment Ready.\n');
