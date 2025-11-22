@@ -52,5 +52,4 @@ jobs:
         run: bun install
 
       - name: Run linter
-        run: bun run lint || echo "No lint script found"
-        continue-on-error: true
+        run: bun run lint

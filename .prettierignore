@@ -1,29 +1,9 @@
-# Ignore build output
+node_modules
+.nitro
 .output
 dist
-.nitro
-.cache
-
-# Ignore version control
-.git
-
-# Ignore lockfile
+*.lock
 bun.lockb
-
-# Ignore dependencies
-node_modules
-
-# Ignore data files
 .data
-data/*
-
-# Ignore old templates
 oldtemplates
-
-# Ignore logs
-.vscode/.server-controller-port.log
-.DS_Store
-server.log
-
-# Ignore handlebars files
 *.hbs
