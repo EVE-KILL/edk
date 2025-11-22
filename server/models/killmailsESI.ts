@@ -1,4 +1,4 @@
-import { database } from '../helpers/database'
+import { database } from '../helpers/database';
 
 /**
  * Killmails ESI Model
@@ -8,30 +8,30 @@ import { database } from '../helpers/database'
  */
 
 export interface KillmailESI {
-  killmailId: number
-  killmailTime: Date
-  solarSystemId: number
+  killmailId: number;
+  killmailTime: Date;
+  solarSystemId: number;
 
   // Victim data
-  victimCharacterId: number
-  victimCorporationId: number
-  victimAllianceId: number
-  victimShipTypeId: number
-  victimDamageTaken: number
-  victimPosition: string // JSON: {x, y, z}
+  victimCharacterId: number;
+  victimCorporationId: number;
+  victimAllianceId: number;
+  victimShipTypeId: number;
+  victimDamageTaken: number;
+  victimPosition: string; // JSON: {x, y, z}
 
   // Pre-serialized arrays
-  attackers: string // JSON array
-  items: string // JSON array
+  attackers: string; // JSON array
+  items: string; // JSON array
 
   // Metadata
-  totalValue: number
-  attackerCount: number
-  npc: boolean
-  solo: boolean
-  awox: boolean
+  totalValue: number;
+  attackerCount: number;
+  npc: boolean;
+  solo: boolean;
+  awox: boolean;
 
-  version: number
+  version: number;
 }
 
 // Helper to construct JSON objects in Postgres
@@ -81,48 +81,54 @@ SELECT
   k.awox,
   k.version
 FROM killmails k
-`
+`;
 
 /**
  * Get killmail in ESI format (simulated)
  */
-export async function getKillmailESI(killmailId: number): Promise<KillmailESI | null> {
+export async function getKillmailESI(
+  killmailId: number
+): Promise<KillmailESI | null> {
   const [row] = await database.sql<KillmailESI[]>`
     ${QUERY_ESI_FORMAT} WHERE k."killmailId" = ${killmailId}
-  `
-  return row || null
+  `;
+  return row || null;
 }
 
 /**
  * Get multiple killmails in ESI format
  */
-export async function getKillmailsESI(killmailIds: number[]): Promise<KillmailESI[]> {
-  if (killmailIds.length === 0) return []
+export async function getKillmailsESI(
+  killmailIds: number[]
+): Promise<KillmailESI[]> {
+  if (killmailIds.length === 0) return [];
 
   return await database.sql<KillmailESI[]>`
     ${QUERY_ESI_FORMAT}
      WHERE k."killmailId" = ANY(${killmailIds})
      ORDER BY k."killmailTime" DESC
-  `
+  `;
 }
 
 /**
  * Get recent killmails in ESI format
  */
-export async function getRecentKillmailsESI(limit: number = 50): Promise<KillmailESI[]> {
+export async function getRecentKillmailsESI(
+  limit: number = 50
+): Promise<KillmailESI[]> {
   return await database.sql<KillmailESI[]>`
     ${QUERY_ESI_FORMAT}
      ORDER BY k."killmailTime" DESC, k."killmailId" DESC
      LIMIT ${limit}
-  `
+  `;
 }
 
 /**
  * Check if killmail exists
  */
 export async function killmailESIExists(killmailId: number): Promise<boolean> {
-  const [result] = await database.sql<{count: number}[]>`
+  const [result] = await database.sql<{ count: number }[]>`
     SELECT count(*) as count FROM killmails WHERE "killmailId" = ${killmailId}
-  `
-  return Number(result?.count || 0) > 0
+  `;
+  return Number(result?.count || 0) > 0;
 }

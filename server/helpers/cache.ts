@@ -1,4 +1,4 @@
-import Redis from 'ioredis'
+import Redis from 'ioredis';
 
 /**
  * Redis Cache Helper
@@ -7,7 +7,7 @@ import Redis from 'ioredis'
  * Can be used alongside Nitro's built-in cache or independently.
  */
 export class CacheHelper {
-  private redis: Redis
+  private redis: Redis;
 
   constructor() {
     // Create Redis connection using environment variables
@@ -17,17 +17,17 @@ export class CacheHelper {
       password: process.env.REDIS_PASSWORD || undefined,
       db: 0,
       maxRetriesPerRequest: 3,
-      lazyConnect: true
-    })
+      lazyConnect: true,
+    });
 
     // Handle connection events
     this.redis.on('error', (error) => {
-      console.error('Redis connection error:', error)
-    })
+      console.error('Redis connection error:', error);
+    });
 
     this.redis.on('connect', () => {
-      console.log('Redis connected successfully')
-    })
+      console.log('Redis connected successfully');
+    });
   }
 
   /**
@@ -35,16 +35,16 @@ export class CacheHelper {
    */
   async set<T = any>(key: string, value: T, ttl?: number): Promise<void> {
     try {
-      const serialized = JSON.stringify(value)
+      const serialized = JSON.stringify(value);
 
       if (ttl) {
-        await this.redis.setex(key, ttl, serialized)
+        await this.redis.setex(key, ttl, serialized);
       } else {
-        await this.redis.set(key, serialized)
+        await this.redis.set(key, serialized);
       }
     } catch (error) {
-      console.error('Cache set error:', error)
-      throw error
+      console.error('Cache set error:', error);
+      throw error;
     }
   }
 
@@ -53,16 +53,16 @@ export class CacheHelper {
    */
   async get<T = any>(key: string): Promise<T | null> {
     try {
-      const value = await this.redis.get(key)
+      const value = await this.redis.get(key);
 
       if (!value) {
-        return null
+        return null;
       }
 
-      return JSON.parse(value) as T
+      return JSON.parse(value) as T;
     } catch (error) {
-      console.error('Cache get error:', error)
-      return null
+      console.error('Cache get error:', error);
+      return null;
     }
   }
 
@@ -71,11 +71,11 @@ export class CacheHelper {
    */
   async has(key: string): Promise<boolean> {
     try {
-      const exists = await this.redis.exists(key)
-      return exists === 1
+      const exists = await this.redis.exists(key);
+      return exists === 1;
     } catch (error) {
-      console.error('Cache has error:', error)
-      return false
+      console.error('Cache has error:', error);
+      return false;
     }
   }
 
@@ -84,9 +84,9 @@ export class CacheHelper {
    */
   async delete(key: string): Promise<void> {
     try {
-      await this.redis.del(key)
+      await this.redis.del(key);
     } catch (error) {
-      console.error('Cache delete error:', error)
+      console.error('Cache delete error:', error);
     }
   }
 
@@ -95,9 +95,9 @@ export class CacheHelper {
    */
   async clear(): Promise<void> {
     try {
-      await this.redis.flushdb()
+      await this.redis.flushdb();
     } catch (error) {
-      console.error('Cache clear error:', error)
+      console.error('Cache clear error:', error);
     }
   }
 
@@ -109,16 +109,16 @@ export class CacheHelper {
     factory: () => Promise<T> | T,
     ttl?: number
   ): Promise<T> {
-    const cached = await this.get<T>(key)
+    const cached = await this.get<T>(key);
 
     if (cached !== null) {
-      return cached
+      return cached;
     }
 
-    const value = await factory()
-    await this.set(key, value, ttl)
+    const value = await factory();
+    await this.set(key, value, ttl);
 
-    return value
+    return value;
   }
 
   /**
@@ -126,10 +126,10 @@ export class CacheHelper {
    */
   async increment(key: string, delta: number = 1): Promise<number> {
     try {
-      return await this.redis.incrby(key, delta)
+      return await this.redis.incrby(key, delta);
     } catch (error) {
-      console.error('Cache increment error:', error)
-      throw error
+      console.error('Cache increment error:', error);
+      throw error;
     }
   }
 
@@ -138,11 +138,11 @@ export class CacheHelper {
    */
   async expire(key: string, seconds: number): Promise<boolean> {
     try {
-      const result = await this.redis.expire(key, seconds)
-      return result === 1
+      const result = await this.redis.expire(key, seconds);
+      return result === 1;
     } catch (error) {
-      console.error('Cache expire error:', error)
-      return false
+      console.error('Cache expire error:', error);
+      return false;
     }
   }
 
@@ -151,10 +151,10 @@ export class CacheHelper {
    */
   async ttl(key: string): Promise<number> {
     try {
-      return await this.redis.ttl(key)
+      return await this.redis.ttl(key);
     } catch (error) {
-      console.error('Cache TTL error:', error)
-      return -1
+      console.error('Cache TTL error:', error);
+      return -1;
     }
   }
 
@@ -162,20 +162,22 @@ export class CacheHelper {
    * Disconnect from Redis
    */
   async disconnect(): Promise<void> {
-    await this.redis.disconnect()
+    await this.redis.disconnect();
   }
 
   /**
    * Generate a cache key with namespace
    */
   key(...parts: (string | number)[]): string {
-    return parts.filter(part => part !== null && part !== undefined).join(':')
+    return parts
+      .filter((part) => part !== null && part !== undefined)
+      .join(':');
   }
 }
 
 // Export a singleton instance
-export const cache = new CacheHelper()
+export const cache = new CacheHelper();
 
 // Export types for convenience
-export type CacheValue<T> = T | null
-export type CacheFactory<T> = () => Promise<T> | T
+export type CacheValue<T> = T | null;
+export type CacheFactory<T> = () => Promise<T> | T;

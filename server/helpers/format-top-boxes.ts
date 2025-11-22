@@ -4,18 +4,18 @@
  */
 
 export interface FormattedTopBoxItem {
-  name: string
-  kills: number
-  imageType: string
-  imageId: number
-  link: string
-  dataAttribute?: string
+  name: string;
+  kills: number;
+  imageType: string;
+  imageId: number;
+  link: string;
+  dataAttribute?: string;
 }
 
 export function formatTopBoxes(stats: any): any {
-  if (!stats) return {}
+  if (!stats) return {};
 
-  const formatted: any = {}
+  const formatted: any = {};
 
   if (stats.ships && Array.isArray(stats.ships)) {
     formatted.ships = stats.ships.map((item: any) => ({
@@ -23,8 +23,8 @@ export function formatTopBoxes(stats: any): any {
       kills: item.count || item.kills,
       imageType: 'type',
       imageId: item.id,
-      link: `/type/${item.id}`
-    }))
+      link: `/type/${item.id}`,
+    }));
   }
 
   if (stats.characters && Array.isArray(stats.characters)) {
@@ -34,8 +34,8 @@ export function formatTopBoxes(stats: any): any {
       imageType: 'character',
       imageId: item.id,
       link: `/character/${item.id}`,
-      dataAttribute: 'data-character-id'
-    }))
+      dataAttribute: 'data-character-id',
+    }));
   }
 
   if (stats.corporations && Array.isArray(stats.corporations)) {
@@ -45,8 +45,8 @@ export function formatTopBoxes(stats: any): any {
       imageType: 'corporation',
       imageId: item.id,
       link: `/corporation/${item.id}`,
-      dataAttribute: 'data-corporation-id'
-    }))
+      dataAttribute: 'data-corporation-id',
+    }));
   }
 
   if (stats.alliances && Array.isArray(stats.alliances)) {
@@ -56,8 +56,8 @@ export function formatTopBoxes(stats: any): any {
       imageType: 'alliance',
       imageId: item.id,
       link: `/alliance/${item.id}`,
-      dataAttribute: 'data-alliance-id'
-    }))
+      dataAttribute: 'data-alliance-id',
+    }));
   }
 
   if (stats.systems && Array.isArray(stats.systems)) {
@@ -66,8 +66,8 @@ export function formatTopBoxes(stats: any): any {
       kills: item.count || item.kills,
       imageType: 'system',
       imageId: item.id,
-      link: `/system/${item.id}`
-    }))
+      link: `/system/${item.id}`,
+    }));
   }
 
   if (stats.regions && Array.isArray(stats.regions)) {
@@ -76,9 +76,9 @@ export function formatTopBoxes(stats: any): any {
       kills: item.count || item.kills,
       imageType: 'region',
       imageId: item.id,
-      link: `/region/${item.id}`
-    }))
+      link: `/region/${item.id}`,
+    }));
   }
 
-  return formatted
+  return formatted;
 }

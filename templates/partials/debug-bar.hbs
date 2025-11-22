@@ -1,24 +1,28 @@
-<div class="fixed-bottom bg-dark text-white p-3" style="opacity: 0.9;">
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col">
-        <strong>Total Time:</strong> {{performance.totalTime}}ms
+<div class='fixed-bottom bg-dark text-white p-3' style='opacity: 0.9;'>
+  <div class='container-fluid'>
+    <div class='row'>
+      <div class='col'>
+        <strong>Total Time:</strong>
+        {{performance.totalTime}}ms
       </div>
-      <div class="col">
-        <strong>App Time:</strong> {{performance.appTime}}ms
+      <div class='col'>
+        <strong>App Time:</strong>
+        {{performance.appTime}}ms
       </div>
-      <div class="col">
-        <strong>DB Time:</strong> {{performance.dbTime}}ms ({{performance.queryCount}} queries)
+      <div class='col'>
+        <strong>DB Time:</strong>
+        {{performance.dbTime}}ms ({{performance.queryCount}}
+        queries)
       </div>
     </div>
-    <hr/>
-    <div class="row">
-      <div class="col">
-        <ul class="list-unstyled">
+    <hr />
+    <div class='row'>
+      <div class='col'>
+        <ul class='list-unstyled'>
           {{#each performance.queries}}
             <li>
               <code>{{this.query}}</code>
-              <span class="badge bg-primary">{{this.duration}}ms</span>
+              <span class='badge bg-primary'>{{this.duration}}ms</span>
             </li>
           {{/each}}
         </ul>

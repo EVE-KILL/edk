@@ -13,7 +13,9 @@ const DEFAULT_DB = process.env.DB_NAME || 'edk';
 // Use the provided admin connection string or construct one
 // We need a connection to a database that exists (like 'postgres' or the default app db) to create the test db
 const ADMIN_DATABASE = process.env.ADMIN_DB_NAME || DEFAULT_DB;
-const adminUrl = process.env.ADMIN_DATABASE_URL || `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${ADMIN_DATABASE}`;
+const adminUrl =
+  process.env.ADMIN_DATABASE_URL ||
+  `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${ADMIN_DATABASE}`;
 
 console.log('🛠️  Initializing Test Environment...');
 
@@ -30,37 +32,44 @@ process.env.NODE_ENV = 'test';
 const DATA_DIR = join(process.cwd(), '.data');
 const CHECKSUM_FILE = join(DATA_DIR, 'schema-checksums.json');
 if (existsSync(CHECKSUM_FILE)) {
-    unlinkSync(CHECKSUM_FILE);
+  unlinkSync(CHECKSUM_FILE);
 }
 
 // 3. Recreate Database
 const sql = postgres(adminUrl);
 try {
-    // Force disconnect others
-    await sql`
+  // Force disconnect others
+  await sql`
         SELECT pg_terminate_backend(pid)
         FROM pg_stat_activity
         WHERE datname = ${TEST_DB}
         AND pid <> pg_backend_pid()
     `.catch(() => {});
 
-    await sql.unsafe(`DROP DATABASE IF EXISTS "${TEST_DB}"`);
-    await sql.unsafe(`CREATE DATABASE "${TEST_DB}"`);
+  await sql.unsafe(`DROP DATABASE IF EXISTS "${TEST_DB}"`);
+  await sql.unsafe(`CREATE DATABASE "${TEST_DB}"`);
 } catch (e) {
-    console.error('Failed to recreate test database:', e);
-    console.error('Database:', DB_HOST, 'Port:', DB_PORT, 'Name:', ADMIN_DATABASE);
-    process.exit(1);
+  console.error('Failed to recreate test database:', e);
+  console.error(
+    'Database:',
+    DB_HOST,
+    'Port:',
+    DB_PORT,
+    'Name:',
+    ADMIN_DATABASE
+  );
+  process.exit(1);
 } finally {
-    await sql.end();
+  await sql.end();
 }
 
 // 4. Run Migrations
 try {
-    const { migrateSchema } = await import('../server/plugins/schema-migration');
-    await migrateSchema();
+  const { migrateSchema } = await import('../server/plugins/schema-migration');
+  await migrateSchema();
 } catch (e) {
-    console.error('Failed to run migrations:', e);
-    process.exit(1);
+  console.error('Failed to run migrations:', e);
+  process.exit(1);
 }
 
 console.log('✅ Test Environment Ready.\n');

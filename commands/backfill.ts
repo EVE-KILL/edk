@@ -1,38 +1,38 @@
-import { logger } from "../server/helpers/logger";
-import { database } from "../server/helpers/database";
-import { enqueueJobMany } from "../server/helpers/queue";
-import { QueueType } from "../server/helpers/queue";
-import { storeKillmailsBulk } from "../server/models/killmails";
-import { storeCharactersBulk } from "../server/models/characters";
-import { storeCorporationsBulk } from "../server/models/corporations";
-import { storeAlliancesBulk } from "../server/models/alliances";
-import { storePrices } from "../server/models/prices";
+import { logger } from '../server/helpers/logger';
+import { database } from '../server/helpers/database';
+import { enqueueJobMany } from '../server/helpers/queue';
+import { QueueType } from '../server/helpers/queue';
+import { storeKillmailsBulk } from '../server/models/killmails';
+import { storeCharactersBulk } from '../server/models/characters';
+import { storeCorporationsBulk } from '../server/models/corporations';
+import { storeAlliancesBulk } from '../server/models/alliances';
+import { storePrices } from '../server/models/prices';
 import type {
   ESIKillmail,
   KillmailValueBreakdown,
-} from "../server/models/killmails";
+} from '../server/models/killmails';
 
 export default {
-  description: "Backfill killmails from eve-kill.com API for followed entities",
+  description: 'Backfill killmails from eve-kill.com API for followed entities',
   options: [
     {
-      flags: "--limit <number>",
-      description: "Maximum number of killmails to fetch (default: unlimited)",
+      flags: '--limit <number>',
+      description: 'Maximum number of killmails to fetch (default: unlimited)',
     },
     {
-      flags: "--fetch <size>",
-      description: "Number of killmails per API request (default: 1000)",
-      defaultValue: "1000",
+      flags: '--fetch <size>',
+      description: 'Number of killmails per API request (default: 1000)',
+      defaultValue: '1000',
     },
     {
-      flags: "--delay <ms>",
-      description: "Delay between API fetches in milliseconds (default: 1000)",
-      defaultValue: "1000",
+      flags: '--delay <ms>',
+      description: 'Delay between API fetches in milliseconds (default: 1000)',
+      defaultValue: '1000',
     },
     {
-      flags: "--page <number>",
-      description: "Starting page number to resume from (default: 0)",
-      defaultValue: "0",
+      flags: '--page <number>',
+      description: 'Starting page number to resume from (default: 0)',
+      defaultValue: '0',
     },
   ],
   action: async (options: {
@@ -50,21 +50,21 @@ export default {
 
     // Get followed entities from environment variables
     const followedCharacterIds =
-      process.env.FOLLOWED_CHARACTER_IDS?.split(",")
+      process.env.FOLLOWED_CHARACTER_IDS?.split(',')
         .map((id) => id.trim())
         .filter((id) => id.length > 0)
         .map((id) => Number.parseInt(id))
         .filter((id) => !Number.isNaN(id)) || [];
 
     const followedCorporationIds =
-      process.env.FOLLOWED_CORPORATION_IDS?.split(",")
+      process.env.FOLLOWED_CORPORATION_IDS?.split(',')
         .map((id) => id.trim())
         .filter((id) => id.length > 0)
         .map((id) => Number.parseInt(id))
         .filter((id) => !Number.isNaN(id)) || [];
 
     const followedAllianceIds =
-      process.env.FOLLOWED_ALLIANCE_IDS?.split(",")
+      process.env.FOLLOWED_ALLIANCE_IDS?.split(',')
         .map((id) => id.trim())
         .filter((id) => id.length > 0)
         .map((id) => Number.parseInt(id))
@@ -76,12 +76,12 @@ export default {
       followedAllianceIds.length === 0
     ) {
       logger.error(
-        "No followed entities configured in .env (FOLLOWED_CHARACTER_IDS, FOLLOWED_CORPORATION_IDS, FOLLOWED_ALLIANCE_IDS)"
+        'No followed entities configured in .env (FOLLOWED_CHARACTER_IDS, FOLLOWED_CORPORATION_IDS, FOLLOWED_ALLIANCE_IDS)'
       );
       process.exit(1);
     }
 
-    logger.info("Starting backfill for followed entities", {
+    logger.info('Starting backfill for followed entities', {
       maxLimit,
       characters: followedCharacterIds.length,
       corporations: followedCorporationIds.length,
@@ -101,7 +101,7 @@ export default {
 
     const startTime = Date.now();
 
-    logger.info("Fetching killmails from eve-kill.com API");
+    logger.info('Fetching killmails from eve-kill.com API');
 
     // Fetch killmail IDs for followed entities using export API
     while (processed < maxLimit) {
@@ -121,7 +121,7 @@ export default {
 
         // If we hit too many consecutive errors, stop
         if (consecutiveErrors >= maxConsecutiveErrors) {
-          logger.info("Reached maximum consecutive errors, stopping backfill");
+          logger.info('Reached maximum consecutive errors, stopping backfill');
           break;
         }
 
@@ -244,7 +244,7 @@ export default {
             esiKillmails.map(({ original }) => enqueueEntityUpdates(original))
           );
         } catch (error) {
-          logger.error("Failed to store killmails in bulk", {
+          logger.error('Failed to store killmails in bulk', {
             error: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
           });
@@ -258,7 +258,7 @@ export default {
       const rate = processed / elapsedSeconds;
       const currentPage = Math.floor(skip / fetchSize);
 
-      logger.info("Batch complete", {
+      logger.info('Batch complete', {
         page: currentPage,
         processed,
         successful,
@@ -270,14 +270,14 @@ export default {
       // If we got fewer results than requested, we're done
       if (killmails.length < fetchSize) {
         logger.info(
-          "Received fewer killmails than requested, all data fetched"
+          'Received fewer killmails than requested, all data fetched'
         );
         break;
       }
 
       // Check if we've hit the limit
       if (processed >= maxLimit) {
-        logger.info("Reached maximum limit");
+        logger.info('Reached maximum limit');
         break;
       }
 
@@ -289,7 +289,7 @@ export default {
     }
 
     const totalTime = (Date.now() - startTime) / 1000;
-    logger.success("Backfill complete", {
+    logger.success('Backfill complete', {
       processed,
       successful,
       failed,
@@ -387,9 +387,10 @@ function buildValueOverrides(
     }
 
     const estimatedTotal = shipValue + droppedValue + destroyedValue;
-    const totalValue = killmail.total_value && killmail.total_value > 0
-      ? killmail.total_value
-      : estimatedTotal;
+    const totalValue =
+      killmail.total_value && killmail.total_value > 0
+        ? killmail.total_value
+        : estimatedTotal;
 
     overrides.set(killmail.killmail_id, {
       shipValue,
@@ -433,7 +434,7 @@ async function filterExistingRecords<T>(
     return records;
   }
 
-  return records.filter(record => !existingIds.has(getId(record)));
+  return records.filter((record) => !existingIds.has(getId(record)));
 }
 
 // Store entities from eve-kill killmail with basic info
@@ -450,18 +451,18 @@ async function storeEntitiesInBulk(
     const characterData = Array.from(characters.values()).map((char) => ({
       characterId: char.id,
       allianceId: char.allianceId > 0 ? char.allianceId : null,
-      birthday: "", // Unknown, will be filled by queue worker
+      birthday: '', // Unknown, will be filled by queue worker
       bloodlineId: 0, // Unknown, will be filled by queue worker
       corporationId: char.corporationId,
-      description: "", // Unknown, will be filled by queue worker
-      gender: "", // Unknown, will be filled by queue worker
+      description: '', // Unknown, will be filled by queue worker
+      gender: '', // Unknown, will be filled by queue worker
       name: char.name,
       raceId: 0, // Unknown, will be filled by queue worker
       securityStatus: 0, // Unknown, will be filled by queue worker
     }));
     const newCharacters = await filterExistingRecords(
-      "characters",
-      "characterId",
+      'characters',
+      'characterId',
       characterData,
       (record) => record.characterId
     );
@@ -478,19 +479,19 @@ async function storeEntitiesInBulk(
       allianceId: corp.allianceId > 0 ? corp.allianceId : null,
       ceoId: 0, // Unknown, will be filled by queue worker
       creatorId: 0, // Unknown, will be filled by queue worker
-      dateFounded: "", // Unknown, will be filled by queue worker
-      description: "", // Unknown, will be filled by queue worker
+      dateFounded: '', // Unknown, will be filled by queue worker
+      description: '', // Unknown, will be filled by queue worker
       homeStationId: null, // Unknown, will be filled by queue worker
       memberCount: 0, // Unknown, will be filled by queue worker
       name: corp.name,
       shares: 0, // Unknown, will be filled by queue worker
       taxRate: 0, // Unknown, will be filled by queue worker
-      ticker: "", // Unknown, will be filled by queue worker
-      url: "", // Unknown, will be filled by queue worker
+      ticker: '', // Unknown, will be filled by queue worker
+      url: '', // Unknown, will be filled by queue worker
     }));
     const newCorporations = await filterExistingRecords(
-      "corporations",
-      "corporationId",
+      'corporations',
+      'corporationId',
       corporationData,
       (record) => record.corporationId
     );
@@ -506,14 +507,14 @@ async function storeEntitiesInBulk(
       allianceId: alliance.id,
       creatorCorporationId: 0, // Unknown, will be filled by queue worker
       creatorId: 0, // Unknown, will be filled by queue worker
-      dateFounded: "", // Unknown, will be filled by queue worker
+      dateFounded: '', // Unknown, will be filled by queue worker
       executorCorporationId: 0, // Unknown, will be filled by queue worker
       name: alliance.name,
-      ticker: "", // Unknown, will be filled by queue worker
+      ticker: '', // Unknown, will be filled by queue worker
     }));
     const newAlliances = await filterExistingRecords(
-      "alliances",
-      "allianceId",
+      'alliances',
+      'allianceId',
       allianceData,
       (record) => record.allianceId
     );
@@ -574,7 +575,7 @@ async function storePriceDataFromKillmails(
   };
 
   for (const killmail of killmails) {
-    const killDate = killmail.kill_time.split("T")[0];
+    const killDate = killmail.kill_time.split('T')[0];
 
     if (killmail.ship_value > 0) {
       recordPrice(killmail.victim.ship_id, killDate, killmail.ship_value, 1);
@@ -593,17 +594,24 @@ async function storePriceDataFromKillmails(
 
   if (priceMap.size > 0) {
     const priceData = Array.from(priceMap.values()).map((price) => {
-      const unitAverage = price.totalUnits > 0
-        ? price.totalValue / price.totalUnits
-        : price.totalValue / Math.max(price.sampleCount, 1);
+      const unitAverage =
+        price.totalUnits > 0
+          ? price.totalValue / price.totalUnits
+          : price.totalValue / Math.max(price.sampleCount, 1);
 
       return {
         region_id: 10000002,
         date: `${price.priceDate}T00:00:00Z`,
         type_id: price.typeId,
         average: unitAverage,
-        highest: price.maxPrice === Number.NEGATIVE_INFINITY ? unitAverage : price.maxPrice,
-        lowest: price.minPrice === Number.POSITIVE_INFINITY ? unitAverage : price.minPrice,
+        highest:
+          price.maxPrice === Number.NEGATIVE_INFINITY
+            ? unitAverage
+            : price.maxPrice,
+        lowest:
+          price.minPrice === Number.POSITIVE_INFINITY
+            ? unitAverage
+            : price.minPrice,
         order_count: 0,
         volume: price.totalUnits,
       };
@@ -619,7 +627,7 @@ function convertEveKillToESI(killmail: EveKillAPIKillmail): ESIKillmail {
   // Convert kill_time to ISO format without milliseconds
   const killTime = new Date(killmail.kill_time)
     .toISOString()
-    .replace(/\.\d{3}Z$/, "Z");
+    .replace(/\.\d{3}Z$/, 'Z');
 
   return {
     killmail_id: killmail.killmail_id,
@@ -755,11 +763,11 @@ async function fetchKillmailsForEntities(
       `Fetching killmails (page: ${page}, skip: ${skip}, limit: ${limit})`
     );
 
-    const response = await fetch("https://eve-kill.com/api/export/killmails", {
-      method: "POST",
+    const response = await fetch('https://eve-kill.com/api/export/killmails', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "EVE-Kill EDK/1.0 (https://github.com/EVE-KILL/edk)",
+        'Content-Type': 'application/json',
+        'User-Agent': 'EVE-Kill EDK/1.0 (https://github.com/EVE-KILL/edk)',
       },
       body: JSON.stringify(requestBody),
     });
@@ -782,9 +790,9 @@ async function fetchKillmailsForEntities(
 
     return result.data;
   } catch (error) {
-    logger.warn("Failed to fetch killmails from eve-kill.com", {
+    logger.warn('Failed to fetch killmails from eve-kill.com', {
       error: error instanceof Error ? error.message : String(error),
-      hint: "Connection error. Will retry after delay to allow resume.",
+      hint: 'Connection error. Will retry after delay to allow resume.',
     });
     return [];
   }

@@ -1,5 +1,5 @@
-import postgres from 'postgres'
-import { requestContext } from '../utils/request-context'
+import postgres from 'postgres';
+import { requestContext } from '../utils/request-context';
 
 /**
  * Postgres Database Helper (using postgres.js)
@@ -8,14 +8,16 @@ import { requestContext } from '../utils/request-context'
  * Handles connection management and provides common query patterns.
  */
 export class DatabaseHelper {
-  private _sql: postgres.Sql | undefined
+  private _sql: postgres.Sql | undefined;
 
   constructor() {}
 
   get sql(): postgres.Sql {
     if (!this._sql) {
       // Initialize postgres client
-      const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
+      const url =
+        process.env.DATABASE_URL ||
+        'postgresql://edk_user:edk_password@localhost:5432/edk';
 
       // postgres.js manages the connection pool automatically
       this._sql = postgres(url, {
@@ -25,12 +27,12 @@ export class DatabaseHelper {
         transform: {
           // Optional: convert row keys to camelCase if needed, but we stick to schema for now
           // undefined
-        }
-      })
+        },
+      });
     }
 
     // Get the raw SQL instance
-    const sqlInstance = this._sql
+    const sqlInstance = this._sql;
 
     // From here, we create a proxy to intercept query calls for performance tracking.
     // The handler retrieves the performance tracker from the current async context.
@@ -38,107 +40,125 @@ export class DatabaseHelper {
     const handler: ProxyHandler<postgres.Sql> = {
       // This trap handles tagged template literal calls, e.g., sql`SELECT * FROM users`
       apply: (target, thisArg, args) => {
-        const performance = requestContext.getStore()?.performance
+        const performance = requestContext.getStore()?.performance;
         if (!performance) {
-          return Reflect.apply(target, thisArg, args)
+          return Reflect.apply(target, thisArg, args);
         }
 
-        const startTime = performance.now()
-        const promise = Reflect.apply(target, thisArg, args) as Promise<any>
+        const startTime = performance.now();
+        const promise = Reflect.apply(target, thisArg, args) as Promise<any>;
 
         promise.finally(() => {
-          const duration = performance.now() - startTime
+          const duration = performance.now() - startTime;
           // For template tags, args[0] has a `raw` property with query parts
-          const query = (args[0].raw as string[]).join('?')
-          const params = args.slice(1)
-          performance.addQuery(query, params, duration)
-        })
+          const query = (args[0].raw as string[]).join('?');
+          const params = args.slice(1);
+          performance.addQuery(query, params, duration);
+        });
 
-        return promise
+        return promise;
       },
       // This trap handles method calls on the sql object, e.g., sql.unsafe('...')
       get: (target, prop, receiver) => {
-        const original = (target as any)[prop]
+        const original = (target as any)[prop];
         if (typeof original !== 'function') {
-          return Reflect.get(target, prop, receiver)
+          return Reflect.get(target, prop, receiver);
         }
 
         return (...args: any[]) => {
-          const performance = requestContext.getStore()?.performance
+          const performance = requestContext.getStore()?.performance;
           if (!performance) {
-            return original.apply(target, args)
+            return original.apply(target, args);
           }
 
-          const startTime = performance.now()
-          const result = original.apply(target, args)
+          const startTime = performance.now();
+          const result = original.apply(target, args);
 
           // Check if the result is a PendingQuery, which indicates a query-executing method
-          if (result && typeof result.finally === 'function' && 'sql' in result) {
+          if (
+            result &&
+            typeof result.finally === 'function' &&
+            'sql' in result
+          ) {
             result.finally(() => {
-              const duration = performance.now() - startTime
-              const query = result.sql
-              const params = result.parameters
-              performance.addQuery(query, params, duration)
-            })
+              const duration = performance.now() - startTime;
+              const query = result.sql;
+              const params = result.parameters;
+              performance.addQuery(query, params, duration);
+            });
           }
 
-          return result
-        }
-      }
-    }
+          return result;
+        };
+      },
+    };
 
-    return new Proxy(sqlInstance, handler)
+    return new Proxy(sqlInstance, handler);
   }
 
   /**
    * Insert data into a table
    */
-  async insert<T extends object = any>(table: string, data: T | T[]): Promise<void> {
-    const items = Array.isArray(data) ? data : [data]
-    if (items.length === 0) return
+  async insert<T extends object = any>(
+    table: string,
+    data: T | T[]
+  ): Promise<void> {
+    const items = Array.isArray(data) ? data : [data];
+    if (items.length === 0) return;
 
     try {
       // postgres.js has a nice helper for inserts: sql(items)
-      await this.sql`INSERT INTO ${this.sql(table)} ${this.sql(items as any)}`
+      await this.sql`INSERT INTO ${this.sql(table)} ${this.sql(items as any)}`;
     } catch (error) {
-      console.error('Database insert error:', error)
-      throw error
+      console.error('Database insert error:', error);
+      throw error;
     }
   }
 
   /**
    * Bulk insert data
    */
-  async bulkInsert<T extends object = any>(table: string, data: T[]): Promise<void> {
-    return this.insert(table, data)
+  async bulkInsert<T extends object = any>(
+    table: string,
+    data: T[]
+  ): Promise<void> {
+    return this.insert(table, data);
   }
 
   /**
    * Bulk upsert data
    */
-  async bulkUpsert<T extends object = any>(table: string, data: T[], conflictKey: string): Promise<void> {
-    const items = Array.isArray(data) ? data : [data]
-    if (items.length === 0) return
+  async bulkUpsert<T extends object = any>(
+    table: string,
+    data: T[],
+    conflictKey: string
+  ): Promise<void> {
+    const items = Array.isArray(data) ? data : [data];
+    if (items.length === 0) return;
 
     try {
-        const columns = Object.keys(items[0]).filter(c => c !== conflictKey)
+      const columns = Object.keys(items[0]).filter((c) => c !== conflictKey);
 
-        // Construct dynamic update list: "col" = EXCLUDED."col"
-        // Use reduce to join with commas manually to avoid postgres.js array formatting issues in SET clause
-        const updateClause = columns.reduce((acc, col, i) => {
-          const fragment = this.sql`${this.sql(col)} = EXCLUDED.${this.sql(col)}`
+      // Construct dynamic update list: "col" = EXCLUDED."col"
+      // Use reduce to join with commas manually to avoid postgres.js array formatting issues in SET clause
+      const updateClause = columns.reduce(
+        (acc, col, i) => {
+          const fragment = this
+            .sql`${this.sql(col)} = EXCLUDED.${this.sql(col)}`;
           // Cast to any to avoid complex type inference issues with postgres.js template literals
-          return i === 0 ? fragment : this.sql`${acc as any}, ${fragment}`
-        }, this.sql``)
+          return i === 0 ? fragment : this.sql`${acc as any}, ${fragment}`;
+        },
+        this.sql``
+      );
 
-        await this.sql`
+      await this.sql`
             INSERT INTO ${this.sql(table)} ${this.sql(items as any)}
             ON CONFLICT (${this.sql(conflictKey)})
             DO UPDATE SET ${updateClause as any}
-        `
+        `;
     } catch (error) {
-      console.error('Database upsert error:', error)
-      throw error
+      console.error('Database upsert error:', error);
+      throw error;
     }
   }
 
@@ -147,13 +167,13 @@ export class DatabaseHelper {
    */
   async tableExists(tableName: string): Promise<boolean> {
     try {
-      const [result] = await this.sql<{exists: number}[]>`
+      const [result] = await this.sql<{ exists: number }[]>`
         SELECT 1 as exists FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ${tableName}
-      `
-      return Number(result?.exists) === 1
+      `;
+      return Number(result?.exists) === 1;
     } catch (error) {
-      console.error('Error checking table existence:', error)
-      return false
+      console.error('Error checking table existence:', error);
+      return false;
     }
   }
 
@@ -166,43 +186,43 @@ export class DatabaseHelper {
        FROM information_schema.columns
        WHERE table_schema = 'public' AND table_name = ${tableName}
        ORDER BY ordinal_position
-    `
+    `;
   }
 
   /**
    * Execute a raw query
    */
   async query<T = any>(query: string, params?: any[]): Promise<T[]> {
-    return await this.sql.unsafe<T[]>(query, params) as T[]
+    return (await this.sql.unsafe<T[]>(query, params)) as T[];
   }
 
   /**
    * Execute a raw query and return the first row
    */
   async queryOne<T = any>(query: string, params?: any[]): Promise<T | null> {
-    const result = await this.sql.unsafe<T[]>(query, params)
-    return result.length > 0 ? result[0] : null
+    const result = await this.sql.unsafe<T[]>(query, params);
+    return result.length > 0 ? result[0] : null;
   }
 
   /**
    * Execute a raw query and return the first value of the first row
    */
   async queryValue<T = any>(query: string, params?: any[]): Promise<T | null> {
-    const result = await this.sql.unsafe<any[]>(query, params)
+    const result = await this.sql.unsafe<any[]>(query, params);
     if (result.length > 0) {
-      const keys = Object.keys(result[0])
+      const keys = Object.keys(result[0]);
       if (keys.length > 0) {
-        return result[0][keys[0]] as T
+        return result[0][keys[0]] as T;
       }
     }
-    return null
+    return null;
   }
 
   /**
    * Execute a command (alias for query but implies no return value needed)
    */
   async execute(query: string, params?: any[]): Promise<void> {
-    await this.sql.unsafe(query, params)
+    await this.sql.unsafe(query, params);
   }
 
   /**
@@ -210,11 +230,11 @@ export class DatabaseHelper {
    */
   async ping(): Promise<boolean> {
     try {
-      await this.sql`SELECT 1`
-      return true
+      await this.sql`SELECT 1`;
+      return true;
     } catch (error) {
-      console.error('Database ping failed:', error)
-      return false
+      console.error('Database ping failed:', error);
+      return false;
     }
   }
 
@@ -223,8 +243,8 @@ export class DatabaseHelper {
    */
   async close(): Promise<void> {
     if (this._sql) {
-      await this._sql.end()
-      this._sql = undefined
+      await this._sql.end();
+      this._sql = undefined;
     }
   }
 
@@ -232,13 +252,13 @@ export class DatabaseHelper {
    * Get the raw client
    */
   getClient(): postgres.Sql {
-    return this.sql
+    return this.sql;
   }
 }
 
 // Export a singleton instance
-export const database = new DatabaseHelper()
+export const database = new DatabaseHelper();
 
 // Export types for convenience
-export type QueryParams = Record<string, any>
-export type InsertData<T> = T | T[]
+export type QueryParams = Record<string, any>;
+export type InsertData<T> = T | T[];

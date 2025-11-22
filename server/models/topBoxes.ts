@@ -1,4 +1,4 @@
-import { database } from '../helpers/database'
+import { database } from '../helpers/database';
 
 /**
  * Top Boxes Model
@@ -8,13 +8,13 @@ import { database } from '../helpers/database'
  */
 
 export interface TopBoxWithName {
-  id: number
-  name: string
-  kills: number
-  losses: number
-  iskDestroyed: number
-  iskLost: number
-  points: number
+  id: number;
+  name: string;
+  kills: number;
+  losses: number;
+  iskDestroyed: number;
+  iskLost: number;
+  points: number;
 }
 
 /**
@@ -22,49 +22,63 @@ export interface TopBoxWithName {
  */
 export async function getTopByKills(
   periodType: 'hour' | 'day' | 'week' | 'month',
-  entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
+  entityType:
+    | 'character'
+    | 'corporation'
+    | 'alliance'
+    | 'ship'
+    | 'system'
+    | 'region',
   limit: number = 10
 ): Promise<TopBoxWithName[]> {
-  const end = new Date()
-  const start = new Date()
+  const end = new Date();
+  const start = new Date();
 
   switch (periodType) {
-    case 'hour': start.setHours(start.getHours() - 1); break;
-    case 'day': start.setDate(start.getDate() - 1); break;
-    case 'week': start.setDate(start.getDate() - 7); break;
-    case 'month': start.setMonth(start.getMonth() - 1); break;
+    case 'hour':
+      start.setHours(start.getHours() - 1);
+      break;
+    case 'day':
+      start.setDate(start.getDate() - 1);
+      break;
+    case 'week':
+      start.setDate(start.getDate() - 7);
+      break;
+    case 'month':
+      start.setMonth(start.getMonth() - 1);
+      break;
   }
 
-  let groupCol
-  let nameCol
-  let joinClause
+  let groupCol;
+  let nameCol;
+  let joinClause;
 
   if (entityType === 'character') {
-    groupCol = database.sql`k."topAttackerCharacterId"`
-    nameCol = database.sql`c.name`
-    joinClause = database.sql`LEFT JOIN characters c ON k."topAttackerCharacterId" = c."characterId"`
+    groupCol = database.sql`k."topAttackerCharacterId"`;
+    nameCol = database.sql`c.name`;
+    joinClause = database.sql`LEFT JOIN characters c ON k."topAttackerCharacterId" = c."characterId"`;
   } else if (entityType === 'corporation') {
-    groupCol = database.sql`k."topAttackerCorporationId"`
-    nameCol = database.sql`c.name`
-    joinClause = database.sql`LEFT JOIN corporations c ON k."topAttackerCorporationId" = c."corporationId"`
+    groupCol = database.sql`k."topAttackerCorporationId"`;
+    nameCol = database.sql`c.name`;
+    joinClause = database.sql`LEFT JOIN corporations c ON k."topAttackerCorporationId" = c."corporationId"`;
   } else if (entityType === 'alliance') {
-    groupCol = database.sql`k."topAttackerAllianceId"`
-    nameCol = database.sql`a.name`
-    joinClause = database.sql`LEFT JOIN alliances a ON k."topAttackerAllianceId" = a."allianceId"`
+    groupCol = database.sql`k."topAttackerAllianceId"`;
+    nameCol = database.sql`a.name`;
+    joinClause = database.sql`LEFT JOIN alliances a ON k."topAttackerAllianceId" = a."allianceId"`;
   } else if (entityType === 'ship') {
-    groupCol = database.sql`k."victimShipTypeId"`
-    nameCol = database.sql`t.name`
-    joinClause = database.sql`LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"`
+    groupCol = database.sql`k."victimShipTypeId"`;
+    nameCol = database.sql`t.name`;
+    joinClause = database.sql`LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"`;
   } else if (entityType === 'system') {
-    groupCol = database.sql`k."solarSystemId"`
-    nameCol = database.sql`ss.name`
-    joinClause = database.sql`LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"`
+    groupCol = database.sql`k."solarSystemId"`;
+    nameCol = database.sql`ss.name`;
+    joinClause = database.sql`LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"`;
   } else if (entityType === 'region') {
-    groupCol = database.sql`ss."regionId"`
-    nameCol = database.sql`r.name`
-    joinClause = database.sql`LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId" LEFT JOIN regions r ON ss."regionId" = r."regionId"`
+    groupCol = database.sql`ss."regionId"`;
+    nameCol = database.sql`r.name`;
+    joinClause = database.sql`LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId" LEFT JOIN regions r ON ss."regionId" = r."regionId"`;
   } else {
-      return []
+    return [];
   }
 
   return await database.sql<TopBoxWithName[]>`
@@ -84,7 +98,7 @@ export async function getTopByKills(
      GROUP BY ${groupCol}, ${nameCol}
      ORDER BY "iskDestroyed" DESC, kills DESC
      LIMIT ${limit}
-  `
+  `;
 }
 
 /**
@@ -92,11 +106,17 @@ export async function getTopByKills(
  */
 export async function getTopByPoints(
   periodType: 'hour' | 'day' | 'week' | 'month',
-  entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
+  entityType:
+    | 'character'
+    | 'corporation'
+    | 'alliance'
+    | 'ship'
+    | 'system'
+    | 'region',
   limit: number = 10
 ): Promise<TopBoxWithName[]> {
-    // Points not implemented without aggregations, return empty
-  return []
+  // Points not implemented without aggregations, return empty
+  return [];
 }
 
 /**
@@ -104,10 +124,16 @@ export async function getTopByPoints(
  */
 export async function getEntityTopBoxStats(
   entityId: number,
-  entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
+  entityType:
+    | 'character'
+    | 'corporation'
+    | 'alliance'
+    | 'ship'
+    | 'system'
+    | 'region',
   periodType: 'hour' | 'day' | 'week' | 'month'
 ): Promise<TopBoxWithName | null> {
-  return null
+  return null;
 }
 
 /**
@@ -115,21 +141,21 @@ export async function getEntityTopBoxStats(
  * This queries the killlist table directly and aggregates on the fly
  */
 export interface FilteredTopStats {
-  systems: Array<{ id: number; name: string; kills: number }>
-  regions: Array<{ id: number; name: string; kills: number }>
-  characters: Array<{ id: number; name: string; kills: number }>
-  corporations: Array<{ id: number; name: string; kills: number }>
-  alliances: Array<{ id: number; name: string; kills: number }>
+  systems: Array<{ id: number; name: string; kills: number }>;
+  regions: Array<{ id: number; name: string; kills: number }>;
+  characters: Array<{ id: number; name: string; kills: number }>;
+  corporations: Array<{ id: number; name: string; kills: number }>;
+  alliances: Array<{ id: number; name: string; kills: number }>;
 }
 
 /**
  * Helper to combine conditions into a WHERE clause
  */
 function conditionsToWhere(conditions: any[], extraCondition?: any): any {
-  const all = extraCondition ? [...conditions, extraCondition] : conditions
+  const all = extraCondition ? [...conditions, extraCondition] : conditions;
   return all.length > 0
-    ? database.sql`WHERE ${all.reduce((acc, curr, i) => i === 0 ? curr : database.sql`${acc} AND ${curr}`, database.sql``)}`
-    : database.sql``
+    ? database.sql`WHERE ${all.reduce((acc, curr, i) => (i === 0 ? curr : database.sql`${acc} AND ${curr}`), database.sql``)}`
+    : database.sql``;
 }
 
 /**
@@ -139,7 +165,10 @@ export async function getTopSystemsFiltered(
   whereConditions: any[],
   limit: number = 10
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  const clause = conditionsToWhere(whereConditions, database.sql`k."solarSystemId" > 0`)
+  const clause = conditionsToWhere(
+    whereConditions,
+    database.sql`k."solarSystemId" > 0`
+  );
 
   return await database.sql<{ id: number; name: string; kills: number }[]>`
     SELECT
@@ -153,7 +182,7 @@ export async function getTopSystemsFiltered(
      GROUP BY k."solarSystemId", ss.name
      ORDER BY kills DESC
      LIMIT ${limit}
-  `
+  `;
 }
 
 /**
@@ -163,7 +192,10 @@ export async function getTopRegionsFiltered(
   whereConditions: any[],
   limit: number = 10
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  const clause = conditionsToWhere(whereConditions, database.sql`ss."regionId" > 0`)
+  const clause = conditionsToWhere(
+    whereConditions,
+    database.sql`ss."regionId" > 0`
+  );
 
   return await database.sql<{ id: number; name: string; kills: number }[]>`
     SELECT
@@ -178,7 +210,7 @@ export async function getTopRegionsFiltered(
      GROUP BY ss."regionId", reg.name
      ORDER BY kills DESC
      LIMIT ${limit}
-  `
+  `;
 }
 
 /**
@@ -188,7 +220,10 @@ export async function getTopCharactersFiltered(
   whereConditions: any[],
   limit: number = 10
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  const clause = conditionsToWhere(whereConditions, database.sql`k."topAttackerCharacterId" > 0`)
+  const clause = conditionsToWhere(
+    whereConditions,
+    database.sql`k."topAttackerCharacterId" > 0`
+  );
 
   return await database.sql<{ id: number; name: string; kills: number }[]>`
     SELECT
@@ -203,7 +238,7 @@ export async function getTopCharactersFiltered(
      GROUP BY k."topAttackerCharacterId", c.name
      ORDER BY kills DESC
      LIMIT ${limit}
-  `
+  `;
 }
 
 /**
@@ -213,7 +248,10 @@ export async function getTopCorporationsFiltered(
   whereConditions: any[],
   limit: number = 10
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  const clause = conditionsToWhere(whereConditions, database.sql`k."topAttackerCorporationId" > 0`)
+  const clause = conditionsToWhere(
+    whereConditions,
+    database.sql`k."topAttackerCorporationId" > 0`
+  );
 
   return await database.sql<{ id: number; name: string; kills: number }[]>`
     SELECT
@@ -228,7 +266,7 @@ export async function getTopCorporationsFiltered(
      GROUP BY k."topAttackerCorporationId", c.name
      ORDER BY kills DESC
      LIMIT ${limit}
-  `
+  `;
 }
 
 /**
@@ -238,7 +276,10 @@ export async function getTopAlliancesFiltered(
   whereConditions: any[],
   limit: number = 10
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  const clause = conditionsToWhere(whereConditions, database.sql`k."topAttackerAllianceId" > 0`)
+  const clause = conditionsToWhere(
+    whereConditions,
+    database.sql`k."topAttackerAllianceId" > 0`
+  );
 
   return await database.sql<{ id: number; name: string; kills: number }[]>`
     SELECT
@@ -253,5 +294,5 @@ export async function getTopAlliancesFiltered(
      GROUP BY k."topAttackerAllianceId", a.name
      ORDER BY kills DESC
      LIMIT ${limit}
-  `
+  `;
 }

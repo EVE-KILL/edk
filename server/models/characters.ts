@@ -2,57 +2,61 @@
  * Character Model
  * Handles character-related data queries
  */
-import { database } from '../helpers/database'
+import { database } from '../helpers/database';
 
 export interface CharacterInfo {
-  id: number
-  name: string
+  id: number;
+  name: string;
   corporation: {
-    id: number
-    name: string
-    ticker: string
-  } | null
+    id: number;
+    name: string;
+    ticker: string;
+  } | null;
   alliance: {
-    id: number
-    name: string
-    ticker: string
-  } | null
+    id: number;
+    name: string;
+    ticker: string;
+  } | null;
   stats: {
-    kills: number
-    losses: number
-    killLossRatio: number
-    efficiency: number
-    iskDestroyed: number
-    iskLost: number
-    iskEfficiency: number
-  }
+    kills: number;
+    losses: number;
+    killLossRatio: number;
+    efficiency: number;
+    iskDestroyed: number;
+    iskLost: number;
+    iskEfficiency: number;
+  };
 }
 
 /**
  * Get character information with statistics
  */
-export async function getCharacterInfo(characterId: number): Promise<CharacterInfo | null> {
+export async function getCharacterInfo(
+  characterId: number
+): Promise<CharacterInfo | null> {
   // First get character name from characters table
-  const [character] = await database.sql<{name: string}[]>`
+  const [character] = await database.sql<{ name: string }[]>`
     SELECT name
     FROM characters
     WHERE characterId = ${characterId}
     LIMIT 1
-  `
+  `;
 
   if (!character || !character.name) {
-    return null
+    return null;
   }
 
   // Get latest corporation/alliance info from most recent killmail activity
-  const [corpAllianceQuery] = await database.sql<{
-    corporationId: number | null
-    corporationName: string | null
-    corporationTicker: string | null
-    allianceId: number | null
-    allianceName: string | null
-    allianceTicker: string | null
-  }[]>`
+  const [corpAllianceQuery] = await database.sql<
+    {
+      corporationId: number | null;
+      corporationName: string | null;
+      corporationTicker: string | null;
+      allianceId: number | null;
+      allianceName: string | null;
+      allianceTicker: string | null;
+    }[]
+  >`
     SELECT
       corporationId,
       corporationName,
@@ -92,35 +96,41 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
     ) as sub
     ORDER BY "lastSeen" DESC
     LIMIT 1
-  `
+  `;
 
   // Build corporation object
-  let corporation: CharacterInfo['corporation'] = null
+  let corporation: CharacterInfo['corporation'] = null;
   if (corpAllianceQuery?.corporationId) {
     corporation = {
       id: corpAllianceQuery.corporationId,
-      name: corpAllianceQuery.corporationName || `Corp ${corpAllianceQuery.corporationId}`,
-      ticker: corpAllianceQuery.corporationTicker || '???'
-    }
+      name:
+        corpAllianceQuery.corporationName ||
+        `Corp ${corpAllianceQuery.corporationId}`,
+      ticker: corpAllianceQuery.corporationTicker || '???',
+    };
   }
 
   // Build alliance object
-  let alliance: CharacterInfo['alliance'] = null
+  let alliance: CharacterInfo['alliance'] = null;
   if (corpAllianceQuery?.allianceId) {
     alliance = {
       id: corpAllianceQuery.allianceId,
-      name: corpAllianceQuery.allianceName || `Alliance ${corpAllianceQuery.allianceId}`,
-      ticker: corpAllianceQuery.allianceTicker || '???'
-    }
+      name:
+        corpAllianceQuery.allianceName ||
+        `Alliance ${corpAllianceQuery.allianceId}`,
+      ticker: corpAllianceQuery.allianceTicker || '???',
+    };
   }
 
   // Get statistics
-  const [stats] = await database.sql<{
-    kills: number
-    losses: number
-    iskDestroyed: number
-    iskLost: number
-  }[]>`
+  const [stats] = await database.sql<
+    {
+      kills: number;
+      losses: number;
+      iskDestroyed: number;
+      iskLost: number;
+    }[]
+  >`
     WITH
       kills_stats AS (
         SELECT
@@ -165,15 +175,21 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
       kills_stats."iskDestroyed" as "iskDestroyed",
       losses_stats."iskLost" as "iskLost"
     FROM kills_stats, losses_stats
-  `
+  `;
 
-  const kills = Number(stats?.kills) || 0
-  const losses = Number(stats?.losses) || 0
-  const iskDestroyed = stats?.iskDestroyed || 0
-  const iskLost = stats?.iskLost || 0
-  const killLossRatio = losses > 0 ? kills / losses : kills
-  const efficiency = (iskDestroyed + iskLost) > 0 ? (iskDestroyed / (iskDestroyed + iskLost)) * 100 : 0
-  const iskEfficiency = (iskDestroyed + iskLost) > 0 ? (iskDestroyed / (iskDestroyed + iskLost)) * 100 : 0
+  const kills = Number(stats?.kills) || 0;
+  const losses = Number(stats?.losses) || 0;
+  const iskDestroyed = stats?.iskDestroyed || 0;
+  const iskLost = stats?.iskLost || 0;
+  const killLossRatio = losses > 0 ? kills / losses : kills;
+  const efficiency =
+    iskDestroyed + iskLost > 0
+      ? (iskDestroyed / (iskDestroyed + iskLost)) * 100
+      : 0;
+  const iskEfficiency =
+    iskDestroyed + iskLost > 0
+      ? (iskDestroyed / (iskDestroyed + iskLost)) * 100
+      : 0;
 
   return {
     id: characterId,
@@ -187,22 +203,24 @@ export async function getCharacterInfo(characterId: number): Promise<CharacterIn
       efficiency,
       iskDestroyed,
       iskLost,
-      iskEfficiency
-    }
-  }
+      iskEfficiency,
+    },
+  };
 }
 
 export interface ShipGroupStats {
-  groupId: number
-  groupName: string
-  killed: number
-  lost: number
+  groupId: number;
+  groupName: string;
+  killed: number;
+  lost: number;
 }
 
 /**
  * Get ship group statistics for a character (last 30 days)
  */
-export async function getShipGroupStatsByCharacter(characterId: number): Promise<ShipGroupStats[]> {
+export async function getShipGroupStatsByCharacter(
+  characterId: number
+): Promise<ShipGroupStats[]> {
   const stats = await database.sql<ShipGroupStats[]>`
     WITH
       killed_stats AS (
@@ -241,30 +259,32 @@ export async function getShipGroupStatsByCharacter(characterId: number): Promise
     FULL OUTER JOIN lost_stats ON killed_stats."groupId" = lost_stats."groupId"
     ORDER BY (coalesce(killed_stats.killed, 0) + coalesce(lost_stats.lost, 0)) DESC
     LIMIT 100
-  `
+  `;
 
-  return stats
+  return stats;
 }
 
 export interface CharacterTopEntity {
-  id: number
-  name: string
-  kills: number
+  id: number;
+  name: string;
+  kills: number;
 }
 
 export interface CharacterTopBoxStats {
-  ships: CharacterTopEntity[]
-  systems: CharacterTopEntity[]
-  regions: CharacterTopEntity[]
-  corporations: CharacterTopEntity[]
-  alliances: CharacterTopEntity[]
+  ships: CharacterTopEntity[];
+  systems: CharacterTopEntity[];
+  regions: CharacterTopEntity[];
+  corporations: CharacterTopEntity[];
+  alliances: CharacterTopEntity[];
 }
 
 /**
  * Get top 10 stats for a character (last 7 days)
  * Shows: ships, systems, regions, corporations, alliances (excludes characters)
  */
-export async function getTop10StatsByCharacter(characterId: number): Promise<CharacterTopBoxStats> {
+export async function getTop10StatsByCharacter(
+  characterId: number
+): Promise<CharacterTopBoxStats> {
   // Top ships killed
   const ships = await database.sql<CharacterTopEntity[]>`
     SELECT
@@ -280,7 +300,7 @@ export async function getTop10StatsByCharacter(characterId: number): Promise<Cha
     GROUP BY t.typeId, t.name
     ORDER BY kills DESC
     LIMIT 10
-  `
+  `;
 
   // Top systems
   const systems = await database.sql<CharacterTopEntity[]>`
@@ -297,7 +317,7 @@ export async function getTop10StatsByCharacter(characterId: number): Promise<Cha
     GROUP BY sys.solarSystemId, sys.name
     ORDER BY kills DESC
     LIMIT 10
-  `
+  `;
 
   // Top regions
   const regions = await database.sql<CharacterTopEntity[]>`
@@ -315,7 +335,7 @@ export async function getTop10StatsByCharacter(characterId: number): Promise<Cha
     GROUP BY reg.regionId, reg.name
     ORDER BY kills DESC
     LIMIT 10
-  `
+  `;
 
   // Top corporations killed
   const corporations = await database.sql<CharacterTopEntity[]>`
@@ -332,7 +352,7 @@ export async function getTop10StatsByCharacter(characterId: number): Promise<Cha
     GROUP BY corp.corporationId, corp.name
     ORDER BY kills DESC
     LIMIT 10
-  `
+  `;
 
   // Top alliances killed
   const alliances = await database.sql<CharacterTopEntity[]>`
@@ -350,47 +370,47 @@ export async function getTop10StatsByCharacter(characterId: number): Promise<Cha
     GROUP BY alliance.corporationId, alliance.name
     ORDER BY kills DESC
     LIMIT 10
-  `
+  `;
 
   return {
     ships,
     systems,
     regions,
     corporations,
-    alliances
-  }
+    alliances,
+  };
 }
 
 export interface CharacterKillmailRow {
-  killmail_id: number
-  killmail_time: Date
-  victim_ship_type_id: number
-  victim_ship_name: string
-  victim_ship_group: string
-  victim_characterId: number | null
-  victim_character_name: string
-  victim_corporationId: number
-  victim_corporation_name: string
-  victim_corporation_ticker: string
-  victim_allianceId: number | null
-  victim_alliance_name: string | null
-  victim_alliance_ticker: string | null
-  attacker_characterId: number | null
-  attacker_character_name: string
-  attacker_corporationId: number | null
-  attacker_corporation_name: string
-  attacker_corporation_ticker: string
-  attacker_allianceId: number | null
-  attacker_alliance_name: string | null
-  attacker_alliance_ticker: string | null
-  solar_system_id: number
-  solar_system_name: string
-  solar_system_security: number
-  region_id: number
-  region_name: string
-  ship_value: number
-  total_value: number
-  attacker_count: number
+  killmail_id: number;
+  killmail_time: Date;
+  victim_ship_type_id: number;
+  victim_ship_name: string;
+  victim_ship_group: string;
+  victim_characterId: number | null;
+  victim_character_name: string;
+  victim_corporationId: number;
+  victim_corporation_name: string;
+  victim_corporation_ticker: string;
+  victim_allianceId: number | null;
+  victim_alliance_name: string | null;
+  victim_alliance_ticker: string | null;
+  attacker_characterId: number | null;
+  attacker_character_name: string;
+  attacker_corporationId: number | null;
+  attacker_corporation_name: string;
+  attacker_corporation_ticker: string;
+  attacker_allianceId: number | null;
+  attacker_alliance_name: string | null;
+  attacker_alliance_ticker: string | null;
+  solar_system_id: number;
+  solar_system_name: string;
+  solar_system_security: number;
+  region_id: number;
+  region_name: string;
+  ship_value: number;
+  total_value: number;
+  attacker_count: number;
 }
 
 /**
@@ -449,9 +469,9 @@ export async function getCharacterKillmails(
     LEFT JOIN solarSystems sys ON k.solarSystemId = sys.solarSystemId
     LEFT JOIN regions reg ON sys.regionId = reg.regionId
     LEFT JOIN prices p ON k.victimShipTypeId = p.typeId AND k.killmailTime::date = p.priceDate
-  `
+  `;
 
-  let whereClause
+  let whereClause;
   if (type === 'kills') {
     // Character was an attacker (check attackers table)
     whereClause = database.sql`
@@ -460,10 +480,10 @@ export async function getCharacterKillmails(
         FROM attackers
         WHERE characterId = ${characterId}
       )
-    `
+    `;
   } else if (type === 'losses') {
     // Character was the victim
-    whereClause = database.sql`AND k.victimCharacterId = ${characterId}`
+    whereClause = database.sql`AND k.victimCharacterId = ${characterId}`;
   } else {
     // All: either attacker or victim
     whereClause = database.sql`
@@ -475,7 +495,7 @@ export async function getCharacterKillmails(
           WHERE characterId = ${characterId}
         )
       )
-    `
+    `;
   }
 
   return await database.sql<CharacterKillmailRow[]>`
@@ -484,7 +504,7 @@ export async function getCharacterKillmails(
       ${whereClause}
     ORDER BY k.killmailTime DESC
     LIMIT ${limit} OFFSET ${offset}
-  `
+  `;
 }
 
 /**
@@ -496,7 +516,7 @@ export async function getCharacterKillmailCount(
   characterId: number,
   type: 'all' | 'kills' | 'losses' = 'all'
 ): Promise<number> {
-  let whereClause
+  let whereClause;
   if (type === 'kills') {
     whereClause = database.sql`
       AND killmailId IN (
@@ -504,9 +524,9 @@ export async function getCharacterKillmailCount(
         FROM attackers
         WHERE characterId = ${characterId}
       )
-    `
+    `;
   } else if (type === 'losses') {
-    whereClause = database.sql`AND victimCharacterId = ${characterId}`
+    whereClause = database.sql`AND victimCharacterId = ${characterId}`;
   } else {
     whereClause = database.sql`
       AND (
@@ -517,90 +537,99 @@ export async function getCharacterKillmailCount(
           WHERE characterId = ${characterId}
         )
       )
-    `
+    `;
   }
 
-  const [result] = await database.sql<{count: number}[]>`
+  const [result] = await database.sql<{ count: number }[]>`
     SELECT count(*) as count
     FROM killmails
     WHERE 1=1
       ${whereClause}
-  `
+  `;
 
-  return Number(result?.count || 0)
+  return Number(result?.count || 0);
 }
 
 /**
  * Character database record interface
  */
 export interface Character {
-  characterId: number
-  allianceId: number | null
-  birthday: string
-  bloodlineId: number
-  corporationId: number
-  description: string
-  gender: string
-  name: string
-  raceId: number
-  securityStatus: number
-  updatedAt: Date
+  characterId: number;
+  allianceId: number | null;
+  birthday: string;
+  bloodlineId: number;
+  corporationId: number;
+  description: string;
+  gender: string;
+  name: string;
+  raceId: number;
+  securityStatus: number;
+  updatedAt: Date;
 }
 
 /**
  * Get character by ID (basic record)
  */
-export async function getCharacter(characterId: number): Promise<Character | null> {
+export async function getCharacter(
+  characterId: number
+): Promise<Character | null> {
   const [row] = await database.sql<Character[]>`
     SELECT * FROM characters WHERE characterId = ${characterId}
-  `
-  return row || null
+  `;
+  return row || null;
 }
 
 /**
  * Get multiple characters by IDs
  */
-export async function getCharacters(characterIds: number[]): Promise<Character[]> {
-  if (characterIds.length === 0) return []
+export async function getCharacters(
+  characterIds: number[]
+): Promise<Character[]> {
+  if (characterIds.length === 0) return [];
 
   return await database.sql<Character[]>`
     SELECT * FROM characters WHERE characterId = ANY(${characterIds})
-  `
+  `;
 }
 
 /**
  * Search characters by name
  */
-export async function searchCharacters(searchTerm: string, limit: number = 20): Promise<Character[]> {
+export async function searchCharacters(
+  searchTerm: string,
+  limit: number = 20
+): Promise<Character[]> {
   return await database.sql<Character[]>`
     SELECT * FROM characters
     WHERE name ILIKE ${`%${searchTerm}%`}
     ORDER BY name
     LIMIT ${limit}
-  `
+  `;
 }
 
 /**
  * Get character name by ID
  */
-export async function getCharacterName(characterId: number): Promise<string | null> {
-  const [result] = await database.sql<{name: string}[]>`
+export async function getCharacterName(
+  characterId: number
+): Promise<string | null> {
+  const [result] = await database.sql<{ name: string }[]>`
     SELECT name FROM characters WHERE characterId = ${characterId}
-  `
-  return result?.name || null
+  `;
+  return result?.name || null;
 }
 
 /**
  * Character with corporation and alliance info
  */
 export interface CharacterWithCorporationAndAlliance {
-  name: string
-  corporationId: number
-  corporationName: string
-  corporationTicker: string
-  allianceId: number | null
-  allianceName: string | null
-  allianceTicker: string | null
+  name: string;
+  corporationId: number;
+  corporationName: string;
+  corporationTicker: string;
+  allianceId: number | null;
+  allianceName: string | null;
+  allianceTicker: string | null;
 }
 
 /**
@@ -623,8 +652,8 @@ export async function getCharacterWithCorporationAndAlliance(
     LEFT JOIN alliances alliance ON corp."allianceId" = alliance."allianceId"
     WHERE c."characterId" = ${characterId}
     LIMIT 1
-  `
-  return row || null
+  `;
+  return row || null;
 }
 
 /**
@@ -633,34 +662,38 @@ export async function getCharacterWithCorporationAndAlliance(
 export async function storeCharacter(
   characterId: number,
   data: {
-    allianceId: number | null
-    birthday: string
-    bloodlineId: number
-    corporationId: number
-    description: string
-    gender: string
-    name: string
-    raceId: number
-    securityStatus: number
+    allianceId: number | null;
+    birthday: string;
+    bloodlineId: number;
+    corporationId: number;
+    description: string;
+    gender: string;
+    name: string;
+    raceId: number;
+    securityStatus: number;
   }
 ): Promise<void> {
-  const now = Math.floor(Date.now() / 1000)
+  const now = Math.floor(Date.now() / 1000);
 
-  await database.bulkUpsert('characters', [
-    {
-      characterId: characterId,
-      allianceId: data.allianceId,
-      birthday: data.birthday,
-      bloodlineId: data.bloodlineId,
-      corporationId: data.corporationId,
-      description: data.description,
-      gender: data.gender,
-      name: data.name,
-      raceId: data.raceId,
-      securityStatus: data.securityStatus,
-      updatedAt: new Date(now * 1000),
-    }
-  ], ['characterId'])
+  await database.bulkUpsert(
+    'characters',
+    [
+      {
+        characterId: characterId,
+        allianceId: data.allianceId,
+        birthday: data.birthday,
+        bloodlineId: data.bloodlineId,
+        corporationId: data.corporationId,
+        description: data.description,
+        gender: data.gender,
+        name: data.name,
+        raceId: data.raceId,
+        securityStatus: data.securityStatus,
+        updatedAt: new Date(now * 1000),
+      },
+    ],
+    ['characterId']
+  );
 }
 
 /**
@@ -668,23 +701,23 @@ export async function storeCharacter(
  */
 export async function storeCharactersBulk(
   characters: Array<{
-    characterId: number
-    allianceId: number | null
-    birthday: string
-    bloodlineId: number
-    corporationId: number
-    description: string
-    gender: string
-    name: string
-    raceId: number
-    securityStatus: number
+    characterId: number;
+    allianceId: number | null;
+    birthday: string;
+    bloodlineId: number;
+    corporationId: number;
+    description: string;
+    gender: string;
+    name: string;
+    raceId: number;
+    securityStatus: number;
   }>
 ): Promise<void> {
-  if (characters.length === 0) return
+  if (characters.length === 0) return;
 
-  const now = Math.floor(Date.now() / 1000)
+  const now = Math.floor(Date.now() / 1000);
 
-  const records = characters.map(char => ({
+  const records = characters.map((char) => ({
     characterId: char.characterId,
     allianceId: char.allianceId,
     birthday: char.birthday,
@@ -696,17 +729,17 @@ export async function storeCharactersBulk(
     raceId: char.raceId,
     securityStatus: char.securityStatus,
     updatedAt: new Date(now * 1000),
-  }))
+  }));
 
-  await database.bulkInsert('characters', records)
+  await database.bulkInsert('characters', records);
 }
 
 /**
  * Check if character exists
  */
 export async function characterExists(characterId: number): Promise<boolean> {
-  const [result] = await database.sql<{count: number}[]>`
+  const [result] = await database.sql<{ count: number }[]>`
     SELECT count(*) as count FROM characters WHERE characterId = ${characterId}
-  `
-  return Number(result?.count) > 0
+  `;
+  return Number(result?.count) > 0;
 }

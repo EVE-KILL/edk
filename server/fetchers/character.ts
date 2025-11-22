@@ -1,44 +1,49 @@
-import { fetchESI } from '../helpers/esi'
-import { storeCharacter as storeCharacterInDB, getCharacter } from '../models/characters'
+import { fetchESI } from '../helpers/esi';
+import {
+  storeCharacter as storeCharacterInDB,
+  getCharacter,
+} from '../models/characters';
 
 /**
  * ESI Character Data - Fields we store
  * Only contains fields from the official ESI API
  */
 export interface ESICharacter {
-  alliance_id: number | null
-  birthday: string
-  bloodline_id: number
-  corporation_id: number
-  description: string
-  gender: string
-  name: string
-  race_id: number
-  security_status: number
+  alliance_id: number | null;
+  birthday: string;
+  bloodline_id: number;
+  corporation_id: number;
+  description: string;
+  gender: string;
+  name: string;
+  race_id: number;
+  security_status: number;
 }
 
 /**
  * Fetch character data from ESI
  * Stores only ESI-compatible fields in the database
  */
-export async function fetchAndStoreCharacter(characterId: number): Promise<ESICharacter | null> {
+export async function fetchAndStoreCharacter(
+  characterId: number
+): Promise<ESICharacter | null> {
   try {
-    const characterData = await fetchFromESI(characterId)
+    const characterData = await fetchFromESI(characterId);
 
     if (!characterData) {
-      return null
+      return null;
     }
 
     // Extract only ESI fields
-    const esiCharacter = extractESIFields(characterData)
+    const esiCharacter = extractESIFields(characterData);
 
     // Store in database
-    await storeCharacter(characterId, esiCharacter)
+    await storeCharacter(characterId, esiCharacter);
 
-    return esiCharacter
+    return esiCharacter;
   } catch (error) {
-    console.error(`ESI fetch failed for character ${characterId}:`, error)
-    return null
+    console.error(`ESI fetch failed for character ${characterId}:`, error);
+    return null;
   }
 }
 
@@ -47,19 +52,19 @@ export async function fetchAndStoreCharacter(characterId: number): Promise<ESICh
  */
 async function fetchFromESI(characterId: number): Promise<any | null> {
   try {
-    const response = await fetchESI(`/characters/${characterId}`)
+    const response = await fetchESI(`/characters/${characterId}`);
 
     if (!response.ok) {
       if (response.status === 404) {
-        return null
+        return null;
       }
-      throw new Error(`ESI API error: ${response.statusText}`)
+      throw new Error(`ESI API error: ${response.statusText}`);
     }
 
-    return response.data
+    return response.data;
   } catch (error) {
-    console.error(`ESI fetch failed for character ${characterId}:`, error)
-    return null
+    console.error(`ESI fetch failed for character ${characterId}:`, error);
+    return null;
   }
 }
 
@@ -76,14 +81,17 @@ function extractESIFields(data: any): ESICharacter {
     gender: data.gender,
     name: data.name,
     race_id: data.race_id,
-    security_status: data.security_status || 0
-  }
+    security_status: data.security_status || 0,
+  };
 }
 
 /**
  * Store character in database
  */
-async function storeCharacter(characterId: number, character: ESICharacter): Promise<void> {
+async function storeCharacter(
+  characterId: number,
+  character: ESICharacter
+): Promise<void> {
   await storeCharacterInDB(characterId, {
     allianceId: character.alliance_id,
     birthday: character.birthday,
@@ -93,19 +101,21 @@ async function storeCharacter(characterId: number, character: ESICharacter): Pro
     gender: character.gender,
     name: character.name,
     raceId: character.race_id,
-    securityStatus: character.security_status
-  })
+    securityStatus: character.security_status,
+  });
 }
 
 /**
  * Get cached character from database
  */
-export async function getCachedCharacter(characterId: number): Promise<ESICharacter | null> {
+export async function getCachedCharacter(
+  characterId: number
+): Promise<ESICharacter | null> {
   try {
-    const result = await getCharacter(characterId)
+    const result = await getCharacter(characterId);
 
     if (!result) {
-      return null
+      return null;
     }
 
     return {
@@ -117,9 +127,9 @@ export async function getCachedCharacter(characterId: number): Promise<ESICharac
       gender: result.gender,
       name: result.name,
       race_id: result.raceId,
-      security_status: result.securityStatus
-    }
+      security_status: result.securityStatus,
+    };
   } catch (error) {
-    return null
+    return null;
   }
 }

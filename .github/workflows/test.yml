@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ['main', 'master']
   pull_request:
-    branches: [ "main", "master" ]
+    branches: ['main', 'master']
 
 jobs:
   test:
@@ -36,24 +36,27 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Bun
-      uses: oven-sh/setup-bun@v1
-      with:
-        bun-version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
 
-    - name: Install dependencies
-      run: bun install
+      - name: Install dependencies
+        run: bun install
 
-    - name: Run tests
-      run: bun run test
-      env:
-        DB_HOST: localhost
-        DB_PORT: 5432
-        DB_USER: edk_user
-        DB_PASSWORD: edk_password
-        DB_NAME: edk
-        REDIS_HOST: localhost
-        REDIS_PORT: 6379
-        TEST_DB_NAME: edk_test
+      - name: Run linter
+        run: bun run lint
+
+      - name: Run tests
+        run: bun run test
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: edk_user
+          DB_PASSWORD: edk_password
+          DB_NAME: edk
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          TEST_DB_NAME: edk_test

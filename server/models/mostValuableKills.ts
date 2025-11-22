@@ -1,4 +1,4 @@
-import { database } from '../helpers/database'
+import { database } from '../helpers/database';
 
 /**
  * Most Valuable Kills Model
@@ -7,35 +7,35 @@ import { database } from '../helpers/database'
  */
 
 export interface MostValuableKill {
-  periodType: 'hour' | 'day' | 'week' | 'month' | 'all'
-  killmailId: number
-  killmailTime: Date
-  solarSystemId: number
-  solarSystemName?: string | null
-  victimCharacterId: number | null
-  victimCharacterName: string
-  victimCorporationId: number
-  victimCorporationName: string
-  victimCorporationTicker: string
-  victimAllianceId: number | null
-  victimAllianceName: string | null
-  victimAllianceTicker: string | null
-  victimShipTypeId: number
-  victimShipName?: string
-  victimShipGroup?: string
-  totalValue: number
-  attackerCount: number
-  npc: boolean
-  solo: boolean
-  attackerCharacterId: number | null
-  attackerCharacterName: string | null
-  attackerCorporationId: number | null
-  attackerCorporationName: string | null
-  attackerCorporationTicker: string | null
-  attackerAllianceId: number | null
-  attackerAllianceName: string | null
-  attackerAllianceTicker?: string | null
-  regionName?: string | null
+  periodType: 'hour' | 'day' | 'week' | 'month' | 'all';
+  killmailId: number;
+  killmailTime: Date;
+  solarSystemId: number;
+  solarSystemName?: string | null;
+  victimCharacterId: number | null;
+  victimCharacterName: string;
+  victimCorporationId: number;
+  victimCorporationName: string;
+  victimCorporationTicker: string;
+  victimAllianceId: number | null;
+  victimAllianceName: string | null;
+  victimAllianceTicker: string | null;
+  victimShipTypeId: number;
+  victimShipName?: string;
+  victimShipGroup?: string;
+  totalValue: number;
+  attackerCount: number;
+  npc: boolean;
+  solo: boolean;
+  attackerCharacterId: number | null;
+  attackerCharacterName: string | null;
+  attackerCorporationId: number | null;
+  attackerCorporationName: string | null;
+  attackerCorporationTicker: string | null;
+  attackerAllianceId: number | null;
+  attackerAllianceName: string | null;
+  attackerAllianceTicker?: string | null;
+  regionName?: string | null;
 }
 
 const getSelectClause = (periodType: string) => database.sql`
@@ -68,7 +68,7 @@ const getSelectClause = (periodType: string) => database.sql`
   aalliance.name as "attackerAllianceName",
   aalliance.ticker as "attackerAllianceTicker",
   reg.name as "regionName"
-`
+`;
 
 const JOIN_CLAUSE = database.sql`
   FROM killmails k
@@ -82,16 +82,22 @@ const JOIN_CLAUSE = database.sql`
   LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
   LEFT JOIN corporations acorp ON k."topAttackerCorporationId" = acorp."corporationId"
   LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
-`
+`;
 
 function getHoursAgo(periodType: string): number {
   switch (periodType) {
-    case 'hour': return 1
-    case 'day': return 24
-    case 'week': return 168
-    case 'month': return 720
-    case 'all': return 876000
-    default: return 168
+    case 'hour':
+      return 1;
+    case 'day':
+      return 24;
+    case 'week':
+      return 168;
+    case 'month':
+      return 720;
+    case 'all':
+      return 876000;
+    default:
+      return 168;
   }
 }
 
@@ -102,7 +108,7 @@ export async function getMostValuableKillsByPeriod(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
-  const hoursAgo = getHoursAgo(periodType)
+  const hoursAgo = getHoursAgo(periodType);
 
   return await database.sql<MostValuableKill[]>`
     SELECT
@@ -112,7 +118,7 @@ export async function getMostValuableKillsByPeriod(
       AND k."attackerCount" > 0
     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
     LIMIT ${limit}
-  `
+  `;
 }
 
 /**
@@ -123,7 +129,7 @@ export async function getMostValuableKillsByCharacter(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
-  const hoursAgo = getHoursAgo(periodType)
+  const hoursAgo = getHoursAgo(periodType);
 
   return await database.sql<MostValuableKill[]>`
     SELECT ${getSelectClause(periodType)}
@@ -132,7 +138,7 @@ export async function getMostValuableKillsByCharacter(
        AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT ${limit}
-  `
+  `;
 }
 
 /**
@@ -143,7 +149,7 @@ export async function getMostValuableKillsByCorporation(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
-  const hoursAgo = getHoursAgo(periodType)
+  const hoursAgo = getHoursAgo(periodType);
 
   return await database.sql<MostValuableKill[]>`
     SELECT ${getSelectClause(periodType)}
@@ -152,7 +158,7 @@ export async function getMostValuableKillsByCorporation(
        AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT ${limit}
-  `
+  `;
 }
 
 /**
@@ -163,7 +169,7 @@ export async function getMostValuableKillsByAlliance(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
-  const hoursAgo = getHoursAgo(periodType)
+  const hoursAgo = getHoursAgo(periodType);
 
   return await database.sql<MostValuableKill[]>`
     SELECT ${getSelectClause(periodType)}
@@ -172,7 +178,7 @@ export async function getMostValuableKillsByAlliance(
        AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT ${limit}
-  `
+  `;
 }
 
 /**
@@ -182,7 +188,7 @@ export async function getMostValuableSoloKills(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
-  const hoursAgo = getHoursAgo(periodType)
+  const hoursAgo = getHoursAgo(periodType);
 
   return await database.sql<MostValuableKill[]>`
     SELECT ${getSelectClause(periodType)}
@@ -191,5 +197,5 @@ export async function getMostValuableSoloKills(
        AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT ${limit}
-  `
+  `;
 }

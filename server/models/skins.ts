@@ -1,4 +1,4 @@
-import { database } from '../helpers/database'
+import { database } from '../helpers/database';
 
 /**
  * Skins Model
@@ -7,11 +7,11 @@ import { database } from '../helpers/database'
  */
 
 export interface Skin {
-  skinId: number
-  name: string
-  description?: string
-  iconId?: number
-  internalName?: string
+  skinId: number;
+  name: string;
+  description?: string;
+  iconId?: number;
+  internalName?: string;
 }
 
 /**
@@ -20,8 +20,8 @@ export interface Skin {
 export async function getSkin(skinId: number): Promise<Skin | null> {
   const [row] = await database.sql<Skin[]>`
     SELECT * FROM skins WHERE skinId = ${skinId}
-  `
-  return row || null
+  `;
+  return row || null;
 }
 
 /**
@@ -30,46 +30,51 @@ export async function getSkin(skinId: number): Promise<Skin | null> {
 export async function getAllSkins(): Promise<Skin[]> {
   return await database.sql<Skin[]>`
     SELECT * FROM skins ORDER BY name
-  `
+  `;
 }
 
 /**
  * Search skins by name
  */
-export async function searchSkins(namePattern: string, limit: number = 10): Promise<Skin[]> {
+export async function searchSkins(
+  namePattern: string,
+  limit: number = 10
+): Promise<Skin[]> {
   return await database.sql<Skin[]>`
     SELECT * FROM skins
     WHERE name ILIKE ${`%${namePattern}%`}
     ORDER BY name
     LIMIT ${limit}
-  `
+  `;
 }
 
 /**
  * Get skin name by ID
  */
 export async function getSkinName(skinId: number): Promise<string | null> {
-  const [result] = await database.sql<{name: string}[]>`
+  const [result] = await database.sql<{ name: string }[]>`
     SELECT name FROM skins WHERE skinId = ${skinId}
-  `
-  return result?.name || null
+  `;
+  return result?.name || null;
 }
 
 /**
  * Search skins by internal name
  */
-export async function searchSkinsByInternalName(internalName: string): Promise<Skin[]> {
+export async function searchSkinsByInternalName(
+  internalName: string
+): Promise<Skin[]> {
   return await database.sql<Skin[]>`
     SELECT * FROM skins WHERE "internalName" ILIKE ${`%${internalName}%`}
-  `
+  `;
 }
 
 /**
  * Count total skins
  */
 export async function countSkins(): Promise<number> {
-  const [result] = await database.sql<{count: number}[]>`
+  const [result] = await database.sql<{ count: number }[]>`
     SELECT count(*) as count FROM skins
-  `
-  return Number(result?.count || 0)
+  `;
+  return Number(result?.count || 0);
 }

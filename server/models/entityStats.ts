@@ -1,4 +1,4 @@
-import { database } from '../helpers/database'
+import { database } from '../helpers/database';
 
 /**
  * Entity Stats Model
@@ -8,98 +8,105 @@ import { database } from '../helpers/database'
  */
 
 export interface EntityStats {
-  entityId: number
-  entityType: 'character' | 'corporation' | 'alliance'
-  periodType: 'hour' | 'day' | 'week' | 'month' | 'all'
+  entityId: number;
+  entityType: 'character' | 'corporation' | 'alliance';
+  periodType: 'hour' | 'day' | 'week' | 'month' | 'all';
 
   // Kill/Loss counts
-  kills: number
-  losses: number
+  kills: number;
+  losses: number;
 
   // ISK statistics
-  iskDestroyed: number
-  iskLost: number
+  iskDestroyed: number;
+  iskLost: number;
 
   // Efficiency metrics
-  efficiency: number // (iskDestroyed / (iskDestroyed + iskLost)) * 100
-  iskEfficiency: number // (iskDestroyed / (iskDestroyed + iskLost)) * 100
-  killLossRatio: number // kills / losses (0 if no losses)
+  efficiency: number; // (iskDestroyed / (iskDestroyed + iskLost)) * 100
+  iskEfficiency: number; // (iskDestroyed / (iskDestroyed + iskLost)) * 100
+  killLossRatio: number; // kills / losses (0 if no losses)
 
   // Points (for rankings)
-  points: number
+  points: number;
 
   // Combat metrics
-  soloKills: number
-  soloLosses: number
-  npcKills: number
-  npcLosses: number
+  soloKills: number;
+  soloLosses: number;
+  npcKills: number;
+  npcLosses: number;
 
   // Ship stats (most used ship in losses)
-  topShipTypeId: number
-  topShipKills: number
+  topShipTypeId: number;
+  topShipKills: number;
 
   // Location stats (most active system)
-  topSystemId: number
-  topSystemKills: number
+  topSystemId: number;
+  topSystemKills: number;
 
   // Last activity
-  lastKillTime: Date
-  lastLossTime: Date
+  lastKillTime: Date;
+  lastLossTime: Date;
 }
 
 /**
  * Calculate the date range for a period type
  */
-function getDateRange(periodType: 'hour' | 'day' | 'week' | 'month' | 'all'): { start: string; end: string } {
-  const end = new Date()
+function getDateRange(periodType: 'hour' | 'day' | 'week' | 'month' | 'all'): {
+  start: string;
+  end: string;
+} {
+  const end = new Date();
 
-  const start = new Date(end)
+  const start = new Date(end);
 
   switch (periodType) {
     case 'hour': {
-      start.setHours(start.getHours() - 1)
-      break
+      start.setHours(start.getHours() - 1);
+      break;
     }
     case 'day': {
-      start.setDate(start.getDate() - 1)
-      break
+      start.setDate(start.getDate() - 1);
+      break;
     }
     case 'week': {
-      start.setDate(start.getDate() - 7)
-      break
+      start.setDate(start.getDate() - 7);
+      break;
     }
     case 'month': {
-      start.setMonth(start.getMonth() - 1)
-      break
+      start.setMonth(start.getMonth() - 1);
+      break;
     }
     case 'all': {
-      start.setFullYear(1970, 0, 1)
-      break
+      start.setFullYear(1970, 0, 1);
+      break;
     }
   }
 
   return {
     start: start.toISOString(),
-    end: end.toISOString()
-  }
+    end: end.toISOString(),
+  };
 }
 
 /**
  * Calculate derived stats from raw data
  */
 function calculateDerivedStats(stats: any): any {
-  const efficiency = (Number(stats.iskDestroyed) + Number(stats.iskLost)) > 0
-    ? (Number(stats.iskDestroyed) / (Number(stats.iskDestroyed) + Number(stats.iskLost))) * 100
-    : 0
+  const efficiency =
+    Number(stats.iskDestroyed) + Number(stats.iskLost) > 0
+      ? (Number(stats.iskDestroyed) /
+          (Number(stats.iskDestroyed) + Number(stats.iskLost))) *
+        100
+      : 0;
 
-  const killLossRatio = Number(stats.losses) > 0 ? Number(stats.kills) / Number(stats.losses) : 0
+  const killLossRatio =
+    Number(stats.losses) > 0 ? Number(stats.kills) / Number(stats.losses) : 0;
 
   return {
     ...stats,
     efficiency,
     iskEfficiency: efficiency,
-    killLossRatio
-  }
+    killLossRatio,
+  };
 }
 
 /**
@@ -110,10 +117,10 @@ export async function getEntityStats(
   entityType: 'character' | 'corporation' | 'alliance',
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all' = 'all'
 ): Promise<EntityStats | null> {
-  const { start, end } = getDateRange(periodType)
+  const { start, end } = getDateRange(periodType);
 
-  let killsWhere
-  let lossesWhere
+  let killsWhere;
+  let lossesWhere;
 
   if (entityType === 'character') {
     killsWhere = database.sql`"topAttackerCharacterId" = ${entityId}`;
@@ -121,7 +128,8 @@ export async function getEntityStats(
   } else if (entityType === 'corporation') {
     killsWhere = database.sql`"topAttackerCorporationId" = ${entityId}`;
     lossesWhere = database.sql`"victimCorporationId" = ${entityId}`;
-  } else { // alliance
+  } else {
+    // alliance
     killsWhere = database.sql`"topAttackerAllianceId" = ${entityId}`;
     lossesWhere = database.sql`"victimAllianceId" = ${entityId}`;
   }
@@ -172,7 +180,7 @@ export async function getEntityStats(
     FROM kills_data k, losses_data l
   `;
 
-  return result ? calculateDerivedStats(result) : null
+  return result ? calculateDerivedStats(result) : null;
 }
 
 /**
@@ -184,12 +192,12 @@ export async function getMultipleEntityStats(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all' = 'all'
 ): Promise<EntityStats[]> {
   // Fallback: loop and call getEntityStats.
-  const results: EntityStats[] = []
+  const results: EntityStats[] = [];
   for (const id of entityIds) {
-    const stat = await getEntityStats(id, entityType, periodType)
-    if (stat) results.push(stat)
+    const stat = await getEntityStats(id, entityType, periodType);
+    if (stat) results.push(stat);
   }
-  return results
+  return results;
 }
 
 /**
@@ -199,17 +207,23 @@ export async function getAllPeriodStats(
   entityId: number,
   entityType: 'character' | 'corporation' | 'alliance'
 ): Promise<EntityStats[]> {
-  const periods: Array<'hour' | 'day' | 'week' | 'month' | 'all'> = ['hour', 'day', 'week', 'month', 'all']
-  const results: EntityStats[] = []
+  const periods: Array<'hour' | 'day' | 'week' | 'month' | 'all'> = [
+    'hour',
+    'day',
+    'week',
+    'month',
+    'all',
+  ];
+  const results: EntityStats[] = [];
 
   for (const period of periods) {
-    const stat = await getEntityStats(entityId, entityType, period)
+    const stat = await getEntityStats(entityId, entityType, period);
     if (stat) {
-      results.push(stat)
+      results.push(stat);
     }
   }
 
-  return results
+  return results;
 }
 
 /**
@@ -220,9 +234,9 @@ export async function getTopEntitiesByKills(
   periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
   limit: number = 100
 ): Promise<EntityStats[]> {
-  const { start, end } = getDateRange(periodType)
+  const { start, end } = getDateRange(periodType);
 
-  let groupCol = ''
+  let groupCol = '';
   if (entityType === 'character') groupCol = 'topAttackerCharacterId';
   else if (entityType === 'corporation') groupCol = 'topAttackerCorporationId';
   else groupCol = 'topAttackerAllianceId';
@@ -242,8 +256,8 @@ export async function getTopEntitiesByKills(
     GROUP BY ${database.sql(groupCol)}
     ORDER BY kills DESC
     LIMIT ${limit}
-  `
-  return results.map(r => calculateDerivedStats(r))
+  `;
+  return results.map((r) => calculateDerivedStats(r));
 }
 
 /**
@@ -255,5 +269,5 @@ export async function getTopEntitiesByEfficiency(
   minKills: number = 10,
   limit: number = 100
 ): Promise<EntityStats[]> {
-  return []
+  return [];
 }
