@@ -1,16 +1,16 @@
-import { logger } from "../server/helpers/logger";
-import { database } from "../server/helpers/database";
-import { enqueueJobMany } from "../server/helpers/queue";
-import { QueueType } from "../server/helpers/queue";
-import { storeKillmailsBulk } from "../server/models/killmails";
-import { storeCharactersBulk } from "../server/models/characters";
-import { storeCorporationsBulk } from "../server/models/corporations";
-import { storeAlliancesBulk } from "../server/models/alliances";
-import { storePrices } from "../server/models/prices";
+import { logger } from "../../server/helpers/logger";
+import { database } from "../../server/helpers/database";
+import { enqueueJobMany } from "../../server/helpers/queue";
+import { QueueType } from "../../server/helpers/queue";
+import { storeKillmailsBulk } from "../../server/models/killmails";
+import { storeCharactersBulk } from "../../server/models/characters";
+import { storeCorporationsBulk } from "../../server/models/corporations";
+import { storeAlliancesBulk } from "../../server/models/alliances";
+import { storePrices } from "../../server/models/prices";
 import type {
   ESIKillmail,
   KillmailValueBreakdown,
-} from "../server/models/killmails";
+} from "../../server/models/killmails";
 
 export default {
   description: "Backfill killmails from eve-kill.com API for followed entities",
