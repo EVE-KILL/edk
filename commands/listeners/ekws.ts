@@ -1,8 +1,7 @@
-import { enqueueJob } from '../server/helpers/queue'
-import { QueueType } from '../server/helpers/queue'
-import { killmailExists } from '../server/models/killmails'
-import chalk from 'chalk'
-import { logger } from '../server/helpers/logger'
+import { enqueueJob } from '../../server/helpers/queue'
+import { QueueType } from '../../server/helpers/queue'
+import { killmailExists } from '../../server/models/killmails'
+import { logger } from '../../server/helpers/logger'
 
 /**
  * EVE-KILL WebSocket Listener Command
@@ -65,21 +64,21 @@ class EkwsListener {
       this.parseFilter(options.filter)
     }
 
-    this.log(chalk.blue.bold('🚀 Starting EVE-KILL WebSocket listener'))
-    this.log(`📡 WebSocket URL: ${chalk.cyan(this.WS_URL)}`)
+    this.log('🚀 Starting EVE-KILL WebSocket listener')
+    this.log(`📡 WebSocket URL: ${this.WS_URL}`)
 
     if (this.filteringEnabled) {
-      this.log(chalk.yellow('🔍 Filtering enabled for followed entities:'))
+      this.log('🔍 Filtering enabled for followed entities:')
       for (const [type, ids] of this.followedEntities) {
         if (ids.size > 0) {
-          this.log(`   ${type}s: ${chalk.green(Array.from(ids).join(', '))}`)
+          this.log(`   ${type}s: ${Array.from(ids).join(', ')}`)
         }
       }
     } else {
-      this.log(chalk.cyan('📡 No filtering - importing all killmails'))
+      this.log('📡 No filtering - importing all killmails')
     }
 
-    this.log(chalk.dim('Press Ctrl+C to stop'))
+    this.log('Press Ctrl+C to stop')
 
     // Handle graceful shutdown
     process.on('SIGINT', () => this.shutdown())
@@ -122,7 +121,7 @@ class EkwsListener {
         if (this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
           this.reconnectAttempts++
           this.log(
-            chalk.yellow(`🔄 Reconnecting (attempt ${this.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS})...`)
+            `🔄 Reconnecting (attempt ${this.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS})...`
           )
           await this.sleep(this.RECONNECT_DELAY)
         } else {
@@ -148,7 +147,7 @@ class EkwsListener {
 
           // Send subscription message
           this.ws!.send('all')
-          this.log(chalk.cyan('📡 Subscribed to "all" killmails'))
+          this.log('📡 Subscribed to "all" killmails')
         }
 
         this.ws.onmessage = (event) => {
@@ -166,7 +165,7 @@ class EkwsListener {
         }
 
         this.ws.onclose = () => {
-          this.log(chalk.gray('🔌 WebSocket disconnected'))
+          this.log('🔌 WebSocket disconnected')
           resolve()
         }
       } catch (error) {
@@ -184,14 +183,14 @@ class EkwsListener {
 
       switch (message.type) {
         case 'info':
-          this.log(chalk.blue(`ℹ️  ${message.message}`))
+          this.log(`ℹ️  ${message.message}`)
           if (message.data?.validTopics && Array.isArray(message.data.validTopics)) {
-            this.log(`   Valid topics: ${chalk.cyan(message.data.validTopics.join(', '))}`)
+            this.log(`   Valid topics: ${message.data.validTopics.join(', ')}`)
           }
           break
 
         case 'subscribed':
-          this.success(`Subscribed to topics: ${chalk.green(message.data?.topics?.join(', '))}`)
+          this.success(`Subscribed to topics: ${message.data?.topics?.join(', ')}`)
           break
 
         case 'ping':
@@ -207,7 +206,7 @@ class EkwsListener {
           break
 
         default:
-          this.log(`Unknown message type: ${chalk.yellow(message.type)}`)
+          this.log(`Unknown message type: ${message.type}`)
       }
     } catch (error) {
       this.error(`Failed to parse message: ${error}`)
