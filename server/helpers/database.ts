@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import { requestContext } from '../utils/request-context';
-import { dbQueryDurationHistogram } from '~/server/helpers/metrics';
+import { dbQueryDurationHistogram } from '~/helpers/metrics';
 
 /**
  * Postgres Database Helper (using postgres.js)

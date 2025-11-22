@@ -38,8 +38,8 @@ export interface MostValuableKill {
   regionName?: string | null;
 }
 
-const getSelectClause = (periodType: string) => database.sql`
-  ${periodType} as "periodType",
+const getSelectClause = (periodType: string) => `
+  '${periodType}' as "periodType",
   k."killmailId",
   k."killmailTime",
   k."solarSystemId",
@@ -70,7 +70,7 @@ const getSelectClause = (periodType: string) => database.sql`
   reg.name as "regionName"
 `;
 
-const JOIN_CLAUSE = database.sql`
+const JOIN_CLAUSE = `
   FROM killmails k
   LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
   LEFT JOIN regions reg ON ss."regionId" = reg."regionId"
@@ -112,8 +112,8 @@ export async function getMostValuableKillsByPeriod(
 
   return await database.sql<MostValuableKill[]>`
     SELECT
-      ${getSelectClause(periodType)}
-    ${JOIN_CLAUSE}
+      ${database.sql.unsafe(getSelectClause(periodType))}
+    ${database.sql.unsafe(JOIN_CLAUSE)}
     WHERE k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
       AND k."attackerCount" > 0
     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
@@ -132,8 +132,8 @@ export async function getMostValuableKillsByCharacter(
   const hoursAgo = getHoursAgo(periodType);
 
   return await database.sql<MostValuableKill[]>`
-    SELECT ${getSelectClause(periodType)}
-     ${JOIN_CLAUSE}
+    SELECT ${database.sql.unsafe(getSelectClause(periodType))}
+     ${database.sql.unsafe(JOIN_CLAUSE)}
      WHERE k."victimCharacterId" = ${characterId}
        AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
@@ -152,8 +152,8 @@ export async function getMostValuableKillsByCorporation(
   const hoursAgo = getHoursAgo(periodType);
 
   return await database.sql<MostValuableKill[]>`
-    SELECT ${getSelectClause(periodType)}
-     ${JOIN_CLAUSE}
+    SELECT ${database.sql.unsafe(getSelectClause(periodType))}
+     ${database.sql.unsafe(JOIN_CLAUSE)}
      WHERE k."victimCorporationId" = ${corporationId}
        AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
@@ -172,8 +172,8 @@ export async function getMostValuableKillsByAlliance(
   const hoursAgo = getHoursAgo(periodType);
 
   return await database.sql<MostValuableKill[]>`
-    SELECT ${getSelectClause(periodType)}
-     ${JOIN_CLAUSE}
+    SELECT ${database.sql.unsafe(getSelectClause(periodType))}
+     ${database.sql.unsafe(JOIN_CLAUSE)}
      WHERE k."victimAllianceId" = ${allianceId}
        AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
@@ -191,8 +191,8 @@ export async function getMostValuableSoloKills(
   const hoursAgo = getHoursAgo(periodType);
 
   return await database.sql<MostValuableKill[]>`
-    SELECT ${getSelectClause(periodType)}
-     ${JOIN_CLAUSE}
+    SELECT ${database.sql.unsafe(getSelectClause(periodType))}
+     ${database.sql.unsafe(JOIN_CLAUSE)}
      WHERE k.solo = true
        AND k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"

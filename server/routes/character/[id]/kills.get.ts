@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { validate } from '~/server/utils/validation';
+import { validate } from '~/utils/validation';
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';

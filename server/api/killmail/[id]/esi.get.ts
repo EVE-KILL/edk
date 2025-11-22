@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { validate } from '~/server/utils/validation';
+import { validate } from '~/utils/validation';
 
 /**
  * GET /api/killmail/{id}/esi

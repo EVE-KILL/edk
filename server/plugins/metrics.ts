@@ -1,7 +1,7 @@
 import {
   httpRequestCounter,
   httpRequestDurationHistogram,
-} from '~/server/helpers/metrics';
+} from '~/helpers/metrics';
 
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook('request', (event) => {

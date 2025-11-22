@@ -52,36 +52,42 @@ const ABYSSAL_REGION_MIN = 12000000;
 const ABYSSAL_REGION_MAX = 13000000;
 const POCHVEN_REGION_ID = 10000070;
 
-function buildSpaceTypeCondition(spaceType: string): any {
+function buildSpaceTypeCondition(spaceType: string): string {
   // Assumes joins: solarSystems ss
-  const securityColumn = database.sql`ss."securityStatus"`;
-  const regionColumn = database.sql`ss."regionId"`;
+  const securityColumn = 'ss."securityStatus"';
+  const regionColumn = 'ss."regionId"';
 
   switch (spaceType) {
     case 'highsec':
-      return database.sql`${securityColumn} >= 0.45`;
+      return `${securityColumn} >= 0.45`;
     case 'lowsec':
-      return database.sql`${securityColumn} >= 0.0 AND ${securityColumn} < 0.45`;
+      return `${securityColumn} >= 0.0 AND ${securityColumn} < 0.45`;
     case 'nullsec':
-      return database.sql`${securityColumn} < 0.0 AND (${regionColumn} < ${WORMHOLE_REGION_MIN} OR ${regionColumn} > ${WORMHOLE_REGION_MAX})`;
+      return `${securityColumn} < 0.0 AND (${regionColumn} < ${WORMHOLE_REGION_MIN} OR ${regionColumn} > ${WORMHOLE_REGION_MAX})`;
     case 'w-space':
     case 'wormhole':
-      return database.sql`${regionColumn} BETWEEN ${WORMHOLE_REGION_MIN} AND ${WORMHOLE_REGION_MAX}`;
+      return `${regionColumn} BETWEEN ${WORMHOLE_REGION_MIN} AND ${WORMHOLE_REGION_MAX}`;
     case 'abyssal':
-      return database.sql`${regionColumn} BETWEEN ${ABYSSAL_REGION_MIN} AND ${ABYSSAL_REGION_MAX}`;
+      return `${regionColumn} BETWEEN ${ABYSSAL_REGION_MIN} AND ${ABYSSAL_REGION_MAX}`;
     case 'pochven':
-      return database.sql`${regionColumn} = ${POCHVEN_REGION_ID}`;
+      return `${regionColumn} = ${POCHVEN_REGION_ID}`;
     default:
-      return null;
+      return '';
   }
 }
 
 export function buildKilllistConditions(
   filters: KilllistFilters,
   alias: string = 'k'
-): any[] {
-  const conditions: any[] = [];
-  const prefix = alias ? database.sql`${database.sql(alias)}.` : database.sql``;
+): { clause: string; params: any[] } {
+  const conditions: string[] = [];
+  const params: any[] = [];
+  const prefix = alias ? `${alias}.` : '';
+
+  const addParam = (val: any) => {
+    params.push(val);
+    return `$${params.length}`;
+  };
 
   if (filters.spaceType) {
     const spaceTypeCondition = buildSpaceTypeCondition(filters.spaceType);
@@ -91,65 +97,66 @@ export function buildKilllistConditions(
   }
 
   if (filters.isSolo !== undefined) {
-    conditions.push(database.sql`${prefix}solo = ${filters.isSolo}`);
+    conditions.push(`${prefix}solo = ${addParam(filters.isSolo)}`);
   }
 
   if (filters.isBig !== undefined) {
-    const column = database.sql`t."groupId"`;
+    const column = 't."groupId"';
     if (filters.isBig) {
-      conditions.push(database.sql`${column} = ANY(${BIG_SHIP_GROUP_IDS})`);
+      conditions.push(`${column} = ANY(${addParam(BIG_SHIP_GROUP_IDS)})`);
     } else {
-      conditions.push(database.sql`${column} != ALL(${BIG_SHIP_GROUP_IDS})`);
+      conditions.push(`${column} != ALL(${addParam(BIG_SHIP_GROUP_IDS)})`);
     }
   }
 
   if (filters.isNpc !== undefined) {
-    conditions.push(database.sql`${prefix}npc = ${filters.isNpc}`);
+    conditions.push(`${prefix}npc = ${addParam(filters.isNpc)}`);
   }
 
   if (filters.minValue !== undefined) {
-    conditions.push(database.sql`${prefix}"totalValue" >= ${filters.minValue}`);
+    conditions.push(`${prefix}"totalValue" >= ${addParam(filters.minValue)}`);
   }
 
   if (filters.shipGroupIds && filters.shipGroupIds.length > 0) {
-    conditions.push(database.sql`t."groupId" = ANY(${filters.shipGroupIds})`);
+    conditions.push(`t."groupId" = ANY(${addParam(filters.shipGroupIds)})`);
   }
 
   if (filters.minSecurityStatus !== undefined) {
     conditions.push(
-      database.sql`ss."securityStatus" >= ${filters.minSecurityStatus}`
+      `ss."securityStatus" >= ${addParam(filters.minSecurityStatus)}`
     );
   }
 
   if (filters.maxSecurityStatus !== undefined) {
     conditions.push(
-      database.sql`ss."securityStatus" <= ${filters.maxSecurityStatus}`
+      `ss."securityStatus" <= ${addParam(filters.maxSecurityStatus)}`
     );
 
     if (filters.maxSecurityStatus <= 0) {
       conditions.push(
-        database.sql`(ss."regionId" < ${WORMHOLE_REGION_MIN} OR ss."regionId" > ${WORMHOLE_REGION_MAX})`
+        `(ss."regionId" < ${WORMHOLE_REGION_MIN} OR ss."regionId" > ${WORMHOLE_REGION_MAX})`
       );
     }
   }
 
   if (filters.regionId !== undefined) {
-    conditions.push(database.sql`ss."regionId" = ${filters.regionId}`);
+    conditions.push(`ss."regionId" = ${addParam(filters.regionId)}`);
   }
 
   if (filters.regionIdMin !== undefined && filters.regionIdMax !== undefined) {
     conditions.push(
-      database.sql`ss."regionId" >= ${filters.regionIdMin} AND ss."regionId" <= ${filters.regionIdMax}`
+      `ss."regionId" >= ${addParam(filters.regionIdMin)} AND ss."regionId" <= ${addParam(filters.regionIdMax)}`
     );
   }
 
   if (filters.solarSystemId !== undefined) {
     conditions.push(
-      database.sql`${prefix}"solarSystemId" = ${filters.solarSystemId}`
+      `${prefix}"solarSystemId" = ${addParam(filters.solarSystemId)}`
     );
   }
 
-  return conditions;
+  const clause = conditions.length > 0 ? conditions.join(' AND ') : '1=1';
+  return { clause, params };
 }
 
 // Maintain compatibility for buildKilllistWhereClause but deprecate logic?
@@ -157,7 +164,7 @@ export function buildKilllistConditions(
 // I'll remove it and rely on buildKilllistConditions.
 
 // Base SELECT list for KilllistRow
-const BASE_SELECT_LIST = database.sql`
+const BASE_SELECT_LIST = `
   k."killmailId",
   k."killmailTime",
   k."solarSystemId",
@@ -181,7 +188,7 @@ const BASE_SELECT_LIST = database.sql`
 `;
 
 // Helper to get base query with joins
-const getBaseQuery = () => database.sql`
+const BASE_QUERY = `
   FROM killmails k
   LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
   LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
@@ -196,11 +203,11 @@ export async function getRecentKills(
   // Frontpage: no entity filter, just all kills
   return await database.sql<KilllistRow[]>`
     SELECT
-       ${BASE_SELECT_LIST},
+       ${database.sql.unsafe(BASE_SELECT_LIST)},
        0 as "entityId",
        'none' as "entityType",
        false as "isVictim"
-     ${getBaseQuery()}
+     ${database.sql.unsafe(BASE_QUERY)}
      ORDER BY k."killmailTime" DESC, k."killmailId" DESC
      LIMIT ${limit}
   `;
@@ -231,11 +238,11 @@ export async function getEntityKills(
 
   return await database.sql<KilllistRow[]>`
     SELECT DISTINCT ON (k."killmailTime", k."killmailId")
-       ${BASE_SELECT_LIST},
+       ${database.sql.unsafe(BASE_SELECT_LIST)},
        ${entityId} as "entityId",
        ${entityType} as "entityType",
        false as "isVictim"
-     ${getBaseQuery()}
+     ${database.sql.unsafe(BASE_QUERY)}
      ${joinClause}
      WHERE ${whereClause}
      ORDER BY k."killmailTime" DESC, k."killmailId" DESC
@@ -263,11 +270,11 @@ export async function getEntityLosses(
 
   return await database.sql<KilllistRow[]>`
     SELECT
-       ${BASE_SELECT_LIST},
+       ${database.sql.unsafe(BASE_SELECT_LIST)},
        ${entityId} as "entityId",
        ${entityType} as "entityType",
        true as "isVictim"
-     ${getBaseQuery()}
+     ${database.sql.unsafe(BASE_QUERY)}
      WHERE ${whereClause}
      ORDER BY k."killmailTime" DESC, k."killmailId" DESC
      LIMIT ${limit}
@@ -283,11 +290,11 @@ export async function getMostValuableKills(
 ): Promise<KilllistRow[]> {
   return await database.sql<KilllistRow[]>`
     SELECT
-       ${BASE_SELECT_LIST},
+       ${database.sql.unsafe(BASE_SELECT_LIST)},
        0 as "entityId",
        'none' as "entityType",
        false as "isVictim"
-     ${getBaseQuery()}
+     ${database.sql.unsafe(BASE_QUERY)}
      WHERE k."killmailTime" >= NOW() - (${hoursAgo} || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC
      LIMIT ${limit}
@@ -489,14 +496,7 @@ export interface KilllistFilters {
   solarSystemId?: number;
 }
 
-/**
- * Helper to combine conditions into a WHERE clause
- */
-function conditionsToWhere(conditions: any[]): any {
-  return conditions.length > 0
-    ? database.sql`WHERE ${conditions.reduce((acc, curr, i) => (i === 0 ? curr : database.sql`${acc} AND ${curr}`), database.sql``)}`
-    : database.sql``;
-}
+
 
 /**
  * Get filtered kills with pagination
@@ -507,17 +507,16 @@ export async function getFilteredKills(
   perPage: number = 50
 ): Promise<KilllistRow[]> {
   const offset = (page - 1) * perPage;
-  const conditions = buildKilllistConditions(filters, 'k');
-  const where = conditionsToWhere(conditions);
+  const { clause, params } = buildKilllistConditions(filters, 'k');
 
   return await database.sql<KilllistRow[]>`
     SELECT
-       ${BASE_SELECT_LIST},
+       ${database.sql.unsafe(BASE_SELECT_LIST)},
        0 as "entityId",
        'none' as "entityType",
        false as "isVictim"
-     ${getBaseQuery()}
-     ${where}
+     ${database.sql.unsafe(BASE_QUERY)}
+     WHERE ${database.sql.unsafe(clause, params)}
      ORDER BY k."killmailTime" DESC, k."killmailId" DESC
      LIMIT ${perPage} OFFSET ${offset}
   `;
@@ -529,13 +528,23 @@ export async function getFilteredKills(
 export async function countFilteredKills(
   filters: KilllistFilters
 ): Promise<number> {
-  const conditions = buildKilllistConditions(filters, 'k');
-  const where = conditionsToWhere(conditions);
+  const { clause, params } = buildKilllistConditions(filters, 'k');
+
+  // Optimization: If no filters (clause is '1=1'), use pg_class estimate
+  // This avoids locking all partitions which causes "out of shared memory"
+  if (clause === '1=1') {
+    const [result] = await database.sql<{ count: string }[]>`
+      SELECT sum(reltuples)::bigint as count
+      FROM pg_class
+      WHERE relname LIKE 'killmails_%' AND relkind = 'r'
+    `;
+    return Number(result?.count || 0);
+  }
 
   const [result] = await database.sql<{ count: number }[]>`
     SELECT count(*) as count
-     ${getBaseQuery()}
-     ${where}
+     ${database.sql.unsafe(BASE_QUERY)}
+     WHERE ${database.sql.unsafe(clause, params)}
   `;
   return Number(result?.count || 0);
 }
@@ -550,8 +559,7 @@ export async function getFilteredKillsWithNames(
   perPage: number = 50
 ): Promise<EntityKillmail[]> {
   const offset = (page - 1) * perPage;
-  const conditions = buildKilllistConditions(filters, 'k');
-  const where = conditionsToWhere(conditions);
+  const { clause, params } = buildKilllistConditions(filters, 'k');
 
   return await database.sql<EntityKillmail[]>`
     SELECT
@@ -613,7 +621,7 @@ export async function getFilteredKillsWithNames(
     LEFT JOIN npcCorporations anpc_corp ON k."topAttackerCorporationId" = anpc_corp."corporationId"
     LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
 
-    ${where}
+    WHERE ${database.sql.unsafe(clause, params)}
     ORDER BY k."killmailTime" DESC
     LIMIT ${perPage} OFFSET ${offset}
   `;

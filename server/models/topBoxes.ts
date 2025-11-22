@@ -49,53 +49,53 @@ export async function getTopByKills(
       break;
   }
 
-  let groupCol;
-  let nameCol;
-  let joinClause;
+  let groupCol: string;
+  let nameCol: string;
+  let joinClause: string;
 
   if (entityType === 'character') {
-    groupCol = database.sql`k."topAttackerCharacterId"`;
-    nameCol = database.sql`c.name`;
-    joinClause = database.sql`LEFT JOIN characters c ON k."topAttackerCharacterId" = c."characterId"`;
+    groupCol = 'k."topAttackerCharacterId"';
+    nameCol = 'c.name';
+    joinClause = 'LEFT JOIN characters c ON k."topAttackerCharacterId" = c."characterId"';
   } else if (entityType === 'corporation') {
-    groupCol = database.sql`k."topAttackerCorporationId"`;
-    nameCol = database.sql`c.name`;
-    joinClause = database.sql`LEFT JOIN corporations c ON k."topAttackerCorporationId" = c."corporationId"`;
+    groupCol = 'k."topAttackerCorporationId"';
+    nameCol = 'c.name';
+    joinClause = 'LEFT JOIN corporations c ON k."topAttackerCorporationId" = c."corporationId"';
   } else if (entityType === 'alliance') {
-    groupCol = database.sql`k."topAttackerAllianceId"`;
-    nameCol = database.sql`a.name`;
-    joinClause = database.sql`LEFT JOIN alliances a ON k."topAttackerAllianceId" = a."allianceId"`;
+    groupCol = 'k."topAttackerAllianceId"';
+    nameCol = 'a.name';
+    joinClause = 'LEFT JOIN alliances a ON k."topAttackerAllianceId" = a."allianceId"';
   } else if (entityType === 'ship') {
-    groupCol = database.sql`k."victimShipTypeId"`;
-    nameCol = database.sql`t.name`;
-    joinClause = database.sql`LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"`;
+    groupCol = 'k."victimShipTypeId"';
+    nameCol = 't.name';
+    joinClause = 'LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"';
   } else if (entityType === 'system') {
-    groupCol = database.sql`k."solarSystemId"`;
-    nameCol = database.sql`ss.name`;
-    joinClause = database.sql`LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"`;
+    groupCol = 'k."solarSystemId"';
+    nameCol = 'ss.name';
+    joinClause = 'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"';
   } else if (entityType === 'region') {
-    groupCol = database.sql`ss."regionId"`;
-    nameCol = database.sql`r.name`;
-    joinClause = database.sql`LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId" LEFT JOIN regions r ON ss."regionId" = r."regionId"`;
+    groupCol = 'ss."regionId"';
+    nameCol = 'r.name';
+    joinClause = 'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId" LEFT JOIN regions r ON ss."regionId" = r."regionId"';
   } else {
     return [];
   }
 
   return await database.sql<TopBoxWithName[]>`
     SELECT
-       ${groupCol} as id,
-       COALESCE(${nameCol}, 'Unknown') as name,
+       ${database.sql.unsafe(groupCol)} as id,
+       COALESCE(${database.sql.unsafe(nameCol)}, 'Unknown') as name,
        count(*) as kills,
        0 as losses,
        SUM(k."totalValue") as "iskDestroyed",
        0 as "iskLost",
        0 as points
      FROM killmails k
-     ${joinClause}
+     ${database.sql.unsafe(joinClause)}
      WHERE k."killmailTime" >= ${start}
        AND k."killmailTime" <= ${end}
-       AND ${groupCol} > 0
-     GROUP BY ${groupCol}, ${nameCol}
+       AND ${database.sql.unsafe(groupCol)} > 0
+     GROUP BY ${database.sql.unsafe(groupCol)}, ${database.sql.unsafe(nameCol)}
      ORDER BY "iskDestroyed" DESC, kills DESC
      LIMIT ${limit}
   `;
@@ -148,27 +148,19 @@ export interface FilteredTopStats {
   alliances: Array<{ id: number; name: string; kills: number }>;
 }
 
-/**
- * Helper to combine conditions into a WHERE clause
- */
-function conditionsToWhere(conditions: any[], extraCondition?: any): any {
-  const all = extraCondition ? [...conditions, extraCondition] : conditions;
-  return all.length > 0
-    ? database.sql`WHERE ${all.reduce((acc, curr, i) => (i === 0 ? curr : database.sql`${acc} AND ${curr}`), database.sql``)}`
-    : database.sql``;
-}
+
 
 /**
  * Get top systems for filtered kills
  */
 export async function getTopSystemsFiltered(
-  whereConditions: any[],
+  conditions: { clause: string; params: any[] },
   limit: number = 10
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  const clause = conditionsToWhere(
-    whereConditions,
-    database.sql`k."solarSystemId" > 0`
-  );
+  const { clause, params } = conditions;
+  const where = clause
+    ? `${clause} AND k."solarSystemId" > 0`
+    : 'k."solarSystemId" > 0';
 
   return await database.sql<{ id: number; name: string; kills: number }[]>`
     SELECT
@@ -178,7 +170,7 @@ export async function getTopSystemsFiltered(
      FROM killmails k
      LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
      LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
-     ${clause}
+     WHERE ${database.sql.unsafe(where, params)}
      GROUP BY k."solarSystemId", ss.name
      ORDER BY kills DESC
      LIMIT ${limit}
@@ -189,13 +181,13 @@ export async function getTopSystemsFiltered(
  * Get top regions for filtered kills
  */
 export async function getTopRegionsFiltered(
-  whereConditions: any[],
+  conditions: { clause: string; params: any[] },
   limit: number = 10
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  const clause = conditionsToWhere(
-    whereConditions,
-    database.sql`ss."regionId" > 0`
-  );
+  const { clause, params } = conditions;
+  const where = clause
+    ? `${clause} AND ss."regionId" > 0`
+    : 'ss."regionId" > 0';
 
   return await database.sql<{ id: number; name: string; kills: number }[]>`
     SELECT
@@ -206,7 +198,7 @@ export async function getTopRegionsFiltered(
      LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
      LEFT JOIN regions reg ON ss."regionId" = reg."regionId"
      LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
-     ${clause}
+     WHERE ${database.sql.unsafe(where, params)}
      GROUP BY ss."regionId", reg.name
      ORDER BY kills DESC
      LIMIT ${limit}
@@ -217,13 +209,13 @@ export async function getTopRegionsFiltered(
  * Get top characters (attackers) for filtered kills
  */
 export async function getTopCharactersFiltered(
-  whereConditions: any[],
+  conditions: { clause: string; params: any[] },
   limit: number = 10
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  const clause = conditionsToWhere(
-    whereConditions,
-    database.sql`k."topAttackerCharacterId" > 0`
-  );
+  const { clause, params } = conditions;
+  const where = clause
+    ? `${clause} AND k."topAttackerCharacterId" > 0`
+    : 'k."topAttackerCharacterId" > 0';
 
   return await database.sql<{ id: number; name: string; kills: number }[]>`
     SELECT
@@ -234,7 +226,7 @@ export async function getTopCharactersFiltered(
      LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
      LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
      LEFT JOIN characters c ON k."topAttackerCharacterId" = c."characterId"
-     ${clause}
+     WHERE ${database.sql.unsafe(where, params)}
      GROUP BY k."topAttackerCharacterId", c.name
      ORDER BY kills DESC
      LIMIT ${limit}
@@ -245,13 +237,13 @@ export async function getTopCharactersFiltered(
  * Get top corporations (attackers) for filtered kills
  */
 export async function getTopCorporationsFiltered(
-  whereConditions: any[],
+  conditions: { clause: string; params: any[] },
   limit: number = 10
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  const clause = conditionsToWhere(
-    whereConditions,
-    database.sql`k."topAttackerCorporationId" > 0`
-  );
+  const { clause, params } = conditions;
+  const where = clause
+    ? `${clause} AND k."topAttackerCorporationId" > 0`
+    : 'k."topAttackerCorporationId" > 0';
 
   return await database.sql<{ id: number; name: string; kills: number }[]>`
     SELECT
@@ -262,7 +254,7 @@ export async function getTopCorporationsFiltered(
      LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
      LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
      LEFT JOIN corporations c ON k."topAttackerCorporationId" = c."corporationId"
-     ${clause}
+     WHERE ${database.sql.unsafe(where, params)}
      GROUP BY k."topAttackerCorporationId", c.name
      ORDER BY kills DESC
      LIMIT ${limit}
@@ -273,13 +265,13 @@ export async function getTopCorporationsFiltered(
  * Get top alliances (attackers) for filtered kills
  */
 export async function getTopAlliancesFiltered(
-  whereConditions: any[],
+  conditions: { clause: string; params: any[] },
   limit: number = 10
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
-  const clause = conditionsToWhere(
-    whereConditions,
-    database.sql`k."topAttackerAllianceId" > 0`
-  );
+  const { clause, params } = conditions;
+  const where = clause
+    ? `${clause} AND k."topAttackerAllianceId" > 0`
+    : 'k."topAttackerAllianceId" > 0';
 
   return await database.sql<{ id: number; name: string; kills: number }[]>`
     SELECT
@@ -290,7 +282,7 @@ export async function getTopAlliancesFiltered(
      LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
      LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
      LEFT JOIN alliances a ON k."topAttackerAllianceId" = a."allianceId"
-     ${clause}
+     WHERE ${database.sql.unsafe(where, params)}
      GROUP BY k."topAttackerAllianceId", a.name
      ORDER BY kills DESC
      LIMIT ${limit}

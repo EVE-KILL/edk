@@ -6,6 +6,7 @@ import {
 import { getTopByKills } from '../models/topBoxes';
 import { getMostValuableKillsByPeriod } from '../models/mostValuableKills';
 import { normalizeKillRow } from '../helpers/templates';
+import { timeAgo } from '../helpers/time';
 
 export default defineEventHandler(async (event: H3Event) => {
   // Page context

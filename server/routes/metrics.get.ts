@@ -1,5 +1,5 @@
 import { defineEventHandler, setHeader } from 'h3';
-import { registry } from '~/server/helpers/metrics';
+import { registry } from '~/helpers/metrics';
 
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Content-Type', registry.contentType);

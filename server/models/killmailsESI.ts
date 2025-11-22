@@ -34,8 +34,8 @@ export interface KillmailESI {
   version: number;
 }
 
-// Helper to construct JSON objects in Postgres
-const QUERY_ESI_FORMAT = database.sql`
+// Helper to construct the base query fragment as a string
+const BASE_QUERY = `
 SELECT
   k."killmailId",
   k."killmailTime",
@@ -90,7 +90,7 @@ export async function getKillmailESI(
   killmailId: number
 ): Promise<KillmailESI | null> {
   const [row] = await database.sql<KillmailESI[]>`
-    ${QUERY_ESI_FORMAT} WHERE k."killmailId" = ${killmailId}
+    ${database.sql.unsafe(BASE_QUERY)} WHERE k."killmailId" = ${killmailId}
   `;
   return row || null;
 }
@@ -104,7 +104,7 @@ export async function getKillmailsESI(
   if (killmailIds.length === 0) return [];
 
   return await database.sql<KillmailESI[]>`
-    ${QUERY_ESI_FORMAT}
+    ${database.sql.unsafe(BASE_QUERY)}
      WHERE k."killmailId" = ANY(${killmailIds})
      ORDER BY k."killmailTime" DESC
   `;
@@ -117,7 +117,7 @@ export async function getRecentKillmailsESI(
   limit: number = 50
 ): Promise<KillmailESI[]> {
   return await database.sql<KillmailESI[]>`
-    ${QUERY_ESI_FORMAT}
+    ${database.sql.unsafe(BASE_QUERY)}
      ORDER BY k."killmailTime" DESC, k."killmailId" DESC
      LIMIT ${limit}
   `;
