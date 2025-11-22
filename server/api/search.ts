@@ -1,13 +1,13 @@
-import { defineEventHandler, getQuery } from 'h3';
-import { typesense } from '../../helpers/typesense';
-import { logger } from '../../helpers/logger';
+import { defineEventHandler, getQuery } from 'h3'
+import { typesense } from '~/helpers/typesense'
+import { logger } from '~/helpers/logger'
 
 export default defineEventHandler(async (event) => {
   const { q, limit = '20' } = getQuery(event);
 
   if (!q || typeof q !== 'string') {
-    event.res.statusCode = 400;
-    return { error: 'Search query is required' };
+    event.res.statusCode = 400
+    return { error: 'Search query is required' }
   }
 
   const searchParameters = {
@@ -32,8 +32,8 @@ export default defineEventHandler(async (event) => {
 
     return groupedResults;
   } catch (error) {
-    logger.error('Typesense search error:', { err: error });
-    event.res.statusCode = 500;
-    return { error: 'Search failed' };
+    logger.error('Typesense search error:', { err: error })
+    event.res.statusCode = 500
+    return { error: 'Search failed' }
   }
-});
+})

@@ -53,7 +53,7 @@ export async function getTopByKills(
   return await database.sql<TopBoxWithName[]>`
     SELECT id, name, kills, "iskDestroyed"
     FROM ${database.sql.unsafe(viewName)}
-    ORDER BY "iskDestroyed" DESC, kills DESC
+    ORDER BY kills DESC
     LIMIT ${limit}
   `
 }
@@ -74,10 +74,17 @@ export interface FilteredTopStats {
  * Helper to combine conditions into a WHERE clause
  */
 function conditionsToWhere(conditions: any[], extraCondition?: any): any {
-    const allConditions = extraCondition ? [...conditions, extraCondition] : conditions;
-    return allConditions.length > 0
-        ? database.sql`WHERE ${database.sql(allConditions, ' AND ')}`
-        : database.sql``;
+  const allConditions = extraCondition ? [...conditions, extraCondition] : conditions
+
+  if (allConditions.length === 0) {
+    return database.sql``
+  }
+
+  const combined = allConditions.slice(1).reduce((acc, condition) => {
+    return database.sql`${acc} AND ${condition}`
+  }, allConditions[0])
+
+  return database.sql`WHERE ${combined}`
 }
 
 /**

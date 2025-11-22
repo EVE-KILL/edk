@@ -2,14 +2,14 @@ import { Worker, Job } from 'bullmq'
 
 import { createRedisClient } from '../server/helpers/redis'
 import { fetchESI } from '../server/helpers/esi'
-import { storeKillmail, type ESIKillmail } from '../server/models/killmails'
+import { storeKillmail, calculateKillmailValues, type ESIKillmail } from '../server/models/killmails'
 import { fetchAndStoreCharacter, type ESICharacter } from '../server/fetchers/character'
 import { fetchAndStoreCorporation, type ESICorporation } from '../server/fetchers/corporation'
 import { fetchAndStoreAlliance, type ESIAlliance } from '../server/fetchers/alliance'
 import { fetchPrices } from '../server/fetchers/price'
 import { storePrices } from '../server/models/prices'
 import { database } from '../server/helpers/database'
-import { normalizeKillRow } from '../server/helpers/normalizers'
+import { normalizeKillRow } from '../server/helpers/templates'
 import type { EntityKillmail } from '../server/models/killlist'
 
 const redis = createRedisClient()
@@ -112,10 +112,15 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     }
 
     // Store killmail
-    const storedKillmail = await storeKillmail(killmail, hash)
+    await storeKillmail(killmail, hash)
 
     // Assemble EntityKillmail in memory
-    const topAttacker = storedKillmail.attackers.find(a => a.isTopAttacker)
+    // Find top attacker (final blow or highest damage)
+    const finalBlowAttacker = killmail.attackers.find((a) => a.final_blow)
+    const topAttacker = finalBlowAttacker || killmail.attackers.reduce(
+      (max, a) => (a.damage_done > max.damage_done ? a : max),
+      killmail.attackers[0]
+    )
 
     const [
       victimShip,
@@ -132,13 +137,16 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     const victimCorporation = victim.corporation_id ? corporationCache.get(victim.corporation_id) : null
     const victimAlliance = victim.alliance_id ? allianceCache.get(victim.alliance_id) : null
 
-    const attackerCharacter = topAttacker?.characterId ? characterCache.get(topAttacker.characterId) : null
-    const attackerCorporation = topAttacker?.corporationId ? corporationCache.get(topAttacker.corporationId) : null
-    const attackerAlliance = topAttacker?.allianceId ? allianceCache.get(topAttacker.allianceId) : null
+    const attackerCharacter = topAttacker?.character_id ? characterCache.get(topAttacker.character_id) : null
+    const attackerCorporation = topAttacker?.corporation_id ? corporationCache.get(topAttacker.corporation_id) : null
+    const attackerAlliance = topAttacker?.alliance_id ? allianceCache.get(topAttacker.alliance_id) : null
+
+    // Calculate total value
+    const valueBreakdown = await calculateKillmailValues(killmail)
 
     const entityKillmail: EntityKillmail = {
-      killmailId: storedKillmail.killmailId,
-      killmailTime: storedKillmail.killmailTime.toISOString(),
+      killmailId: killmail.killmail_id,
+      killmailTime: killmail.killmail_time,
       victimCharacterId: victim.character_id || null,
       victimCharacterName: victimCharacter?.name || 'Unknown',
       victimCorporationId: victim.corporation_id,
@@ -150,19 +158,27 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
       victimShipTypeId: victim.ship_type_id,
       victimShipName: victimShip?.name || 'Unknown',
       victimShipGroup: victimShipGroup?.name || 'Unknown',
-      attackerCharacterId: topAttacker?.characterId || 0,
+      victimShipGroupId: victimShip?.groupId || 0,
+      attackerCharacterId: topAttacker?.character_id || null,
       attackerCharacterName: attackerCharacter?.name || 'Unknown',
-      attackerCorporationId: topAttacker?.corporationId || 0,
+      attackerCorporationId: topAttacker?.corporation_id || null,
       attackerCorporationName: attackerCorporation?.name || 'Unknown',
       attackerCorporationTicker: attackerCorporation?.ticker || '???',
-      attackerAllianceId: topAttacker?.allianceId || null,
+      attackerAllianceId: topAttacker?.alliance_id || null,
       attackerAllianceName: attackerAlliance?.name || null,
       attackerAllianceTicker: attackerAlliance?.ticker || null,
+      attackerShipTypeId: topAttacker?.ship_type_id || null,
+      attackerShipName: null,
       solarSystemId: killmail.solar_system_id,
+      regionId: solarSystem?.regionId || 0,
+      security: 0,
       solarSystemName: solarSystem?.name || 'Unknown',
       regionName: region?.name || 'Unknown',
-      totalValue: storedKillmail.totalValue,
-      attackerCount: storedKillmail.attackers.length
+      totalValue: valueBreakdown?.totalValue || 0,
+      attackerCount: killmail.attackers.length,
+      npc: killmail.attackers.every((a) => !a.character_id),
+      solo: killmail.attackers.length === 1,
+      awox: !!(victim.alliance_id && victim.alliance_id > 0 && killmail.attackers.some((a) => a.alliance_id === victim.alliance_id))
     }
 
     // Normalize and broadcast

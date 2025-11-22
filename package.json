@@ -12,10 +12,11 @@
     "format": "echo 'No formatter configured yet'",
     "start": "bun run preview",
     "cli": "bun cli.ts",
-    "cron": "bun cronjobs.ts"
+    "cron": "bun cronjobs.ts",
+    "ws": "bun ws.ts"
   },
   "devDependencies": {
-    "@types/bun": "^1.3.2",
+    "@types/bun": "^1.3.3",
     "@types/handlebars": "^4.1.0",
     "@types/node": "^24.10.1",
     "@types/unbzip2-stream": "^1.4.3",

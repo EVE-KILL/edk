@@ -107,7 +107,7 @@ function accumulateItemValues(
   }
 }
 
-async function calculateKillmailValues(
+export async function calculateKillmailValues(
   esiData: ESIKillmail
 ): Promise<KillmailValueBreakdown> {
   const victim = esiData.victim;

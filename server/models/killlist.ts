@@ -186,9 +186,15 @@ export interface KilllistFilters {
  * Helper to combine conditions into a WHERE clause
  */
 function conditionsToWhere(conditions: any[]): any {
-  return conditions.length > 0
-    ? database.sql`WHERE ${database.sql(conditions, ' AND ')}`
-    : database.sql``
+  if (conditions.length === 0) {
+    return database.sql``
+  }
+
+  const combined = conditions.slice(1).reduce((acc, condition) => {
+    return database.sql`${acc} AND ${condition}`
+  }, conditions[0])
+
+  return database.sql`WHERE ${combined}`
 }
 
 /**
