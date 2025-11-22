@@ -17,6 +17,10 @@ export default defineNitroConfig({
       baseURL: '/',
       dir: resolve(__dirname, `templates/${process.env.THEME || 'default'}/public`),
       maxAge: 60 * 60 * 24 * 7 // 7 days
+    },
+    {
+      baseURL: '/',
+      dir: resolve(__dirname, `templates/default/static`),
     }
   ],
   compressPublicAssets: {

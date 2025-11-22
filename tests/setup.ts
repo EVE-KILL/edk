@@ -15,52 +15,61 @@ const DEFAULT_DB = process.env.DB_NAME || 'edk';
 const ADMIN_DATABASE = process.env.ADMIN_DB_NAME || DEFAULT_DB;
 const adminUrl = process.env.ADMIN_DATABASE_URL || `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${ADMIN_DATABASE}`;
 
-console.log('🛠️  Initializing Test Environment...');
+import { beforeAll } from 'bun:test';
 
-// 1. Set Environment Variables for the Application
-// These must be set before importing app modules
-process.env.TEST_DB_NAME = TEST_DB;
-process.env.DATABASE_URL = `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${TEST_DB}`;
-process.env.REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-process.env.REDIS_PORT = process.env.REDIS_PORT || '6379';
-process.env.NODE_ENV = 'test';
+beforeAll(async () => {
+  console.log('🛠️  Initializing Test Environment...');
 
-// 2. Cleanup Previous State
-// Remove checksum file to force migration to ensure schema is up to date
-const DATA_DIR = join(process.cwd(), '.data');
-const CHECKSUM_FILE = join(DATA_DIR, 'schema-checksums.json');
-if (existsSync(CHECKSUM_FILE)) {
-    unlinkSync(CHECKSUM_FILE);
-}
+  // 1. Set Environment Variables for the Application
+  // These must be set before importing app modules
+  process.env.TEST_DB_NAME = TEST_DB;
+  process.env.DATABASE_URL = `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${TEST_DB}`;
+  process.env.REDIS_HOST = process.env.REDIS_HOST || 'localhost';
+  process.env.REDIS_PORT = process.env.REDIS_PORT || '6379';
+  process.env.NODE_ENV = 'test';
 
-// 3. Recreate Database
-const sql = postgres(adminUrl);
-try {
-    // Force disconnect others
-    await sql`
-        SELECT pg_terminate_backend(pid)
-        FROM pg_stat_activity
-        WHERE datname = ${TEST_DB}
-        AND pid <> pg_backend_pid()
-    `.catch(() => {});
+  // 2. Cleanup Previous State
+  // Remove checksum file to force migration to ensure schema is up to date
+  const DATA_DIR = join(process.cwd(), '.data');
+  const CHECKSUM_FILE = join(DATA_DIR, 'schema-checksums.json');
+  if (existsSync(CHECKSUM_FILE)) {
+      unlinkSync(CHECKSUM_FILE);
+  }
 
-    await sql.unsafe(`DROP DATABASE IF EXISTS "${TEST_DB}"`);
-    await sql.unsafe(`CREATE DATABASE "${TEST_DB}"`);
-} catch (e) {
-    console.error('Failed to recreate test database:', e);
-    console.error('Database:', DB_HOST, 'Port:', DB_PORT, 'Name:', ADMIN_DATABASE);
-    process.exit(1);
-} finally {
-    await sql.end();
-}
+  // 3. Recreate Database
+  const sql = postgres(adminUrl);
+  try {
+      // Force disconnect others
+      await sql`
+          SELECT pg_terminate_backend(pid)
+          FROM pg_stat_activity
+          WHERE datname = ${TEST_DB}
+          AND pid <> pg_backend_pid()
+      `.catch(() => {});
 
-// 4. Run Migrations
-try {
-    const { migrateSchema } = await import('../server/plugins/schema-migration');
-    await migrateSchema();
-} catch (e) {
-    console.error('Failed to run migrations:', e);
-    process.exit(1);
-}
+      await sql.unsafe(`DROP DATABASE IF EXISTS "${TEST_DB}"`);
+      await sql.unsafe(`CREATE DATABASE "${TEST_DB}"`);
+  } catch (e) {
+      console.error('Failed to recreate test database:', e);
+      console.error('Database:', DB_HOST, 'Port:', DB_PORT, 'Name:', ADMIN_DATABASE);
+      process.exit(1);
+  } finally {
+      await sql.end();
+  }
 
-console.log('✅ Test Environment Ready.\n');
+  // 4. Set Database URL in Helper
+  const { database } = await import('../server/helpers/database');
+  database.setUrl(process.env.DATABASE_URL);
+
+
+  // 5. Run Migrations
+  try {
+      const { migrateSchema } = await import('../server/plugins/schema-migration');
+      await migrateSchema();
+  } catch (e) {
+      console.error('Failed to run migrations:', e);
+      process.exit(1);
+  }
+
+  console.log('✅ Test Environment Ready.\n');
+});

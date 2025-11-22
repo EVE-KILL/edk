@@ -32,6 +32,20 @@ services:
       - edk_network
     restart: unless-stopped
 
+  typesense:
+    image: typesense/typesense:0.25.2
+    container_name: edk_typesense
+    ports:
+      - "8108:8108"
+    environment:
+      - TYPESENSE_DATA_DIR=/data
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY:-xyz}
+    volumes:
+      - ./.data/typesense:/data
+    networks:
+      - edk_network
+    restart: unless-stopped
+
 networks:
   edk_network:
     driver: bridge
