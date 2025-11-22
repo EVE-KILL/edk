@@ -56,7 +56,9 @@ class SiteUpdatesManager {
 
       // Check if websocket updates are disabled for this killlist
       if (this.filterConfig.disableWebsocket) {
-        console.log('[Site Updates] WebSocket updates disabled for this killlist');
+        console.log(
+          '[Site Updates] WebSocket updates disabled for this killlist'
+        );
         return;
       }
 
@@ -98,7 +100,10 @@ class SiteUpdatesManager {
       big: [547, 485, 513, 902, 941, 30, 659],
       citadels: [1657, 1406, 1404, 1408, 2017, 2016],
       t1: [419, 27, 29, 547, 26, 420, 25, 28, 941, 463, 237, 31],
-      t2: [324, 898, 906, 540, 830, 893, 543, 541, 833, 358, 894, 831, 902, 832, 900, 834, 380],
+      t2: [
+        324, 898, 906, 540, 830, 893, 543, 541, 833, 358, 894, 831, 902, 832,
+        900, 834, 380,
+      ],
       t3: [963, 1305],
       frigates: [324, 893, 25, 831, 237],
       destroyers: [420, 541],
@@ -133,12 +138,14 @@ class SiteUpdatesManager {
         break;
 
       case 'highsec':
-        if (filters.minSecurityStatus === null) filters.minSecurityStatus = 0.45;
+        if (filters.minSecurityStatus === null)
+          filters.minSecurityStatus = 0.45;
         break;
 
       case 'lowsec':
         if (filters.minSecurityStatus === null) filters.minSecurityStatus = 0.0;
-        if (filters.maxSecurityStatus === null) filters.maxSecurityStatus = 0.45;
+        if (filters.maxSecurityStatus === null)
+          filters.maxSecurityStatus = 0.45;
         break;
 
       case 'nullsec':
@@ -172,7 +179,8 @@ class SiteUpdatesManager {
         break;
 
       case 'destroyers':
-        if (!filters.shipGroupIds) filters.shipGroupIds = SHIP_GROUPS.destroyers;
+        if (!filters.shipGroupIds)
+          filters.shipGroupIds = SHIP_GROUPS.destroyers;
         break;
 
       case 'cruisers':
@@ -180,11 +188,13 @@ class SiteUpdatesManager {
         break;
 
       case 'battlecruisers':
-        if (!filters.shipGroupIds) filters.shipGroupIds = SHIP_GROUPS.battlecruisers;
+        if (!filters.shipGroupIds)
+          filters.shipGroupIds = SHIP_GROUPS.battlecruisers;
         break;
 
       case 'battleships':
-        if (!filters.shipGroupIds) filters.shipGroupIds = SHIP_GROUPS.battleships;
+        if (!filters.shipGroupIds)
+          filters.shipGroupIds = SHIP_GROUPS.battleships;
         break;
 
       case 'capitals':
@@ -192,7 +202,8 @@ class SiteUpdatesManager {
         break;
 
       case 'supercarriers':
-        if (!filters.shipGroupIds) filters.shipGroupIds = SHIP_GROUPS.supercarriers;
+        if (!filters.shipGroupIds)
+          filters.shipGroupIds = SHIP_GROUPS.supercarriers;
         break;
 
       case 'titans':
@@ -200,7 +211,8 @@ class SiteUpdatesManager {
         break;
 
       case 'freighters':
-        if (!filters.shipGroupIds) filters.shipGroupIds = SHIP_GROUPS.freighters;
+        if (!filters.shipGroupIds)
+          filters.shipGroupIds = SHIP_GROUPS.freighters;
         break;
 
       case 'citadels':
@@ -247,30 +259,47 @@ class SiteUpdatesManager {
     }
 
     // If region range is set (for abyssal/wspace), check if region is in range
-    if (effectiveFilters.regionIdMin !== null && effectiveFilters.regionIdMax !== null) {
+    if (
+      effectiveFilters.regionIdMin !== null &&
+      effectiveFilters.regionIdMax !== null
+    ) {
       const regionId = killmail.solar_system.region_id;
-      if (regionId < effectiveFilters.regionIdMin || regionId > effectiveFilters.regionIdMax) {
+      if (
+        regionId < effectiveFilters.regionIdMin ||
+        regionId > effectiveFilters.regionIdMax
+      ) {
         return false;
       }
     }
 
     // Security status filters
     if (effectiveFilters.minSecurityStatus !== null) {
-      if (killmail.solar_system.security_status < effectiveFilters.minSecurityStatus) {
+      if (
+        killmail.solar_system.security_status <
+        effectiveFilters.minSecurityStatus
+      ) {
         return false;
       }
     }
     if (effectiveFilters.maxSecurityStatus !== null) {
-      if (killmail.solar_system.security_status > effectiveFilters.maxSecurityStatus) {
+      if (
+        killmail.solar_system.security_status >
+        effectiveFilters.maxSecurityStatus
+      ) {
         return false;
       }
     }
 
     // Ship group filter (victim ship)
-    if (effectiveFilters.shipGroupIds && effectiveFilters.shipGroupIds.length > 0) {
+    if (
+      effectiveFilters.shipGroupIds &&
+      effectiveFilters.shipGroupIds.length > 0
+    ) {
       // Check if victim ship's group ID is in the filter list
-      if (!killmail.victim.ship.group_id ||
-          !effectiveFilters.shipGroupIds.includes(killmail.victim.ship.group_id)) {
+      if (
+        !killmail.victim.ship.group_id ||
+        !effectiveFilters.shipGroupIds.includes(killmail.victim.ship.group_id)
+      ) {
         return false;
       }
     }
@@ -307,11 +336,32 @@ class SiteUpdatesManager {
 
     // Known kill types that should NOT apply entity-based filtering
     const killTypes = [
-      'latest', 'big', 'solo', 'npc', 'highsec', 'lowsec', 'nullsec',
-      'w-space', 'abyssal', 'pochven', '5b', '10b',
-      'frigates', 'destroyers', 'cruisers', 'battlecruisers', 'battleships',
-      'capitals', 'supercarriers', 'titans', 'freighters', 'citadels', 'structures',
-      't1', 't2', 't3'
+      'latest',
+      'big',
+      'solo',
+      'npc',
+      'highsec',
+      'lowsec',
+      'nullsec',
+      'w-space',
+      'abyssal',
+      'pochven',
+      '5b',
+      '10b',
+      'frigates',
+      'destroyers',
+      'cruisers',
+      'battlecruisers',
+      'battleships',
+      'capitals',
+      'supercarriers',
+      'titans',
+      'freighters',
+      'citadels',
+      'structures',
+      't1',
+      't2',
+      't3',
     ];
 
     // Only apply entity filtering if type is 'all', 'kills', or 'losses'
@@ -324,11 +374,16 @@ class SiteUpdatesManager {
     // AND we're not using a kill type filter
     if (isEntityFilterType && !isKillTypeFilter) {
       // If characterIds is set, check if character is involved based on filter type
-      if (effectiveFilters.characterIds && effectiveFilters.characterIds.length > 0) {
-        const characterInAttackers = killmail.attackers.some(a =>
+      if (
+        effectiveFilters.characterIds &&
+        effectiveFilters.characterIds.length > 0
+      ) {
+        const characterInAttackers = killmail.attackers.some((a) =>
           effectiveFilters.characterIds.includes(a.character.id)
         );
-        const characterIsVictim = effectiveFilters.characterIds.includes(killmail.victim.character.id);
+        const characterIsVictim = effectiveFilters.characterIds.includes(
+          killmail.victim.character.id
+        );
 
         if (filterType === 'kills' && !characterInAttackers) {
           return false;
@@ -336,17 +391,26 @@ class SiteUpdatesManager {
         if (filterType === 'losses' && !characterIsVictim) {
           return false;
         }
-        if (filterType === 'all' && !characterInAttackers && !characterIsVictim) {
+        if (
+          filterType === 'all' &&
+          !characterInAttackers &&
+          !characterIsVictim
+        ) {
           return false;
         }
       }
 
       // If corporationIds is set, check if corporation is involved based on filter type
-      if (effectiveFilters.corporationIds && effectiveFilters.corporationIds.length > 0) {
-        const corporationInAttackers = killmail.attackers.some(a =>
+      if (
+        effectiveFilters.corporationIds &&
+        effectiveFilters.corporationIds.length > 0
+      ) {
+        const corporationInAttackers = killmail.attackers.some((a) =>
           effectiveFilters.corporationIds.includes(a.corporation.id)
         );
-        const corporationIsVictim = effectiveFilters.corporationIds.includes(killmail.victim.corporation.id);
+        const corporationIsVictim = effectiveFilters.corporationIds.includes(
+          killmail.victim.corporation.id
+        );
 
         if (filterType === 'kills' && !corporationInAttackers) {
           return false;
@@ -354,17 +418,26 @@ class SiteUpdatesManager {
         if (filterType === 'losses' && !corporationIsVictim) {
           return false;
         }
-        if (filterType === 'all' && !corporationInAttackers && !corporationIsVictim) {
+        if (
+          filterType === 'all' &&
+          !corporationInAttackers &&
+          !corporationIsVictim
+        ) {
           return false;
         }
       }
 
       // If allianceIds is set, check if alliance is involved based on filter type
-      if (effectiveFilters.allianceIds && effectiveFilters.allianceIds.length > 0) {
-        const allianceInAttackers = killmail.attackers.some(a =>
-          a.alliance && effectiveFilters.allianceIds.includes(a.alliance.id)
+      if (
+        effectiveFilters.allianceIds &&
+        effectiveFilters.allianceIds.length > 0
+      ) {
+        const allianceInAttackers = killmail.attackers.some(
+          (a) =>
+            a.alliance && effectiveFilters.allianceIds.includes(a.alliance.id)
         );
-        const allianceIsVictim = killmail.victim.alliance &&
+        const allianceIsVictim =
+          killmail.victim.alliance &&
           effectiveFilters.allianceIds.includes(killmail.victim.alliance.id);
 
         if (filterType === 'kills' && !allianceInAttackers) {
@@ -387,7 +460,9 @@ class SiteUpdatesManager {
    */
   updateKillmailRowCount() {
     // Count all row divs, excluding the header
-    const rows = this.killlistContainer.querySelectorAll('.kb-kl-row:not(.kb-kl-row--header):not(.kb-kl-row--empty)');
+    const rows = this.killlistContainer.querySelectorAll(
+      '.kb-kl-row:not(.kb-kl-row--header):not(.kb-kl-row--empty)'
+    );
     this.maxKillmails = rows.length || 20;
 
     // Store killmail IDs on existing rows for chronological ordering
@@ -475,7 +550,9 @@ class SiteUpdatesManager {
     }
 
     if (!['character', 'corporation', 'alliance'].includes(entityType)) {
-      console.log(`[Site Updates] Unsupported entityType: ${entityType} - skipping`);
+      console.log(
+        `[Site Updates] Unsupported entityType: ${entityType} - skipping`
+      );
       return; // Skip other entity types
     }
 
@@ -489,8 +566,10 @@ class SiteUpdatesManager {
     const elements = document.querySelectorAll(selector);
 
     if (elements.length > 0) {
-      console.log(`[Site Updates] Entity update: ${entityType} ${id} = ${name} (${elements.length} elements found)`);
-      elements.forEach(el => {
+      console.log(
+        `[Site Updates] Entity update: ${entityType} ${id} = ${name} (${elements.length} elements found)`
+      );
+      elements.forEach((el) => {
         this.applyEntityUpdate(el, entityType, id, name);
       });
     }
@@ -557,8 +636,10 @@ class SiteUpdatesManager {
     const elements = document.querySelectorAll(selector);
 
     if (elements.length > 0) {
-      console.log(`[Site Updates] Value update: Killmail ${killmailId} = ${this.formatISK(totalValue)} (${elements.length} elements found)`);
-      elements.forEach(el => {
+      console.log(
+        `[Site Updates] Value update: Killmail ${killmailId} = ${this.formatISK(totalValue)} (${elements.length} elements found)`
+      );
+      elements.forEach((el) => {
         this.applyValueUpdate(el, totalValue);
       });
     }
@@ -570,14 +651,20 @@ class SiteUpdatesManager {
   applyValueUpdate(el, totalValue) {
     // Find the value display element within this killmail
     // Check for both the normal value element and the "unknown" placeholder
-    let valueElement = el.querySelector('.kb-kl-value, .isk-value, .kb-kl-value--unknown');
+    let valueElement = el.querySelector(
+      '.kb-kl-value, .isk-value, .kb-kl-value--unknown'
+    );
 
     if (valueElement) {
       const formattedValue = this.formatISK(totalValue);
       const currentText = valueElement.textContent.trim();
 
       // Only update if it's currently showing N/A or is different
-      if (currentText.includes('N/A') || currentText === '' || currentText !== formattedValue) {
+      if (
+        currentText.includes('N/A') ||
+        currentText === '' ||
+        currentText !== formattedValue
+      ) {
         valueElement.textContent = formattedValue;
         valueElement.classList.remove('kb-kl-value--unknown');
         valueElement.classList.add('kb-kl-value', 'value-updated');
@@ -601,9 +688,11 @@ class SiteUpdatesManager {
    */
   applyCachedUpdates(row) {
     // Find all elements with data-*-id attributes (only character, corporation, alliance)
-    const elements = row.querySelectorAll('[data-character-id], [data-corporation-id], [data-alliance-id]');
+    const elements = row.querySelectorAll(
+      '[data-character-id], [data-corporation-id], [data-alliance-id]'
+    );
 
-    elements.forEach(el => {
+    elements.forEach((el) => {
       // Check which type of entity this is
       if (el.hasAttribute('data-character-id')) {
         const id = el.getAttribute('data-character-id');
@@ -669,24 +758,32 @@ class SiteUpdatesManager {
     }
 
     // Get the first non-header row to check its killmail ID
-    const allRows = this.killlistContainer.querySelectorAll('.kb-kl-row:not(.kb-kl-row--header):not(.kb-kl-row--empty)');
+    const allRows = this.killlistContainer.querySelectorAll(
+      '.kb-kl-row:not(.kb-kl-row--header):not(.kb-kl-row--empty)'
+    );
 
     let firstRowId = 0;
     const newKillmailId = killmail.killmail_id;
 
     if (allRows.length > 0) {
       const firstRow = allRows[0];
-      firstRowId = parseInt(firstRow.getAttribute('data-killmail-id') || '0', 10);
+      firstRowId = parseInt(
+        firstRow.getAttribute('data-killmail-id') || '0',
+        10
+      );
 
       // Don't add if the new killmail ID is lower (older kill)
       if (newKillmailId <= firstRowId) {
         return;
       }
     }
-    console.log(`[Site Updates] Adding killmail ${newKillmailId} (first row ID: ${firstRowId})`);
+    console.log(
+      `[Site Updates] Adding killmail ${newKillmailId} (first row ID: ${firstRowId})`
+    );
 
     // Remove empty state if it exists
-    const emptyState = this.killlistContainer.querySelector('.kb-kl-row--empty');
+    const emptyState =
+      this.killlistContainer.querySelector('.kb-kl-row--empty');
     if (emptyState) {
       emptyState.remove();
     }
@@ -706,12 +803,16 @@ class SiteUpdatesManager {
     });
 
     // Find the header row and insert after it
-    const headerRow = this.killlistContainer.querySelector('.kb-kl-row--header');
+    const headerRow =
+      this.killlistContainer.querySelector('.kb-kl-row--header');
     if (headerRow) {
       headerRow.insertAdjacentElement('afterend', newRow);
     } else {
       // No header, just prepend
-      this.killlistContainer.insertBefore(newRow, this.killlistContainer.firstChild);
+      this.killlistContainer.insertBefore(
+        newRow,
+        this.killlistContainer.firstChild
+      );
     }
 
     console.log('[Site Updates] ✅ Killmail row added to DOM');
@@ -723,7 +824,9 @@ class SiteUpdatesManager {
     this.animateNewRow(newRow);
 
     // Check if we need to remove the oldest row to maintain max count
-    const updatedRows = this.killlistContainer.querySelectorAll('.kb-kl-row:not(.kb-kl-row--header):not(.kb-kl-row--empty)');
+    const updatedRows = this.killlistContainer.querySelectorAll(
+      '.kb-kl-row:not(.kb-kl-row--header):not(.kb-kl-row--empty)'
+    );
     if (updatedRows.length > this.maxKillmails) {
       const oldestRow = updatedRows[updatedRows.length - 1];
       await this.removeRow(oldestRow);
@@ -775,47 +878,65 @@ class SiteUpdatesManager {
         <div class="kb-kl-col kb-kl-col--victim">
           <div class="kb-kl-info kb-kl-info--victim">
             <div class="kb-kl-info__primary" data-character-id="${victim.character.id}">
-              ${victim.character.id
-                ? `<a href="/character/${victim.character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${victim.character.name}</a>`
-                : victim.character.name}
+              ${
+                victim.character.id
+                  ? `<a href="/character/${victim.character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${victim.character.name}</a>`
+                  : victim.character.name
+              }
             </div>
             <div class="kb-kl-info__secondary" data-corporation-id="${victim.corporation.id}">
-              ${victim.corporation.id
-                ? `<a href="/corporation/${victim.corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${victim.corporation.name}</a>`
-                : victim.corporation.name}
+              ${
+                victim.corporation.id
+                  ? `<a href="/corporation/${victim.corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${victim.corporation.name}</a>`
+                  : victim.corporation.name
+              }
             </div>
-            ${victim.alliance.name
-              ? `<div class="kb-kl-info__secondary" data-alliance-id="${victim.alliance.id}">
-                  ${victim.alliance.id
-                    ? `<a href="/alliance/${victim.alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${victim.alliance.name}</a>`
-                    : victim.alliance.name}
+            ${
+              victim.alliance.name
+                ? `<div class="kb-kl-info__secondary" data-alliance-id="${victim.alliance.id}">
+                  ${
+                    victim.alliance.id
+                      ? `<a href="/alliance/${victim.alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${victim.alliance.name}</a>`
+                      : victim.alliance.name
+                  }
                 </div>`
-              : ''}
+                : ''
+            }
           </div>
         </div>
 
         <!-- Final Blow -->
         <div class="kb-kl-col kb-kl-col--finalblow">
           <div class="kb-kl-info kb-kl-info--finalblow">
-            ${finalBlow
-              ? `<div class="kb-kl-info__primary" data-character-id="${finalBlow.character.id}">
-                  ${finalBlow.character.id
-                    ? `<a href="/character/${finalBlow.character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${finalBlow.character.name}</a>`
-                    : finalBlow.character.name}
+            ${
+              finalBlow
+                ? `<div class="kb-kl-info__primary" data-character-id="${finalBlow.character.id}">
+                  ${
+                    finalBlow.character.id
+                      ? `<a href="/character/${finalBlow.character.id}" class="kb-kl-info__link" onclick="event.stopPropagation();">${finalBlow.character.name}</a>`
+                      : finalBlow.character.name
+                  }
                 </div>
                 <div class="kb-kl-info__secondary" data-corporation-id="${finalBlow.corporation.id}">
-                  ${finalBlow.corporation.id
-                    ? `<a href="/corporation/${finalBlow.corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${finalBlow.corporation.name}</a>`
-                    : finalBlow.corporation.name}
+                  ${
+                    finalBlow.corporation.id
+                      ? `<a href="/corporation/${finalBlow.corporation.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${finalBlow.corporation.name}</a>`
+                      : finalBlow.corporation.name
+                  }
                 </div>
-                ${finalBlow.alliance && finalBlow.alliance.name
-                  ? `<div class="kb-kl-info__secondary" data-alliance-id="${finalBlow.alliance.id}">
-                      ${finalBlow.alliance.id
-                        ? `<a href="/alliance/${finalBlow.alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${finalBlow.alliance.name}</a>`
-                        : finalBlow.alliance.name}
+                ${
+                  finalBlow.alliance && finalBlow.alliance.name
+                    ? `<div class="kb-kl-info__secondary" data-alliance-id="${finalBlow.alliance.id}">
+                      ${
+                        finalBlow.alliance.id
+                          ? `<a href="/alliance/${finalBlow.alliance.id}" class="kb-kl-info__link--secondary" onclick="event.stopPropagation();">${finalBlow.alliance.name}</a>`
+                          : finalBlow.alliance.name
+                      }
                     </div>`
-                  : ''}`
-              : '<div class="kb-kl-value--unknown">Unknown</div>'}
+                    : ''
+                }`
+                : '<div class="kb-kl-value--unknown">Unknown</div>'
+            }
           </div>
         </div>
 
@@ -830,12 +951,16 @@ class SiteUpdatesManager {
         <!-- Value -->
         <div class="kb-kl-col kb-kl-col--value">
           <div class="kb-kl-info kb-kl-info--value">
-            ${ship_value
-              ? `<div class="kb-kl-value">${iskValue}</div>`
-              : '<div class="kb-kl-value--unknown">N/A</div>'}
-            ${attacker_count
-              ? `<div class="kb-kl-info__secondary kb-kl-attackers-count">(${attacker_count})</div>`
-              : ''}
+            ${
+              ship_value
+                ? `<div class="kb-kl-value">${iskValue}</div>`
+                : '<div class="kb-kl-value--unknown">N/A</div>'
+            }
+            ${
+              attacker_count
+                ? `<div class="kb-kl-info__secondary kb-kl-attackers-count">(${attacker_count})</div>`
+                : ''
+            }
           </div>
         </div>
 
@@ -914,7 +1039,9 @@ class SiteUpdatesManager {
    */
   onClose() {
     this.connected = false;
-    console.log('[Site Updates] ⚠️  WebSocket closed - reconnecting in 5 seconds...');
+    console.log(
+      '[Site Updates] ⚠️  WebSocket closed - reconnecting in 5 seconds...'
+    );
 
     // Attempt to reconnect after 5 seconds
     setTimeout(() => {

@@ -142,10 +142,11 @@ notified Jules try and notify Jules again
 
 **Example Instructions to Jules:**
 
-```markdown
+````markdown
 ## 🔄 Hey Jules - Merge Conflicts Detected
 
 ### Recommended Approach
+
 1. Rebase PR #88 on main first:
    ```bash
    gh pr checkout 88
@@ -153,9 +154,11 @@ notified Jules try and notify Jules again
    git rebase origin/main
    git push --force-with-lease
    ```
+````
+
 2. After #88 merges, rebase the others
 
-```text
+````text
 
 ---
 
@@ -235,12 +238,13 @@ gh pr merge 89 --squash
 
 # Pull changes
 git pull origin main
-```
+````
 
 ### Scenario 2: PRs Need Changes
 
 ```markdown
 Jules, this PR is good overall but needs these fixes:
+
 1. Fix the race condition in rate limiter
 2. Add missing Redis password configuration
 3. Include X-RateLimit-Reset header
@@ -250,22 +254,26 @@ Once fixed, this will be ready to merge!
 
 ### Scenario 3: Merge Conflicts
 
-```markdown
+````markdown
 Hey Jules, all PRs have merge conflicts because they modify the same files.
 
 Recommended approach:
+
 1. Merge PR #88 first (has critical test fix)
 2. Rebase PR #87, #89, #90 on the updated main
 3. Merge them in sequence
 
 Commands for PR #88:
+
 ```bash
 gh pr checkout 88
 git fetch origin main
 git rebase origin/main
 git push --force-with-lease
 ```
-```
+````
+
+````
 
 ### Scenario 4: Performance Issues Found
 ```markdown
@@ -288,7 +296,7 @@ return result
 
 ```text
 Please update the PR with this approach.
-```
+````
 
 ---
 
@@ -356,7 +364,7 @@ gh pr list --state merged --label jules --limit 20
 - Always address Jules by name in comments
 - Be specific about what needs to change
 - Provide code examples when possible
-- Explain *why* changes are needed
+- Explain _why_ changes are needed
 
 ### 3. Strategic Merge Order
 
@@ -429,5 +437,5 @@ This workflow enables rapid development with high code quality by treating Jules
 
 ---
 
-*Last Updated: November 22, 2025*
-*Workflow Version: 1.0*
+_Last Updated: November 22, 2025_
+_Workflow Version: 1.0_

@@ -1,4 +1,4 @@
-import { database } from '../helpers/database'
+import { database } from '../helpers/database';
 
 /**
  * Config Model
@@ -6,12 +6,12 @@ import { database } from '../helpers/database'
  */
 
 export interface Config {
-  configKey: string
-  configValue: string | null
-  buildNumber: number | null
-  tableName: string | null
-  rowCount: number | null
-  updatedAt: string | null
+  configKey: string;
+  configValue: string | null;
+  buildNumber: number | null;
+  tableName: string | null;
+  rowCount: number | null;
+  updatedAt: string | null;
 }
 
 /**
@@ -20,15 +20,15 @@ export interface Config {
 export async function getConfig(key: string): Promise<string | null> {
   const [row] = await database.sql<{ configValue: string }[]>`
     SELECT "configValue" FROM config WHERE "configKey" = ${key}
-  `
-  return row?.configValue ?? null
+  `;
+  return row?.configValue ?? null;
 }
 
 /**
  * Set a config value
  */
 export async function setConfig(key: string, value: string): Promise<void> {
-  const now = new Date()
+  const now = new Date();
 
   await database.sql`
     INSERT INTO config ("configKey", "configValue", "updatedAt")
@@ -37,7 +37,7 @@ export async function setConfig(key: string, value: string): Promise<void> {
     DO UPDATE SET
       "configValue" = ${value},
       "updatedAt" = ${now}
-  `
+  `;
 }
 
 /**
@@ -46,7 +46,7 @@ export async function setConfig(key: string, value: string): Promise<void> {
 export async function getAllConfig(): Promise<Config[]> {
   return await database.sql<Config[]>`
     SELECT * FROM config ORDER BY "configKey"
-  `
+  `;
 }
 
 /**
@@ -55,5 +55,5 @@ export async function getAllConfig(): Promise<Config[]> {
 export async function deleteConfig(key: string): Promise<void> {
   await database.sql`
     DELETE FROM config WHERE "configKey" = ${key}
-  `
+  `;
 }

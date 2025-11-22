@@ -1,4 +1,4 @@
-import { Queue } from 'bullmq'
+import { Queue } from 'bullmq';
 
 /**
  * Queue Types Enum
@@ -9,7 +9,7 @@ export enum QueueType {
   CHARACTER = 'character',
   CORPORATION = 'corporation',
   ALLIANCE = 'alliance',
-  PRICE = 'price'
+  PRICE = 'price',
 }
 
 /**
@@ -17,11 +17,11 @@ export enum QueueType {
  * Each queue type maps to its job data structure
  */
 export interface QueueJobData {
-  [QueueType.KILLMAIL]: { killmailId: number; hash: string }
-  [QueueType.CHARACTER]: { id: number }
-  [QueueType.CORPORATION]: { id: number }
-  [QueueType.ALLIANCE]: { id: number }
-  [QueueType.PRICE]: { typeId: number; date?: number }
+  [QueueType.KILLMAIL]: { killmailId: number; hash: string };
+  [QueueType.CHARACTER]: { id: number };
+  [QueueType.CORPORATION]: { id: number };
+  [QueueType.ALLIANCE]: { id: number };
+  [QueueType.PRICE]: { typeId: number; date?: number };
 }
 
 /**
@@ -31,13 +31,13 @@ const REDIS_CONFIG = {
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379'),
   password: process.env.REDIS_PASSWORD,
-  db: 0
-}
+  db: 0,
+};
 
 /**
  * Queue instances cache
  */
-const queues = new Map<QueueType, Queue>()
+const queues = new Map<QueueType, Queue>();
 
 /**
  * Get or create a queue instance
@@ -52,16 +52,16 @@ function getQueue<T extends QueueType>(queueType: T): Queue {
           attempts: 3,
           backoff: {
             type: 'exponential',
-            delay: 2000
+            delay: 2000,
           },
           removeOnComplete: true,
-          removeOnFail: false
-        }
+          removeOnFail: false,
+        },
       })
-    )
+    );
   }
 
-  return queues.get(queueType)!
+  return queues.get(queueType)!;
 }
 
 /**
@@ -69,8 +69,8 @@ function getQueue<T extends QueueType>(queueType: T): Queue {
  */
 function createJobId(queueType: QueueType, data: any): string {
   // Convert data to a string without colons
-  const dataStr = JSON.stringify(data).replace(/:/g, '_')
-  return `${queueType}-${dataStr}`
+  const dataStr = JSON.stringify(data).replace(/:/g, '_');
+  return `${queueType}-${dataStr}`;
 }
 
 /**
@@ -81,15 +81,15 @@ export async function enqueueJob<T extends QueueType>(
   queueType: T,
   data: QueueJobData[T]
 ): Promise<void> {
-  const queue = getQueue(queueType)
+  const queue = getQueue(queueType);
 
   // Use data properties as unique job ID to prevent duplicates
-  const jobId = createJobId(queueType, data)
+  const jobId = createJobId(queueType, data);
 
   await queue.add(queueType, data, {
     jobId,
-    removeOnComplete: true
-  })
+    removeOnComplete: true,
+  });
 }
 
 /**
@@ -100,18 +100,18 @@ export async function enqueueJobMany<T extends QueueType>(
   queueType: T,
   dataArray: QueueJobData[T][]
 ): Promise<void> {
-  const queue = getQueue(queueType)
+  const queue = getQueue(queueType);
 
   const jobs = dataArray.map((data) => ({
     name: queueType,
     data,
     opts: {
       jobId: createJobId(queueType, data),
-      removeOnComplete: true
-    }
-  }))
+      removeOnComplete: true,
+    },
+  }));
 
-  await queue.addBulk(jobs)
+  await queue.addBulk(jobs);
 }
 
 /**
@@ -119,37 +119,43 @@ export async function enqueueJobMany<T extends QueueType>(
  */
 export async function closeAllQueues(): Promise<void> {
   for (const queue of queues.values()) {
-    await queue.close()
+    await queue.close();
   }
-  queues.clear()
+  queues.clear();
 }
 
 /**
  * Get queue statistics
  */
 export async function getQueueStats(queueType: QueueType): Promise<{
-  active: number
-  waiting: number
-  completed: number
-  failed: number
-  delayed: number
+  active: number;
+  waiting: number;
+  completed: number;
+  failed: number;
+  delayed: number;
 }> {
-  const queue = getQueue(queueType)
+  const queue = getQueue(queueType);
 
-  const counts = await queue.getJobCounts('active', 'waiting', 'completed', 'failed', 'delayed')
+  const counts = await queue.getJobCounts(
+    'active',
+    'waiting',
+    'completed',
+    'failed',
+    'delayed'
+  );
 
   return {
     active: counts.active,
     waiting: counts.waiting,
     completed: counts.completed,
     failed: counts.failed,
-    delayed: counts.delayed
-  }
+    delayed: counts.delayed,
+  };
 }
 
 /**
  * Get all queues for monitoring
  */
 export function getAllQueues(): Map<QueueType, Queue> {
-  return queues
+  return queues;
 }

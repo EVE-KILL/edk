@@ -1,32 +1,35 @@
 <!-- 401 Error Page - EDK Style -->
-<div class="killlist" style="max-width: 700px; margin: 20px auto;">
-    <div class="kb-losses-header">401 - Unauthorized</div>
+<div class='killlist' style='max-width: 700px; margin: 20px auto;'>
+  <div class='kb-losses-header'>401 - Unauthorized</div>
 
-    <table class="kb-table" cellspacing="1" style="width: 100%;">
-        <tr class="kb-table-header">
-            <td class="kb-table-header">
-                <span style="font-size: 14px;">🔐 Authentication Required</span>
-            </td>
-        </tr>
-        <tr class="kb-table-row-even">
-            <td class="kb-table-cell" style="padding: 20px; text-align: center;">
-                <p style="font-size: 12px; color: #dfdfdf; margin-bottom: 15px;">
-                    {{#if message}}
-                        {{message}}
-                    {{else}}
-                        You need to be logged in to access this page.
-                    {{/if}}
-                </p>
-                <p style="font-size: 11px; color: #999;">
-                    Please login with your EVE Online account to continue.
-                </p>
-            </td>
-        </tr>
-        <tr class="kb-table-row-odd">
-            <td class="kb-table-cell" style="padding: 15px; text-align: center;">
-                <a href="/login" style="background-color: #2a2a2a; color: #9bb3e8; font-size: 11px; padding: 8px 16px; margin-right: 10px; border: 1px solid #555; text-decoration: none;">🔑 Login</a>
-                <a href="/" style="color: #9bb3e8; font-size: 11px;">← Back to Home</a>
-            </td>
-        </tr>
-    </table>
+  <table class='kb-table' cellspacing='1' style='width: 100%;'>
+    <tr class='kb-table-header'>
+      <td class='kb-table-header'>
+        <span style='font-size: 14px;'>🔐 Authentication Required</span>
+      </td>
+    </tr>
+    <tr class='kb-table-row-even'>
+      <td class='kb-table-cell' style='padding: 20px; text-align: center;'>
+        <p style='font-size: 12px; color: #dfdfdf; margin-bottom: 15px;'>
+          {{#if message}}
+            {{message}}
+          {{else}}
+            You need to be logged in to access this page.
+          {{/if}}
+        </p>
+        <p style='font-size: 11px; color: #999;'>
+          Please login with your EVE Online account to continue.
+        </p>
+      </td>
+    </tr>
+    <tr class='kb-table-row-odd'>
+      <td class='kb-table-cell' style='padding: 15px; text-align: center;'>
+        <a
+          href='/login'
+          style='background-color: #2a2a2a; color: #9bb3e8; font-size: 11px; padding: 8px 16px; margin-right: 10px; border: 1px solid #555; text-decoration: none;'
+        >🔑 Login</a>
+        <a href='/' style='color: #9bb3e8; font-size: 11px;'>← Back to Home</a>
+      </td>
+    </tr>
+  </table>
 </div>

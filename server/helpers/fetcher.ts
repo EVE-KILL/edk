@@ -6,37 +6,37 @@
  */
 
 export interface FetcherOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
-  headers?: Record<string, string>
-  body?: any
-  timeout?: number
-  retries?: number
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  headers?: Record<string, string>;
+  body?: any;
+  timeout?: number;
+  retries?: number;
 }
 
 export interface FetcherResponse<T = any> {
-  ok: boolean
-  status: number
-  statusText: string
-  data: T
-  headers: Headers
+  ok: boolean;
+  status: number;
+  statusText: string;
+  data: T;
+  headers: Headers;
 }
 
-const DEFAULT_TIMEOUT = 30000 // 30 seconds
-const DEFAULT_RETRIES = 1
-const DEFAULT_USER_AGENT = 'EDK/0.1 (+https://eve-kill.com)'
+const DEFAULT_TIMEOUT = 30000; // 30 seconds
+const DEFAULT_RETRIES = 1;
+const DEFAULT_USER_AGENT = 'EDK/0.1 (+https://eve-kill.com)';
 
 /**
  * Sleep utility for retry delays
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
  * Calculate exponential backoff delay
  */
 function getBackoffDelay(attempt: number): number {
-  return Math.min(1000 * Math.pow(2, attempt), 10000)
+  return Math.min(1000 * Math.pow(2, attempt), 10000);
 }
 
 /**
@@ -58,45 +58,49 @@ export async function fetcher<T = any>(
     headers = {},
     body,
     timeout = DEFAULT_TIMEOUT,
-    retries = DEFAULT_RETRIES
-  } = options
+    retries = DEFAULT_RETRIES,
+  } = options;
 
   const standardHeaders: Record<string, string> = {
     'User-Agent': DEFAULT_USER_AGENT,
-    'Accept': 'application/json',
+    Accept: 'application/json',
     'Accept-Encoding': 'gzip, deflate',
-    ...headers
-  }
+    ...headers,
+  };
 
   // Add Content-Type for POST/PUT requests with body
-  if ((method === 'POST' || method === 'PUT') && body && !standardHeaders['Content-Type']) {
-    standardHeaders['Content-Type'] = 'application/json'
+  if (
+    (method === 'POST' || method === 'PUT') &&
+    body &&
+    !standardHeaders['Content-Type']
+  ) {
+    standardHeaders['Content-Type'] = 'application/json';
   }
 
-  let lastError: Error | null = null
+  let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), timeout)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       try {
         const response = await fetch(url, {
           method,
           headers: standardHeaders,
           body: body ? JSON.stringify(body) : undefined,
-          signal: controller.signal
-        })
+          signal: controller.signal,
+        });
 
-        clearTimeout(timeoutId)
+        clearTimeout(timeoutId);
 
         // Parse response body
-        let data: T
+        let data: T;
         try {
-          data = await response.json()
+          data = await response.json();
         } catch {
           // If JSON parsing fails, return empty object
-          data = {} as T
+          data = {} as T;
         }
 
         return {
@@ -104,28 +108,31 @@ export async function fetcher<T = any>(
           status: response.status,
           statusText: response.statusText,
           data,
-          headers: response.headers
-        }
+          headers: response.headers,
+        };
       } finally {
-        clearTimeout(timeoutId)
+        clearTimeout(timeoutId);
       }
     } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error))
+      lastError = error instanceof Error ? error : new Error(String(error));
 
       // Don't retry on client errors (4xx) except for rate limit (429)
-      if (lastError.message.includes('404') || lastError.message.includes('400')) {
-        throw lastError
+      if (
+        lastError.message.includes('404') ||
+        lastError.message.includes('400')
+      ) {
+        throw lastError;
       }
 
       // Retry if we haven't exhausted retries
       if (attempt < retries) {
-        const delay = getBackoffDelay(attempt)
-        await sleep(delay)
-        continue
+        const delay = getBackoffDelay(attempt);
+        await sleep(delay);
+        continue;
       }
     }
   }
 
   // If we got here, all retries failed
-  throw lastError || new Error('Fetch failed after retries')
+  throw lastError || new Error('Fetch failed after retries');
 }

@@ -1,46 +1,50 @@
-import type { H3Event } from 'h3'
-import { timeAgo } from '../../../helpers/time'
-import { render, normalizeKillRow } from '../../../helpers/templates'
-import { getEntityStats } from '../../../models/entityStats'
-import { getCharacterWithCorporationAndAlliance } from '../../../models/characters'
-import { getEntityKillmails, countEntityKillmails } from '../../../models/killlist'
+import type { H3Event } from 'h3';
+import { timeAgo } from '../../../helpers/time';
+import { render, normalizeKillRow } from '../../../helpers/templates';
+import { getEntityStats } from '../../../models/entityStats';
+import { getCharacterWithCorporationAndAlliance } from '../../../models/characters';
+import {
+  getEntityKillmails,
+  countEntityKillmails,
+} from '../../../models/killlist';
 
 export default defineEventHandler(async (event: H3Event) => {
-  const characterId = Number.parseInt(getRouterParam(event, 'id') || '0')
+  const characterId = Number.parseInt(getRouterParam(event, 'id') || '0');
 
   if (!characterId) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid character ID'
-    })
+      statusMessage: 'Invalid character ID',
+    });
   }
 
   // Fetch character basic info using model
-  const characterData = await getCharacterWithCorporationAndAlliance(characterId)
+  const characterData =
+    await getCharacterWithCorporationAndAlliance(characterId);
 
   if (!characterData) {
     throw createError({
       statusCode: 404,
-      statusMessage: 'Character not found'
-    })
+      statusMessage: 'Character not found',
+    });
   }
 
   // Get character stats using the same query as dashboard
-  const stats = await getEntityStats(characterId, 'character', 'all')
+  const stats = await getEntityStats(characterId, 'character', 'all');
 
   // Get pagination parameters
-  const query = getQuery(event)
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1)
-  const perPage = 30
+  const query = getQuery(event);
+  const page = Math.max(1, Number.parseInt(query.page as string) || 1);
+  const perPage = 30;
 
   // Fetch killmails where character was victim (losses) using model
   const [killmailsData, totalKillmails] = await Promise.all([
     getEntityKillmails(characterId, 'character', 'losses', page, perPage),
-    countEntityKillmails(characterId, 'character', 'losses')
-  ])
+    countEntityKillmails(characterId, 'character', 'losses'),
+  ]);
 
   // Calculate pagination
-  const totalPages = Math.ceil(totalKillmails / perPage)
+  const totalPages = Math.ceil(totalKillmails / perPage);
   const pagination = {
     currentPage: page,
     totalPages,
@@ -50,18 +54,20 @@ export default defineEventHandler(async (event: H3Event) => {
     prevPage: page - 1,
     nextPage: page + 1,
     showFirst: page > 3 && totalPages > 5,
-    showLast: page < totalPages - 2 && totalPages > 5
-  }
+    showLast: page < totalPages - 2 && totalPages > 5,
+  };
 
   // Transform killmail data to match component expectations
-  const killmails = killmailsData.map(km => {
-    const normalized = normalizeKillRow(km)
+  const killmails = killmailsData.map((km) => {
+    const normalized = normalizeKillRow(km);
     return {
       ...normalized,
       isLoss: true,
-      killmailTimeRelative: timeAgo(new Date(km.killmailTime ?? normalized.killmailTime))
-    }
-  })
+      killmailTimeRelative: timeAgo(
+        new Date(km.killmailTime ?? normalized.killmailTime)
+      ),
+    };
+  });
 
   // Entity header data
   const entityData = {
@@ -76,14 +82,16 @@ export default defineEventHandler(async (event: H3Event) => {
     parent: {
       id: characterData.corporationId,
       name: characterData.corporationName,
-      ticker: characterData.corporationTicker
+      ticker: characterData.corporationTicker,
     },
-    grandparent: characterData.allianceId ? {
-      id: characterData.allianceId,
-      name: characterData.allianceName,
-      ticker: characterData.allianceTicker
-    } : null
-  }
+    grandparent: characterData.allianceId
+      ? {
+          id: characterData.allianceId,
+          name: characterData.allianceName,
+          ticker: characterData.allianceTicker,
+        }
+      : null,
+  };
 
   // Render the template
   return render(
@@ -91,36 +99,34 @@ export default defineEventHandler(async (event: H3Event) => {
     {
       title: `${characterData.name} - Losses`,
       description: `Losses by ${characterData.name}`,
-      keywords: 'eve online, character, losses, killmail, pvp'
+      keywords: 'eve online, character, killmail, losses, pvp',
     },
     {
       ...entityData,
       killmails,
       pagination,
-      wsFilter: {
-        type: 'character',
-        id: characterId.toString(),
-        mode: 'losses'
-      }
     }
-  )
-})
+  );
+});
 
 // Helper function to generate page numbers
-function generatePageNumbers(currentPage: number, totalPages: number): number[] {
-  const pages: number[] = []
-  const maxVisible = 5
+function generatePageNumbers(
+  currentPage: number,
+  totalPages: number
+): number[] {
+  const pages: number[] = [];
+  const maxVisible = 5;
 
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2))
-  let endPage = Math.min(totalPages, startPage + maxVisible - 1)
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
 
   if (endPage - startPage + 1 < maxVisible) {
-    startPage = Math.max(1, endPage - maxVisible + 1)
+    startPage = Math.max(1, endPage - maxVisible + 1);
   }
 
   for (let i = startPage; i <= endPage; i++) {
-    pages.push(i)
+    pages.push(i);
   }
 
-  return pages
+  return pages;
 }

@@ -1,4 +1,4 @@
-import { database } from '../helpers/database'
+import { database } from '../helpers/database';
 
 /**
  * Killmail Reports Model
@@ -8,54 +8,54 @@ import { database } from '../helpers/database'
  */
 
 export interface KillmailReport {
-  entityId: number
-  entityType: 'character' | 'corporation' | 'alliance'
-  reportDate: Date
+  entityId: number;
+  entityType: 'character' | 'corporation' | 'alliance';
+  reportDate: Date;
 
   // Basic counts
-  kills: number
-  losses: number
+  kills: number;
+  losses: number;
 
   // ISK values
-  iskDestroyed: number
-  iskLost: number
-  efficiency: number
+  iskDestroyed: number;
+  iskLost: number;
+  efficiency: number;
 
   // Ship breakdown (JSON strings - need to parse)
-  shipStats: string // [{shipTypeId, kills, losses, iskDestroyed, iskLost}]
-  systemStats: string // [{solarSystemId, kills, losses}]
+  shipStats: string; // [{shipTypeId, kills, losses, iskDestroyed, iskLost}]
+  systemStats: string; // [{solarSystemId, kills, losses}]
 
   // Hourly activity arrays (0-23)
-  hourlyKills: number[]
-  hourlyLosses: number[]
+  hourlyKills: number[];
+  hourlyLosses: number[];
 
   // Combat style metrics
-  soloKills: number
-  soloLosses: number
-  gangKills: number
-  gangLosses: number
+  soloKills: number;
+  soloLosses: number;
+  gangKills: number;
+  gangLosses: number;
 
   // Weapon breakdown (JSON string)
-  weaponStats: string // [{weaponTypeId, kills}]
+  weaponStats: string; // [{weaponTypeId, kills}]
 }
 
 export interface ShipStat {
-  shipTypeId: number
-  kills: number
-  losses: number
-  iskDestroyed: number
-  iskLost: number
+  shipTypeId: number;
+  kills: number;
+  losses: number;
+  iskDestroyed: number;
+  iskLost: number;
 }
 
 export interface SystemStat {
-  solarSystemId: number
-  kills: number
-  losses: number
+  solarSystemId: number;
+  kills: number;
+  losses: number;
 }
 
 export interface WeaponStat {
-  weaponTypeId: number
-  kills: number
+  weaponTypeId: number;
+  kills: number;
 }
 
 /**
@@ -71,8 +71,8 @@ export async function getEntityReport(
      WHERE "entityId" = ${entityId}
        AND "entityType" = ${entityType}
        AND "reportDate" = ${reportDate.toISOString().split('T')[0]}
-  `
-  return row || null
+  `;
+  return row || null;
 }
 
 /**
@@ -90,7 +90,7 @@ export async function getEntityReportRange(
        AND "entityType" = ${entityType}
        AND "reportDate" BETWEEN ${startDate.toISOString().split('T')[0]} AND ${endDate.toISOString().split('T')[0]}
      ORDER BY "reportDate" DESC
-  `
+  `;
 }
 
 /**
@@ -107,7 +107,7 @@ export async function getRecentEntityReports(
        AND "entityType" = ${entityType}
        AND "reportDate" >= CURRENT_DATE - (${days} || ' days')::interval
      ORDER BY "reportDate" DESC
-  `
+  `;
 }
 
 /**
@@ -119,9 +119,9 @@ export async function getEntityMonthlyReports(
   year: number,
   month: number
 ): Promise<KillmailReport[]> {
-  const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-  const endOfMonth = new Date(year, month, 0) // Day 0 = last day of previous month
-  const endDate = `${year}-${String(month).padStart(2, '0')}-${endOfMonth.getDate()}`
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endOfMonth = new Date(year, month, 0); // Day 0 = last day of previous month
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${endOfMonth.getDate()}`;
 
   return await database.sql<KillmailReport[]>`
     SELECT * FROM killmail_reports
@@ -129,7 +129,7 @@ export async function getEntityMonthlyReports(
        AND "entityType" = ${entityType}
        AND "reportDate" BETWEEN ${startDate} AND ${endDate}
      ORDER BY "reportDate" ASC
-  `
+  `;
 }
 
 /**
@@ -141,15 +141,17 @@ export async function getEntityAggregatedStats(
   startDate: Date,
   endDate: Date
 ) {
-  const [result] = await database.sql<{
-    kills: number
-    losses: number
-    iskDestroyed: number
-    iskLost: number
-    efficiency: number
-    soloKills: number
-    soloLosses: number
-  }[]>`
+  const [result] = await database.sql<
+    {
+      kills: number;
+      losses: number;
+      iskDestroyed: number;
+      iskLost: number;
+      efficiency: number;
+      soloKills: number;
+      soloLosses: number;
+    }[]
+  >`
     SELECT
        sum(kills) as kills,
        sum(losses) as losses,
@@ -162,8 +164,8 @@ export async function getEntityAggregatedStats(
      WHERE "entityId" = ${entityId}
        AND "entityType" = ${entityType}
        AND "reportDate" BETWEEN ${startDate.toISOString().split('T')[0]} AND ${endDate.toISOString().split('T')[0]}
-  `
-  return result
+  `;
+  return result;
 }
 
 /**
@@ -171,9 +173,9 @@ export async function getEntityAggregatedStats(
  */
 export function parseShipStats(shipStats: string): ShipStat[] {
   try {
-    return JSON.parse(shipStats) as ShipStat[]
+    return JSON.parse(shipStats) as ShipStat[];
   } catch {
-    return []
+    return [];
   }
 }
 
@@ -182,9 +184,9 @@ export function parseShipStats(shipStats: string): ShipStat[] {
  */
 export function parseSystemStats(systemStats: string): SystemStat[] {
   try {
-    return JSON.parse(systemStats) as SystemStat[]
+    return JSON.parse(systemStats) as SystemStat[];
   } catch {
-    return []
+    return [];
   }
 }
 
@@ -193,8 +195,8 @@ export function parseSystemStats(systemStats: string): SystemStat[] {
  */
 export function parseWeaponStats(weaponStats: string): WeaponStat[] {
   try {
-    return JSON.parse(weaponStats) as WeaponStat[]
+    return JSON.parse(weaponStats) as WeaponStat[];
   } catch {
-    return []
+    return [];
   }
 }

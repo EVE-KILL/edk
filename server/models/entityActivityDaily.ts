@@ -1,4 +1,4 @@
-import { database } from '../helpers/database'
+import { database } from '../helpers/database';
 
 /**
  * Entity Activity Daily Model
@@ -8,28 +8,28 @@ import { database } from '../helpers/database'
  */
 
 export interface EntityActivityDaily {
-  entityId: number
-  entityType: 'character' | 'corporation' | 'alliance'
-  activityDate: Date
+  entityId: number;
+  entityType: 'character' | 'corporation' | 'alliance';
+  activityDate: Date;
 
   // Activity counts
-  kills: number
-  losses: number
+  kills: number;
+  losses: number;
 
   // ISK values
-  iskDestroyed: number
-  iskLost: number
+  iskDestroyed: number;
+  iskLost: number;
 
   // Active hours bitmap (24 bits for 24 hours)
-  activeHours: number
+  activeHours: number;
 
   // Unique opponents
-  uniqueVictims: number
-  uniqueAttackers: number
+  uniqueVictims: number;
+  uniqueAttackers: number;
 
   // Combat style
-  soloKills: number
-  gangKills: number
+  soloKills: number;
+  gangKills: number;
 }
 
 /**
@@ -41,7 +41,7 @@ export async function getEntityActivity(
   activityDate: Date
 ): Promise<EntityActivityDaily | null> {
   // Return null for now to avoid heavy queries on base tables
-  return null
+  return null;
 }
 
 /**
@@ -53,18 +53,18 @@ export async function getEntityActivityRange(
   startDate: Date,
   endDate: Date
 ): Promise<EntityActivityDaily[]> {
-    // Calculating daily stats from raw killmails on the fly is too heavy for this task scope without materialized views.
-    // If needed, we would aggregate killmails GROUP BY date.
+  // Calculating daily stats from raw killmails on the fly is too heavy for this task scope without materialized views.
+  // If needed, we would aggregate killmails GROUP BY date.
 
-    // Attempting a simplified aggregation for kills only (ignoring hours/unique opponents for perf)
+  // Attempting a simplified aggregation for kills only (ignoring hours/unique opponents for perf)
 
-    let entityCol = ''
-    if (entityType === 'character') entityCol = 'topAttackerCharacterId';
-    else if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
-    else entityCol = 'topAttackerAllianceId';
+  let entityCol = '';
+  if (entityType === 'character') entityCol = 'topAttackerCharacterId';
+  else if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
+  else entityCol = 'topAttackerAllianceId';
 
-    // Use Postgres date_trunc
-    return await database.sql<EntityActivityDaily[]>`
+  // Use Postgres date_trunc
+  return await database.sql<EntityActivityDaily[]>`
         SELECT
           ${entityId} as "entityId",
           ${entityType} as "entityType",
@@ -83,7 +83,7 @@ export async function getEntityActivityRange(
           AND "killmailTime" >= ${startDate} AND "killmailTime" <= ${endDate}
         GROUP BY 3
         ORDER BY 3 ASC
-    `
+    `;
 }
 
 /**
@@ -94,11 +94,11 @@ export async function getRecentEntityActivity(
   entityType: 'character' | 'corporation' | 'alliance',
   days: number = 30
 ): Promise<EntityActivityDaily[]> {
-  const startDate = new Date()
-  startDate.setDate(startDate.getDate() - days)
-  const endDate = new Date()
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const endDate = new Date();
 
-  return getEntityActivityRange(entityId, entityType, startDate, endDate)
+  return getEntityActivityRange(entityId, entityType, startDate, endDate);
 }
 
 /**
@@ -110,10 +110,10 @@ export async function getEntityMonthlyActivity(
   year: number,
   month: number
 ): Promise<EntityActivityDaily[]> {
-  const startDate = new Date(year, month - 1, 1)
-  const endDate = new Date(year, month, 0)
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0);
 
-  return getEntityActivityRange(entityId, entityType, startDate, endDate)
+  return getEntityActivityRange(entityId, entityType, startDate, endDate);
 }
 
 /**
@@ -125,21 +125,23 @@ export async function getEntityActivitySummary(
   startDate: Date,
   endDate: Date
 ) {
-    // Simplified summary from killmails table (kills only for now)
-    let entityCol = ''
-    if (entityType === 'character') entityCol = 'topAttackerCharacterId';
-    else if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
-    else entityCol = 'topAttackerAllianceId';
+  // Simplified summary from killmails table (kills only for now)
+  let entityCol = '';
+  if (entityType === 'character') entityCol = 'topAttackerCharacterId';
+  else if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
+  else entityCol = 'topAttackerAllianceId';
 
-  const [result] = await database.sql<{
-    totalKills: number
-    totalLosses: number
-    totalIskDestroyed: number
-    totalIskLost: number
-    activeDays: number
-    totalSoloKills: number
-    totalGangKills: number
-  }[]>`
+  const [result] = await database.sql<
+    {
+      totalKills: number;
+      totalLosses: number;
+      totalIskDestroyed: number;
+      totalIskLost: number;
+      activeDays: number;
+      totalSoloKills: number;
+      totalGangKills: number;
+    }[]
+  >`
     SELECT
        count(*) as "totalKills",
        0 as "totalLosses",
@@ -151,8 +153,8 @@ export async function getEntityActivitySummary(
      FROM killmails
      WHERE ${database.sql(entityCol)} = ${entityId}
        AND "killmailTime" >= ${startDate} AND "killmailTime" <= ${endDate}
-  `
-  return result
+  `;
+  return result;
 }
 
 /**
@@ -163,20 +165,20 @@ export async function getActiveEntitiesOnDate(
   activityDate: Date,
   limit: number = 100
 ): Promise<EntityActivityDaily[]> {
-  return []
+  return [];
 }
 
 /**
  * Parse active hours bitmap into array of active hours (0-23)
  */
 export function parseActiveHours(activeHours: number): number[] {
-  const hours: number[] = []
+  const hours: number[] = [];
   for (let i = 0; i < 24; i++) {
     if ((activeHours & (1 << i)) !== 0) {
-      hours.push(i)
+      hours.push(i);
     }
   }
-  return hours
+  return hours;
 }
 
 /**
@@ -188,10 +190,10 @@ export async function getEntityMostActiveHours(
   startDate: Date,
   endDate: Date
 ): Promise<{ hour: number; activityCount: number }[]> {
-    let entityCol = ''
-    if (entityType === 'character') entityCol = 'topAttackerCharacterId';
-    else if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
-    else entityCol = 'topAttackerAllianceId';
+  let entityCol = '';
+  if (entityType === 'character') entityCol = 'topAttackerCharacterId';
+  else if (entityType === 'corporation') entityCol = 'topAttackerCorporationId';
+  else entityCol = 'topAttackerAllianceId';
 
   // Query to count which hours have the most activity using EXTRACT(HOUR FROM ...)
   const result = await database.sql<{ hour: number; activityCount: number }[]>`
@@ -203,7 +205,7 @@ export async function getEntityMostActiveHours(
        AND "killmailTime" >= ${startDate} AND "killmailTime" <= ${endDate}
      GROUP BY hour
      ORDER BY "activityCount" DESC
-  `
+  `;
 
-  return result
+  return result;
 }

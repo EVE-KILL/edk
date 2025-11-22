@@ -1,76 +1,88 @@
-<div class="box">
-    <div class="box-header">Post Killmail</div>
-    <div class="box-content">
-        <div style="text-align: center; padding: 40px 20px;">
-            <p style="font-size: 16px; color: #8ab4f8; margin-bottom: 20px;">
-                Paste an ESI killmail URL
-            </p>
-            <p style="color: #666; margin-bottom: 30px;">
-                Press
-                <kbd style="background: #2a3f54; padding: 3px 8px; border-radius: 3px; border: 1px solid #374957;">Ctrl+V</kbd>
-                (or
-                <kbd style="background: #2a3f54; padding: 3px 8px; border-radius: 3px; border: 1px solid #374957;">⌘+V</kbd>
-                on Mac) to paste
-            </p>
+<div class='box'>
+  <div class='box-header'>Post Killmail</div>
+  <div class='box-content'>
+    <div style='text-align: center; padding: 40px 20px;'>
+      <p style='font-size: 16px; color: #8ab4f8; margin-bottom: 20px;'>
+        Paste an ESI killmail URL
+      </p>
+      <p style='color: #666; margin-bottom: 30px;'>
+        Press
+        <kbd
+          style='background: #2a3f54; padding: 3px 8px; border-radius: 3px; border: 1px solid #374957;'
+        >Ctrl+V</kbd>
+        (or
+        <kbd
+          style='background: #2a3f54; padding: 3px 8px; border-radius: 3px; border: 1px solid #374957;'
+        >⌘+V</kbd>
+        on Mac) to paste
+      </p>
 
-            <div style="max-width: 600px; margin: 0 auto;">
-                <textarea
-                    id="killmailInput"
-                    placeholder="https://esi.evetech.net/latest/killmails/{id}/{hash}/"
-                    style="width: 100%; min-height: 120px; padding: 15px; font-size: 14px; border: 2px dashed #374957; background: #0a1929; color: #aaa; font-family: monospace; border-radius: 4px; box-sizing: border-box; display: block;"
-                ></textarea>
+      <div style='max-width: 600px; margin: 0 auto;'>
+        <textarea
+          id='killmailInput'
+          placeholder='https://esi.evetech.net/latest/killmails/{id}/{hash}/'
+          style='width: 100%; min-height: 120px; padding: 15px; font-size: 14px; border: 2px dashed #374957; background: #0a1929; color: #aaa; font-family: monospace; border-radius: 4px; box-sizing: border-box; display: block;'
+        ></textarea>
 
-                <button
-                    id="submitButton"
-                    style="margin-top: 20px; padding: 12px 30px; background: #2a3f54; color: #aaa; border: 1px solid #374957; cursor: pointer; font-size: 14px; border-radius: 4px; display: block; width: auto; margin-left: auto; margin-right: auto;"
-                >
-                    Submit Killmail
-                </button>
-            </div>
+        <button
+          id='submitButton'
+          style='margin-top: 20px; padding: 12px 30px; background: #2a3f54; color: #aaa; border: 1px solid #374957; cursor: pointer; font-size: 14px; border-radius: 4px; display: block; width: auto; margin-left: auto; margin-right: auto;'
+        >
+          Submit Killmail
+        </button>
+      </div>
 
-            <div id="postStatus" style="margin-top: 20px; display: none;">
-                <div id="loadingSpinner" style="display: none;">
-                    <div style="color: #8ab4f8; font-size: 14px;">
-                        <span style="animation: spin 1s linear infinite; display: inline-block;">⟳</span>
-                        Processing killmail...
-                    </div>
-                </div>
-                <div id="postError" style="display: none; color: #d9534f; font-size: 14px;"></div>
-                <div id="postSuccess" style="display: none; color: #5cb85c; font-size: 14px;"></div>
-            </div>
+      <div id='postStatus' style='margin-top: 20px; display: none;'>
+        <div id='loadingSpinner' style='display: none;'>
+          <div style='color: #8ab4f8; font-size: 14px;'>
+            <span
+              style='animation: spin 1s linear infinite; display: inline-block;'
+            >⟳</span>
+            Processing killmail...
+          </div>
         </div>
+        <div
+          id='postError'
+          style='display: none; color: #d9534f; font-size: 14px;'
+        ></div>
+        <div
+          id='postSuccess'
+          style='display: none; color: #5cb85c; font-size: 14px;'
+        ></div>
+      </div>
     </div>
+  </div>
 </div>
 
 <style>
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
-        to {
-            transform: rotate(360deg);
-        }
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
     }
+    to {
+      transform: rotate(360deg);
+    }
+  }
 
-    kbd {
-        font-family: monospace;
-    }
+  kbd {
+    font-family: monospace;
+  }
 
-    #killmailInput:focus {
-        outline: none;
-        border-color: #8ab4f8;
-        background: #1a2939;
-    }
+  #killmailInput:focus {
+    outline: none;
+    border-color: #8ab4f8;
+    background: #1a2939;
+  }
 
-    #submitButton:hover {
-        background: #3a4f64;
-        color: #8ab4f8;
-    }
+  #submitButton:hover {
+    background: #3a4f64;
+    color: #8ab4f8;
+  }
 
-    #submitButton:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
+  #submitButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 </style>
 
-<script src="/post.js"></script>
+<script src='/post.js'></script>

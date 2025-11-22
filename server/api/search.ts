@@ -2,15 +2,15 @@
  * Search API endpoint
  * Queries Typesense for characters, corporations, alliances, items, systems, etc.
  */
-import { defineEventHandler, getQuery } from 'h3'
-import { typesense } from '~/helpers/typesense'
-import { logger } from '~/helpers/logger'
+import { defineEventHandler, getQuery } from 'h3';
+import { typesense } from '~/helpers/typesense';
+import { logger } from '~/helpers/logger';
 
 export default defineEventHandler(async (event) => {
   const { q, limit = '20' } = getQuery(event);
 
   if (!q || typeof q !== 'string' || q.trim().length < 2) {
-    return {}
+    return {};
   }
 
   try {
@@ -20,10 +20,13 @@ export default defineEventHandler(async (event) => {
       per_page: Math.min(parseInt(limit as string, 10), 50),
       group_by: 'type',
       group_limit: 5,
-      sort_by: 'name:asc'
+      sort_by: 'name:asc',
     };
 
-    const searchResult = await typesense.collections('search').documents().search(searchParameters);
+    const searchResult = await typesense
+      .collections('search')
+      .documents()
+      .search(searchParameters);
 
     const groupedResults: Record<string, any[]> = {};
 
@@ -33,12 +36,13 @@ export default defineEventHandler(async (event) => {
         groupedResults[type] = group.hits.map((hit) => {
           const doc = hit.document as any;
           const rawId = doc.id as string;
-          const entityId = typeof rawId === 'string' ? rawId.replace(`${type}-`, '') : rawId;
+          const entityId =
+            typeof rawId === 'string' ? rawId.replace(`${type}-`, '') : rawId;
           return {
             id: doc.id,
             entityId,
             name: doc.name,
-            type: doc.type
+            type: doc.type,
           };
         });
       }
@@ -46,16 +50,16 @@ export default defineEventHandler(async (event) => {
 
     return groupedResults;
   } catch (error: any) {
-    logger.error('Typesense search error:', { err: error })
+    logger.error('Typesense search error:', { err: error });
 
     // If collection doesn't exist, return empty results
     if (error.httpStatus === 404) {
-      return {}
+      return {};
     }
 
     throw createError({
       statusCode: 500,
-      statusMessage: 'Search failed'
-    })
+      statusMessage: 'Search failed',
+    });
   }
-})
+});

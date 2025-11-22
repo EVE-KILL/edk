@@ -1,4 +1,4 @@
-import Redis from 'ioredis'
+import Redis from 'ioredis';
 
 export function createRedisClient() {
   return new Redis({
@@ -6,5 +6,5 @@ export function createRedisClient() {
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD,
     db: 0,
-  })
+  });
 }

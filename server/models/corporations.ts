@@ -1,4 +1,4 @@
-import { database } from '../helpers/database'
+import { database } from '../helpers/database';
 
 /**
  * Corporation Model
@@ -7,120 +7,139 @@ import { database } from '../helpers/database'
  */
 
 export interface Corporation {
-  corporationId: number
-  allianceId: number | null
-  ceoId: number
-  creatorId: number
-  dateFounded: string
-  description: string
-  homeStationId: number | null
-  memberCount: number
-  name: string
-  shares: number
-  taxRate: number
-  ticker: string
-  url: string
-  updatedAt: Date
+  corporationId: number;
+  allianceId: number | null;
+  ceoId: number;
+  creatorId: number;
+  dateFounded: string;
+  description: string;
+  homeStationId: number | null;
+  memberCount: number;
+  name: string;
+  shares: number;
+  taxRate: number;
+  ticker: string;
+  url: string;
+  updatedAt: Date;
 }
 
 /**
  * Get corporation by ID
  */
-export async function getCorporation(corporationId: number): Promise<Corporation | null> {
+export async function getCorporation(
+  corporationId: number
+): Promise<Corporation | null> {
   const [row] = await database.sql<Corporation[]>`
     SELECT * FROM corporations WHERE corporationId = ${corporationId}
-  `
-  return row || null
+  `;
+  return row || null;
 }
 
 /**
  * Get multiple corporations by IDs
  */
-export async function getCorporations(corporationIds: number[]): Promise<Corporation[]> {
-  if (corporationIds.length === 0) return []
+export async function getCorporations(
+  corporationIds: number[]
+): Promise<Corporation[]> {
+  if (corporationIds.length === 0) return [];
 
   return await database.sql<Corporation[]>`
     SELECT * FROM corporations WHERE corporationId = ANY(${corporationIds})
-  `
+  `;
 }
 
 /**
  * Search corporations by name
  */
-export async function searchCorporations(searchTerm: string, limit: number = 20): Promise<Corporation[]> {
+export async function searchCorporations(
+  searchTerm: string,
+  limit: number = 20
+): Promise<Corporation[]> {
   return await database.sql<Corporation[]>`
     SELECT * FROM corporations
     WHERE name ILIKE ${`%${searchTerm}%`}
     ORDER BY name
     LIMIT ${limit}
-  `
+  `;
 }
 
 /**
  * Get corporation name by ID
  */
-export async function getCorporationName(corporationId: number): Promise<string | null> {
-  const [result] = await database.sql<{name: string}[]>`
+export async function getCorporationName(
+  corporationId: number
+): Promise<string | null> {
+  const [result] = await database.sql<{ name: string }[]>`
     SELECT name FROM corporations WHERE corporationId = ${corporationId}
-  `
-  return result?.name || null
+  `;
+  return result?.name || null;
 }
 
 /**
  * Get corporation ticker by ID
  */
-export async function getCorporationTicker(corporationId: number): Promise<string | null> {
-  const [result] = await database.sql<{ticker: string}[]>`
+export async function getCorporationTicker(
+  corporationId: number
+): Promise<string | null> {
+  const [result] = await database.sql<{ ticker: string }[]>`
     SELECT ticker FROM corporations WHERE corporationId = ${corporationId}
-  `
-  return result?.ticker || null
+  `;
+  return result?.ticker || null;
 }
 
 /**
  * Get corporations by alliance
  */
-export async function getCorporationsByAlliance(allianceId: number): Promise<Corporation[]> {
+export async function getCorporationsByAlliance(
+  allianceId: number
+): Promise<Corporation[]> {
   return await database.sql<Corporation[]>`
     SELECT * FROM corporations WHERE allianceId = ${allianceId}
-  `
+  `;
 }
 
 /**
  * Get corporations by CEO
  */
-export async function getCorporationsByCEO(characterId: number): Promise<Corporation[]> {
+export async function getCorporationsByCEO(
+  characterId: number
+): Promise<Corporation[]> {
   return await database.sql<Corporation[]>`
     SELECT * FROM corporations WHERE ceoId = ${characterId}
-  `
+  `;
 }
 
 /**
  * Get corporations by creator
  */
-export async function getCorporationsByCreator(characterId: number): Promise<Corporation[]> {
+export async function getCorporationsByCreator(
+  characterId: number
+): Promise<Corporation[]> {
   return await database.sql<Corporation[]>`
     SELECT * FROM corporations WHERE creatorId = ${characterId}
-  `
+  `;
 }
 
 /**
  * Count total corporations
  */
 export async function countCorporations(): Promise<number> {
-  const [result] = await database.sql<{count: number}[]>`
+  const [result] = await database.sql<{ count: number }[]>`
     SELECT count(*) as count FROM corporations
-  `
-  return Number(result?.count || 0)
+  `;
+  return Number(result?.count || 0);
 }
 
 /**
  * Count corporations in an alliance
  */
-export async function countCorporationsInAlliance(allianceId: number): Promise<number> {
-  const [result] = await database.sql<{count: number}[]>`
+export async function countCorporationsInAlliance(
+  allianceId: number
+): Promise<number> {
+  const [result] = await database.sql<{ count: number }[]>`
     SELECT count(*) as count FROM corporations WHERE allianceId = ${allianceId}
-  `
-  return Number(result?.count || 0)
+  `;
+  return Number(result?.count || 0);
 }
 
 /**
@@ -129,40 +148,44 @@ export async function countCorporationsInAlliance(allianceId: number): Promise<n
 export async function storeCorporation(
   corporationId: number,
   data: {
-    allianceId: number | null
-    ceoId: number
-    creatorId: number
-    dateFounded: string
-    description: string
-    homeStationId: number | null
-    memberCount: number
-    name: string
-    shares: number
-    taxRate: number
-    ticker: string
-    url: string
+    allianceId: number | null;
+    ceoId: number;
+    creatorId: number;
+    dateFounded: string;
+    description: string;
+    homeStationId: number | null;
+    memberCount: number;
+    name: string;
+    shares: number;
+    taxRate: number;
+    ticker: string;
+    url: string;
   }
 ): Promise<void> {
-  const now = Math.floor(Date.now() / 1000)
+  const now = Math.floor(Date.now() / 1000);
 
-  await database.bulkUpsert('corporations', [
-    {
-      corporationId: corporationId,
-      allianceId: data.allianceId,
-      ceoId: data.ceoId,
-      creatorId: data.creatorId,
-      dateFounded: data.dateFounded,
-      description: data.description,
-      homeStationId: data.homeStationId,
-      memberCount: data.memberCount,
-      name: data.name,
-      shares: data.shares,
-      taxRate: data.taxRate,
-      ticker: data.ticker,
-      url: data.url,
-      updatedAt: new Date(now * 1000),
-    }
-  ], ['corporationId'])
+  await database.bulkUpsert(
+    'corporations',
+    [
+      {
+        corporationId: corporationId,
+        allianceId: data.allianceId,
+        ceoId: data.ceoId,
+        creatorId: data.creatorId,
+        dateFounded: data.dateFounded,
+        description: data.description,
+        homeStationId: data.homeStationId,
+        memberCount: data.memberCount,
+        name: data.name,
+        shares: data.shares,
+        taxRate: data.taxRate,
+        ticker: data.ticker,
+        url: data.url,
+        updatedAt: new Date(now * 1000),
+      },
+    ],
+    ['corporationId']
+  );
 }
 
 /**
@@ -170,26 +193,26 @@ export async function storeCorporation(
  */
 export async function storeCorporationsBulk(
   corporations: Array<{
-    corporationId: number
-    allianceId: number | null
-    ceoId: number
-    creatorId: number
-    dateFounded: string
-    description: string
-    homeStationId: number | null
-    memberCount: number
-    name: string
-    shares: number
-    taxRate: number
-    ticker: string
-    url: string
+    corporationId: number;
+    allianceId: number | null;
+    ceoId: number;
+    creatorId: number;
+    dateFounded: string;
+    description: string;
+    homeStationId: number | null;
+    memberCount: number;
+    name: string;
+    shares: number;
+    taxRate: number;
+    ticker: string;
+    url: string;
   }>
 ): Promise<void> {
-  if (corporations.length === 0) return
+  if (corporations.length === 0) return;
 
-  const now = Math.floor(Date.now() / 1000)
+  const now = Math.floor(Date.now() / 1000);
 
-  const records = corporations.map(corp => ({
+  const records = corporations.map((corp) => ({
     corporationId: corp.corporationId,
     allianceId: corp.allianceId,
     ceoId: corp.ceoId,
@@ -204,38 +227,44 @@ export async function storeCorporationsBulk(
     ticker: corp.ticker,
     url: corp.url,
     updatedAt: new Date(now * 1000),
-  }))
+  }));
 
-  await database.bulkInsert('corporations', records)
+  await database.bulkInsert('corporations', records);
 }
 
 /**
  * Check if corporation exists
  */
-export async function corporationExists(corporationId: number): Promise<boolean> {
-  const [result] = await database.sql<{count: number}[]>`
+export async function corporationExists(
+  corporationId: number
+): Promise<boolean> {
+  const [result] = await database.sql<{ count: number }[]>`
     SELECT count(*) as count FROM corporations WHERE corporationId = ${corporationId}
-  `
-  return Number(result?.count) > 0
+  `;
+  return Number(result?.count) > 0;
 }
 
 /**
  * Get corporation with alliance information
  */
-export async function getCorporationWithAlliance(corporationId: number): Promise<{
-  name: string
-  ticker: string
-  allianceId: number | null
-  allianceName: string | null
-  allianceTicker: string | null
+export async function getCorporationWithAlliance(
+  corporationId: number
+): Promise<{
+  name: string;
+  ticker: string;
+  allianceId: number | null;
+  allianceName: string | null;
+  allianceTicker: string | null;
 } | null> {
-  const [row] = await database.sql<{
-    name: string
-    ticker: string
-    allianceId: number | null
-    allianceName: string | null
-    allianceTicker: string | null
-  }[]>`
+  const [row] = await database.sql<
+    {
+      name: string;
+      ticker: string;
+      allianceId: number | null;
+      allianceName: string | null;
+      allianceTicker: string | null;
+    }[]
+  >`
     SELECT
       c.name as name,
       c.ticker as ticker,
@@ -246,6 +275,6 @@ export async function getCorporationWithAlliance(corporationId: number): Promise
     LEFT JOIN alliances alliance ON c."allianceId" = alliance."allianceId"
     WHERE c."corporationId" = ${corporationId}
     LIMIT 1
-  `
-  return row || null
+  `;
+  return row || null;
 }

@@ -21,7 +21,7 @@ export default {
   action: async () => {
     const importer = new RedisQImporter();
     await importer.execute();
-  }
+  },
 };
 
 class RedisQImporter {
@@ -33,7 +33,7 @@ class RedisQImporter {
     new: 0,
     duplicate: 0,
     processed: 0,
-    errors: 0
+    errors: 0,
   };
 
   constructor() {
@@ -60,7 +60,7 @@ class RedisQImporter {
     while (this.running) {
       try {
         const response = await fetch(this.queueUrl, {
-          headers: { 'User-Agent': 'EVE-KILL' }
+          headers: { 'User-Agent': 'EVE-KILL' },
         });
 
         if (!response.ok) {
@@ -86,7 +86,9 @@ class RedisQImporter {
     const killmailId = pkg?.killmail_id || pkg?.killID;
 
     if (!pkg || !killmailId || !pkg.zkb || !pkg.zkb.hash) {
-      this.error(`Invalid killmail package received: ${JSON.stringify(pkg).substring(0, 200)}`);
+      this.error(
+        `Invalid killmail package received: ${JSON.stringify(pkg).substring(0, 200)}`
+      );
       return;
     }
 

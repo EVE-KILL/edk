@@ -3,11 +3,11 @@ services:
     image: postgres:16
     container_name: edk_postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
     command:
-      - "postgres"
-      - "-c"
-      - "default_toast_compression=lz4"
+      - 'postgres'
+      - '-c'
+      - 'default_toast_compression=lz4'
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-edk}
       POSTGRES_USER: ${POSTGRES_USER:-edk_user}
@@ -22,7 +22,7 @@ services:
     image: redis:latest
     container_name: edk_redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     command: redis-server --requirepass ${REDIS_PASSWORD:-redis_password}
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
@@ -36,7 +36,7 @@ services:
     image: typesense/typesense:0.25.2
     container_name: edk_typesense
     ports:
-      - "8108:8108"
+      - '8108:8108'
     environment:
       - TYPESENSE_DATA_DIR=/data
       - TYPESENSE_API_KEY=${TYPESENSE_API_KEY:-xyz}

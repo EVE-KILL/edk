@@ -1,25 +1,27 @@
-import { fetchESI } from '../helpers/esi'
-import { storeCorporation as storeCorporationInDB, getCorporation } from '../models/corporations'
-import { getNPCCorporation } from '../models/npcCorporations'
-import { updateSearchEntity } from '../helpers/typesense'
+import { fetchESI } from '../helpers/esi';
+import {
+  storeCorporation as storeCorporationInDB,
+  getCorporation,
+} from '../models/corporations';
+import { getNPCCorporation } from '../models/npcCorporations';
 
 /**
  * ESI Corporation Data - Fields we store
  * Only contains fields from the official ESI API
  */
 export interface ESICorporation {
-  alliance_id: number | null
-  ceo_id: number
-  creator_id: number
-  date_founded: string
-  description: string
-  home_station_id: number | null
-  member_count: number
-  name: string
-  shares: number
-  tax_rate: number
-  ticker: string
-  url: string
+  alliance_id: number | null;
+  ceo_id: number;
+  creator_id: number;
+  date_founded: string;
+  description: string;
+  home_station_id: number | null;
+  member_count: number;
+  name: string;
+  shares: number;
+  tax_rate: number;
+  ticker: string;
+  url: string;
 }
 
 /**
@@ -27,12 +29,14 @@ export interface ESICorporation {
  * For NPC corporations (ID < 2000000), check SDE first
  * Stores only ESI-compatible fields in the database
  */
-export async function fetchAndStoreCorporation(corporationId: number): Promise<ESICorporation | null> {
+export async function fetchAndStoreCorporation(
+  corporationId: number
+): Promise<ESICorporation | null> {
   try {
     // Check if this is an NPC corporation (ID range: 1,000,000 - 1,999,999)
     // See: https://developers.eveonline.com/docs/guides/id-ranges/
     if (corporationId >= 1000000 && corporationId <= 1999999) {
-      const npcCorp = await getNPCCorporation(corporationId)
+      const npcCorp = await getNPCCorporation(corporationId);
       if (npcCorp) {
         // Convert NPC corporation to ESI format and store
         const esiCorporation: ESICorporation = {
@@ -47,32 +51,32 @@ export async function fetchAndStoreCorporation(corporationId: number): Promise<E
           shares: 0,
           tax_rate: npcCorp.taxRate ?? 0,
           ticker: npcCorp.tickerName ?? '',
-          url: ''
-        }
+          url: '',
+        };
 
         // Store in corporations table for consistency
-        await storeCorporation(corporationId, esiCorporation)
-        return esiCorporation
+        await storeCorporation(corporationId, esiCorporation);
+        return esiCorporation;
       }
     }
 
     // Not an NPC corp or not found in SDE, fetch from ESI
-    const corporationData = await fetchFromESI(corporationId)
+    const corporationData = await fetchFromESI(corporationId);
 
     if (!corporationData) {
-      return null
+      return null;
     }
 
     // Extract only ESI fields
-    const esiCorporation = extractESIFields(corporationData)
+    const esiCorporation = extractESIFields(corporationData);
 
     // Store in database
-    await storeCorporation(corporationId, esiCorporation)
+    await storeCorporation(corporationId, esiCorporation);
 
-    return esiCorporation
+    return esiCorporation;
   } catch (error) {
-    console.error(`Failed to fetch corporation ${corporationId}:`, error)
-    return null
+    console.error(`Failed to fetch corporation ${corporationId}:`, error);
+    return null;
   }
 }
 
@@ -81,19 +85,19 @@ export async function fetchAndStoreCorporation(corporationId: number): Promise<E
  */
 async function fetchFromESI(corporationId: number): Promise<any | null> {
   try {
-    const response = await fetchESI(`/corporations/${corporationId}`)
+    const response = await fetchESI(`/corporations/${corporationId}`);
 
     if (!response.ok) {
       if (response.status === 404) {
-        return null
+        return null;
       }
-      throw new Error(`ESI API error: ${response.statusText}`)
+      throw new Error(`ESI API error: ${response.statusText}`);
     }
 
-    return response.data
+    return response.data;
   } catch (error) {
-    console.error(`ESI fetch failed for corporation ${corporationId}:`, error)
-    return null
+    console.error(`ESI fetch failed for corporation ${corporationId}:`, error);
+    return null;
   }
 }
 
@@ -113,14 +117,17 @@ function extractESIFields(data: any): ESICorporation {
     shares: data.shares ?? 0,
     tax_rate: data.tax_rate ?? 0,
     ticker: data.ticker,
-    url: data.url ?? ''
-  }
+    url: data.url ?? '',
+  };
 }
 
 /**
  * Store corporation in database
  */
-async function storeCorporation(corporationId: number, corporation: ESICorporation): Promise<void> {
+async function storeCorporation(
+  corporationId: number,
+  corporation: ESICorporation
+): Promise<void> {
   await storeCorporationInDB(corporationId, {
     allianceId: corporation.alliance_id,
     ceoId: corporation.ceo_id,
@@ -133,22 +140,21 @@ async function storeCorporation(corporationId: number, corporation: ESICorporati
     shares: corporation.shares,
     taxRate: corporation.tax_rate,
     ticker: corporation.ticker,
-    url: corporation.url
-  })
-
-  // Update search index
-  await updateSearchEntity(corporationId, corporation.name, 'corporation')
+    url: corporation.url,
+  });
 }
 
 /**
  * Get cached corporation from database
  */
-export async function getCachedCorporation(corporationId: number): Promise<ESICorporation | null> {
+export async function getCachedCorporation(
+  corporationId: number
+): Promise<ESICorporation | null> {
   try {
-    const result = await getCorporation(corporationId)
+    const result = await getCorporation(corporationId);
 
     if (!result) {
-      return null
+      return null;
     }
 
     return {
@@ -163,9 +169,9 @@ export async function getCachedCorporation(corporationId: number): Promise<ESICo
       shares: result.shares,
       tax_rate: result.taxRate,
       ticker: result.ticker,
-      url: result.url
-    }
+      url: result.url,
+    };
   } catch (error) {
-    return null
+    return null;
   }
 }

@@ -5,6 +5,7 @@
 **EVE-KILL EDK** is a real-time EVE Online killmail tracking and analytics system built on modern infrastructure. The project ingests killmails from multiple sources (WebSocket streams, ESI API), stores them in PostgreSQL, and provides REST APIs and server-side rendered pages for data access.
 
 ### Core Purpose
+
 - Real-time killmail ingestion from EVE-KILL WebSocket feed
 - Historical killmail data storage and querying
 - Entity (character/corporation/alliance) tracking with background processing
@@ -17,12 +18,14 @@
 ## Technology Stack
 
 ### Runtime & Framework
+
 - **Runtime**: Bun (modern JavaScript runtime - use `bun` for all scripts and testing)
 - **Framework**: Nitro (Universal JavaScript Server for server-side application)
 - **Language**: TypeScript (strict mode enabled)
 - **Templating**: Handlebars (server-side rendering)
 
 ### Data Layer
+
 - **Primary Database**: PostgreSQL (with `postgres.js` driver)
   - Mixed-case column names (camelCase) - **MUST use double quotes in raw SQL**
   - Schema migrations tracked in `migrations` table
@@ -31,6 +34,7 @@
 - **Queue System**: BullMQ with Redis backend
 
 ### Infrastructure
+
 - Docker Compose setup (PostgreSQL + Redis)
 - SQL migration files in `db/` directory
 - Automatic schema migration on startup
@@ -147,24 +151,28 @@
 The project uses dynamic module loading for extensibility:
 
 **CLI Commands** (`cli.ts`):
+
 - Scans `commands/` directory recursively
 - Loads `.ts`/`.js` files as commands
 - Nested directories create namespaced commands (e.g., `sde:download`)
 - Commands export: `{ description, options?, action }`
 
 **Queue Processors** (`queue.ts`):
+
 - Auto-discovers queue processors in `queue/` directory
 - Each processor exports: `{ name, processor, createWorker }`
 - Workers can be started individually: `bun queue character`
 - Or all together: `bun queue`
 
 **Nitro Auto-Imports** (`nitro.config.ts`):
+
 - Auto-imports from `server/helpers/**`, `server/models/**`, `server/fetchers/**`
 - Available globally in all server code without explicit imports
 
 ### 2. **Database Patterns**
 
 **PostgreSQL with postgres.js**:
+
 - Uses `postgres.js` driver for high-performance PostgreSQL access
 - Mixed-case column names (camelCase) - **MUST use double quotes in raw SQL**
 - Migrations in `db/` directory (numbered SQL files)
@@ -172,52 +180,57 @@ The project uses dynamic module loading for extensibility:
 - No materialized views - direct complex queries against base tables
 
 **Database Helper** (`server/helpers/database.ts`):
+
 ```typescript
 // DatabaseHelper class provides convenient methods
-const sql = database.sql // Access raw postgres.js sql client
+const sql = database.sql; // Access raw postgres.js sql client
 
 // Common methods:
-await database.insert('tableName', data)
-await database.bulkInsert('tableName', [data])
-await database.bulkUpsert('tableName', [data], ['conflictColumn'])
-await database.queryOne('SELECT ...')
-await database.queryMany('SELECT ...')
+await database.insert('tableName', data);
+await database.bulkInsert('tableName', [data]);
+await database.bulkUpsert('tableName', [data], ['conflictColumn']);
+await database.queryOne('SELECT ...');
+await database.queryMany('SELECT ...');
 // Use sql`` for raw queries with proper escaping
 ```
 
 **Important: Column Name Quoting**:
+
 - When writing **Raw SQL**, wrap mixed-case columns in double quotes: `SELECT "killmailId" FROM ...`
 - When using `postgres.js` with objects, ensure keys match exactly (camelCase)
 - `DatabaseHelper` methods handle quoting automatically
 
 **Model Pattern**:
 Models export functions for data access, not classes:
+
 ```typescript
-export async function getKillmail(id: number): Promise<ESIKillmail | null>
-export async function storeKillmail(data: ESIKillmail): Promise<void>
+export async function getKillmail(id: number): Promise<ESIKillmail | null>;
+export async function storeKillmail(data: ESIKillmail): Promise<void>;
 ```
 
 ### 3. **Queue System Architecture**
 
 **Type-Safe Queue Operations** (`server/helpers/queue.ts`):
+
 ```typescript
 enum QueueType {
   CHARACTER = 'character',
   CORPORATION = 'corporation',
-  ALLIANCE = 'alliance'
+  ALLIANCE = 'alliance',
 }
 
 interface QueueJobData {
-  [QueueType.CHARACTER]: { id: number }
+  [QueueType.CHARACTER]: { id: number };
   // ...
 }
 
 // Type-safe enqueuing
-await enqueueJob(QueueType.CHARACTER, { id: 123 })
-await enqueueJobMany(QueueType.CHARACTER, [{ id: 1 }, { id: 2 }])
+await enqueueJob(QueueType.CHARACTER, { id: 123 });
+await enqueueJobMany(QueueType.CHARACTER, [{ id: 1 }, { id: 2 }]);
 ```
 
 **Queue Processors**:
+
 - Each queue processor is a separate file in `queue/`
 - Implements retry logic via BullMQ configuration
 - Processes entity updates in background
@@ -226,6 +239,7 @@ await enqueueJobMany(QueueType.CHARACTER, [{ id: 1 }, { id: 2 }])
 ### 4. **SDE (Static Data Export) Management**
 
 **SDE System**:
+
 - Downloads latest EVE Online static data from CCP
 - SDE tables defined in migration files (`db/20-25-create-sde-*.sql`)
 - Import logic in `server/helpers/sde/`
@@ -235,18 +249,20 @@ await enqueueJobMany(QueueType.CHARACTER, [{ id: 1 }, { id: 2 }])
 ### 5. **API Fetcher Pattern**
 
 **HTTP Fetcher** (`server/helpers/fetcher.ts`):
+
 ```typescript
 // Generic fetcher with retry logic
-const response = await fetcher<T>(url, options)
+const response = await fetcher<T>(url, options);
 
 // ESI-specific helper
-const killmail = await fetchESI<ESIKillmail>(`/killmails/${id}/${hash}/`)
+const killmail = await fetchESI<ESIKillmail>(`/killmails/${id}/${hash}/`);
 
 // EVE-KILL specific helper
-const data = await fetchEveKill<T>('/path')
+const data = await fetchEveKill<T>('/path');
 ```
 
 Features:
+
 - Automatic retry with exponential backoff
 - Timeout handling
 - Standard User-Agent headers
@@ -255,6 +271,7 @@ Features:
 ### 6. **WebSocket Integration**
 
 **EVE-KILL WebSocket** (`commands/ekws.ts`):
+
 - Connects to `wss://ws.eve-kill.com/killmails`
 - Subscribes to real-time killmail stream
 - Deduplication check before processing
@@ -266,6 +283,7 @@ Features:
 ### 7. **Nitro Server Configuration**
 
 **Key Features**:
+
 - WebSocket support (experimental)
 - Redis-backed caching for routes
 - Route-specific cache rules
@@ -274,6 +292,7 @@ Features:
 - Compression (gzip, brotli)
 
 **Route Rules**:
+
 ```typescript
 '/api/killmail/*/esi': { cache: { maxAge: 3600, base: "redis" } }
 '/api/**': { cors: true, cache: { maxAge: 60, base: "redis" } }
@@ -286,16 +305,19 @@ Features:
 ### Killmail Storage
 
 **Database Tables**:
+
 1. `killmails` - Core killmail with victim info
 2. `attackers` - One row per attacker (denormalized)
 3. `items` - One row per item (denormalized)
 
 **ESI Format View** (`killmails_esi`):
+
 - Reconstructs ESI API format from denormalized data
 - Uses subqueries to aggregate attackers and items as JSON arrays
 - Accessed via `getKillmail(id)` in models
 
 **Storage Flow**:
+
 ```
 WebSocket → fetchAndStoreKillmail() → storeKillmail() → PostgreSQL
                                     ↓
@@ -345,6 +367,7 @@ NODE_ENV=development
 ## Common Commands
 
 ### Development
+
 ```bash
 bun run dev           # Start Nitro dev server
 bun cli ekws          # Start WebSocket listener
@@ -353,6 +376,7 @@ bun queue character   # Start specific queue worker
 ```
 
 ### SDE Management
+
 ```bash
 bun cli sde:download          # Download latest SDE
 bun cli sde:inspect           # Inspect SDE tables
@@ -360,11 +384,13 @@ bun cli debug:inspect-sde     # Debug SDE data
 ```
 
 ### Database
+
 ```bash
 bun cli db:test               # Test database connection
 ```
 
 ### Testing
+
 ```bash
 bun test                      # Run tests
 bun run type-check            # TypeScript type checking
@@ -375,6 +401,7 @@ bun run type-check            # TypeScript type checking
 ## Code Style & Conventions
 
 ### TypeScript
+
 - **Strict mode** enabled
 - **No unused locals** (enforced)
 - Use `async/await` for all async operations
@@ -382,6 +409,7 @@ bun run type-check            # TypeScript type checking
 - Type everything explicitly when not obvious
 
 ### Naming Conventions
+
 - **Files**: kebab-case (`solar-systems.ts`)
 - **Functions**: camelCase (`getSolarSystem`)
 - **Types/Interfaces**: PascalCase (`ESIKillmail`)
@@ -389,24 +417,27 @@ bun run type-check            # TypeScript type checking
 - **Database fields**: camelCase in TypeScript (use double quotes in raw SQL)
 
 ### Database Queries
+
 - Use `postgres.js` tagged templates for safe queries
 - Always use double quotes for mixed-case column names in raw SQL
 - Use `DatabaseHelper` methods when possible
 - Batch inserts via `database.bulkInsert()` or `database.bulkUpsert()`
 
 ### Error Handling
+
 - Use structured logging via `logger` helper
 - Catch and log errors at appropriate boundaries
 - Queue processors should throw for retry logic
 - API routes should use `createError()` from H3
 
 ### Logging
+
 ```typescript
-logger.info('Message', { data: value })
-logger.warn('Warning', { context })
-logger.error('Error occurred', { error: err })
-logger.success('Operation completed')
-logger.debug('Debug info', { details })
+logger.info('Message', { data: value });
+logger.warn('Warning', { context });
+logger.error('Error occurred', { error: err });
+logger.success('Operation completed');
+logger.debug('Debug info', { details });
 ```
 
 ---
@@ -414,6 +445,7 @@ logger.debug('Debug info', { details })
 ## Performance Considerations
 
 ### PostgreSQL Optimization
+
 - Use proper indexes on frequently queried columns
 - Batch inserts for bulk operations
 - Use transactions for multiple related operations
@@ -421,18 +453,21 @@ logger.debug('Debug info', { details })
 - Use direct complex queries instead of materialized views
 
 ### Queue Processing
+
 - Batch enqueue operations with `enqueueJobMany()`
 - Configure concurrency per worker based on API limits
 - Use job deduplication via jobId
 - Set appropriate retry strategies
 
 ### Caching Strategy
+
 - Route-level caching via Nitro config
 - Redis-backed cache for expensive queries
 - ETag support for SDE downloads
 - Build number tracking to avoid re-imports
 
 ### Memory Management
+
 - Stream JSONL parsing for large SDE files
 - Batch database inserts (typically 1000 rows)
 - Clear arrays after batch operations
@@ -443,17 +478,20 @@ logger.debug('Debug info', { details })
 ## Testing & Debugging
 
 ### Testing
+
 - **Run all tests**: `bun test`
 - **Test setup**: `tests/setup.ts` automatically drops/creates test DB and runs migrations
 - **Test files**: Place in `tests/` directory
 - **Do not** manually migrate test DB - setup script handles it
 
 ### Debug Commands
+
 - `bun cli debug:check-data` - Verify data integrity
 - `bun cli debug:inspect-sde` - Inspect SDE structure
 - `bun cli test:killmail-reconstruct` - Test ESI format reconstruction
 
 ### Health Checks
+
 - `GET /health` - Server health endpoint
 - Check PostgreSQL: `await database.sql`SELECT 1``
 - Check Redis: BullMQ connection status
@@ -461,16 +499,19 @@ logger.debug('Debug info', { details })
 ### Common Issues
 
 **PostgreSQL Connection**:
+
 - Verify docker-compose services are running
 - Check credentials in environment variables
 - Test with `bun cli db:test`
 
 **Queue Processing**:
+
 - Check Redis connection
 - Verify queue worker is running
 - Check BullMQ job states in Redis
 
 **SDE Import**:
+
 - Ensure adequate disk space (~500MB per build)
 - Verify network access to developers.eveonline.com
 - Check extraction succeeded
@@ -480,35 +521,38 @@ logger.debug('Debug info', { details })
 ## API Design Patterns
 
 ### Route Structure
+
 - File-based routing in `server/routes/`
 - Dynamic parameters: `[id]/` directories
 - Method handlers: `*.get.ts`, `*.post.ts`, etc.
 - Use `defineEventHandler()` for all routes
 
 ### Response Format
+
 - Return raw data objects (Nitro handles serialization)
 - Use `createError()` for errors with proper status codes
 - Cache headers managed via route rules
 - CORS automatically handled for `/api/**`
 
 ### Request Handling
+
 ```typescript
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  const query = getQuery(event)
-  const body = await readBody(event)
+  const id = getRouterParam(event, 'id');
+  const query = getQuery(event);
+  const body = await readBody(event);
 
   // Validate input
   if (!id) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Missing parameter'
-    })
+      statusMessage: 'Missing parameter',
+    });
   }
 
   // Process and return
-  return await getData(id)
-})
+  return await getData(id);
+});
 ```
 
 ---
@@ -516,18 +560,21 @@ export default defineEventHandler(async (event) => {
 ## Database Schema Design Principles
 
 ### Denormalization Strategy
+
 - Store complete killmail data across 3 tables
 - One-to-many relationships become separate tables
 - Use views to reconstruct complex formats
 - Duplicate frequently-joined data
 
 ### Migrations
+
 - Migrations located in `db/` directory
 - `server/plugins/schema-migration.ts` automatically adds missing columns
 - Relies on checksums stored in `migrations` table
 - Test environment auto-migrates via `tests/setup.ts`
 
 ### Query Optimization
+
 - Index commonly filtered fields
 - Use proper PostgreSQL indexes
 - Construct dynamic queries with `postgres.js` template literals
@@ -538,6 +585,7 @@ export default defineEventHandler(async (event) => {
 ## Future Development Notes
 
 ### Planned Features
+
 - Enhanced entity tracking and statistics
 - Additional SDE tables (blueprints, etc.)
 - Killmail statistics and aggregations
@@ -545,6 +593,7 @@ export default defineEventHandler(async (event) => {
 - Advanced analytics and reporting
 
 ### Extension Points
+
 - Add new queue types in `queue/` directory
 - Add new CLI commands in `commands/` directory
 - Add new API routes in `server/routes/api/`
@@ -553,6 +602,7 @@ export default defineEventHandler(async (event) => {
 - Add new templates in `templates/` directory
 
 ### Maintenance Tasks
+
 - Regular SDE updates (monthly)
 - Redis cache cleanup
 - Database backup strategy
@@ -579,6 +629,7 @@ export default defineEventHandler(async (event) => {
 ## Contributing Guidelines
 
 When adding new features:
+
 1. **Follow existing patterns** - Look at similar code first
 2. **Use auto-discovery** - Add to appropriate directory for auto-loading
 3. **Type everything** - No `any` types unless absolutely necessary
@@ -608,38 +659,42 @@ When adding new features:
 ## Quick Reference
 
 ### Database Helper
+
 ```typescript
-await database.query<T>('SELECT ...', { params })
-await database.queryOne<T>('SELECT ...', { params })
-await database.queryValue<T>('SELECT ...', { params })
-await database.execute('INSERT ...', { params })
-await database.insert('table', data)
-await database.bulkInsert('table', [data])
-await database.count('table', 'where', { params })
-await database.ping()
+await database.query<T>('SELECT ...', { params });
+await database.queryOne<T>('SELECT ...', { params });
+await database.queryValue<T>('SELECT ...', { params });
+await database.execute('INSERT ...', { params });
+await database.insert('table', data);
+await database.bulkInsert('table', [data]);
+await database.count('table', 'where', { params });
+await database.ping();
 ```
 
 ### Queue Helper
+
 ```typescript
-await enqueueJob(QueueType.CHARACTER, { id: 123 })
-await enqueueJobMany(QueueType.CHARACTER, [{ id: 1 }])
-await getQueueStats(QueueType.CHARACTER)
+await enqueueJob(QueueType.CHARACTER, { id: 123 });
+await enqueueJobMany(QueueType.CHARACTER, [{ id: 1 }]);
+await getQueueStats(QueueType.CHARACTER);
 ```
 
 ### Logger
+
 ```typescript
-logger.info('msg', { data })
-logger.warn('msg', { data })
-logger.error('msg', { data })
-logger.success('msg', { data })
-logger.debug('msg', { data })
+logger.info('msg', { data });
+logger.warn('msg', { data });
+logger.error('msg', { data });
+logger.success('msg', { data });
+logger.debug('msg', { data });
 ```
 
 ### Fetcher
+
 ```typescript
-await fetcher<T>(url, options)
-await fetchESI<T>('/path')
-await fetchEveKill<T>('/path')
+await fetcher<T>(url, options);
+await fetchESI<T>('/path');
+await fetchEveKill<T>('/path');
 ```
 
 ---

@@ -1,20 +1,20 @@
-import { database } from '../../server/helpers/database'
+import { database } from '../../server/helpers/database';
 
-export const description = 'Create entity_killlist materialized view'
+export const description = 'Create entity_killlist materialized view';
 
 export async function action() {
   try {
-    console.log('🔧 Creating entity_killlist materialized view...')
-    
+    console.log('🔧 Creating entity_killlist materialized view...');
+
     // Drop existing objects
-    console.log('  Dropping existing objects...')
-    await database.execute('DROP TABLE IF EXISTS entity_killlist_mv')
-    await database.execute('DROP TABLE IF EXISTS entity_killlist')
-    await database.execute('DROP VIEW IF EXISTS entity_killlist')
-    console.log('  ✅ Dropped existing objects')
+    console.log('  Dropping existing objects...');
+    await database.execute('DROP TABLE IF EXISTS entity_killlist_mv');
+    await database.execute('DROP TABLE IF EXISTS entity_killlist');
+    await database.execute('DROP VIEW IF EXISTS entity_killlist');
+    console.log('  ✅ Dropped existing objects');
 
     // Create materialized view
-    console.log('  Creating materialized view...')
+    console.log('  Creating materialized view...');
     const viewSql = `
 CREATE MATERIALIZED VIEW IF NOT EXISTS entity_killlist
 ENGINE = ReplacingMergeTree(version)
@@ -158,15 +158,17 @@ LEFT JOIN (
   ) p ON i.itemTypeId = p.type_id
   GROUP BY i.killmailId
 ) items_agg ON k.killmailId = items_agg.killmailId
-    `
-    
-    await database.execute(viewSql)
-    console.log('  ✅ Created materialized view')
+    `;
 
-    console.log('✅ Entity killlist view created successfully!')
-    
+    await database.execute(viewSql);
+    console.log('  ✅ Created materialized view');
+
+    console.log('✅ Entity killlist view created successfully!');
   } catch (error) {
-    console.error('❌ Error:', error instanceof Error ? error.message : String(error))
-    throw error
+    console.error(
+      '❌ Error:',
+      error instanceof Error ? error.message : String(error)
+    );
+    throw error;
   }
 }

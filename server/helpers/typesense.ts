@@ -72,7 +72,14 @@ export async function ensureSearchCollection(): Promise<void> {
 export async function updateSearchEntity(
   id: number,
   name: string,
-  type: 'character' | 'corporation' | 'alliance' | 'item' | 'system' | 'constellation' | 'region'
+  type:
+    | 'character'
+    | 'corporation'
+    | 'alliance'
+    | 'item'
+    | 'system'
+    | 'constellation'
+    | 'region'
 ): Promise<void> {
   try {
     await ensureSearchCollection();
@@ -86,7 +93,10 @@ export async function updateSearchEntity(
     } catch (error: any) {
       // If document exists (409), update it
       if (error.httpStatus === 409) {
-        await typesense.collections('search').documents(documentId).update(document);
+        await typesense
+          .collections('search')
+          .documents(documentId)
+          .update(document);
       } else {
         throw error;
       }

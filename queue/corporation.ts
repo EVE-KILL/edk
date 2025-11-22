@@ -1,5 +1,5 @@
-import { Worker, Job } from 'bullmq'
-import { fetchAndStoreCorporation } from '../server/fetchers/corporation'
+import { Worker, Job } from 'bullmq';
+import { fetchAndStoreCorporation } from '../server/fetchers/corporation';
 
 /**
  * Corporation Queue Processor
@@ -8,24 +8,29 @@ import { fetchAndStoreCorporation } from '../server/fetchers/corporation'
  * Fetches corporation data from EVE-KILL/ESI and stores it
  */
 
-export const name = 'corporation'
+export const name = 'corporation';
 
 export async function processor(job: Job): Promise<void> {
-  const { id } = job.data as { id: number }
+  const { id } = job.data as { id: number };
 
-  console.log(`[corporation] Processing corporation ${id}...`)
+  console.log(`[corporation] Processing corporation ${id}...`);
 
   try {
-    const result = await fetchAndStoreCorporation(id)
+    const result = await fetchAndStoreCorporation(id);
 
     if (result) {
-      console.log(`✅ [corporation] Successfully processed corporation ${id}`)
+      console.log(`✅ [corporation] Successfully processed corporation ${id}`);
     } else {
-      console.warn(`⚠️  [corporation] Corporation ${id} not found or failed to fetch`)
+      console.warn(
+        `⚠️  [corporation] Corporation ${id} not found or failed to fetch`
+      );
     }
   } catch (error) {
-    console.error(`❌ [corporation] Error processing corporation ${id}:`, error)
-    throw error // Re-throw for BullMQ retry handling
+    console.error(
+      `❌ [corporation] Error processing corporation ${id}:`,
+      error
+    );
+    throw error; // Re-throw for BullMQ retry handling
   }
 }
 
@@ -33,13 +38,16 @@ export async function processor(job: Job): Promise<void> {
  * Create worker instance
  * Used by main queue.ts runner
  */
-export function createWorker(connection: any, options?: { concurrency?: number }) {
+export function createWorker(
+  connection: any,
+  options?: { concurrency?: number }
+) {
   return new Worker(name, processor, {
     connection,
     concurrency: options?.concurrency ?? 5,
     lockDuration: 30000,
     lockRenewTime: 15000,
     maxStalledCount: 2,
-    stalledInterval: 5000
-  })
+    stalledInterval: 5000,
+  });
 }

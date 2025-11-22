@@ -1,7 +1,7 @@
-import { database } from "../helpers/database";
-import { logger } from "../helpers/logger";
-import { createHash } from "crypto";
-import { getLatestPricesForTypes } from "./prices";
+import { database } from '../helpers/database';
+import { logger } from '../helpers/logger';
+import { createHash } from 'crypto';
+import { getLatestPricesForTypes } from './prices';
 
 /**
  * Killmails Model
@@ -156,7 +156,7 @@ async function resolveKillmailValueBreakdowns(
         shipValue: override.shipValue ?? 0,
         droppedValue: override.droppedValue ?? 0,
         destroyedValue: override.destroyedValue ?? 0,
-        totalValue: override.totalValue ?? 0
+        totalValue: override.totalValue ?? 0,
       };
     } else {
       pendingIndices.push(index);
@@ -185,7 +185,7 @@ async function resolveKillmailValueBreakdowns(
         shipValue: 0,
         droppedValue: 0,
         destroyedValue: 0,
-        totalValue: 0
+        totalValue: 0,
       };
     }
   }
@@ -266,7 +266,7 @@ export async function getKillmail(
  */
 function calculateKillmailHash(esiData: ESIKillmail): string {
   const json = JSON.stringify(esiData);
-  return createHash("md5").update(json).digest("hex");
+  return createHash('md5').update(json).digest('hex');
 }
 
 /**
@@ -295,15 +295,18 @@ export async function storeKillmail(
     const attackerCount = esiData.attackers.length;
     const solo = attackerCount === 1;
     const npc = esiData.attackers.every((a) => !a.character_id); // All attackers are NPC
-    const awox =
-      !!(victim.alliance_id &&
+    const awox = !!(
+      victim.alliance_id &&
       victim.alliance_id > 0 &&
-      esiData.attackers.some((a) => a.alliance_id === victim.alliance_id));
+      esiData.attackers.some((a) => a.alliance_id === victim.alliance_id)
+    );
 
     // Insert main killmail record
     const killmailRecord = {
       killmailId: esiData.killmail_id ?? 0,
-      killmailTime: esiData.killmail_time?.replace("Z", "").replace("T", " ") ?? new Date().toISOString().replace("Z", "").replace("T", " "),
+      killmailTime:
+        esiData.killmail_time?.replace('Z', '').replace('T', ' ') ??
+        new Date().toISOString().replace('Z', '').replace('T', ' '),
       solarSystemId: esiData.solar_system_id ?? 0,
 
       // Victim information
@@ -340,7 +343,7 @@ export async function storeKillmail(
     };
 
     // Insert killmail
-    await database.insert("killmails", killmailRecord);
+    await database.insert('killmails', killmailRecord);
     logger.info(
       `[Killmail] Stored killmail ${esiData.killmail_id} with hash ${killmailHash}`
     );
@@ -361,7 +364,7 @@ export async function storeKillmail(
     }));
 
     if (attackerRecords.length > 0) {
-      await database.bulkInsert("attackers", attackerRecords);
+      await database.bulkInsert('attackers', attackerRecords);
     }
 
     // Insert items
@@ -377,7 +380,7 @@ export async function storeKillmail(
         createdAt: new Date(nowUnix * 1000),
       }));
 
-      await database.bulkInsert("items", itemRecords);
+      await database.bulkInsert('items', itemRecords);
     }
   } catch (error) {
     logger.error(`[Killmail] Error storing killmail:`, { error });
@@ -421,14 +424,17 @@ export async function storeKillmailsBulk(
       const attackerCount = esi.attackers.length;
       const solo = attackerCount === 1;
       const npc = esi.attackers.every((a) => !a.character_id); // All attackers are NPC
-      const awox =
-        !!(victim.alliance_id &&
+      const awox = !!(
+        victim.alliance_id &&
         victim.alliance_id > 0 &&
-        esi.attackers.some((a) => a.alliance_id === victim.alliance_id));
+        esi.attackers.some((a) => a.alliance_id === victim.alliance_id)
+      );
 
       return {
         killmailId: esi.killmail_id ?? 0,
-        killmailTime: esi.killmail_time?.replace("Z", "").replace("T", " ") ?? new Date().toISOString().replace("Z", "").replace("T", " "),
+        killmailTime:
+          esi.killmail_time?.replace('Z', '').replace('T', ' ') ??
+          new Date().toISOString().replace('Z', '').replace('T', ' '),
         solarSystemId: esi.solar_system_id ?? 0,
         victimAllianceId: victim?.alliance_id ?? null,
         victimCharacterId: victim?.character_id ?? null,
@@ -453,7 +459,7 @@ export async function storeKillmailsBulk(
     });
 
     // Insert all killmails at once
-    await database.bulkInsert("killmails", killmailRecords);
+    await database.bulkInsert('killmails', killmailRecords);
     logger.info(
       `[Killmail] Stored ${killmailRecords.length} killmails in bulk`
     );
@@ -462,7 +468,9 @@ export async function storeKillmailsBulk(
     const allAttackerRecords = esiDataArray.flatMap(({ esi }) =>
       esi.attackers.map((attacker) => ({
         killmailId: esi.killmail_id ?? 0,
-        killmailTime: esi.killmail_time?.replace('Z', '').replace('T', ' ') ?? new Date().toISOString().replace('Z', '').replace('T', ' '),
+        killmailTime:
+          esi.killmail_time?.replace('Z', '').replace('T', ' ') ??
+          new Date().toISOString().replace('Z', '').replace('T', ' '),
         allianceId: attacker.alliance_id ?? null,
         corporationId: attacker.corporation_id ?? null,
         characterId: attacker.character_id ?? null,
@@ -477,7 +485,7 @@ export async function storeKillmailsBulk(
 
     // Insert all attackers at once
     if (allAttackerRecords.length > 0) {
-      await database.bulkInsert("attackers", allAttackerRecords);
+      await database.bulkInsert('attackers', allAttackerRecords);
       logger.info(
         `[Killmail] Stored ${allAttackerRecords.length} attackers in bulk`
       );
@@ -490,7 +498,9 @@ export async function storeKillmailsBulk(
 
       return victim.items.map((item) => ({
         killmailId: esi.killmail_id ?? 0,
-        killmailTime: esi.killmail_time?.replace('Z', '').replace('T', ' ') ?? new Date().toISOString().replace('Z', '').replace('T', ' '),
+        killmailTime:
+          esi.killmail_time?.replace('Z', '').replace('T', ' ') ??
+          new Date().toISOString().replace('Z', '').replace('T', ' '),
         flag: item.flag ?? 0,
         itemTypeId: item.item_type_id ?? 0,
         quantityDropped: item.quantity_dropped ?? 0,
@@ -502,7 +512,7 @@ export async function storeKillmailsBulk(
 
     // Insert all items at once
     if (allItemRecords.length > 0) {
-      await database.bulkInsert("items", allItemRecords);
+      await database.bulkInsert('items', allItemRecords);
       logger.info(`[Killmail] Stored ${allItemRecords.length} items in bulk`);
     }
   } catch (error) {
@@ -748,7 +758,7 @@ export async function getSiblingKillmails(
  * @returns True if killmail exists
  */
 export async function killmailExists(killmailId: number): Promise<boolean> {
-  const [result] = await database.sql<{count: number}[]>`
+  const [result] = await database.sql<{ count: number }[]>`
     SELECT count(*) as count FROM killmails WHERE "killmailId" = ${killmailId}
   `;
   return Number(result?.count || 0) > 0;

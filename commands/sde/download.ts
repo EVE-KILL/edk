@@ -1,6 +1,6 @@
-import { sdeFetcher } from "../../server/helpers/sde/fetcher";
-import chalk from "chalk";
-import { logger } from "../../server/helpers/logger";
+import { sdeFetcher } from '../../server/helpers/sde/fetcher';
+import chalk from 'chalk';
+import { logger } from '../../server/helpers/logger';
 import {
   mapStargatesConfig,
   mapStarsConfig,
@@ -23,7 +23,7 @@ import {
   skinsConfig,
   dogmaAttributesConfig,
   dogmaEffectsConfig,
-} from "../../server/helpers/sde/configs";
+} from '../../server/helpers/sde/configs';
 
 /**
  * SDE Download Command
@@ -35,12 +35,12 @@ import {
  *   bun run cli sde:download --force    (force re-import all tables, useful for testing)
  */
 export default {
-  description: "Download, extract, and import latest SDE (Static Data Export)",
+  description: 'Download, extract, and import latest SDE (Static Data Export)',
   options: [
     {
-      flags: "-f, --force",
+      flags: '-f, --force',
       description:
-        "Force re-import all tables (useful for SDE updates and testing deduplication)",
+        'Force re-import all tables (useful for SDE updates and testing deduplication)',
     },
   ],
 
@@ -48,24 +48,24 @@ export default {
     const forceReimport = options.force || false;
 
     if (forceReimport) {
-      logger.warn("FORCE REIMPORT MODE ENABLED");
+      logger.warn('FORCE REIMPORT MODE ENABLED');
       sdeFetcher.enableForceReimport();
     }
 
-    logger.info("Starting SDE sync and import...");
+    logger.info('Starting SDE sync and import...');
 
     try {
       // Sync (download if needed, extract)
       const metadata = await sdeFetcher.sync();
 
-      logger.success("SDE sync completed!");
-      logger.info("Metadata:", {
+      logger.success('SDE sync completed!');
+      logger.info('Metadata:', {
         buildNumber: metadata.buildNumber,
         variant: metadata.variant,
         downloadedAt: new Date(metadata.downloadedAt).toISOString(),
         extractedAt: metadata.extractedAt
           ? new Date(metadata.extractedAt).toISOString()
-          : "N/A",
+          : 'N/A',
         url: metadata.url,
       });
 
@@ -78,7 +78,7 @@ export default {
       // Group tables by type
       const typeGroups = new Map<string, string[]>();
       for (const table of tables) {
-        const prefix = table.split(/(?=[A-Z])/)[0] || "other";
+        const prefix = table.split(/(?=[A-Z])/)[0] || 'other';
         if (!typeGroups.has(prefix)) {
           typeGroups.set(prefix, []);
         }
@@ -86,11 +86,11 @@ export default {
       }
 
       for (const [prefix, tbls] of Array.from(typeGroups.entries()).sort()) {
-        logger.debug(`${prefix}: ${chalk.cyan(tbls.map((t) => t).join(", "))}`);
+        logger.debug(`${prefix}: ${chalk.cyan(tbls.map((t) => t).join(', '))}`);
       }
 
       // Import tables
-      logger.info("Importing tables...");
+      logger.info('Importing tables...');
 
       // First batch - already implemented with special handling
       await sdeFetcher.importMapSolarSystems(metadata.buildNumber);
@@ -141,9 +141,9 @@ export default {
         sdeFetcher.disableForceReimport();
       }
 
-      logger.success("All done!");
+      logger.success('All done!');
     } catch (error) {
-      logger.error("Error:", { error: String(error) });
+      logger.error('Error:', { error: String(error) });
       process.exit(1);
     }
   },

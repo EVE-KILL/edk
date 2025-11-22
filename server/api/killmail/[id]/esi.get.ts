@@ -7,32 +7,32 @@
  * @returns ESI formatted killmail data
  */
 export default defineEventHandler(async (event: any) => {
-  const id = getRouterParam(event, 'id')
+  const id = getRouterParam(event, 'id');
 
   if (!id) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Missing killmail ID'
-    })
+      statusMessage: 'Missing killmail ID',
+    });
   }
 
-  const killmailId = parseInt(id, 10)
+  const killmailId = parseInt(id, 10);
 
   if (isNaN(killmailId)) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid killmail ID - must be a number'
-    })
+      statusMessage: 'Invalid killmail ID - must be a number',
+    });
   }
 
-  const killmail = await getKillmail(killmailId)
+  const killmail = await getKillmail(killmailId);
 
   if (!killmail) {
     throw createError({
       statusCode: 404,
-      statusMessage: `Killmail with ID ${killmailId} not found`
-    })
+      statusMessage: `Killmail with ID ${killmailId} not found`,
+    });
   }
 
-  return killmail
-})
+  return killmail;
+});

@@ -1,0 +1,9 @@
+node_modules
+.nitro
+.output
+dist
+*.lock
+bun.lockb
+.data
+oldtemplates
+*.hbs

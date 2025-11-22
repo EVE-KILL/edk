@@ -28,11 +28,13 @@ Files are prefixed with numbers to control execution order:
 ## Files
 
 ### Infrastructure (01-09)
+
 - `01-create-database.sql` - Creates the `edk` database
 - `02-create-migrations-table.sql` - Migration tracking table
 - `03-create-config-table.sql` - Configuration key-value store
 
 ### Core Tables (10-19)
+
 - `10-create-killmail-tables.sql` - killmails, attackers, items
   - **Optimization #5**: killmailTime field added to attackers/items for aligned partitioning
 - `11-create-entity-tables.sql` - characters, corporations, alliances
@@ -40,6 +42,7 @@ Files are prefixed with numbers to control execution order:
 - `12-create-prices-table.sql` - Item price tracking
 
 ### SDE Tables (20-29)
+
 - `20-create-sde-map-tables.sql` - Solar systems, regions, constellations, stargates, stars, planets, moons, asteroid belts
 - `21-create-sde-type-tables.sql` - Types, groups, categories, market groups, meta groups
 - `22-create-sde-npc-tables.sql` - NPC corporations, stations, characters
@@ -48,6 +51,7 @@ Files are prefixed with numbers to control execution order:
 - `25-create-sde-cosmetic-tables.sql` - Skins, station operations
 
 ### Existing Views (40-49)
+
 - `40-create-killlist-views.sql` - killlist_frontpage, entity_killlist
   - **Optimization #6**: Added set(100) indexes on entity IDs
 - `41-create-topbox-views.sql` - top_box_frontpage
@@ -56,6 +60,7 @@ Files are prefixed with numbers to control execution order:
   - **Optimization #6**: Added set(100) indexes on entity IDs
 
 ### New Optimized Views (50-59)
+
 - `50-create-esi-materialized-view.sql` - **Optimization #2**: Pre-computed ESI format
   - Benefits: 10-50x faster killmail API lookups
   - Tradeoff: ~5-7 KB additional storage per killmail
@@ -70,6 +75,7 @@ Files are prefixed with numbers to control execution order:
   - Tradeoff: ~200 bytes per entity per day
 
 ### Projections & Indexes (60-69)
+
 - `60-create-value-projections.sql` - **Optimization #4**: Value-sorted projections
   - Benefits: 5-10x faster "most valuable kills" queries
   - Tradeoff: ~15% additional storage (~650 bytes per killmail)
@@ -84,8 +90,8 @@ The schema files implement 9 approved optimizations from `SCHEMA_OPTIMIZATION_AN
 4. ✅ **Value Projections** - Sorted projections for expensive kill queries
 5. ✅ **Fixed Partitioning** - Aligned partitions using killmailTime
 6. ✅ **Set Indexes** - Fast IN queries for entity filtering
-9. ✅ **Kill Reports** - Pre-computed daily reports with breakdowns
-11. ✅ **Activity Aggregations** - Daily activity pattern tracking
+7. ✅ **Kill Reports** - Pre-computed daily reports with breakdowns
+8. ✅ **Activity Aggregations** - Daily activity pattern tracking
 
 **Rejected optimizations** (#7, #8, #10, #12, #13) were not implemented per user decision.
 
