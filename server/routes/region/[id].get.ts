@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { database } from '../../helpers/database'
 import { getRegion, getRegionStats } from '../../models/regions'
 import { getFilteredKillsWithNames, countFilteredKills } from '../../models/killlist'
 import { getTopByKills } from '../../models/topBoxes'
@@ -29,14 +30,14 @@ export default defineEventHandler(async (event: H3Event) => {
   const perPage = 50
 
   // Fetch stats and killmails in parallel
-  // TODO: Filter top lists by region
+  const where = database.sql`k."solarSystemId" IN (SELECT "solarSystemId" FROM "solarSystems" WHERE "regionId" = ${id})`
   const [stats, killmailsData, totalKillmails, topCharacters, topCorporations, topAlliances] = await Promise.all([
     getRegionStats(id),
-    getFilteredKillsWithNames({ regionId: id }, page, perPage), // We need to ensure getFilteredKillsWithNames supports regionId
+    getFilteredKillsWithNames({ regionId: id }, page, perPage),
     countFilteredKills({ regionId: id }),
-    getTopByKills('week', 'character', 10),
-    getTopByKills('week', 'corporation', 10),
-    getTopByKills('week', 'alliance', 10)
+    getTopByKills('week', 'character', 10, where),
+    getTopByKills('week', 'corporation', 10, where),
+    getTopByKills('week', 'alliance', 10, where)
   ])
 
   const totalPages = Math.ceil(totalKillmails / perPage)

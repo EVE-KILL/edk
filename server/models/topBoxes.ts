@@ -23,7 +23,8 @@ export interface TopBoxWithName {
 export async function getTopByKills(
   periodType: 'hour' | 'day' | 'week' | 'month',
   entityType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
-  limit: number = 10
+  limit: number = 10,
+  whereClause?: any
 ): Promise<TopBoxWithName[]> {
   const end = new Date()
   const start = new Date()
@@ -67,6 +68,18 @@ export async function getTopByKills(
       return []
   }
 
+  const conditions = [
+    database.sql`k."killmailTime" >= ${start}`,
+    database.sql`k."killmailTime" <= ${end}`,
+    database.sql`${groupCol} > 0`
+  ]
+
+  if (whereClause) {
+    conditions.push(whereClause)
+  }
+
+  const where = database.sql`WHERE ${database.sql(conditions, ' AND ')}`
+
   return await database.sql<TopBoxWithName[]>`
     SELECT
        ${groupCol} as id,
@@ -78,9 +91,7 @@ export async function getTopByKills(
        0 as points
      FROM killmails k
      ${joinClause}
-     WHERE k."killmailTime" >= ${start}
-       AND k."killmailTime" <= ${end}
-       AND ${groupCol} > 0
+     ${where}
      GROUP BY ${groupCol}, ${nameCol}
      ORDER BY "iskDestroyed" DESC, kills DESC
      LIMIT ${limit}

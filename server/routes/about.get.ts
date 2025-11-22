@@ -21,6 +21,7 @@ export default defineEventHandler(async (event) => {
     const avgAttackers = await getAverageAttackersPerKill()
     const activity24h = await getActivityStats(24)
     const activity7d = await getActivityStats(168)
+    const activity30d = await getActivityStats(24 * 30)
     const topCharacters = await getTopCharactersByKills(5)
     const topCorporations = await getTopCorporationsByKills(5)
     const topAlliances = await getTopAlliancesByKills(5)
@@ -42,7 +43,7 @@ export default defineEventHandler(async (event) => {
       activePilotsLast7Days: activity7d.pilots,
       killsLast24Hours: activity24h.kills,
       killsLast7Days: activity7d.kills,
-      killsLast30Days: 0, // TODO: Add 30 day tracking
+      killsLast30Days: activity30d.kills,
       topKiller: topCharacters[0] || null,
       topCorporation: topCorporations[0] || null,
       topAlliance: topAlliances[0] || null,

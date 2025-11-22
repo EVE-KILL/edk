@@ -2,6 +2,7 @@
  * Alliance entity page - dashboard
  */
 import type { H3Event } from 'h3'
+import { database } from '../../../helpers/database'
 import { timeAgo } from '../../../helpers/time'
 import { render, normalizeKillRow } from '../../../helpers/templates'
 import { getAlliance } from '../../../models/alliances'
@@ -31,16 +32,15 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   // Fetch all entity data in parallel
+  const where = database.sql`"victimAllianceId" = ${allianceId} OR "topAttackerAllianceId" = ${allianceId}`
   const [stats, topSystems, topRegions, topCorps, topAlliances, mostValuable] = await Promise.all([
     getEntityStats(allianceId, 'alliance', 'all'),
-    getTopByKills('week', 'system', 10),
-    getTopByKills('week', 'region', 10),
-    getTopByKills('week', 'corporation', 10),
-    getTopByKills('week', 'alliance', 10),
+    getTopByKills('week', 'system', 10, where),
+    getTopByKills('week', 'region', 10, where),
+    getTopByKills('week', 'corporation', 10, where),
+    getTopByKills('week', 'alliance', 10, where),
     getMostValuableKillsByAlliance(allianceId, 'all', 6)
   ])
-
-  // TODO: Implement top systems/regions/corporations/alliances stats
 
   // Get pagination parameters
   const query = getQuery(event)

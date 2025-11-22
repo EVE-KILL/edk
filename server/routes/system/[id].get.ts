@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { database } from '../../helpers/database'
 import { getSolarSystem, getSystemStats } from '../../models/solarSystems'
 import { getRegion } from '../../models/regions'
 import { getFilteredKillsWithNames, countFilteredKills } from '../../models/killlist'
@@ -33,13 +34,14 @@ export default defineEventHandler(async (event: H3Event) => {
   const perPage = 50
 
   // Fetch stats and killmails in parallel
+  const where = database.sql`k."solarSystemId" = ${id}`
   const [stats, killmailsData, totalKillmails, topCharacters, topCorporations, topAlliances] = await Promise.all([
     getSystemStats(id),
     getFilteredKillsWithNames({ solarSystemId: id }, page, perPage),
     countFilteredKills({ solarSystemId: id }),
-    getTopByKills('week', 'character', 10), // TODO: these are global top 10, not system specific. System specific top 10 needs implementation.
-    getTopByKills('week', 'corporation', 10),
-    getTopByKills('week', 'alliance', 10)
+    getTopByKills('week', 'character', 10, where),
+    getTopByKills('week', 'corporation', 10, where),
+    getTopByKills('week', 'alliance', 10, where)
   ])
 
   const totalPages = Math.ceil(totalKillmails / perPage)
