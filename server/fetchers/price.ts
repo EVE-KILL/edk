@@ -65,7 +65,7 @@ export async function fetchPrices(typeId: number): Promise<PriceAPIResponse[]> {
  */
 export async function fetchHistoricalPrices(
   typeId: number,
-  targetDate: Date | string
+  _targetDate: Date | string
 ): Promise<PriceAPIResponse[]> {
   return await fetchPrices(typeId);
 }

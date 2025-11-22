@@ -47,7 +47,7 @@ export class SDEFetcher {
    */
   enableForceReimport(): void {
     this.forceReimport = true;
-    logger.info('⚠️  Force reimport mode enabled - will re-import all tables');
+    console.log('⚠️  Force reimport mode enabled - will re-import all tables');
   }
 
   /**
@@ -55,7 +55,7 @@ export class SDEFetcher {
    */
   disableForceReimport(): void {
     this.forceReimport = false;
-    logger.info('✅ Force reimport mode disabled');
+    console.log('✅ Force reimport mode disabled');
   }
   /**
    * Ensure directories exist
@@ -77,7 +77,7 @@ export class SDEFetcher {
       const data = await readFile(METADATA_FILE, 'utf-8');
       return JSON.parse(data);
     } catch (error) {
-      logger.error('Failed to load metadata:', { error: String(error) });
+      console.error('Failed to load metadata:', error);
       return null;
     }
   }
@@ -93,7 +93,7 @@ export class SDEFetcher {
    * Fetch latest build number and download URL
    */
   async getLatestBuild(): Promise<{ buildNumber: number; url: string }> {
-    logger.info('📡 Fetching latest SDE build number...');
+    console.log('📡 Fetching latest SDE build number...');
 
     try {
       const response = await fetch(SDE_LATEST_BUILD_URL);
@@ -112,14 +112,14 @@ export class SDEFetcher {
           const variant = 'jsonl'; // We're using JSON Lines format
           const url = `${SDE_BASE_URL}/eve-online-static-data-${buildNumber}-${variant}.zip`;
 
-          logger.info(`✅ Latest build: ${buildNumber}`);
+          console.log(`✅ Latest build: ${buildNumber}`);
           return { buildNumber, url };
         }
       }
 
       throw new Error('Could not find build number in latest.jsonl response');
     } catch (error) {
-      logger.error('❌ Error fetching latest build:', { error: String(error) });
+      console.error('❌ Error fetching latest build:', error);
       throw error;
     }
   }
@@ -134,7 +134,7 @@ export class SDEFetcher {
     const filename = `eve-online-static-data-${buildNumber}-jsonl.zip`;
     const filepath = join(SDE_DOWNLOADS_DIR, filename);
 
-    logger.info(`📥 Downloading SDE (${buildNumber})...`);
+    console.log(`📥 Downloading SDE (${buildNumber})...`);
 
     try {
       const response = await fetch(url);
@@ -150,14 +150,14 @@ export class SDEFetcher {
 
       if (contentLength) {
         const sizeMB = (parseInt(contentLength) / 1024 / 1024).toFixed(2);
-        logger.info(`   Size: ${sizeMB} MB`);
+        console.log(`   Size: ${sizeMB} MB`);
       }
 
       // Write to file
       const buffer = await response.arrayBuffer();
       await writeFile(filepath, new Uint8Array(buffer));
 
-      logger.info(`✅ Downloaded: ${filename}`);
+      console.log(`✅ Downloaded: ${filename}`);
 
       return {
         file: filepath,
@@ -165,7 +165,7 @@ export class SDEFetcher {
         lastModified: lastModified || undefined,
       };
     } catch (error) {
-      logger.error('❌ Error downloading SDE:', { error: String(error) });
+      console.error('❌ Error downloading SDE:', error);
       throw error;
     }
   }
@@ -174,7 +174,7 @@ export class SDEFetcher {
    * Extract zip file
    */
   private async extractZip(filepath: string, outputDir: string): Promise<void> {
-    logger.info('📦 Extracting SDE zip...');
+    console.log('📦 Extracting SDE zip...');
 
     try {
       const filename = basename(filepath);
@@ -187,9 +187,9 @@ export class SDEFetcher {
       // Extract
       await execAsync(`unzip -q "${filepath}" -d "${outputDir}"`);
 
-      logger.info(`✅ Extracted: ${filename}`);
+      console.log(`✅ Extracted: ${filename}`);
     } catch (error) {
-      logger.error('❌ Error extracting SDE:', { error: String(error) });
+      console.error('❌ Error extracting SDE:', error);
       throw error;
     }
   }
@@ -208,7 +208,7 @@ export class SDEFetcher {
 
       return files.filter((f) => f.endsWith('.jsonl')).sort();
     } catch (error) {
-      logger.error('Error listing tables:', { error: String(error) });
+      console.error('Error listing tables:', error);
       return [];
     }
   }
@@ -242,7 +242,7 @@ export class SDEFetcher {
 
     // Check if we need to download
     if (metadata && metadata.buildNumber === buildNumber) {
-      logger.info(`✅ Already have build ${buildNumber}`);
+      console.log(`✅ Already have build ${buildNumber}`);
       return metadata;
     }
 
@@ -282,7 +282,7 @@ export class SDEFetcher {
    * Clean up old downloads (keep latest 2)
    */
   async cleanup(): Promise<void> {
-    logger.info('🧹 Cleaning up old SDE downloads...');
+    console.log('🧹 Cleaning up old SDE downloads...');
 
     try {
       const { readdirSync } = await import('fs');
@@ -295,10 +295,10 @@ export class SDEFetcher {
       for (let i = 2; i < files.length; i++) {
         const filepath = join(SDE_DOWNLOADS_DIR, files[i]);
         await rm(filepath);
-        logger.info(`   Deleted: ${files[i]}`);
+        console.log(`   Deleted: ${files[i]}`);
       }
     } catch (error) {
-      logger.error('Error during cleanup:', { error: String(error) });
+      console.error('Error during cleanup:', error);
     }
   }
 
@@ -320,7 +320,9 @@ export class SDEFetcher {
       // If query fails, assume not imported
       return false;
     }
-  } /**
+  }
+
+  /**
    * Mark a table as imported for the current build
    */
   private async markTableAsImported(
@@ -346,9 +348,7 @@ export class SDEFetcher {
         ['configKey']
       );
     } catch (error) {
-      logger.error(`⚠️  Failed to mark ${tableName} as imported:`, {
-        error: String(error),
-      });
+      console.error(`⚠️  Failed to mark ${tableName} as imported:`, error);
       // Don't throw - import succeeded even if we can't mark it
     }
   }
@@ -359,7 +359,7 @@ export class SDEFetcher {
    */
   async optimizeViews(): Promise<void> {
     try {
-      logger.info('🔧 Optimizing tables...');
+      console.log('🔧 Optimizing tables...');
 
       // List of all SDE tables to optimize
       const tables = [
@@ -393,12 +393,14 @@ export class SDEFetcher {
         // Use VACUUM ANALYZE for Postgres
         await database.sql.unsafe(`VACUUM ANALYZE "${table.toLowerCase()}"`);
       }
-      logger.info(`   ✓ Optimized ${tables.length} SDE tables`);
+      console.log(`   ✓ Optimized ${tables.length} SDE tables`);
     } catch (error) {
-      logger.warn('⚠️  Failed to optimize tables:', { error: String(error) });
+      console.warn('⚠️  Failed to optimize tables:', error);
       // Don't throw - optimization is not critical
     }
-  } /**
+  }
+
+  /**
    * Import mapSolarSystems table into ClickHouse
    */
   async importMapSolarSystems(buildNumber?: number): Promise<void> {
@@ -406,7 +408,7 @@ export class SDEFetcher {
     if (!buildNumber) {
       const metadata = await this.getMetadata();
       if (!metadata) {
-        logger.error('❌ No build number available for mapSolarSystems');
+        console.error('❌ No build number available for mapSolarSystems');
         return;
       }
       buildNumber = metadata.buildNumber;
@@ -419,18 +421,18 @@ export class SDEFetcher {
         buildNumber
       );
       if (alreadyImported) {
-        logger.info(
+        console.log(
           `⏭️  Skipping mapSolarSystems (already imported for build ${buildNumber})`
         );
         return;
       }
     }
 
-    logger.info('📥 Importing mapSolarSystems...');
+    console.log('📥 Importing mapSolarSystems...');
 
     const filepath = this.getTablePath('mapSolarSystems');
     if (!existsSync(filepath)) {
-      logger.error(`❌ mapSolarSystems.jsonl not found at ${filepath}`);
+      console.error(`❌ mapSolarSystems.jsonl not found at ${filepath}`);
       return;
     }
 
@@ -480,7 +482,7 @@ export class SDEFetcher {
         // Batch insert
         if (records.length >= BATCH_SIZE) {
           await database.bulkUpsert('solarsystems', records, 'solarSystemId');
-          logger.info(`   Inserted ${imported} rows...`);
+          console.log(`   Inserted ${imported} rows...`);
           records.length = 0;
         }
       }
@@ -493,11 +495,9 @@ export class SDEFetcher {
       // Mark as imported
       await this.markTableAsImported('mapSolarSystems', buildNumber, imported);
 
-      logger.info(`✅ Imported ${imported} solar systems`);
+      console.log(`✅ Imported ${imported} solar systems`);
     } catch (error) {
-      logger.error('❌ Error importing mapSolarSystems:', {
-        error: String(error),
-      });
+      console.error('❌ Error importing mapSolarSystems:', error);
       throw error;
     }
   }
@@ -510,7 +510,7 @@ export class SDEFetcher {
     if (!buildNumber) {
       const metadata = await this.getMetadata();
       if (!metadata) {
-        logger.error('❌ No build number available for mapRegions');
+        console.error('❌ No build number available for mapRegions');
         return;
       }
       buildNumber = metadata.buildNumber;
@@ -523,18 +523,18 @@ export class SDEFetcher {
         buildNumber
       );
       if (alreadyImported) {
-        logger.info(
+        console.log(
           `⏭️  Skipping mapRegions (already imported for build ${buildNumber})`
         );
         return;
       }
     }
 
-    logger.info('📥 Importing mapRegions...');
+    console.log('📥 Importing mapRegions...');
 
     const filepath = this.getTablePath('mapRegions');
     if (!existsSync(filepath)) {
-      logger.error(`❌ mapRegions.jsonl not found at ${filepath}`);
+      console.error(`❌ mapRegions.jsonl not found at ${filepath}`);
       return;
     }
 
@@ -565,7 +565,7 @@ export class SDEFetcher {
         // Batch insert
         if (records.length >= BATCH_SIZE) {
           await database.bulkUpsert('regions', records, 'regionId');
-          logger.info(`   Inserted ${imported} rows...`);
+          console.log(`   Inserted ${imported} rows...`);
           records.length = 0;
         }
       }
@@ -578,9 +578,9 @@ export class SDEFetcher {
       // Mark as imported
       await this.markTableAsImported('mapRegions', buildNumber, imported);
 
-      logger.info(`✅ Imported ${imported} regions`);
+      console.log(`✅ Imported ${imported} regions`);
     } catch (error) {
-      logger.error('❌ Error importing mapRegions:', { error: String(error) });
+      console.error('❌ Error importing mapRegions:', error);
       throw error;
     }
   }
@@ -593,7 +593,7 @@ export class SDEFetcher {
     if (!buildNumber) {
       const metadata = await this.getMetadata();
       if (!metadata) {
-        logger.error('❌ No build number available for mapConstellations');
+        console.error('❌ No build number available for mapConstellations');
         return;
       }
       buildNumber = metadata.buildNumber;
@@ -601,17 +601,17 @@ export class SDEFetcher {
 
     // Check if already imported
     if (await this.isTableAlreadyImported('mapConstellations', buildNumber)) {
-      logger.info(
+      console.log(
         '⏭️  mapConstellations already imported for this build, skipping'
       );
       return;
     }
 
-    logger.info('📥 Importing mapConstellations...');
+    console.log('📥 Importing mapConstellations...');
 
     const filepath = this.getTablePath('mapConstellations');
     if (!existsSync(filepath)) {
-      logger.error(`❌ mapConstellations.jsonl not found at ${filepath}`);
+      console.error(`❌ mapConstellations.jsonl not found at ${filepath}`);
       return;
     }
 
@@ -645,7 +645,7 @@ export class SDEFetcher {
             records,
             'constellationId'
           );
-          logger.info(`   Inserted ${imported} rows...`);
+          console.log(`   Inserted ${imported} rows...`);
           records.length = 0;
         }
       }
@@ -662,11 +662,9 @@ export class SDEFetcher {
         imported
       );
 
-      logger.info(`✅ Imported ${imported} constellations`);
+      console.log(`✅ Imported ${imported} constellations`);
     } catch (error) {
-      logger.error('❌ Error importing mapConstellations:', {
-        error: String(error),
-      });
+      console.error('❌ Error importing mapConstellations:', error);
       throw error;
     }
   }
@@ -684,7 +682,6 @@ export class SDEFetcher {
       transform?: (value: any) => any;
     }>,
     buildNumber?: number,
-    forceReimport?: boolean,
     sourceTableName?: string,
     primaryKey?: string
   ): Promise<number> {
@@ -692,7 +689,7 @@ export class SDEFetcher {
     if (!buildNumber) {
       const metadata = await this.getMetadata();
       if (!metadata) {
-        logger.error(`❌ No build number available for ${tableName}`);
+        console.error(`❌ No build number available for ${tableName}`);
         return 0;
       }
       buildNumber = metadata.buildNumber;
@@ -705,19 +702,19 @@ export class SDEFetcher {
         buildNumber
       );
       if (alreadyImported) {
-        logger.info(
+        console.log(
           `⏭️  Skipping ${tableName} (already imported for build ${buildNumber})`
         );
         return 0;
       }
     }
 
-    logger.info(`📥 Importing ${tableName}...`);
+    console.log(`📥 Importing ${tableName}...`);
 
     const sourceName = sourceTableName ?? tableName;
     const filepath = this.getTablePath(sourceName);
     if (!existsSync(filepath)) {
-      logger.error(`❌ ${sourceName}.jsonl not found at ${filepath}`);
+      console.error(`❌ ${sourceName}.jsonl not found at ${filepath}`);
       return 0;
     }
 
@@ -757,7 +754,7 @@ export class SDEFetcher {
           } else {
             await database.bulkInsert(tableName.toLowerCase(), records);
           }
-          logger.info(`   Inserted ${imported} rows...`);
+          console.log(`   Inserted ${imported} rows...`);
           records.length = 0;
         }
       }
@@ -777,12 +774,10 @@ export class SDEFetcher {
       // Mark as imported
       await this.markTableAsImported(tableName, buildNumber, imported);
 
-      logger.info(`✅ Imported ${imported} ${tableName}`);
+      console.log(`✅ Imported ${imported} ${tableName}`);
       return imported;
     } catch (error) {
-      logger.error(`❌ Error importing ${tableName}:`, {
-        error: String(error),
-      });
+      console.error(`❌ Error importing ${tableName}:`, error);
       throw error;
     }
   }
@@ -795,7 +790,6 @@ export class SDEFetcher {
       config.name,
       config.mappings,
       buildNumber,
-      undefined,
       config.sourceName,
       config.primaryKey
     );

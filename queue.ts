@@ -126,7 +126,7 @@ async function startQueues(
         : module.createWorker(REDIS_CONFIG);
 
       // Add event listeners
-      worker.on('completed', (job, result) => {
+      worker.on('completed', (job, _result) => {
         console.log(`✅ [${queueName}] Job ${job.id} completed`);
 
         // Track job count if limit is set
@@ -157,7 +157,7 @@ async function startQueues(
       worker.on('failed', (job, error) => {
         console.error(
           `❌ [${queueName}] Job ${job?.id} failed:`,
-          error?.message
+          error.message
         );
 
         // Still count failed jobs towards the limit
@@ -229,10 +229,6 @@ async function shutdown(workers: Worker[]) {
  * Main entry point
  */
 async function main() {
-  if (process.env.NODE_ENV === 'test') {
-    console.log('🚫 Queue workers are disabled in test environment');
-    return;
-  }
   // Parse CLI arguments
   const args = process.argv.slice(2);
   const queueNames: string[] = [];

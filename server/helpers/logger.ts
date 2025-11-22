@@ -41,7 +41,7 @@ function getLevelColor(level: LogLevel): string {
 }
 
 function formatData(data: Record<string, any>): string {
-  const replacer = (key: any, value: any) => {
+  const replacer = (_key: any, value: any) => {
     if (typeof value === 'bigint') {
       return value.toString();
     }
@@ -62,7 +62,7 @@ function log(context: LogContext): void {
     output += formatData(data);
   }
 
-  process.stdout.write(output + '\n');
+  console.log(output);
 }
 
 export const logger = {

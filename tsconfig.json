@@ -23,7 +23,7 @@
     "noFallthroughCasesInSwitch": true,
     "useUnknownInCatchVariables": true,
     "noUnusedLocals": true,
-    // "noUnusedParameters": true,
+    "noUnusedParameters": true,
 
     // Libs & paths
     "lib": ["ESNext", "DOM"],
