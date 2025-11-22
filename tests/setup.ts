@@ -1,8 +1,6 @@
-import { beforeAll, afterAll } from 'bun:test';
 import postgres from 'postgres';
 import { unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
-import { database } from '../server/helpers/database';
 
 // Configuration
 const TEST_DB = process.env.TEST_DB_NAME || 'edk_test';
@@ -13,15 +11,19 @@ const DB_PORT = parseInt(process.env.DB_PORT || '5432');
 const DEFAULT_DB = process.env.DB_NAME || 'edk';
 
 // Use the provided admin connection string or construct one
+// We need a connection to a database that exists (like 'postgres' or the default app db) to create the test db
 const ADMIN_DATABASE = process.env.ADMIN_DB_NAME || DEFAULT_DB;
 const adminUrl =
   process.env.ADMIN_DATABASE_URL ||
   `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${ADMIN_DATABASE}`;
 
+import { beforeAll } from 'bun:test';
+
 beforeAll(async () => {
   console.log('🛠️  Initializing Test Environment...');
 
   // 1. Set Environment Variables for the Application
+  // These must be set before importing app modules
   process.env.TEST_DB_NAME = TEST_DB;
   process.env.DATABASE_URL = `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${TEST_DB}`;
   process.env.REDIS_HOST = process.env.REDIS_HOST || 'localhost';
@@ -29,6 +31,7 @@ beforeAll(async () => {
   process.env.NODE_ENV = 'test';
 
   // 2. Cleanup Previous State
+  // Remove checksum file to force migration to ensure schema is up to date
   const DATA_DIR = join(process.cwd(), '.data');
   const CHECKSUM_FILE = join(DATA_DIR, 'schema-checksums.json');
   if (existsSync(CHECKSUM_FILE)) {
@@ -38,6 +41,7 @@ beforeAll(async () => {
   // 3. Recreate Database
   const sql = postgres(adminUrl);
   try {
+    // Force disconnect others
     await sql`
           SELECT pg_terminate_backend(pid)
           FROM pg_stat_activity
@@ -49,13 +53,24 @@ beforeAll(async () => {
     await sql.unsafe(`CREATE DATABASE "${TEST_DB}"`);
   } catch (e) {
     console.error('Failed to recreate test database:', e);
+    console.error(
+      'Database:',
+      DB_HOST,
+      'Port:',
+      DB_PORT,
+      'Name:',
+      ADMIN_DATABASE
+    );
     process.exit(1);
   } finally {
     await sql.end();
   }
 
-  // 4. Set the Database URL for the app
-  await database.setUrl(process.env.DATABASE_URL!);
+  // 4. Force DatabaseHelper to use the new URL
+  // This is crucial because DatabaseHelper might have been initialized
+  // with the default URL before this script runs.
+  const { database } = await import('../server/helpers/database');
+  await database.setUrl(process.env.DATABASE_URL);
 
   // 5. Run Migrations
   try {
@@ -68,32 +83,5 @@ beforeAll(async () => {
     process.exit(1);
   }
 
-<<<<<<< HEAD
-  // 6. Setup global mocks for Nitro auto-imports
-  // @ts-ignore
-  global.defineEventHandler = (handler: any) => handler;
-  // @ts-ignore
-  global.getKillmail = async (killmailId: number) => {
-    if (killmailId === 1) {
-      return null;
-    }
-    const killmailModel = await import('../server/models/killmails');
-    return killmailModel.getKillmail(killmailId);
-  };
-  // @ts-ignore
-  global.getRouterParam = (event: any, param: string) =>
-    event.context.params[param];
-  // @ts-ignore
-  global.createError = (options: any) => {
-    const error = new Error(options.statusMessage);
-    // @ts-ignore
-    error.statusCode = options.statusCode;
-    return error;
-  };
-
   console.log('✅ Test Environment Ready.\n');
-});
-
-afterAll(async () => {
-  await database.close();
 });

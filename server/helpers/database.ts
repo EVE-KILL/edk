@@ -260,6 +260,20 @@ export class DatabaseHelper {
   }
 
   /**
+   * Set the database URL and reconnect.
+   * Useful for test environments.
+   */
+  async setUrl(url: string): Promise<void> {
+    await this.close(); // Close existing connection if any
+    this._sql = postgres(url, {
+      max: 10,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      transform: {},
+    });
+  }
+
+  /**
    * Close the connection
    */
   async close(): Promise<void> {

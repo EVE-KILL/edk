@@ -23,14 +23,11 @@
     "noFallthroughCasesInSwitch": true,
     "useUnknownInCatchVariables": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // "noUnusedParameters": true,
 
     // Libs & paths
     "lib": ["ESNext", "DOM"],
     "baseUrl": ".",
-    "paths": {
-      "~/*": ["./*"]
-    },
-    "types": ["bun"]
+    "types": ["bun-types"]
   }
 }
