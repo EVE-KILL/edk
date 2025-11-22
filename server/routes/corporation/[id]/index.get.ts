@@ -1,6 +1,5 @@
-/**
- * Corporation entity page - dashboard
- */
+import { z } from 'zod';
+import { validate } from '~/server/utils/validation';
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
@@ -14,14 +13,17 @@ import { getMostValuableKillsByCorporation } from '../../../models/mostValuableK
 import { getTopByKills } from '../../../models/topBoxes';
 
 export default defineEventHandler(async (event: H3Event) => {
-  const corporationId = Number.parseInt(getRouterParam(event, 'id') || '0');
+  const { params, query } = await validate(event, {
+    params: z.object({
+      id: z.coerce.number().int().positive(),
+    }),
+    query: z.object({
+      page: z.coerce.number().int().positive().optional().default(1),
+    }),
+  });
 
-  if (!corporationId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid corporation ID',
-    });
-  }
+  const { id: corporationId } = params;
+  const { page } = query;
 
   // Fetch corporation basic info using model
   const corporationData = await getCorporationWithAlliance(corporationId);
@@ -45,8 +47,6 @@ export default defineEventHandler(async (event: H3Event) => {
     ]);
 
   // Get pagination parameters
-  const query = getQuery(event);
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1);
   const perPage = 30;
 
   // Fetch paginated killmails using model function

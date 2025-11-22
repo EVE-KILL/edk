@@ -40,8 +40,10 @@
     "handlebars": "^4.7.8",
     "ioredis": "^5.8.2",
     "postgres": "^3.4.7",
+    "sanitize-html": "^2.17.0",
     "typescript": "^5.9.3",
     "typesense": "^2.1.0",
-    "unbzip2-stream": "^1.4.3"
+    "unbzip2-stream": "^1.4.3",
+    "zod": "^4.1.12"
   }
 }

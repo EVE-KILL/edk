@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { validate } from '~/server/utils/validation';
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
@@ -9,14 +11,17 @@ import {
 } from '../../../models/killlist';
 
 export default defineEventHandler(async (event: H3Event) => {
-  const allianceId = Number.parseInt(getRouterParam(event, 'id') || '0');
+  const { params, query } = await validate(event, {
+    params: z.object({
+      id: z.coerce.number().int().positive(),
+    }),
+    query: z.object({
+      page: z.coerce.number().int().positive().optional().default(1),
+    }),
+  });
 
-  if (!allianceId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid alliance ID',
-    });
-  }
+  const { id: allianceId } = params;
+  const { page } = query;
 
   // Fetch alliance basic info using model
   const allianceData = await getAlliance(allianceId);
@@ -32,8 +37,6 @@ export default defineEventHandler(async (event: H3Event) => {
   const stats = await getEntityStats(allianceId, 'alliance');
 
   // Get pagination parameters
-  const query = getQuery(event);
-  const page = Math.max(1, Number.parseInt(query.page as string) || 1);
   const perPage = 30;
 
   // Fetch killmails where alliance was attacker (kills) using model
