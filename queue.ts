@@ -205,6 +205,10 @@ async function shutdown(workers: Worker[]) {
  * Main entry point
  */
 async function main() {
+  if (process.env.NODE_ENV === 'test') {
+    console.log('🚫 Queue workers are disabled in test environment');
+    return;
+  }
   // Parse CLI arguments
   const args = process.argv.slice(2)
   const queueNames: string[] = []

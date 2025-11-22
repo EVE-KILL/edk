@@ -28,6 +28,9 @@
      // Libs & paths
     "lib": ["ESNext", "DOM"],
     "baseUrl": ".",
+    "paths": {
+      "~/*": ["./*"]
+    },
     "types": ["bun"]
   }
 }

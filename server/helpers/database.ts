@@ -1,5 +1,6 @@
 import postgres from 'postgres'
 import { requestContext } from '../utils/request-context'
+import { dbQueryDurationHistogram } from '~/server/helpers/metrics'
 
 /**
  * Postgres Database Helper (using postgres.js)
@@ -9,13 +10,26 @@ import { requestContext } from '../utils/request-context'
  */
 export class DatabaseHelper {
   private _sql: postgres.Sql | undefined
+  private _url: string | undefined
 
   constructor() {}
+
+  /**
+   * Overrides the database URL and forces a reconnection.
+   * This is primarily used for the test environment.
+   */
+  async setUrl(url: string): Promise<void> {
+    if (this._sql) {
+      await this._sql.end({ timeout: 5 });
+    }
+    this._url = url;
+    this._sql = undefined; // Force re-initialization on next `sql` access
+  }
 
   get sql(): postgres.Sql {
     if (!this._sql) {
       // Initialize postgres client
-      const url = process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
+      const url = this._url || process.env.DATABASE_URL || 'postgresql://edk_user:edk_password@localhost:5432/edk'
 
       // postgres.js manages the connection pool automatically
       this._sql = postgres(url, {
@@ -38,20 +52,26 @@ export class DatabaseHelper {
     const handler: ProxyHandler<postgres.Sql> = {
       // This trap handles tagged template literal calls, e.g., sql`SELECT * FROM users`
       apply: (target, thisArg, args) => {
-        const performance = requestContext.getStore()?.performance
-        if (!performance) {
-          return Reflect.apply(target, thisArg, args)
+        const isTaggedTemplate = Array.isArray(args[0]) && 'raw' in args[0];
+
+        if (!isTaggedTemplate) {
+          // This is a helper call like sql(table) or sql(data), pass through
+          return Reflect.apply(target, thisArg, args);
         }
 
-        const startTime = performance.now()
+        const performance = requestContext.getStore()?.performance
+        const startTime = Date.now();
         const promise = Reflect.apply(target, thisArg, args) as Promise<any>
 
         promise.finally(() => {
-          const duration = performance.now() - startTime
-          // For template tags, args[0] has a `raw` property with query parts
+          const duration = Date.now() - startTime
           const query = (args[0].raw as string[]).join('?')
-          const params = args.slice(1)
-          performance.addQuery(query, params, duration)
+          dbQueryDurationHistogram.observe({ query }, duration / 1000)
+
+          if (performance) {
+            const params = args.slice(1)
+            performance.addQuery(query, params, duration)
+          }
         })
 
         return promise
@@ -65,20 +85,20 @@ export class DatabaseHelper {
 
         return (...args: any[]) => {
           const performance = requestContext.getStore()?.performance
-          if (!performance) {
-            return original.apply(target, args)
-          }
-
-          const startTime = performance.now()
+          const startTime = Date.now();
           const result = original.apply(target, args)
 
           // Check if the result is a PendingQuery, which indicates a query-executing method
           if (result && typeof result.finally === 'function' && 'sql' in result) {
             result.finally(() => {
-              const duration = performance.now() - startTime
+              const duration = Date.now() - startTime
               const query = result.sql
-              const params = result.parameters
-              performance.addQuery(query, params, duration)
+              dbQueryDurationHistogram.observe({ query }, duration / 1000)
+
+              if (performance) {
+                const params = result.parameters
+                performance.addQuery(query, params, duration)
+              }
             })
           }
 
