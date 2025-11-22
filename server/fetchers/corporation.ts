@@ -70,7 +70,7 @@ export async function fetchAndStoreCorporation(corporationId: number): Promise<E
 
     return esiCorporation
   } catch (error) {
-    console.error(`Failed to fetch corporation ${corporationId}:`, error)
+    logger.error(`Failed to fetch corporation ${corporationId}`, { error: String(error) })
     return null
   }
 }
@@ -91,7 +91,7 @@ async function fetchFromESI(corporationId: number): Promise<any | null> {
 
     return response.data
   } catch (error) {
-    console.error(`ESI fetch failed for corporation ${corporationId}:`, error)
+    logger.error(`ESI fetch failed for corporation ${corporationId}`, { error: String(error) })
     return null
   }
 }

@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
         const [result] = await database.sql<{version: string}[]>`SELECT version() as version`
         dbInfo = result
       } catch (error) {
-        console.error('Failed to get Postgres version:', error)
+        logger.error('Failed to get Postgres version:', { error: String(error) })
       }
     }
 
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
       timestamp: new Date().toISOString()
     }
   } catch (error) {
-    console.error('Health check error:', error)
+    logger.error('Health check error:', { error: String(error) })
 
     return {
       status: 'error',

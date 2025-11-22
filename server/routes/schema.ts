@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
             total_bytes: Number(sizeResult?.size) || 0
           }
         } catch (err) {
-          console.error(`Error getting stats for ${table.name}:`, err)
+          logger.error(`Error getting stats for ${table.name}:`, { error: String(err) })
           return {
             name: table.name,
             engine: 'Postgres',
@@ -80,7 +80,7 @@ export default defineEventHandler(async (event) => {
       timestamp: new Date().toISOString()
     }
   } catch (error) {
-    console.error('Schema status error:', error)
+    logger.error('Schema status error:', { error: String(error) })
 
     return {
       status: 'error',

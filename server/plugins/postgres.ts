@@ -15,9 +15,9 @@ export default async (nitroApp: any) => {
 
     // Test the connection
     await postgresClient`SELECT 1`
-    console.log('🎯 Postgres connection established successfully')
+    logger.info('🎯 Postgres connection established successfully')
   } catch (error) {
-    console.error('❌ Failed to connect to Postgres:', error)
+    logger.error('❌ Failed to connect to Postgres', { error: String(error) })
   }
 }
 

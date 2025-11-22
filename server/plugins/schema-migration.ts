@@ -3,6 +3,7 @@ import { join } from 'path'
 import { createHash } from 'crypto'
 import { database } from '../helpers/database'
 import chalk from 'chalk'
+import { logger } from '../helpers/logger'
 
 /**
  * Schema Migration Plugin for Postgres
@@ -128,7 +129,7 @@ async function loadChecksumsFromDb(): Promise<FileChecksums> {
     }
     return checksums;
   } catch (e) {
-    console.error(chalk.yellow('⚠️  Failed to load checksums from DB:'), e);
+    logger.error(chalk.yellow('⚠️  Failed to load checksums from DB:'), { error: String(e) });
     return {};
   }
 }
@@ -141,7 +142,7 @@ async function saveChecksumToDb(filename: string, checksum: string, success: boo
                  // This is expected for the migration that creates the table
                  return;
              }
-             console.warn(chalk.yellow(`⚠️  Cannot save checksum for ${filename}: 'migrations' table does not exist yet.`));
+             logger.warn(chalk.yellow(`⚠️  Cannot save checksum for ${filename}: 'migrations' table does not exist yet.`));
              return;
         }
 
@@ -150,7 +151,7 @@ async function saveChecksumToDb(filename: string, checksum: string, success: boo
             VALUES (${filename}, ${checksum}, ${success})
         `;
     } catch (e) {
-        console.error(chalk.red(`Failed to save checksum for ${filename} to DB:`), e);
+        logger.error(chalk.red(`Failed to save checksum for ${filename} to DB:`), { error: String(e) });
     }
 }
 
@@ -348,7 +349,7 @@ async function syncTableSchema(statement: string) {
       const existingCol = currentColumnMap.get(col.name.toLowerCase())
 
       if (!existingCol) {
-        console.log(chalk.yellow(`⚠️  Column '${col.name}' missing in table '${tableName}', adding it...`))
+        logger.info(chalk.yellow(`⚠️  Column '${col.name}' missing in table '${tableName}', adding it...`))
 
         let alterSql = `ALTER TABLE ${tableName} ADD COLUMN ${col.name} ${col.type}`
 
@@ -360,14 +361,14 @@ async function syncTableSchema(statement: string) {
              } else {
                  // Cannot add NOT NULL without default to populated table easily
                  // So we skip NOT NULL constraint for now or warn
-                 console.warn(chalk.yellow(`   Warning: Adding NOT NULL column '${col.name}' without default value. Constraint might be omitted.`))
+                 logger.warn(chalk.yellow(`   Warning: Adding NOT NULL column '${col.name}' without default value. Constraint might be omitted.`))
              }
         } else if (col.defaultValue) {
             alterSql += ` DEFAULT ${col.defaultValue}`
         }
 
         await database.sql.unsafe(alterSql)
-        console.log(chalk.green(`   ✓ Added column '${col.name}'`))
+        logger.info(chalk.green(`   ✓ Added column '${col.name}'`))
       } else {
           // Check for type mismatches (simplified check)
           // Note: comparing SQL types is hard because of aliases (int vs integer, varchar vs character varying)
@@ -399,21 +400,21 @@ async function syncTableSchema(statement: string) {
                   continue
               }
 
-              console.warn(chalk.yellow(`⚠️  Column '${col.name}' in table '${tableName}' has type mismatch.`))
-              console.warn(chalk.gray(`   Defined: ${col.type}, Database: ${existingCol.type}`))
-              console.warn(chalk.gray(`   Automatic type migration is skipped for safety.`))
+              logger.warn(chalk.yellow(`⚠️  Column '${col.name}' in table '${tableName}' has type mismatch.`))
+              logger.warn(chalk.gray(`   Defined: ${col.type}, Database: ${existingCol.type}`))
+              logger.warn(chalk.gray(`   Automatic type migration is skipped for safety.`))
           }
       }
     }
   } catch (e) {
-    console.error(chalk.red(`Failed to sync schema for table ${tableName}:`), e)
+    logger.error(chalk.red(`Failed to sync schema for table ${tableName}:`), { error: String(e) })
     throw e; // Re-throw to stop migration
   }
 }
 
 export async function migrateSchema() {
     try {
-      console.log(chalk.blue('🔧 Starting schema migration...'))
+      logger.info(chalk.blue('🔧 Starting schema migration...'))
 
       // Ensure .data directory exists
       if (!existsSync(DATA_DIR)) {
@@ -422,7 +423,7 @@ export async function migrateSchema() {
 
       // Check if migrations directory exists
       if (!existsSync(MIGRATIONS_DIR)) {
-        console.error(chalk.red(`❌ Migrations directory not found: ${MIGRATIONS_DIR}`))
+        logger.error(chalk.red(`❌ Migrations directory not found: ${MIGRATIONS_DIR}`))
         return
       }
 
@@ -432,16 +433,16 @@ export async function migrateSchema() {
         .sort()
 
       if (migrationFiles.length === 0) {
-        console.error(chalk.red('❌ No migration files found in db/ directory'))
+        logger.error(chalk.red('❌ No migration files found in db/ directory'))
         return
       }
 
-      console.log(chalk.cyan(`📁 Found ${migrationFiles.length} migration files`))
+      logger.info(chalk.cyan(`📁 Found ${migrationFiles.length} migration files`))
 
       // Ensure we have a database connection
       const connected = await database.ping()
       if (!connected) {
-        console.error(chalk.red('❌ Postgres not connected, skipping schema migration'))
+        logger.error(chalk.red('❌ Postgres not connected, skipping schema migration'))
         return
       }
 
@@ -479,13 +480,13 @@ export async function migrateSchema() {
 
       // If no files need migration, skip
       if (filesToMigrate.length === 0) {
-        console.log(chalk.green(`✅ Schema is up to date (no changes detected)`))
+        logger.info(chalk.green(`✅ Schema is up to date (no changes detected)`))
         return
       }
 
-      console.log(chalk.yellow(`ℹ️  ${filesToMigrate.length} file(s) need migration`))
+      logger.info(chalk.yellow(`ℹ️  ${filesToMigrate.length} file(s) need migration`))
 
-      console.log(chalk.blue('🔄 Applying schema migration...\n'))
+      logger.info(chalk.blue('🔄 Applying schema migration...\n'))
 
       let totalSuccessCount = 0
       let totalErrorCount = 0
@@ -501,7 +502,7 @@ export async function migrateSchema() {
           const statements = splitSqlStatements(content)
 
           if (statements.length === 0) {
-            console.log(chalk.yellow(`⚠ ${file}`) + chalk.gray(` (0ms, empty file)`))
+            logger.info(chalk.yellow(`⚠ ${file}`) + chalk.gray(` (0ms, empty file)`))
             await saveChecksumToDb(file, currentChecksums[file], true);
             storedChecksums[file] = currentChecksums[file]
             totalSuccessCount++
@@ -538,7 +539,7 @@ export async function migrateSchema() {
             ? `${fileElapsedTime}ms`
             : `${(fileElapsedTime / 1000).toFixed(2)}s`
 
-          console.log(chalk.green(`✓ ${file}`) + chalk.gray(` (${timeStr}, ${statements.length} statement${statements.length === 1 ? '' : 's'})`))
+          logger.info(chalk.green(`✓ ${file}`) + chalk.gray(` (${timeStr}, ${statements.length} statement${statements.length === 1 ? '' : 's'})`))
 
           // Update stored checksum for this file
           await saveChecksumToDb(file, currentChecksums[file], true);
@@ -551,26 +552,26 @@ export async function migrateSchema() {
             ? `${fileElapsedTime}ms`
             : `${(fileElapsedTime / 1000).toFixed(2)}s`
 
-          console.log(chalk.red(`✗ ${file}`) + chalk.gray(` (${timeStr})`))
-          console.error(chalk.red(`   ❌ ${errorMessage.substring(0, 150)}`))
+          logger.info(chalk.red(`✗ ${file}`) + chalk.gray(` (${timeStr})`))
+          logger.error(chalk.red(`   ❌ ${errorMessage.substring(0, 150)}`))
           totalErrorCount++
         }
       }
 
-      console.log('') // Empty line
+      logger.info('') // Empty line
 
       if (totalErrorCount === 0) {
-        console.log(chalk.green(`✅ Schema migration completed successfully (${totalSuccessCount} files)`))
+        logger.info(chalk.green(`✅ Schema migration completed successfully (${totalSuccessCount} files)`))
         // Also update local JSON file as backup
         try {
             writeFileSync(CHECKSUM_FILE, JSON.stringify(storedChecksums, null, 2), 'utf-8')
         } catch (e) {}
       } else {
-        console.log(chalk.yellow(`⚠️  Schema migration completed with errors (${totalSuccessCount} successful, ${totalErrorCount} failed)`))
+        logger.info(chalk.yellow(`⚠️  Schema migration completed with errors (${totalSuccessCount} successful, ${totalErrorCount} failed)`))
       }
 
     } catch (error) {
-      console.error(chalk.red('❌ Schema migration failed:'), error)
+      logger.error(chalk.red('❌ Schema migration failed:'), { error: String(error) })
     }
 }
 

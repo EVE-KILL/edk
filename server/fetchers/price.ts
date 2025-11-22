@@ -23,7 +23,7 @@ async function fetchAllPrices() {
       lastPriceFetch = now
     }
   } catch (error) {
-    console.error('[Price Fetcher] Failed to fetch market prices from ESI:', error);
+    logger.error('[Price Fetcher] Failed to fetch market prices from ESI', { error: String(error) });
   }
 }
 

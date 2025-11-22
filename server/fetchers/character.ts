@@ -37,7 +37,7 @@ export async function fetchAndStoreCharacter(characterId: number): Promise<ESICh
 
     return esiCharacter
   } catch (error) {
-    console.error(`ESI fetch failed for character ${characterId}:`, error)
+    logger.error(`ESI fetch failed for character ${characterId}`, { error: String(error) })
     return null
   }
 }
@@ -58,7 +58,7 @@ async function fetchFromESI(characterId: number): Promise<any | null> {
 
     return response.data
   } catch (error) {
-    console.error(`ESI fetch failed for character ${characterId}:`, error)
+    logger.error(`ESI fetch failed for character ${characterId}`, { error: String(error) })
     return null
   }
 }

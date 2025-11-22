@@ -41,7 +41,7 @@ export default defineEventHandler((event) => {
     const methodColor = chalk.blue(method)
     const log = `${chalk.gray(timestamp)} ${methodColor} ${url} ${coloredStatus} ${chalk.gray(`${duration}ms`)} ${chalk.gray(`${responseSize}B`)} ${chalk.gray(ip)}`
 
-    console.log(log)
+    logger.info(log)
 
     return originalSend.apply(this, args as Parameters<typeof originalSend>)
   }

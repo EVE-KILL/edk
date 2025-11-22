@@ -22,11 +22,11 @@ export class CacheHelper {
 
     // Handle connection events
     this.redis.on('error', (error) => {
-      console.error('Redis connection error:', error)
+      logger.error('Redis connection error:', { error: String(error) })
     })
 
     this.redis.on('connect', () => {
-      console.log('Redis connected successfully')
+      logger.info('Redis connected successfully')
     })
   }
 
@@ -43,7 +43,7 @@ export class CacheHelper {
         await this.redis.set(key, serialized)
       }
     } catch (error) {
-      console.error('Cache set error:', error)
+      logger.error('Cache set error:', { error: String(error) })
       throw error
     }
   }
@@ -61,7 +61,7 @@ export class CacheHelper {
 
       return JSON.parse(value) as T
     } catch (error) {
-      console.error('Cache get error:', error)
+      logger.error('Cache get error:', { error: String(error) })
       return null
     }
   }
@@ -74,7 +74,7 @@ export class CacheHelper {
       const exists = await this.redis.exists(key)
       return exists === 1
     } catch (error) {
-      console.error('Cache has error:', error)
+      logger.error('Cache has error:', { error: String(error) })
       return false
     }
   }
@@ -86,7 +86,7 @@ export class CacheHelper {
     try {
       await this.redis.del(key)
     } catch (error) {
-      console.error('Cache delete error:', error)
+      logger.error('Cache delete error:', { error: String(error) })
     }
   }
 
@@ -97,7 +97,7 @@ export class CacheHelper {
     try {
       await this.redis.flushdb()
     } catch (error) {
-      console.error('Cache clear error:', error)
+      logger.error('Cache clear error:', { error: String(error) })
     }
   }
 
@@ -128,7 +128,7 @@ export class CacheHelper {
     try {
       return await this.redis.incrby(key, delta)
     } catch (error) {
-      console.error('Cache increment error:', error)
+      logger.error('Cache increment error:', { error: String(error) })
       throw error
     }
   }
@@ -141,7 +141,7 @@ export class CacheHelper {
       const result = await this.redis.expire(key, seconds)
       return result === 1
     } catch (error) {
-      console.error('Cache expire error:', error)
+      logger.error('Cache expire error:', { error: String(error) })
       return false
     }
   }
@@ -153,7 +153,7 @@ export class CacheHelper {
     try {
       return await this.redis.ttl(key)
     } catch (error) {
-      console.error('Cache TTL error:', error)
+      logger.error('Cache TTL error:', { error: String(error) })
       return -1
     }
   }
