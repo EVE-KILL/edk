@@ -251,6 +251,10 @@ async function startAllCronJobs(jobs: Map<string, string>) {
  * Main entry point
  */
 async function main() {
+  if (process.env.NODE_ENV === 'test') {
+    console.log('🚫 Cron jobs are disabled in test environment');
+    return;
+  }
   const args = process.argv.slice(2);
   const specificJob = args[0];
 

@@ -1,11 +1,5 @@
 import { z, ZodSchema } from 'zod';
-import {
-  H3Event,
-  getRouterParams,
-  getQuery,
-  readBody,
-  createError,
-} from 'h3';
+import { H3Event, getRouterParams, getQuery, readBody, createError } from 'h3';
 import sanitizeHtml from 'sanitize-html';
 
 interface ValidationSchema {
