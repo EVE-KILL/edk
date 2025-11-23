@@ -11,7 +11,7 @@ export const action = async () => {
     const result = await database.findOne<{ count: number }>(
       `SELECT count(*) as count FROM pg_stat_activity`
     );
-    const count = result?.count || 0;
+    const count = Number(result?.count || 0);
     activeConnectionsGauge.set(count);
   }
 };
