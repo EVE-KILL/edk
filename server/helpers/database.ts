@@ -3,6 +3,7 @@ import { LRUCache } from 'lru-cache';
 import { requestContext } from '../utils/request-context';
 import { dbQueryDurationHistogram } from './metrics';
 import { env } from './env';
+import { als } from './als';
 
 const DEFAULT_DATABASE_URL =
   'postgresql://edk_user:edk_password@localhost:5432/edk';
@@ -366,6 +367,11 @@ export class Database {
     const { sql, values } = this.prepare(query, params);
     const performance = requestContext.getStore()?.performance;
 
+    const store = als.getStore();
+    const finalSql = store?.correlationId
+      ? `/* correlationId: ${store.correlationId} */ ${sql}`
+      : sql;
+
     // Extract table name for span naming (simple heuristic)
     const tableName = sql.match(/(?:FROM|UPDATE|INSERT INTO|DELETE FROM)\s+([a-zA-Z0-9_"]+)/i)?.[1] || 'query';
 
@@ -376,19 +382,19 @@ export class Database {
 
     // Debug logging if DEBUG env var is set
     if (env.DEBUG) {
-      console.log('[DB Query]', sql.substring(0, 200) + (sql.length > 200 ? '...' : ''));
+      console.log('[DB Query]', finalSql.substring(0, 200) + (finalSql.length > 200 ? '...' : ''));
       console.log('[DB Params]', values);
     }
 
     try {
-      const rows = await this.driver.execute<T>(sql, values as any[]);
+      const rows = await this.driver.execute<T>(finalSql, values as any[]);
       const duration = Date.now() - start;
-      dbQueryDurationHistogram.observe({ query: sql }, duration / 1000);
+      dbQueryDurationHistogram.observe({ query: finalSql }, duration / 1000);
 
       if (performance) {
-        performance.addQuery(sql, values, duration);
+        performance.addQuery(finalSql, values, duration);
         // Create span with accurate query duration and parent
-        const spanId = performance.startSpan(`db:${tableName}`, 'database', { sql });
+        const spanId = performance.startSpan(`db:${tableName}`, 'database', { sql: finalSql });
         const span = performance['spans'].get(spanId);
         if (span) {
           span.startTime = start;
@@ -405,12 +411,12 @@ export class Database {
       return rows;
     } catch (error) {
       const duration = Date.now() - start;
-      dbQueryDurationHistogram.observe({ query: sql }, duration / 1000);
+      dbQueryDurationHistogram.observe({ query: finalSql }, duration / 1000);
 
       if (performance) {
-        performance.addQuery(sql, values, duration);
+        performance.addQuery(finalSql, values, duration);
         // Create span with accurate query duration even on error and set parent
-        const spanId = performance.startSpan(`db:${tableName}`, 'database', { sql });
+        const spanId = performance.startSpan(`db:${tableName}`, 'database', { sql: finalSql });
         const span = performance['spans'].get(spanId);
         if (span) {
           span.startTime = start;

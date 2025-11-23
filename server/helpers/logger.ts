@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { als } from './als';
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug' | 'success';
 
@@ -56,10 +57,13 @@ function log(context: LogContext): void {
   const time = formatTimestamp(timestamp);
   const msg = level === 'error' ? chalk.red(message) : message;
 
+  const store = als.getStore();
+  const mergedData = { ...store, ...data };
+
   let output = `${time} ${levelTag} ${msg}`;
 
-  if (data && Object.keys(data).length > 0) {
-    output += formatData(data);
+  if (Object.keys(mergedData).length > 0) {
+    output += formatData(mergedData);
   }
 
   console.log(output);

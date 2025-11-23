@@ -9,6 +9,7 @@
  */
 
 import type { ServerWebSocket } from 'bun';
+import { randomUUID } from 'crypto';
 import { createRedisClient } from './server/helpers/redis';
 import { logger } from './server/helpers/logger';
 import type { ClientData, WebSocketMessage } from './ws/common';
@@ -72,6 +73,7 @@ function broadcastKillmail(killmail: any): void {
     killmailMessageHandler.getMessageType?.(killmail) || 'killmail';
   const logId =
     killmailMessageHandler.getLogIdentifier?.(killmail) || 'unknown';
+  const correlationId = randomUUID();
 
   for (const [ws, clientData] of clients.entries()) {
     if (ws.readyState === 1) {
@@ -86,6 +88,9 @@ function broadcastKillmail(killmail: any): void {
             JSON.stringify({
               type: messageType,
               data: killmail,
+              _meta: {
+                correlationId,
+              },
             })
           );
           sentCount++;
@@ -98,7 +103,8 @@ function broadcastKillmail(killmail: any): void {
 
   if (sentCount > 0) {
     logger.debug(
-      `Broadcasted ${messageType} ${logId} to ${sentCount}/${clients.size} clients`
+      `Broadcasted ${messageType} ${logId} to ${sentCount}/${clients.size} clients`,
+      { correlationId }
     );
   }
 }

@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq';
 import { env } from './env';
+import { als } from './als';
 
 /**
  * Queue Types Enum
@@ -99,7 +100,16 @@ export async function enqueueJob<T extends QueueType>(
 ): Promise<void> {
   const queue = getQueue(queueType);
   const jobId = createJobId(queueType, data);
-  await queue.add(queueType, data, {
+  const store = als.getStore();
+
+  const jobData = {
+    ...data,
+    _meta: {
+      correlationId: store?.correlationId,
+    },
+  };
+
+  await queue.add(queueType, jobData, {
     jobId,
     removeOnComplete: true,
   });
@@ -113,14 +123,24 @@ export async function enqueueJobMany<T extends QueueType>(
   dataArray: QueueJobData[T][]
 ): Promise<void> {
   const queue = getQueue(queueType);
-  const jobs = dataArray.map((data) => ({
-    name: queueType,
-    data,
-    opts: {
-      jobId: createJobId(queueType, data),
-      removeOnComplete: true,
-    },
-  }));
+  const store = als.getStore();
+
+  const jobs = dataArray.map((data) => {
+    const jobData = {
+      ...data,
+      _meta: {
+        correlationId: store?.correlationId,
+      },
+    };
+    return {
+      name: queueType,
+      data: jobData,
+      opts: {
+        jobId: createJobId(queueType, data),
+        removeOnComplete: true,
+      },
+    };
+  });
   await queue.addBulk(jobs);
 }
 
