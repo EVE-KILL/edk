@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { enqueueJob } from '../../server/helpers/queue';
+import { enqueueJob, JobPriority } from '../../server/helpers/queue';
 import { QueueType } from '../../server/helpers/queue';
 import { killmailExists } from '../../server/models/killmails';
 import { logger } from '../../server/helpers/logger';
@@ -112,7 +112,11 @@ class RedisQImporter {
     this.stats.new++;
 
     try {
-      await enqueueJob(QueueType.KILLMAIL, { killmailId, hash });
+      await enqueueJob(
+        QueueType.KILLMAIL,
+        { killmailId, hash },
+        { priority: JobPriority.HIGH }
+      );
       this.stats.processed++;
       this.success(`Enqueued killmail ${killmailId} for processing`);
     } catch (error) {

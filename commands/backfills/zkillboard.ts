@@ -1,6 +1,6 @@
 import { logger } from '../../server/helpers/logger';
 import { database } from '../../server/helpers/database';
-import { enqueueJobMany } from '../../server/helpers/queue';
+import { enqueueJobMany, JobPriority } from '../../server/helpers/queue';
 import { QueueType } from '../../server/helpers/queue';
 
 export default {
@@ -107,7 +107,8 @@ export default {
                 newKillmails.map((km) => ({
                   killmailId: km.killmailId,
                   hash: km.hash,
-                }))
+                })),
+                { priority: JobPriority.NORMAL }
               );
               logger.info(
                 `Enqueued ${newKillmails.length} new killmails for ${dateStr}.`

@@ -1,4 +1,4 @@
-import { enqueueJob } from '../../server/helpers/queue';
+import { enqueueJob, JobPriority } from '../../server/helpers/queue';
 import { QueueType } from '../../server/helpers/queue';
 import { killmailExists } from '../../server/models/killmails';
 import chalk from 'chalk';
@@ -286,7 +286,11 @@ class EkwsListener {
       // 2. Fetch all entity data (characters, corporations, alliances)
       // 3. Fetch all price data
       // 4. Store killmail (materialized view will have complete data)
-      await enqueueJob(QueueType.KILLMAIL, { killmailId, hash });
+      await enqueueJob(
+        QueueType.KILLMAIL,
+        { killmailId, hash },
+        { priority: JobPriority.HIGH }
+      );
 
       this.stats.processed++;
       this.success(`Enqueued killmail ${killmailId} for processing`);

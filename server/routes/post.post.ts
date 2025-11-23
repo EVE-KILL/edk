@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3';
 import { fetchAndStoreKillmail } from '../fetchers/killmail';
-import { enqueueJobMany, QueueType } from '../helpers/queue';
+import { enqueueJobMany, JobPriority, QueueType } from '../helpers/queue';
 
 // Regex for ESI URLs
 const ESI_REGEX = /killmails\/(\d+)\/([a-zA-Z0-9]+)/;
@@ -38,19 +38,22 @@ export default defineEventHandler(async (event: H3Event) => {
     if (result.characterIds.length > 0) {
       await enqueueJobMany(
         QueueType.CHARACTER,
-        result.characterIds.map((id) => ({ id }))
+        result.characterIds.map((id) => ({ id })),
+        { priority: JobPriority.LOW, delay: 10000 }
       );
     }
     if (result.corporationIds.length > 0) {
       await enqueueJobMany(
         QueueType.CORPORATION,
-        result.corporationIds.map((id) => ({ id }))
+        result.corporationIds.map((id) => ({ id })),
+        { priority: JobPriority.LOW, delay: 10000 }
       );
     }
     if (result.allianceIds.length > 0) {
       await enqueueJobMany(
         QueueType.ALLIANCE,
-        result.allianceIds.map((id) => ({ id }))
+        result.allianceIds.map((id) => ({ id })),
+        { priority: JobPriority.LOW, delay: 10000 }
       );
     }
     // Prices queue could be added if needed, but typically price fetcher runs periodically or on insert
