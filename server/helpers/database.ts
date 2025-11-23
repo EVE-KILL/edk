@@ -350,9 +350,9 @@ export class Database {
       this.currentUrl = url;
 
       this.sqlInstance = postgres(url, {
-        max: this.options.maxConnections ?? 10,
-        idle_timeout: this.options.idleTimeoutSeconds ?? 20,
-        connect_timeout: this.options.connectTimeoutSeconds ?? 10,
+        max: this.options.maxConnections ?? env.DB_POOL_MAX,
+        idle_timeout: this.options.idleTimeoutSeconds ?? env.DB_IDLE_TIMEOUT,
+        connect_timeout: this.options.connectTimeoutSeconds ?? env.DB_CONNECT_TIMEOUT,
       });
     }
 
@@ -691,3 +691,16 @@ export class Database {
 }
 
 export const database = new Database();
+
+export function getPoolStats() {
+  const sql = database.sql;
+  if (!sql || !sql.pool) {
+    return { total: 0, idle: 0, active: 0 };
+  }
+
+  return {
+    total: sql.options.max,
+    idle: sql.pool.idle.length,
+    active: sql.pool.connecting.length + sql.pool.connection.length,
+  };
+}
