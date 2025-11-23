@@ -412,7 +412,7 @@
       ws.onopen = () => {
         console.log('✅ WebSocket connected');
         reconnectInterval = 1000;
-        
+
         // Enable debug panel WebSocket tab
         if (window.debugWS) {
           window.debugWS.enable();
@@ -457,7 +457,7 @@
 
         console.log('📡 Subscribing to topics:', topics);
         ws.send(JSON.stringify({ type: 'subscribe', topics }));
-        
+
         // Update debug panel with topics
         if (window.debugWS) {
           window.debugWS.setTopics(topics);

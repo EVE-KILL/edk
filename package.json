@@ -39,6 +39,8 @@
     "prettier": "^3.6.2"
   },
   "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.11.0",
     "bullmq": "^5.64.1",
     "chalk": "^5.6.2",
     "cron": "^4.3.4",

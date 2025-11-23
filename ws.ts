@@ -26,7 +26,8 @@ const CLEANUP_INTERVAL = env.WS_CLEANUP_INTERVAL; // 1 minute
 type KillmailSocket = ServerWebSocket;
 
 const clients = new Map<KillmailSocket, ClientData>();
-let redis: ReturnType<typeof createRedisClient>;
+let redis: ReturnType<typeof createRedisClient>; // Subscriber client (pub/sub only)
+let redisWriter: ReturnType<typeof createRedisClient>; // Writer client (for stats, etc)
 let pingInterval: Timer | null = null;
 let cleanupInterval: Timer | null = null;
 
@@ -34,10 +35,18 @@ let cleanupInterval: Timer | null = null;
  * Setup Redis subscriber
  */
 async function setupRedis(): Promise<void> {
+  // Create subscriber client (for pub/sub)
   redis = createRedisClient();
 
   redis.on('error', (error) => {
-    logger.error('Redis error:', { error });
+    logger.error('Redis subscriber error:', { error });
+  });
+
+  // Create separate writer client (for normal commands like setex)
+  redisWriter = createRedisClient();
+  
+  redisWriter.on('error', (error) => {
+    logger.error('Redis writer error:', { error });
   });
 
   // Subscribe to killmails channel
@@ -186,6 +195,32 @@ function handleMessage(ws: KillmailSocket, message: string): void {
 }
 
 /**
+ * Update WebSocket stats in Redis
+ */
+async function updateWebSocketStats(): Promise<void> {
+  try {
+    if (!redisWriter) {
+      logger.warn('Redis writer not initialized, skipping stats update');
+      return;
+    }
+    
+    const stats = {
+      connectedClients: clients.size,
+      timestamp: Date.now(),
+    };
+    
+    // Store in Redis with 10 second TTL (in case WS server crashes)
+    await redisWriter.setex('ws:stats', 10, JSON.stringify(stats));
+    logger.debug(`Updated WebSocket stats: ${clients.size} clients`);
+  } catch (error) {
+    logger.error('Failed to update WebSocket stats', { 
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+  }
+}
+
+/**
  * Send ping to all clients
  */
 function sendPingToAllClients(): void {
@@ -213,6 +248,9 @@ function sendPingToAllClients(): void {
   if (pingsSent > 0) {
     logger.debug(`Sent ping to ${pingsSent} client(s)`);
   }
+  
+  // Update stats after ping
+  updateWebSocketStats();
 }
 
 /**
@@ -253,6 +291,9 @@ function cleanupUnresponsiveClients(): void {
   if (clientsToRemove.length > 0) {
     logger.info(`Cleaned up ${clientsToRemove.length} unresponsive client(s)`);
   }
+  
+  // Update stats after cleanup
+  updateWebSocketStats();
 }
 
 /**
@@ -317,6 +358,9 @@ Bun.serve({
         );
 
         logger.info(`Client connected. Total: ${clients.size}`);
+        
+        // Update stats
+        updateWebSocketStats();
       },
 
       message(ws: KillmailSocket, message: string | ArrayBuffer | Uint8Array) {
@@ -332,6 +376,9 @@ Bun.serve({
       close(ws: KillmailSocket) {
         clients.delete(ws);
         logger.info(`Client disconnected. Total: ${clients.size}`);
+        
+        // Update stats
+        updateWebSocketStats();
       },
     },
   });

@@ -164,7 +164,7 @@ export class PerformanceTracker {
     for (const span of spans) {
       // Calculate duration for running spans (those without endTime yet)
       const duration = span.duration || (span.endTime ? span.endTime - span.startTime : now - span.startTime);
-      
+
       if (duration > 0) {
         categoryBreakdown[span.category].count++;
         categoryBreakdown[span.category].total += duration;
@@ -225,7 +225,7 @@ export class PerformanceTracker {
               depthMap.set(span.id, depth);
               return depth;
             };
-            
+
             return spans
               .map((s) => {
                 // Calculate duration for running spans

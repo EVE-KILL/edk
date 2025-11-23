@@ -595,12 +595,12 @@ window.debugWS = {
     lastMessageTime: null,
     recentMessages: []
   },
-  
+
   enable() {
     this.enabled = true;
     document.getElementById('debug-ws-tab').style.display = 'block';
   },
-  
+
   setConnected(isConnected) {
     this.stats.connected = isConnected;
     if (isConnected) {
@@ -610,21 +610,21 @@ window.debugWS = {
     }
     this.updateUI();
   },
-  
+
   setReconnectCount(count) {
     this.stats.reconnectCount = count;
     this.updateUI();
   },
-  
+
   setTopics(topics) {
     this.stats.topics = topics || [];
     this.updateUI();
   },
-  
+
   addMessage(type, data) {
     this.stats.messagesTotal++;
     this.stats.lastMessageTime = new Date();
-    
+
     if (type === 'killmail') {
       this.stats.messagesKillmails++;
       const killmailId = data?.killmailId || '?';
@@ -642,68 +642,68 @@ window.debugWS = {
         text: type
       });
     }
-    
+
     // Keep only last 10 messages
     if (this.stats.recentMessages.length > 10) {
       this.stats.recentMessages = this.stats.recentMessages.slice(0, 10);
     }
-    
+
     this.updateUI();
   },
-  
+
   updateUI() {
     if (!this.enabled) return;
-    
+
     // Status
     const statusEl = document.getElementById('ws-status');
     if (statusEl) {
       statusEl.textContent = this.stats.connected ? '🟢 Connected' : '🔴 Disconnected';
       statusEl.style.color = this.stats.connected ? '#4CAF50' : '#f44336';
     }
-    
+
     // Connected time
     const connTimeEl = document.getElementById('ws-connected-time');
     if (connTimeEl && this.stats.connectedAt) {
       const duration = Math.floor((new Date() - this.stats.connectedAt) / 1000);
       connTimeEl.textContent = duration + 's ago';
     }
-    
+
     // Reconnect count
     const reconnectEl = document.getElementById('ws-reconnect-count');
     if (reconnectEl) {
       reconnectEl.textContent = this.stats.reconnectCount;
     }
-    
+
     // Topics
     const topicsEl = document.getElementById('ws-topics');
     if (topicsEl) {
       topicsEl.textContent = this.stats.topics.length;
     }
-    
+
     const topicsListEl = document.getElementById('ws-topics-list');
     if (topicsListEl && this.stats.topics.length > 0) {
-      topicsListEl.innerHTML = this.stats.topics.map(t => 
+      topicsListEl.innerHTML = this.stats.topics.map(t =>
         `<div style="padding: 2px 0;">• ${t}</div>`
       ).join('');
     }
-    
+
     // Message stats
     const msgTotalEl = document.getElementById('ws-msg-total');
     if (msgTotalEl) {
       msgTotalEl.textContent = this.stats.messagesTotal;
     }
-    
+
     const msgKillmailsEl = document.getElementById('ws-msg-killmails');
     if (msgKillmailsEl) {
       msgKillmailsEl.textContent = this.stats.messagesKillmails;
     }
-    
+
     const msgLastEl = document.getElementById('ws-msg-last');
     if (msgLastEl && this.stats.lastMessageTime) {
       const ago = Math.floor((new Date() - this.stats.lastMessageTime) / 1000);
       msgLastEl.textContent = ago < 60 ? ago + 's ago' : Math.floor(ago / 60) + 'm ago';
     }
-    
+
     // Recent messages
     const recentEl = document.getElementById('ws-recent-messages');
     if (recentEl && this.stats.recentMessages.length > 0) {

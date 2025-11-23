@@ -1,6 +1,6 @@
 
 import { defineEventHandler } from 'h3';
-import { database, getPoolStats } from '../helpers/database';
+import { database } from '../helpers/database';
 import { cache } from '../helpers/cache';
 import { promisify } from 'util';
 import { exec } from 'child_process';
@@ -78,25 +78,9 @@ async function getMemoryUsage() {
   try {
     const memUsage = process.memoryUsage();
     return {
-<<<<<<< HEAD
       used: `${(memUsage.heapUsed / 1024 / 1024).toFixed(2)}MB`,
       rss: `${(memUsage.rss / 1024 / 1024).toFixed(2)}MB`,
       heap_total: `${(memUsage.heapTotal / 1024 / 1024).toFixed(2)}MB`,
-=======
-      status: 'ok',
-      services: {
-        postgres: {
-          connected: dbConnected,
-          version: dbInfo?.version || 'unknown',
-          pool: getPoolStats(),
-        },
-        redis: {
-          connected: cachedData !== null,
-          testData: cachedData,
-        },
-      },
-      timestamp: new Date().toISOString(),
->>>>>>> c3ef9fc (feat: Add database connection pooling configuration and monitoring)
     };
   } catch (error) {
     return { error: (error as Error).message };

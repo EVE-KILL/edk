@@ -27,9 +27,7 @@ const envSchema = z.object({
   DB_NAME: z.string().default('edk'),
   ADMIN_DB_NAME: z.string().default('edk'),
   ADMIN_DATABASE_URL: z.string().url().optional(),
-  DB_POOL_MAX: z.coerce.number().default(20),
-  DB_IDLE_TIMEOUT: z.coerce.number().default(20),
-  DB_CONNECT_TIMEOUT: z.coerce.number().default(10),
+
   TYPESENSE_HOST: z.string().default('localhost'),
   TYPESENSE_PORT: z.coerce.number().default(8108),
   TYPESENSE_PROTOCOL: z.enum(['http', 'https']).default('http'),
@@ -40,6 +38,7 @@ const envSchema = z.object({
   RATE_LIMIT_DEFAULT_MAX: z.coerce.number().default(100),
   WS_PORT: z.coerce.number().default(3002),
   WS_HOST: z.string().default('0.0.0.0'),
+  WS_URL: z.string().default('ws://localhost:3002'),
   WS_PING_INTERVAL: z.coerce.number().default(30000),
   WS_PING_TIMEOUT: z.coerce.number().default(10000),
   WS_CLEANUP_INTERVAL: z.coerce.number().default(60000),

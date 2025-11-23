@@ -4,7 +4,7 @@ import { env } from '../helpers/env';
 
 export default defineNitroPlugin((nitroApp) => {
   const isProduction = env.NODE_ENV === 'production';
-  
+
   // Skip all performance tracking in production
   if (isProduction) {
     return;

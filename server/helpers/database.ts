@@ -691,16 +691,3 @@ export class Database {
 }
 
 export const database = new Database();
-
-export function getPoolStats() {
-  const sql = database.sql;
-  if (!sql || !sql.pool) {
-    return { total: 0, idle: 0, active: 0 };
-  }
-
-  return {
-    total: sql.options.max,
-    idle: sql.pool.idle.length,
-    active: sql.pool.connecting.length + sql.pool.connection.length,
-  };
-}
