@@ -1,6 +1,50 @@
 /**
- * Search API endpoint
- * Queries Typesense for characters, corporations, alliances, items, systems, etc.
+ * @openapi
+ * /api/search:
+ *   get:
+ *     summary: Performs a search for EVE Online entities.
+ *     description: |
+ *       Queries the Typesense search index for various EVE Online entities, including characters, corporations, alliances, items, and solar systems.
+ *       Results are grouped by entity type.
+ *     tags:
+ *       - Search
+ *     parameters:
+ *       - name: q
+ *         in: query
+ *         required: true
+ *         description: The search query string (minimum 2 characters).
+ *         schema:
+ *           type: string
+ *           example: "drake"
+ *       - name: limit
+ *         in: query
+ *         required: false
+ *         description: The maximum number of results to return per group.
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 50
+ *     responses:
+ *       '200':
+ *         description: An object containing the search results.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 results:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *       '500':
+ *         description: Internal server error if the search operation fails.
  */
 import { defineEventHandler, getQuery } from 'h3';
 import { typesense } from '~/helpers/typesense';

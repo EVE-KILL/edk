@@ -51,6 +51,18 @@ export default defineNitroConfig({
       db: 0,
     },
   },
+  openAPI: {
+    meta: {
+      title: 'EDK API',
+      description: 'EVE Online Killboard API documentation.',
+      version: '1.0.0',
+    },
+    ui: {
+      scalar: {
+        route: '/api/docs',
+      },
+    },
+  },
   routeRules: {
     '/api/killmail/*/esi': {
       cache: { maxAge: 3600, staleMaxAge: 3600, base: 'redis' },
