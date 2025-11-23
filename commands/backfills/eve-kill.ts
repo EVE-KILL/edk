@@ -1,6 +1,6 @@
 import { logger } from '../../server/helpers/logger';
 import { database } from '../../server/helpers/database';
-import { enqueueJobMany } from '../../server/helpers/queue';
+import { enqueueJobMany, JobPriority } from '../../server/helpers/queue';
 import { QueueType } from '../../server/helpers/queue';
 import { storeKillmailsBulk } from '../../server/models/killmails';
 import { storeCharactersBulk } from '../../server/models/characters';
@@ -709,19 +709,22 @@ async function enqueueEntityUpdates(
   if (characterIds.size > 0) {
     await enqueueJobMany(
       QueueType.CHARACTER,
-      Array.from(characterIds).map((id) => ({ id }))
+      Array.from(characterIds).map((id) => ({ id })),
+      { priority: JobPriority.LOW, delay: 10000 }
     );
   }
   if (corporationIds.size > 0) {
     await enqueueJobMany(
       QueueType.CORPORATION,
-      Array.from(corporationIds).map((id) => ({ id }))
+      Array.from(corporationIds).map((id) => ({ id })),
+      { priority: JobPriority.LOW, delay: 10000 }
     );
   }
   if (allianceIds.size > 0) {
     await enqueueJobMany(
       QueueType.ALLIANCE,
-      Array.from(allianceIds).map((id) => ({ id }))
+      Array.from(allianceIds).map((id) => ({ id })),
+      { priority: JobPriority.LOW, delay: 10000 }
     );
   }
 }

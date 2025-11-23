@@ -1,4 +1,4 @@
-import { Queue } from 'bullmq';
+import { Queue, JobsOptions, RepeatOptions } from 'bullmq';
 import { env } from './env';
 import { als } from './als';
 
@@ -94,9 +94,25 @@ function createJobId(queueType: QueueType, data: any): string {
 /**
  * Enqueue a single job
  */
+export enum JobPriority {
+  HIGH = 1,
+  NORMAL = 5,
+  LOW = 10,
+}
+
+/**
+ * Job Options Interface
+ */
+export interface JobOptions {
+  priority?: JobPriority;
+  delay?: number;
+  repeat?: RepeatOptions;
+}
+
 export async function enqueueJob<T extends QueueType>(
   queueType: T,
-  data: QueueJobData[T]
+  data: QueueJobData[T],
+  options?: JobOptions
 ): Promise<void> {
   const queue = getQueue(queueType);
   const jobId = createJobId(queueType, data);
@@ -108,11 +124,12 @@ export async function enqueueJob<T extends QueueType>(
       correlationId: store?.correlationId,
     },
   };
-
-  await queue.add(queueType, jobData, {
+  const bullOptions: JobsOptions = {
     jobId,
     removeOnComplete: true,
-  });
+    ...options,
+  };
+  await queue.add(queueType, jobData, bullOptions);
 }
 
 /**
@@ -120,7 +137,8 @@ export async function enqueueJob<T extends QueueType>(
  */
 export async function enqueueJobMany<T extends QueueType>(
   queueType: T,
-  dataArray: QueueJobData[T][]
+  dataArray: QueueJobData[T][],
+  options?: JobOptions
 ): Promise<void> {
   const queue = getQueue(queueType);
   const store = als.getStore();
@@ -132,16 +150,37 @@ export async function enqueueJobMany<T extends QueueType>(
         correlationId: store?.correlationId,
       },
     };
+    const bullOptions: JobsOptions = {
+      jobId: createJobId(queueType, data),
+      removeOnComplete: true,
+      ...options,
+    };
     return {
       name: queueType,
       data: jobData,
-      opts: {
-        jobId: createJobId(queueType, data),
-        removeOnComplete: true,
-      },
+      opts: bullOptions,
     };
   });
   await queue.addBulk(jobs);
+}
+
+/**
+ * Schedule a recurring job
+ */
+export async function scheduleJob<T extends QueueType>(
+  queueType: T,
+  jobId: string,
+  data: QueueJobData[T],
+  options: {
+    priority?: JobPriority;
+    repeat: RepeatOptions;
+  }
+): Promise<void> {
+  const queue = getQueue(queueType);
+  await queue.add(queueType, data, {
+    jobId,
+    ...options,
+  });
 }
 
 /**

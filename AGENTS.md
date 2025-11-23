@@ -100,3 +100,62 @@ Key variables (see `.env.example`):
 - `DATABASE_URL`: Postgres connection string.
 - `REDIS_HOST`, `REDIS_PORT`: Redis connection info.
 - `TEST_DB_NAME`: Name of the database used for testing (default: `edk_test`).
+
+## Queue Features
+
+The BullMQ job queueing system is enhanced with several features to provide fine-grained control over job execution, including priorities, delays, and recurring schedules.
+
+### Priorities
+
+The queue utilizes a priority system to ensure that real-time data is processed faster than backfills or batch updates.
+
+- **`JobPriority.HIGH` (1):** For jobs that need immediate processing, like real-time killmails from WebSocket (`ekws.ts`) and RedisQ (`redisq.ts`) listeners.
+- **`JobPriority.NORMAL` (5):** The default for most background tasks, such as backfilling historical killmails (`zkillboard.ts`, `eve-kill.ts`).
+- **`JobPriority.LOW` (10):** For non-essential or batch tasks, like updating entity information after a killmail is posted (`post.post.ts`).
+
+### Delayed Jobs
+
+Jobs can be delayed to postpone their execution. This is useful for rate-limiting, backoff strategies, or simply deferring a task.
+
+- **Use Case:** Entity update jobs are delayed by 10 seconds to avoid interfering with higher-priority tasks.
+
+### Scheduled (Recurring) Jobs
+
+Jobs can be scheduled to run on a recurring basis, similar to cron jobs. This is ideal for periodic maintenance, data refreshes, and other regular tasks.
+
+- **Use Case:** A daily job can be scheduled to refresh market prices.
+
+### How to Use
+
+All queueing options can be passed through the `JobOptions` object.
+
+```typescript
+import { enqueueJob, scheduleJob, JobPriority, QueueType } from './server/helpers/queue';
+
+// High-priority job
+await enqueueJob(
+  QueueType.KILLMAIL,
+  { killmailId, hash },
+  { priority: JobPriority.HIGH }
+);
+
+// Low-priority, delayed job
+await enqueueJobMany(
+  QueueType.CHARACTER,
+  [{ id: 123 }, { id: 456 }],
+  { priority: JobPriority.LOW, delay: 10000 } // 10-second delay
+);
+
+// Scheduled recurring job (daily at midnight)
+await scheduleJob(
+  QueueType.PRICE,
+  'daily-price-update',
+  { typeId: 0 }, // Example data
+  {
+    priority: JobPriority.LOW,
+    repeat: {
+      cron: '0 0 * * *',
+    },
+  }
+);
+```
