@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS killmails;
+DROP TABLE IF EXISTS attackers;
+DROP TABLE IF EXISTS items;

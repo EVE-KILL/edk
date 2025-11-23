@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS skins;
+DROP TABLE IF EXISTS stationOperations;

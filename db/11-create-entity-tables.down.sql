@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS characters;
+DROP TABLE IF EXISTS corporations;
+DROP TABLE IF EXISTS alliances;

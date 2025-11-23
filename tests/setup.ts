@@ -74,10 +74,8 @@ beforeAll(async () => {
 
   // 5. Run Migrations
   try {
-    const { migrateSchema } = await import(
-      '../server/plugins/schema-migration'
-    );
-    await migrateSchema();
+    const { applyMigrations } = await import('../server/helpers/migrator');
+    await applyMigrations();
   } catch (e) {
     console.error('Failed to run migrations:', e);
     process.exit(1);

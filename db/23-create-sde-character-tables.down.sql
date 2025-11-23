@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS factions;
+DROP TABLE IF EXISTS races;
+DROP TABLE IF EXISTS bloodlines;
+DROP TABLE IF EXISTS ancestries;
