@@ -1,6 +1,6 @@
-import { database } from '~/server/helpers/database';
-import { activeConnectionsGauge } from '~/server/helpers/metrics';
-import { env } from '~/server/helpers/env';
+import { database } from '../server/helpers/database';
+import { activeConnectionsGauge } from '../server/helpers/metrics';
+import { env } from '../server/helpers/env';
 
 export const name = 'db-metrics';
 export const schedule = '*/5 * * * * *'; // Every 5 seconds

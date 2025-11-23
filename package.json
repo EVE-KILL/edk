@@ -5,7 +5,7 @@
     "build": "nitro build",
     "dev": "bun --bun nitro dev",
     "preview": "node .output/server/index.mjs",
-    "type-check": "bun tsc --noEmit",
+    "type-check": "bunx nitro prepare && bun tsc --noEmit",
     "test": "bun test --preload ./tests/setup.ts",
     "test:watch": "bun test --watch --preload ./tests/setup.ts",
     "lint": "eslint . --ext .ts,.js",

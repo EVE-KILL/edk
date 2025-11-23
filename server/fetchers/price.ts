@@ -36,7 +36,11 @@ async function fetchAllPrices() {
  * @param typeId Type ID to fetch prices for
  * @returns Array of price data
  */
-export async function fetchPrices(typeId: number): Promise<PriceAPIResponse[]> {
+export async function fetchPrices(
+  typeId: number,
+  _days?: number,
+  _date?: number
+): Promise<PriceAPIResponse[]> {
   await fetchAllPrices();
 
   const price = allPrices.find((p) => p.type_id === typeId);

@@ -8,6 +8,7 @@
  * Usage: bun ws.ts
  */
 
+import type { ServerWebSocket } from 'bun';
 import { createRedisClient } from './server/helpers/redis';
 import { logger } from './server/helpers/logger';
 import type { ClientData, WebSocketMessage } from './ws/common';
@@ -21,7 +22,9 @@ const PING_INTERVAL = env.WS_PING_INTERVAL; // 30 seconds
 const PING_TIMEOUT = env.WS_PING_TIMEOUT; // 10 seconds
 const CLEANUP_INTERVAL = env.WS_CLEANUP_INTERVAL; // 1 minute
 
-const clients = new Map<any, ClientData>();
+type KillmailSocket = ServerWebSocket;
+
+const clients = new Map<KillmailSocket, ClientData>();
 let redis: ReturnType<typeof createRedisClient>;
 let pingInterval: Timer | null = null;
 let cleanupInterval: Timer | null = null;
@@ -33,7 +36,7 @@ async function setupRedis(): Promise<void> {
   redis = createRedisClient();
 
   redis.on('error', (error) => {
-    logger.error('Redis error:', error);
+    logger.error('Redis error:', { error });
   });
 
   // Subscribe to killmails channel
@@ -55,7 +58,7 @@ async function setupRedis(): Promise<void> {
         broadcastKillmail(normalizedKillmail);
       }
     } catch (error) {
-      logger.error('Failed to process Redis message:', error);
+      logger.error('Failed to process Redis message:', { error });
     }
   });
 }
@@ -87,7 +90,7 @@ function broadcastKillmail(killmail: any): void {
           );
           sentCount++;
         } catch (error) {
-          logger.error('Error sending to client:', error);
+          logger.error('Error sending to client:', { error });
         }
       }
     }
@@ -103,7 +106,7 @@ function broadcastKillmail(killmail: any): void {
 /**
  * Handle incoming client message
  */
-function handleMessage(ws: any, message: string): void {
+function handleMessage(ws: KillmailSocket, message: string): void {
   try {
     const data: WebSocketMessage = JSON.parse(message);
     const clientData = clients.get(ws);
@@ -169,7 +172,7 @@ function handleMessage(ws: any, message: string): void {
         break;
     }
   } catch (error) {
-    logger.error('Failed to handle message:', error);
+    logger.error('Failed to handle message:', { error });
     ws.send(
       JSON.stringify({ type: 'error', message: 'Invalid message format' })
     );
@@ -196,7 +199,7 @@ function sendPingToAllClients(): void {
         clientData.lastPing = now;
         pingsSent++;
       } catch (error) {
-        logger.error('Error sending ping:', error);
+        logger.error('Error sending ping:', { error });
       }
     }
   }
@@ -263,7 +266,7 @@ function startPingPongMonitoring(): void {
 async function startServer(): Promise<void> {
   await setupRedis();
 
-  const server = Bun.serve({
+Bun.serve({
     port: PORT,
     hostname: HOST,
     fetch(req, server) {
@@ -294,7 +297,7 @@ async function startServer(): Promise<void> {
     },
 
     websocket: {
-      open(ws) {
+      open(ws: KillmailSocket) {
         clients.set(ws, {
           topics: ['all'], // Default subscription
           connectedAt: new Date(),
@@ -310,7 +313,7 @@ async function startServer(): Promise<void> {
         logger.info(`Client connected. Total: ${clients.size}`);
       },
 
-      message(ws, message) {
+      message(ws: KillmailSocket, message: string | ArrayBuffer | Uint8Array) {
         const text =
           typeof message === 'string'
             ? message
@@ -320,13 +323,9 @@ async function startServer(): Promise<void> {
         handleMessage(ws, text);
       },
 
-      close(ws) {
+      close(ws: KillmailSocket) {
         clients.delete(ws);
         logger.info(`Client disconnected. Total: ${clients.size}`);
-      },
-
-      error(ws, error) {
-        logger.error('WebSocket error:', error);
       },
     },
   });
@@ -350,6 +349,6 @@ process.on('SIGINT', () => {
 
 // Start the server
 startServer().catch((error) => {
-  logger.error('Failed to start server:', error);
+  logger.error('Failed to start server:', { error });
   process.exit(1);
 });

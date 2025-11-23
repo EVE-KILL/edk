@@ -826,18 +826,6 @@ const victimColumnMap: EntityColumnMap = {
   alliance: 'victimAllianceId',
 };
 
-function getColumn(
-  map: EntityColumnMap,
-  entityType: 'character' | 'corporation' | 'alliance',
-  alias: string
-): string {
-  const column = map[entityType];
-  if (!column) {
-    throw new Error(`Unsupported entity type: ${entityType}`);
-  }
-  return `${alias}.${database.identifier(column)}`;
-}
-
 
 
 export async function countEntityKillmails(

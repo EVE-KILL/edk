@@ -8,11 +8,6 @@ import { logger } from './logger';
  * Partitions range from 2007 (first EVE killmail) through current + 1 year.
  */
 
-interface PartitionInfo {
-  tableName: string;
-  year: number;
-}
-
 /**
  * Generate partition name (e.g., "killmails_2024")
  */

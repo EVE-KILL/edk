@@ -13,10 +13,11 @@ export default defineEventHandler(async (event) => {
     const cacheKey = 'test:connection';
     await cache.set(
       cacheKey,
-      { timestamp: Date.now(), message: 'Hello from cache!' },
+      JSON.stringify({ timestamp: Date.now(), message: 'Hello from cache!' }),
       60
     );
-    const cachedData = await cache.get(cacheKey);
+    const cachedDataRaw = await cache.get(cacheKey);
+    const cachedData = cachedDataRaw ? JSON.parse(cachedDataRaw) : null;
 
     // Get some basic Postgres info
     let dbInfo: any = null;

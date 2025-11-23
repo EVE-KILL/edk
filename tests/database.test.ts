@@ -46,7 +46,7 @@ describe('DatabaseHelper', () => {
     await database.execute('DELETE FROM test_upsert');
 
     // Insert initial data
-    await database.insert('test_upsert', [
+    await database.bulkInsert('test_upsert', [
       { id: 1, val: 'A' },
       { id: 2, val: 'B' },
     ]);

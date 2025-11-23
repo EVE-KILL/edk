@@ -8,6 +8,7 @@ import { fetchPrices } from '../server/fetchers/price';
 import { storePrices } from '../server/models/prices';
 import { createRedisClient } from '../server/helpers/redis';
 import { database } from '../server/helpers/database';
+import { logger } from '../server/helpers/logger';
 
 export const name = 'killmail';
 
@@ -33,7 +34,7 @@ interface KillmailJobData {
 export async function processor(job: Job<KillmailJobData>): Promise<void> {
   const { killmailId, hash } = job.data;
 
-  console.log(`[killmail] Processing killmail ${killmailId}...`);
+  logger.info(`[killmail] Processing killmail ${killmailId}...`);
 
   try {
     // Step 1: Fetch killmail from ESI
@@ -41,7 +42,7 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
       `/killmails/${killmailId}/${hash}/`
     );
     if (!response.ok || !response.data || !response.data.victim) {
-      console.warn(
+      logger.warn(
         `⚠️  [killmail] Killmail ${killmailId} not found or invalid (status: ${response.status})`
       );
       return;
@@ -77,17 +78,17 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
       }
     }
 
-    console.log(
+    logger.info(
       `[killmail] ${killmailId}: Extracted ${characterIds.size} characters, ${corporationIds.size} corporations, ${allianceIds.size} alliances, ${typeIds.size} types`
     );
 
     // Step 3: Fetch all entity data in parallel
-    console.log(`[killmail] ${killmailId}: Fetching entity data...`);
+    logger.info(`[killmail] ${killmailId}: Fetching entity data...`);
     await Promise.all([
       // Characters
       ...Array.from(characterIds).map((id) =>
         fetchAndStoreCharacter(id).catch((err) => {
-          console.warn(
+          logger.warn(
             `⚠️  [killmail] ${killmailId}: Failed to fetch character ${id}:`,
             err.message
           );
@@ -97,7 +98,7 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
       // Corporations
       ...Array.from(corporationIds).map((id) =>
         fetchAndStoreCorporation(id).catch((err) => {
-          console.warn(
+          logger.warn(
             `⚠️  [killmail] ${killmailId}: Failed to fetch corporation ${id}:`,
             err.message
           );
@@ -107,7 +108,7 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
       // Alliances
       ...Array.from(allianceIds).map((id) =>
         fetchAndStoreAlliance(id).catch((err) => {
-          console.warn(
+          logger.warn(
             `⚠️  [killmail] ${killmailId}: Failed to fetch alliance ${id}:`,
             err.message
           );
@@ -118,7 +119,7 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     // Step 4: Fetch price data for all type IDs
     const killmailDate = new Date(killmail.killmail_time);
     const unixTimestamp = Math.floor(killmailDate.getTime() / 1000);
-    console.log(
+    logger.info(
       `[killmail] ${killmailId}: Fetching prices for ${typeIds.size} types...`
     );
 
@@ -131,9 +132,9 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
-        console.warn(
+        logger.warn(
           `⚠️  [killmail] ${killmailId}: Failed to fetch prices for type ${typeId}:`,
-          errorMsg
+          { error: errorMsg }
         );
         // Continue with other types
       }
@@ -142,19 +143,18 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     // Step 5: Store the killmail
     // At this point, all entity and price data should be in the database
     // The materialized view will populate with complete data
-    console.log(`[killmail] ${killmailId}: Storing killmail...`);
+    logger.info(`[killmail] ${killmailId}: Storing killmail...`);
     await storeKillmail(killmail, hash);
 
     // Step 6: Publish to Redis for WebSocket broadcast
-    console.log(`[killmail] ${killmailId}: Publishing to WebSocket...`);
+    logger.info(`[killmail] ${killmailId}: Publishing to WebSocket...`);
     await publishKillmailToWebSocket(killmailId);
 
-    console.log(`✅ [killmail] Successfully processed killmail ${killmailId}`);
+    logger.success(`✅ [killmail] Successfully processed killmail ${killmailId}`);
   } catch (error) {
-    console.error(
-      `❌ [killmail] Error processing killmail ${killmailId}:`,
-      error
-    );
+    logger.error(`❌ [killmail] Error processing killmail ${killmailId}:`, {
+      error,
+    });
     throw error; // Re-throw to trigger retry
   }
 }
@@ -299,9 +299,9 @@ async function publishKillmailToWebSocket(killmailId: number): Promise<void> {
 
     console.log(`[killmail] ${killmailId}: Published to WebSocket`);
   } catch (error) {
-    console.error(
+    logger.warn(
       `⚠️  [killmail] ${killmailId}: Failed to publish to WebSocket:`,
-      error
+      { error }
     );
     // Don't throw - this is not critical for the queue processing
   }

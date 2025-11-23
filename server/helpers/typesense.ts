@@ -5,8 +5,8 @@ import { env } from './env';
 export const searchCollectionSchema = {
   name: 'search',
   fields: [
-    { name: 'name', type: 'string', sort: true },
-    { name: 'type', type: 'string', facet: true },
+    { name: 'name', type: 'string' as const, sort: true },
+    { name: 'type', type: 'string' as const, facet: true },
   ],
 };
 

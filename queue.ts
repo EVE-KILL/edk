@@ -31,7 +31,7 @@ const REDIS_CONFIG = {
 interface QueueModule {
   name: string;
   processor: (job: any) => Promise<void>;
-  createWorker: (connection: any) => Worker;
+  createWorker: (connection?: any, options?: { concurrency?: number }) => Worker;
 }
 
 interface QueueOptions {

@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { createStorage, Storage } from 'unstorage';
+import { createStorage } from 'unstorage';
 import redisDriver from 'unstorage/drivers/redis';
 import { requestContext } from '../utils/request-context';
 import { env } from './env';
@@ -28,7 +28,7 @@ const baseStorage = createStorage({
  * Tracked Redis storage wrapper
  * Automatically tracks Redis operations for performance monitoring
  */
-class TrackedStorage implements Storage {
+class TrackedStorage {
   private trackOperation<T>(operation: string, fn: () => Promise<T>): Promise<T> {
     const performance = requestContext.getStore()?.performance;
     const spanId = performance?.startSpan(`redis:${operation}`, 'cache', { operation });
@@ -82,11 +82,11 @@ class TrackedStorage implements Storage {
     return this.trackOperation('set', () => baseStorage.setItemRaw(key, value));
   }
 
-  mount(base: string, driver: any): void {
+  mount(base: string, driver: any) {
     return baseStorage.mount(base, driver);
   }
 
-  unmount(base: string, dispose?: boolean): void {
+  async unmount(base: string, dispose?: boolean): Promise<void> {
     return baseStorage.unmount(base, dispose);
   }
 

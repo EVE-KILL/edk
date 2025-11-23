@@ -678,7 +678,7 @@ export class SDEFetcher {
 
     try {
       // Populate regionId in solarsystems from constellations
-      const result = await database.execute(
+      await database.execute(
         `UPDATE solarsystems ss
          SET "regionId" = c."regionId"
          FROM constellations c
@@ -686,7 +686,7 @@ export class SDEFetcher {
          AND ss."regionId" IS NULL`
       );
 
-      console.log(`   ✓ Updated regionId in solarsystems (${result.count || 0} rows)`);
+      console.log(`   ✓ Updated regionId in solarsystems`);
     } catch (error) {
       console.error('⚠️  Error post-processing map tables:', error);
       // Don't throw - this is not critical

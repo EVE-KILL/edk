@@ -43,6 +43,13 @@ export default defineNitroConfig({
       port: env.REDIS_PORT,
       password: env.REDIS_PASSWORD || 'redis_password',
     },
+    cache: {
+      driver: 'redis',
+      host: env.REDIS_HOST,
+      port: env.REDIS_PORT,
+      password: env.REDIS_PASSWORD || 'redis_password',
+      db: 0,
+    },
   },
   routeRules: {
     '/api/killmail/*/esi': {
@@ -59,14 +66,5 @@ export default defineNitroConfig({
       'server/generators/**',
       'server/fetchers/**',
     ],
-  },
-  storage: {
-    cache: {
-      driver: 'redis',
-      host: env.REDIS_HOST,
-      port: env.REDIS_PORT,
-      password: env.REDIS_PASSWORD,
-      db: 0,
-    },
   },
 });
