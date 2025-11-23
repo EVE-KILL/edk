@@ -8,6 +8,7 @@
 import { fetcher, FetcherOptions, FetcherResponse } from './fetcher';
 import { requestContext } from '../utils/request-context';
 import { env } from './env';
+import { als } from './als';
 
 const ESI_SERVER = env.ESI_SERVER_URL;
 let errorLimitRemain = 100;
@@ -67,9 +68,14 @@ export function fetchESI<T = any>(
       }
 
       const url = `${ESI_SERVER}/latest${path.startsWith('/') ? path : '/' + path}`;
+      const store = als.getStore();
+      const headers = { ...options.headers };
+      if (store?.correlationId) {
+        headers['x-correlation-id'] = store.correlationId;
+      }
 
       try {
-        const response = await fetcher<T>(url, options);
+        const response = await fetcher<T>(url, { ...options, headers });
 
         const remain = response.headers.get('x-esi-error-limit-remain');
         const reset = response.headers.get('x-esi-error-limit-reset');
