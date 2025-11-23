@@ -2,70 +2,28 @@
 
 Self-hosted, EVE Online killboard built with Bun, Nitro, PostgreSQL, Redis, and Typesense.
 
-## Stack
+## Documentation
 
-- Runtime: Bun
-- Framework: Nitro
-- Data: PostgreSQL (`postgres.js`), Redis (BullMQ), Typesense
+Comprehensive developer documentation is available in the [`docs/`](./docs) directory.
 
-## Prerequisites
+- **[Development Setup](./docs/development/setup.md)**
+- **[Contributing Guide](./CONTRIBUTING.md)**
 
-- Bun installed (`bun --version`)
-- Docker + Docker Compose (provides Postgres, Redis, Typesense)
-- `tmux` (required only for `make dev`)
+## Quick Start
 
-**Note**: If you're using your own PostgreSQL server (not Docker), you must set `max_locks_per_transaction = 200` in `postgresql.conf` due to the partitioned table structure (60+ partitions). The Docker setup handles this automatically.
+For detailed instructions, please see the **[Development Setup](./docs/development/setup.md)** guide.
 
-## Quick start
+1.  **Configure Environment:** `cp .env.example .env`
+2.  **Bootstrap:** `make setup`
+3.  **Run:** `make dev`
 
-1: Copy envs and edit as needed:
-
-```bash
-cp .env.example .env
-```
-
-2: Bootstrap everything (containers, deps, migrations, SDE import, search seed):
-
-```bash
-make setup
-```
-
-3: Start the full dev stack (Nitro dev server, WebSocket server, queues, cronjobs, RedisQ listener):
-
-```bash
-make dev
-```
-
-`make dev` opens a tmux session; exit with `Ctrl+b` then `d` (detach) or `Ctrl+c` in each pane to stop.
-
-## Manual setup (if you skip make)
-
-```bash
-cp .env.example .env
-docker compose up -d postgres redis typesense
-bun install
-bun cli db:migrate
-bun cli db:partitions
-bun cli sde:download
-bun cli sde:refresh-mv
-bun cli search:seed
-```
-
-Then run the app:
-
-- Nitro dev server: `bun dev`
-- WebSocket server: `bun ws`
-- Queues: `bun queue` (or `bun queue <name> --limit 5` to test a single queue)
-- Cron jobs: `bun cronjobs`
-- RedisQ listener: `bun cli listeners:redisq`
-
-## Running tests
+## Running Tests
 
 ```bash
 bun test
 ```
 
-Tests preload `tests/setup.ts`, which recreates the test database (`TEST_DB_NAME`, default `edk_test`) and runs migrations automatically.
+Tests preload `tests/setup.ts`, which automatically recreates the test database (`TEST_DB_NAME`, default `edk_test`) and runs all migrations.
 
 ## Project layout
 
