@@ -2,28 +2,79 @@
 
 Self-hosted, EVE Online killboard built with Bun, Nitro, PostgreSQL, Redis, and Typesense.
 
-## Documentation
+## Stack
 
-Comprehensive developer documentation is available in the [`docs/`](./docs) directory.
+- Runtime: Bun
+- Framework: Nitro
+- Data: PostgreSQL (`postgres.js`), Redis (BullMQ), Typesense
 
-- **[Development Setup](./docs/development/setup.md)**
-- **[Contributing Guide](./CONTRIBUTING.md)**
+## Prerequisites
 
-## Quick Start
+- Bun installed (`bun --version`)
+- Docker + Docker Compose (provides Postgres, Redis, Typesense)
+- `tmux` (required only for `make dev`)
 
-For detailed instructions, please see the **[Development Setup](./docs/development/setup.md)** guide.
+**Note**: If you're using your own PostgreSQL server (not Docker), you must set `max_locks_per_transaction = 200` in `postgresql.conf` due to the partitioned table structure (60+ partitions). The Docker setup handles this automatically.
 
-1.  **Configure Environment:** `cp .env.example .env`
-2.  **Bootstrap:** `make setup`
-3.  **Run:** `make dev`
+## Quick start
 
-## Running Tests
+1: Copy envs and edit as needed:
+
+```bash
+cp .env.example .env
+```
+
+2: Bootstrap everything (containers, deps, migrations, SDE import, search seed):
+
+```bash
+make setup
+```
+
+3: Start the full dev stack (Nitro dev server, WebSocket server, queues, cronjobs, RedisQ listener):
+
+```bash
+make dev
+```
+
+`make dev` opens a tmux session; exit with `Ctrl+b` then `d` (detach) or `Ctrl+c` in each pane to stop.
+
+## Manual setup (if you skip make)
+
+```bash
+cp .env.example .env
+docker compose up -d postgres redis typesense
+bun install
+bun cli db:migrate
+bun cli db:partitions
+bun cli sde:download
+bun cli sde:refresh-mv
+bun cli search:seed
+```
+
+Then run the app:
+
+- Nitro dev server: `bun dev`
+- WebSocket server: `bun ws`
+- Queues: `bun queue` (or `bun queue <name> --limit 5` to test a single queue)
+- Cron jobs: `bun cronjobs`
+- RedisQ listener: `bun cli listeners:redisq`
+
+## Code Quality
+
+This project uses `husky`, `lint-staged`, and `commitlint` to enforce code quality and consistent commit messages.
+
+- **Pre-commit**: Before you commit, `lint-staged` will automatically run `eslint` and `prettier` on any staged `.ts` files. It will also format other file types like JSON and Markdown. Type-checking is not included in the pre-commit hook due to a large number of existing errors, but it is still run as a separate check in CI.
+- **Commit Message**: Your commit messages will be linted to ensure they follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
+
+These hooks are installed automatically when you run `bun install`.
+
+## Running tests
 
 ```bash
 bun test
 ```
 
-Tests preload `tests/setup.ts`, which automatically recreates the test database (`TEST_DB_NAME`, default `edk_test`) and runs all migrations.
+Tests preload `tests/setup.ts`, which recreates the test database (`TEST_DB_NAME`, default `edk_test`) and runs migrations automatically.
 
 ## Project layout
 
@@ -37,14 +88,11 @@ Tests preload `tests/setup.ts`, which automatically recreates the test database 
 
 ## Environment
 
-Use `server/helpers/env` for typed, validated access to configuration. Key variables:
-
-- App: `NODE_ENV`, `THEME`, `SITE_TITLE`, `SITE_SUBTITLE`, `IMAGE_SERVER_URL`, `ESI_SERVER_URL`
-- Database: `DATABASE_URL`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `ADMIN_DB_NAME`, `ADMIN_DATABASE_URL`, `TEST_DB_NAME`, `POSTGRES_DB`
-- Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDISQ_ID`
+- Postgres: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_URL`
+- Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_URL`
 - Typesense: `TYPESENSE_HOST`, `TYPESENSE_PORT`, `TYPESENSE_PROTOCOL`, `TYPESENSE_API_KEY`
-- Rate limits: `RATE_LIMIT_KILLMAIL_WINDOW`, `RATE_LIMIT_KILLMAIL_MAX`, `RATE_LIMIT_DEFAULT_WINDOW`, `RATE_LIMIT_DEFAULT_MAX`
-- Tracking & WS: `FOLLOWED_CHARACTER_IDS`, `FOLLOWED_CORPORATION_IDS`, `FOLLOWED_ALLIANCE_IDS`, `WS_PORT`, `WS_HOST`, `WS_PING_INTERVAL`, `WS_PING_TIMEOUT`, `WS_CLEANUP_INTERVAL`
+- Ingestion/search: `REDISQ_ID` (zKillboard queue ID), `IMAGE_SERVER_URL`
+- Tests: `TEST_DB_NAME` (optional override)
 
 ## Useful commands
 
