@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
+import { env } from '../server/helpers/env';
 
 async function reservePort(port: number, host: string) {
   return new Promise<number>((resolve, reject) => {
@@ -17,14 +18,14 @@ async function reservePort(port: number, host: string) {
 }
 
 async function pickPort() {
-  const preferred = Number.parseInt(process.env.PORT || '3000', 10) || 3000;
+  const preferred = env.PORT ?? 3000;
   // Align with listhen defaults: localhost unless HOST is explicitly set.
   const host =
-    process.env.HOST === undefined
+    env.HOST === undefined
       ? 'localhost'
-      : process.env.HOST === ''
+      : env.HOST === ''
         ? '0.0.0.0'
-        : process.env.HOST;
+        : env.HOST;
 
   try {
     const available = await reservePort(preferred, host);
@@ -40,7 +41,7 @@ async function pickPort() {
 }
 
 const { port, chosen } = await pickPort();
-const envHost = process.env.HOST;
+const envHost = env.HOST;
 
 if (port !== chosen) {
   console.info(`[dev] Using port ${port} (preferred ${chosen} was busy).`);

@@ -1,4 +1,5 @@
 import { requestContext } from '../utils/request-context';
+import { env } from '../helpers/env';
 
 /**
  * Performance Context Middleware
@@ -13,7 +14,7 @@ import { requestContext } from '../utils/request-context';
  */
 export default defineEventHandler((event) => {
   // Skip in production
-  if (process.env.NODE_ENV === 'production') {
+  if (env.NODE_ENV === 'production') {
     return;
   }
 

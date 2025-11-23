@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { Worker } from 'bullmq';
 import chalk from 'chalk';
+import { env } from './server/helpers/env';
 
 /**
  * Queue Runner - Main Entry Point
@@ -21,9 +22,9 @@ const __dirname = dirname(__filename);
 const QUEUE_DIR = join(__dirname, 'queue');
 
 const REDIS_CONFIG = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD || 'redis_password',
+  host: env.REDIS_HOST,
+  port: env.REDIS_PORT,
+  password: env.REDIS_PASSWORD || 'redis_password',
   db: 0,
 };
 

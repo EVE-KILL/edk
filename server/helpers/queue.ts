@@ -1,4 +1,5 @@
 import { Queue } from 'bullmq';
+import { env } from './env';
 
 /**
  * Queue Types Enum
@@ -26,9 +27,9 @@ export interface QueueJobData {
  * Redis connection config
  */
 const REDIS_CONFIG = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
+  host: env.REDIS_HOST,
+  port: env.REDIS_PORT,
+  password: env.REDIS_PASSWORD,
   db: 0,
 };
 
@@ -41,7 +42,7 @@ const queues = new Map<QueueType, Queue | any>();
  * Get or create a queue instance
  */
 function getQueue<T extends QueueType>(queueType: T): Queue {
-  if (process.env.NODE_ENV === 'test') {
+  if (env.NODE_ENV === 'test') {
     if (!queues.has(queueType)) {
       // In test mode, return a mock queue that does nothing
       const mockQueue = {

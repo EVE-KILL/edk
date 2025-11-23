@@ -7,8 +7,9 @@
 
 import { fetcher, FetcherOptions, FetcherResponse } from './fetcher';
 import { requestContext } from '../utils/request-context';
+import { env } from './env';
 
-const ESI_SERVER = process.env.ESI_SERVER_URL || 'https://esi.evetech.net';
+const ESI_SERVER = env.ESI_SERVER_URL;
 let errorLimitRemain = 100;
 let errorLimitReset = 60;
 let errorsLastMinute = 0;

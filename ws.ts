@@ -12,16 +12,14 @@ import { createRedisClient } from './server/helpers/redis';
 import { logger } from './server/helpers/logger';
 import type { ClientData, WebSocketMessage } from './ws/common';
 import { killmailMessageHandler } from './ws/handlers/killmails';
+import { env } from './server/helpers/env';
 
 // Server configuration
-const PORT = parseInt(process.env.WS_PORT || '3002', 10);
-const HOST = process.env.WS_HOST || '0.0.0.0';
-const PING_INTERVAL = parseInt(process.env.WS_PING_INTERVAL || '30000', 10); // 30 seconds
-const PING_TIMEOUT = parseInt(process.env.WS_PING_TIMEOUT || '10000', 10); // 10 seconds
-const CLEANUP_INTERVAL = parseInt(
-  process.env.WS_CLEANUP_INTERVAL || '60000',
-  10
-); // 1 minute
+const PORT = env.WS_PORT;
+const HOST = env.WS_HOST;
+const PING_INTERVAL = env.WS_PING_INTERVAL; // 30 seconds
+const PING_TIMEOUT = env.WS_PING_TIMEOUT; // 10 seconds
+const CLEANUP_INTERVAL = env.WS_CLEANUP_INTERVAL; // 1 minute
 
 const clients = new Map<any, ClientData>();
 let redis: ReturnType<typeof createRedisClient>;

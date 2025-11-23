@@ -11,6 +11,7 @@ import type {
   ESIKillmail,
   KillmailValueBreakdown,
 } from '../../server/models/killmails';
+import { getFollowedEntities } from '../../server/helpers/env';
 
 export default {
   description: 'Backfill killmails from eve-kill.com API for followed entities',
@@ -48,27 +49,11 @@ export default {
     const delayMs = options.delay ? Number.parseInt(options.delay) : 1000;
     const startPage = options.page ? Number.parseInt(options.page) : 0;
 
-    // Get followed entities from environment variables
-    const followedCharacterIds =
-      process.env.FOLLOWED_CHARACTER_IDS?.split(',')
-        .map((id) => id.trim())
-        .filter((id) => id.length > 0)
-        .map((id) => Number.parseInt(id))
-        .filter((id) => !Number.isNaN(id)) || [];
-
-    const followedCorporationIds =
-      process.env.FOLLOWED_CORPORATION_IDS?.split(',')
-        .map((id) => id.trim())
-        .filter((id) => id.length > 0)
-        .map((id) => Number.parseInt(id))
-        .filter((id) => !Number.isNaN(id)) || [];
-
-    const followedAllianceIds =
-      process.env.FOLLOWED_ALLIANCE_IDS?.split(',')
-        .map((id) => id.trim())
-        .filter((id) => id.length > 0)
-        .map((id) => Number.parseInt(id))
-        .filter((id) => !Number.isNaN(id)) || [];
+    const {
+      characters: followedCharacterIds,
+      corporations: followedCorporationIds,
+      alliances: followedAllianceIds,
+    } = getFollowedEntities();
 
     if (
       followedCharacterIds.length === 0 &&

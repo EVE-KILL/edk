@@ -3,6 +3,7 @@ import { readFile, access, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { H3Event } from 'h3';
 import { requestContext } from '../utils/request-context';
+import { env } from './env';
 
 export interface NormalizedKillmailEntity {
   id: number | null;
@@ -249,7 +250,7 @@ let partialsRegistered = false;
 
 // Get the current theme from environment
 function getTheme(): string {
-  return process.env.THEME || 'default';
+  return env.THEME;
 }
 
 // Default page context that's always available
@@ -627,7 +628,7 @@ function getDefaultData(): DefaultData {
   return {
     siteName: 'EVE-KILL',
     year: new Date().getFullYear(),
-    env: process.env.NODE_ENV || 'development',
+    env: env.NODE_ENV,
   };
 }
 
@@ -700,7 +701,7 @@ async function resolveTemplatePath(templatePath: string): Promise<string> {
  */
 async function registerPartials() {
   // In dev mode, always re-scan to pick up new files
-  const isDev = process.env.NODE_ENV !== 'production';
+  const isDev = env.NODE_ENV !== 'production';
   if (partialsRegistered && !isDev) return;
 
   const theme = getTheme();
@@ -834,15 +835,14 @@ export async function render(
       ...data,
       default: getDefaultData(),
       config: {
-        title: process.env.SITE_TITLE || 'EVE-KILL',
-        subtitle: process.env.SITE_SUBTITLE || 'Real-time Killmail Tracking',
+        title: env.SITE_TITLE,
+        subtitle: env.SITE_SUBTITLE,
         copyright: `© ${new Date().getFullYear()}`,
-        showVersion: process.env.NODE_ENV === 'development',
-        imageServerUrl:
-          process.env.IMAGE_SERVER_URL || 'https://images.evetech.net',
+        showVersion: env.NODE_ENV === 'development',
+        imageServerUrl: env.IMAGE_SERVER_URL,
       },
-      version: process.env.npm_package_version || '0.1.0',
-      buildDate: process.env.BUILD_DATE || new Date().toISOString().split('T')[0],
+      version: env.npm_package_version || '0.1.0',
+      buildDate: env.BUILD_DATE || new Date().toISOString().split('T')[0],
     };
 
     // Add performance data if available
@@ -850,7 +850,7 @@ export async function render(
       const summary = performance.getSummary();
       context.performance = summary;
       // Show debug bar in development mode
-      context.debug = process.env.NODE_ENV !== 'production';
+      context.debug = env.NODE_ENV !== 'production';
     }
 
     // Render content
@@ -903,7 +903,7 @@ export async function render(
     });
 
     // Return error page in development
-    if (process.env.NODE_ENV !== 'production') {
+    if (env.NODE_ENV !== 'production') {
       return `
         <!DOCTYPE html>
         <html>

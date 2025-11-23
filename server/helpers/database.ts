@@ -2,6 +2,7 @@ import postgres from 'postgres';
 import { LRUCache } from 'lru-cache';
 import { requestContext } from '../utils/request-context';
 import { dbQueryDurationHistogram } from './metrics';
+import { env } from './env';
 
 const DEFAULT_DATABASE_URL =
   'postgresql://edk_user:edk_password@localhost:5432/edk';
@@ -343,10 +344,7 @@ export class Database {
 
     if (!this.sqlInstance) {
       const url =
-        this.options.url ||
-        this.currentUrl ||
-        process.env.DATABASE_URL ||
-        DEFAULT_DATABASE_URL;
+        this.options.url || this.currentUrl || env.DATABASE_URL || DEFAULT_DATABASE_URL;
 
       this.currentUrl = url;
 
@@ -377,7 +375,7 @@ export class Database {
     const start = Date.now();
 
     // Debug logging if DEBUG env var is set
-    if (process.env.DEBUG) {
+    if (env.DEBUG) {
       console.log('[DB Query]', sql.substring(0, 200) + (sql.length > 200 ? '...' : ''));
       console.log('[DB Params]', values);
     }
@@ -400,7 +398,7 @@ export class Database {
         }
       }
 
-      if (process.env.DEBUG) {
+      if (env.DEBUG) {
         console.log(`[DB Duration] ${duration}ms, rows: ${rows.length}`);
       }
 
@@ -422,7 +420,7 @@ export class Database {
         }
       }
 
-      if (process.env.DEBUG) {
+      if (env.DEBUG) {
         console.error('[DB Error]', error);
       }
 
@@ -687,4 +685,3 @@ export class Database {
 }
 
 export const database = new Database();
-

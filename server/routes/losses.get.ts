@@ -5,6 +5,7 @@ import {
   countFollowedEntitiesLosses,
 } from '../models/killlist';
 import { handleError } from '../utils/error';
+import { getFollowedEntities } from '../helpers/env';
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
@@ -14,18 +15,8 @@ export default defineEventHandler(async (event: H3Event) => {
       keywords: 'eve online, losses, tracking',
     };
 
-    const charIds =
-      process.env.FOLLOWED_CHARACTER_IDS?.split(',')
-        .map(Number)
-        .filter((n) => !isNaN(n) && n > 0) || [];
-    const corpIds =
-      process.env.FOLLOWED_CORPORATION_IDS?.split(',')
-        .map(Number)
-        .filter((n) => !isNaN(n) && n > 0) || [];
-    const allyIds =
-      process.env.FOLLOWED_ALLIANCE_IDS?.split(',')
-        .map(Number)
-        .filter((n) => !isNaN(n) && n > 0) || [];
+    const { characters: charIds, corporations: corpIds, alliances: allyIds } =
+      getFollowedEntities();
 
     const hasEntities =
       charIds.length > 0 || corpIds.length > 0 || allyIds.length > 0;

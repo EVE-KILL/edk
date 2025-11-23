@@ -12,6 +12,7 @@
 import { readdirSync, statSync } from 'fs';
 import { join, parse } from 'path';
 import { CronJob, CronTime } from 'cron';
+import { env } from './server/helpers/env';
 
 interface CronJobModule {
   name: string;
@@ -251,7 +252,7 @@ async function startAllCronJobs(jobs: Map<string, string>) {
  * Main entry point
  */
 async function main() {
-  if (process.env.NODE_ENV === 'test') {
+  if (env.NODE_ENV === 'test') {
     console.log('🚫 Cron jobs are disabled in test environment');
     return;
   }

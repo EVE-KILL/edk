@@ -2,15 +2,16 @@ import Redis from 'ioredis';
 import { createStorage, Storage } from 'unstorage';
 import redisDriver from 'unstorage/drivers/redis';
 import { requestContext } from '../utils/request-context';
+import { env } from './env';
 
-const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
+const REDIS_HOST = env.REDIS_HOST;
+const REDIS_PORT = env.REDIS_PORT;
 
 export function createRedisClient() {
   return new Redis({
     host: REDIS_HOST,
     port: REDIS_PORT,
-    password: process.env.REDIS_PASSWORD || 'redis_password',
+    password: env.REDIS_PASSWORD || 'redis_password',
     db: 0,
   });
 }
@@ -19,7 +20,7 @@ const baseStorage = createStorage({
   driver: redisDriver({
     host: REDIS_HOST,
     port: REDIS_PORT,
-    password: process.env.REDIS_PASSWORD || 'redis_password',
+    password: env.REDIS_PASSWORD || 'redis_password',
   }),
 });
 

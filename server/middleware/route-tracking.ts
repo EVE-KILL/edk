@@ -1,4 +1,5 @@
 import { defineEventHandler, getRequestURL } from 'h3';
+import { env } from '../helpers/env';
 
 /**
  * Route Tracking Middleware
@@ -12,7 +13,7 @@ import { defineEventHandler, getRequestURL } from 'h3';
  */
 export default defineEventHandler(async (event) => {
   // Skip in production
-  if (process.env.NODE_ENV === 'production') {
+  if (env.NODE_ENV === 'production') {
     return;
   }
 

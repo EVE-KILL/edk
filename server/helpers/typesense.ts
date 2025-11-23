@@ -1,5 +1,6 @@
-import { Configuration, Client } from 'typesense';
+import { Client } from 'typesense';
 import { requestContext } from '../utils/request-context';
+import { env } from './env';
 
 export const searchCollectionSchema = {
   name: 'search',
@@ -9,10 +10,10 @@ export const searchCollectionSchema = {
   ],
 };
 
-const host = process.env.TYPESENSE_HOST || 'localhost';
-const port = parseInt(process.env.TYPESENSE_PORT || '8108', 10);
-const protocol = process.env.TYPESENSE_PROTOCOL || 'http';
-const apiKey = process.env.TYPESENSE_API_KEY || 'xyz';
+const host = env.TYPESENSE_HOST;
+const port = env.TYPESENSE_PORT;
+const protocol = env.TYPESENSE_PROTOCOL;
+const apiKey = env.TYPESENSE_API_KEY;
 
 const config = {
   nodes: [
@@ -48,7 +49,7 @@ export async function ensureSearchCollection(): Promise<void> {
       return;
     } catch (error: any) {
       if (error?.httpStatus && error.httpStatus !== 404) {
-        if (process.env.NODE_ENV === 'development') {
+        if (env.NODE_ENV === 'development') {
           console.error('Failed to check Typesense search collection:', error);
         }
         throw error;
@@ -64,7 +65,7 @@ export async function ensureSearchCollection(): Promise<void> {
         return;
       }
 
-      if (process.env.NODE_ENV === 'development') {
+      if (env.NODE_ENV === 'development') {
         console.error('Failed to create Typesense search collection:', error);
       }
       throw error;
@@ -115,7 +116,7 @@ export async function updateSearchEntity(
   } catch (error) {
     // Silently fail - search index updates shouldn't break entity storage
     // Only log in development
-    if (process.env.NODE_ENV === 'development') {
+    if (env.NODE_ENV === 'development') {
       console.error(`Failed to update search index for ${type} ${id}:`, error);
     }
   } finally {
