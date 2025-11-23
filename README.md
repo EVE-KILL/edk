@@ -103,4 +103,4 @@ Tests preload `tests/setup.ts`, which recreates the test database (`TEST_DB_NAME
 - `bun cli search:seed` – rebuild Typesense search index
 - `bun cli listeners:redisq` – start the killmail listener
 
-Production guidance is coming soon™; for now the focus is local/development usage.
+For detailed production deployment instructions, please see the [Production Deployment Guide](./docs/production-deployment.md).
