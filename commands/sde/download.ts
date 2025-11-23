@@ -28,8 +28,6 @@ import {
   dogmaEffectsConfig,
 } from '../../server/helpers/sde/configs';
 
-type SdeFetcher = typeof defaultSdeFetcher;
-
 /**
  * SDE Download Command
  *

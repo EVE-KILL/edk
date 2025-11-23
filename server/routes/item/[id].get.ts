@@ -14,7 +14,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Fetch item info
-    const item = await TypeQueries.getType(id);
+    const item = (await TypeQueries.getType(id)) as any;
     if (!item) {
       throw createError({ statusCode: 404, statusMessage: 'Item not found' });
     }

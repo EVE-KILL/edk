@@ -1,50 +1,70 @@
 import { describe, test, expect, mock } from 'bun:test';
 import { Job } from 'bullmq';
-import { processor as killmailProcessor } from '../../queue/killmail';
 import esiKillmail from '../fixtures/esi-killmail.json';
+
+const mockFetchESI = mock().mockResolvedValue({ ok: true, data: esiKillmail });
+const mockFetchAndStoreCharacter = mock().mockResolvedValue(undefined);
+const mockFetchAndStoreCorporation = mock().mockResolvedValue(undefined);
+const mockFetchAndStoreAlliance = mock().mockResolvedValue(undefined);
+const mockFetchPrices = mock().mockResolvedValue([]);
+const mockStorePrices = mock().mockResolvedValue(undefined);
+const mockStoreKillmail = mock().mockResolvedValue(undefined);
+
+mock.module('../../server/helpers/esi', () => ({
+  fetchESI: mockFetchESI,
+}));
+mock.module('../../server/fetchers/character', () => ({
+  fetchAndStoreCharacter: mockFetchAndStoreCharacter,
+}));
+mock.module('../../server/fetchers/corporation', () => ({
+  fetchAndStoreCorporation: mockFetchAndStoreCorporation,
+}));
+mock.module('../../server/fetchers/alliance', () => ({
+  fetchAndStoreAlliance: mockFetchAndStoreAlliance,
+}));
+mock.module('../../server/fetchers/price', () => ({
+  fetchPrices: mockFetchPrices,
+}));
+mock.module('../../server/models/prices', () => ({
+  storePrices: mockStorePrices,
+}));
+mock.module('../../server/models/killmails', () => ({
+  storeKillmail: mockStoreKillmail,
+}));
 
 describe('Queue Processors', () => {
   describe('killmail', () => {
     test('should process a killmail job successfully', async () => {
-      // Create mock functions for all dependencies
-      const mockDependencies = {
-        fetchESI: mock().mockResolvedValue({ ok: true, data: esiKillmail }),
-        fetchAndStoreCharacter: mock().mockResolvedValue(undefined),
-        fetchAndStoreCorporation: mock().mockResolvedValue(undefined),
-        fetchAndStoreAlliance: mock().mockResolvedValue(undefined),
-        fetchPrices: mock().mockResolvedValue([]),
-        storePrices: mock().mockResolvedValue(undefined),
-        storeKillmail: mock().mockResolvedValue(undefined),
-      };
+      const { processor: killmailProcessor } = await import('../../queue/killmail');
 
       // Create a mock job
       const job = { data: { killmailId: 123456789, hash: 'test_hash' } } as Job;
 
-      // Process the job, injecting the mock dependencies
-      await killmailProcessor(job, mockDependencies);
+      // Process the job
+      await killmailProcessor(job);
 
       // Assert that all dependencies were called correctly
-      expect(mockDependencies.fetchESI).toHaveBeenCalledWith(
+      expect(mockFetchESI).toHaveBeenCalledWith(
         '/killmails/123456789/test_hash/'
       );
-      expect(mockDependencies.fetchAndStoreCharacter).toHaveBeenCalledWith(
+      expect(mockFetchAndStoreCharacter).toHaveBeenCalledWith(
         93260215
       );
-      expect(mockDependencies.fetchAndStoreCharacter).toHaveBeenCalledWith(
+      expect(mockFetchAndStoreCharacter).toHaveBeenCalledWith(
         95465495
       );
-      expect(mockDependencies.fetchAndStoreCorporation).toHaveBeenCalledWith(
+      expect(mockFetchAndStoreCorporation).toHaveBeenCalledWith(
         1000001
       );
-      expect(mockDependencies.fetchAndStoreCorporation).toHaveBeenCalledWith(
+      expect(mockFetchAndStoreCorporation).toHaveBeenCalledWith(
         1000002
       );
-      expect(mockDependencies.fetchAndStoreAlliance).toHaveBeenCalledWith(
+      expect(mockFetchAndStoreAlliance).toHaveBeenCalledWith(
         498125261
       );
-      expect(mockDependencies.fetchPrices).toHaveBeenCalled();
-      expect(mockDependencies.storePrices).not.toHaveBeenCalled();
-      expect(mockDependencies.storeKillmail).toHaveBeenCalledWith(
+      expect(mockFetchPrices).toHaveBeenCalled();
+      expect(mockStorePrices).not.toHaveBeenCalled();
+      expect(mockStoreKillmail).toHaveBeenCalledWith(
         esiKillmail,
         'test_hash'
       );

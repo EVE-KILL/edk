@@ -218,6 +218,7 @@ function getTitleForType(type: KillType): string {
     big: 'Big Kills',
     solo: 'Solo Kills',
     npc: 'NPC Kills',
+    awox: 'Awox Kills',
     highsec: 'High-Sec Kills',
     lowsec: 'Low-Sec Kills',
     nullsec: 'Null-Sec Kills',

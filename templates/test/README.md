@@ -14,7 +14,7 @@ These templates provide a reliable, deterministic environment for testing templa
 
 ## Usage
 
-Tests use these fixtures by setting `process.env.THEME = 'test'` before calling the render function. This ensures tests:
+Tests use these fixtures by setting `process.env.THEME = 'test'` and calling `refreshEnv()` before rendering. This ensures tests:
 
 1. Are isolated from production template changes
 2. Don't fail due to missing production templates

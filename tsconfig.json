@@ -28,6 +28,14 @@
     // Libs & paths
     "lib": ["ESNext", "DOM"],
     "baseUrl": ".",
-    "types": ["bun-types"]
+    "types": ["bun", "node"],
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "paths": {
+      "~/*": ["./server/*"],
+      "@/*": ["./server/*"],
+      "~~/*": ["./*"],
+      "@@/*": ["./*"],
+      "#imports": ["./.nitro/types/nitro-imports"]
+    }
   }
 }

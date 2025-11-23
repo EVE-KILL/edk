@@ -1,16 +1,17 @@
 import Redis from 'ioredis';
-import { createStorage, Storage } from 'unstorage';
+import { createStorage } from 'unstorage';
 import redisDriver from 'unstorage/drivers/redis';
 import { requestContext } from '../utils/request-context';
+import { env } from './env';
 
-const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
+const REDIS_HOST = env.REDIS_HOST;
+const REDIS_PORT = env.REDIS_PORT;
 
 export function createRedisClient() {
   return new Redis({
     host: REDIS_HOST,
     port: REDIS_PORT,
-    password: process.env.REDIS_PASSWORD || 'redis_password',
+    password: env.REDIS_PASSWORD || 'redis_password',
     db: 0,
   });
 }
@@ -19,7 +20,7 @@ const baseStorage = createStorage({
   driver: redisDriver({
     host: REDIS_HOST,
     port: REDIS_PORT,
-    password: process.env.REDIS_PASSWORD || 'redis_password',
+    password: env.REDIS_PASSWORD || 'redis_password',
   }),
 });
 
@@ -27,7 +28,7 @@ const baseStorage = createStorage({
  * Tracked Redis storage wrapper
  * Automatically tracks Redis operations for performance monitoring
  */
-class TrackedStorage implements Storage {
+class TrackedStorage {
   private trackOperation<T>(operation: string, fn: () => Promise<T>): Promise<T> {
     const performance = requestContext.getStore()?.performance;
     const spanId = performance?.startSpan(`redis:${operation}`, 'cache', { operation });
@@ -81,11 +82,11 @@ class TrackedStorage implements Storage {
     return this.trackOperation('set', () => baseStorage.setItemRaw(key, value));
   }
 
-  mount(base: string, driver: any): void {
+  mount(base: string, driver: any) {
     return baseStorage.mount(base, driver);
   }
 
-  unmount(base: string, dispose?: boolean): void {
+  async unmount(base: string, dispose?: boolean): Promise<void> {
     return baseStorage.unmount(base, dispose);
   }
 

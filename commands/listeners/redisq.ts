@@ -3,6 +3,7 @@ import { enqueueJob } from '../../server/helpers/queue';
 import { QueueType } from '../../server/helpers/queue';
 import { killmailExists } from '../../server/models/killmails';
 import { logger } from '../../server/helpers/logger';
+import { env } from '../../server/helpers/env';
 
 /**
  * RedisQ Killmail Importer Command
@@ -37,10 +38,10 @@ class RedisQImporter {
   };
 
   constructor() {
-    if (!process.env.REDISQ_ID) {
+    if (!env.REDISQ_ID) {
       throw new Error('REDISQ_ID environment variable is not set.');
     }
-    this.queueUrl = `https://zkillredisq.stream/listen.php?queueID=${process.env.REDISQ_ID}`;
+    this.queueUrl = `https://zkillredisq.stream/listen.php?queueID=${env.REDISQ_ID}`;
   }
 
   async execute(): Promise<void> {

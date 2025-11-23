@@ -1,34 +1,32 @@
 import postgres from 'postgres';
 import { unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
-
-// Configuration
-const TEST_DB = process.env.TEST_DB_NAME || 'edk_test';
-const DB_USER = process.env.DB_USER || 'edk_user';
-const DB_PASS = process.env.DB_PASSWORD || 'edk_password';
-const DB_HOST = process.env.DB_HOST || 'localhost';
-const DB_PORT = parseInt(process.env.DB_PORT || '5432');
-const DEFAULT_DB = process.env.DB_NAME || 'edk';
-
-// Use the provided admin connection string or construct one
-// We need a connection to a database that exists (like 'postgres' or the default app db) to create the test db
-const ADMIN_DATABASE = process.env.ADMIN_DB_NAME || DEFAULT_DB;
-const adminUrl =
-  process.env.ADMIN_DATABASE_URL ||
-  `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${ADMIN_DATABASE}`;
+import { refreshEnv } from '../server/helpers/env';
 
 import { beforeAll } from 'bun:test';
 
 beforeAll(async () => {
   console.log('🛠️  Initializing Test Environment...');
 
+  const baseEnv = refreshEnv();
+  const testDbName = baseEnv.TEST_DB_NAME;
+  const dbUser = baseEnv.DB_USER;
+  const dbPass = baseEnv.DB_PASSWORD;
+  const dbHost = baseEnv.DB_HOST;
+  const dbPort = baseEnv.DB_PORT;
+  const adminDatabase = baseEnv.ADMIN_DB_NAME || baseEnv.DB_NAME;
+  const adminUrl =
+    baseEnv.ADMIN_DATABASE_URL ||
+    `postgresql://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${adminDatabase}`;
+
   // 1. Set Environment Variables for the Application
   // These must be set before importing app modules
-  process.env.TEST_DB_NAME = TEST_DB;
-  process.env.DATABASE_URL = `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${TEST_DB}`;
-  process.env.REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-  process.env.REDIS_PORT = process.env.REDIS_PORT || '6379';
+  process.env.TEST_DB_NAME = testDbName;
+  process.env.DATABASE_URL = `postgresql://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${testDbName}`;
+  process.env.REDIS_HOST = String(baseEnv.REDIS_HOST);
+  process.env.REDIS_PORT = String(baseEnv.REDIS_PORT);
   process.env.NODE_ENV = 'test';
+  const updatedEnv = refreshEnv();
 
   // 2. Cleanup Previous State
   // Remove checksum file to force migration to ensure schema is up to date
@@ -45,21 +43,21 @@ beforeAll(async () => {
     await sql`
           SELECT pg_terminate_backend(pid)
           FROM pg_stat_activity
-          WHERE datname = ${TEST_DB}
+          WHERE datname = ${testDbName}
           AND pid <> pg_backend_pid()
       `.catch(() => {});
 
-    await sql.unsafe(`DROP DATABASE IF EXISTS "${TEST_DB}"`);
-    await sql.unsafe(`CREATE DATABASE "${TEST_DB}"`);
+    await sql.unsafe(`DROP DATABASE IF EXISTS "${testDbName}"`);
+    await sql.unsafe(`CREATE DATABASE "${testDbName}"`);
   } catch (e) {
     console.error('Failed to recreate test database:', e);
     console.error(
       'Database:',
-      DB_HOST,
+      dbHost,
       'Port:',
-      DB_PORT,
+      dbPort,
       'Name:',
-      ADMIN_DATABASE
+      adminDatabase
     );
     process.exit(1);
   } finally {
@@ -70,7 +68,7 @@ beforeAll(async () => {
   // This is crucial because DatabaseHelper might have been initialized
   // with the default URL before this script runs.
   const { database } = await import('../server/helpers/database');
-  await database.setUrl(process.env.DATABASE_URL);
+  await database.setUrl(updatedEnv.DATABASE_URL);
 
   // 5. Run Migrations
   try {

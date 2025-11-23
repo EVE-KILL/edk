@@ -2,11 +2,12 @@ import postgres from 'postgres';
 import { LRUCache } from 'lru-cache';
 import { requestContext } from '../utils/request-context';
 import { dbQueryDurationHistogram } from './metrics';
+import { env } from './env';
 
 const DEFAULT_DATABASE_URL =
   'postgresql://edk_user:edk_password@localhost:5432/edk';
 
-export type NamedParams = Record<string, unknown>;
+export type NamedParams = Record<string, any>;
 
 export interface QueryOptions {
   cacheTimeMs?: number;
@@ -18,17 +19,17 @@ export interface DatabaseOptions {
   maxConnections?: number;
   idleTimeoutSeconds?: number;
   connectTimeoutSeconds?: number;
-  cache?: LRUCache.Options<string, unknown>;
+  cache?: LRUCache.Options<string, any, any>;
 }
 
 interface DriverAdapter {
-  execute<T = unknown>(query: string, values?: unknown[]): Promise<T[]>;
+  execute<T = unknown>(query: string, values?: any[]): Promise<T[]>;
 }
 
 class PostgresDriverAdapter implements DriverAdapter {
   constructor(private readonly sql: postgres.Sql) {}
 
-  execute<T = unknown>(query: string, values: unknown[] = []): Promise<T[]> {
+  execute<T = unknown>(query: string, values: any[] = []): Promise<T[]> {
     return this.sql.unsafe<T[]>(query, values);
   }
 }
@@ -37,7 +38,7 @@ export class Database {
   private sqlInstance: postgres.Sql | undefined;
   private driverInstance: DriverAdapter | undefined;
   private currentUrl: string | undefined;
-  private readonly cache: LRUCache<string, unknown>;
+  private readonly cache: LRUCache<string, any>;
   private readonly ownsConnection: boolean;
   private readonly overrideSql?: postgres.Sql;
 
@@ -46,7 +47,7 @@ export class Database {
     private readonly overrideDriver?: DriverAdapter,
     overrideSql?: postgres.Sql
   ) {
-    this.cache = new LRUCache<string, unknown>({
+    this.cache = new LRUCache<string, any>({
       max: options.cache?.max ?? 500,
       ttlAutopurge: true,
       ...options.cache,
@@ -250,7 +251,7 @@ export class Database {
       const rowIdx = parseInt(idx);
       const colIdx = columns.indexOf(col);
       return `$${rowIdx * columns.length + colIdx + 1}`;
-    }), valuesData.flat());
+    }), valuesData.flat() as any[]);
 
     return true;
   }
@@ -309,7 +310,7 @@ export class Database {
       const result = await callback(txDb);
       this.cache.clear();
       return result;
-    });
+    }) as unknown as Promise<T>;
   }
 
   get sql(): postgres.Sql {
@@ -343,10 +344,7 @@ export class Database {
 
     if (!this.sqlInstance) {
       const url =
-        this.options.url ||
-        this.currentUrl ||
-        process.env.DATABASE_URL ||
-        DEFAULT_DATABASE_URL;
+        this.options.url || this.currentUrl || env.DATABASE_URL || DEFAULT_DATABASE_URL;
 
       this.currentUrl = url;
 
@@ -377,13 +375,13 @@ export class Database {
     const start = Date.now();
 
     // Debug logging if DEBUG env var is set
-    if (process.env.DEBUG) {
+    if (env.DEBUG) {
       console.log('[DB Query]', sql.substring(0, 200) + (sql.length > 200 ? '...' : ''));
       console.log('[DB Params]', values);
     }
 
     try {
-      const rows = await this.driver.execute<T>(sql, values);
+      const rows = await this.driver.execute<T>(sql, values as any[]);
       const duration = Date.now() - start;
       dbQueryDurationHistogram.observe({ query: sql }, duration / 1000);
 
@@ -400,7 +398,7 @@ export class Database {
         }
       }
 
-      if (process.env.DEBUG) {
+      if (env.DEBUG) {
         console.log(`[DB Duration] ${duration}ms, rows: ${rows.length}`);
       }
 
@@ -422,7 +420,7 @@ export class Database {
         }
       }
 
-      if (process.env.DEBUG) {
+      if (env.DEBUG) {
         console.error('[DB Error]', error);
       }
 
@@ -430,8 +428,8 @@ export class Database {
     }
   }
 
-  private prepare(query: string, params: NamedParams) {
-    const values: unknown[] = [];
+  private prepare(query: string, params: NamedParams): { sql: string; values: any[] } {
+    const values: any[] = [];
     const replacements = new Map<string, string>();
 
     const length = query.length;
@@ -687,4 +685,3 @@ export class Database {
 }
 
 export const database = new Database();
-

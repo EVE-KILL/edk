@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { logger } from './server/helpers/logger';
 import { database } from './server/helpers/database';
+import { env } from './server/helpers/env';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -16,6 +17,7 @@ interface CommandInfo {
 }
 
 const loadedCommands: CommandInfo[] = [];
+void env;
 
 async function loadCommands(program: Command): Promise<void> {
   const commandsDir = join(__dirname, 'commands');

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'bun:test';
 import { normalizeKillRow, render } from '../server/helpers/templates';
+import { refreshEnv } from '../server/helpers/env';
 
 // Mock logger for tests since it's auto-imported in Nitro but not available in test context
 beforeAll(() => {
@@ -48,6 +49,7 @@ describe('Frontend Rendering & Helpers', () => {
       // Set theme to test to use test fixtures
       const originalTheme = process.env.THEME;
       process.env.THEME = 'test';
+      refreshEnv();
 
       try {
         const html = await render(
@@ -71,6 +73,7 @@ describe('Frontend Rendering & Helpers', () => {
         } else {
           delete process.env.THEME;
         }
+        refreshEnv();
       }
     });
 
@@ -78,6 +81,7 @@ describe('Frontend Rendering & Helpers', () => {
       // Set theme to test to use test fixtures
       const originalTheme = process.env.THEME;
       process.env.THEME = 'test';
+      refreshEnv();
 
       try {
         const html = await render(
@@ -102,6 +106,7 @@ describe('Frontend Rendering & Helpers', () => {
         } else {
           delete process.env.THEME;
         }
+        refreshEnv();
       }
     });
   });

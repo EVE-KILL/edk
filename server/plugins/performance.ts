@@ -1,8 +1,9 @@
 import { defineNitroPlugin } from 'nitropack/runtime';
 import { PerformanceTracker } from '../helpers/performance';
+import { env } from '../helpers/env';
 
 export default defineNitroPlugin((nitroApp) => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = env.NODE_ENV === 'production';
   
   // Skip all performance tracking in production
   if (isProduction) {
