@@ -2,63 +2,9 @@
 <!-- Kills for Followed Entities or Global Feed -->
 
 <!-- Most Valuable Kills Section - Full Width -->
-{{#if data.mostValuableKills}}
 <section style="margin-bottom: 20px;">
-    <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 20px; overflow: visible; position: relative;">
-        <!-- Header Section -->
-        <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
-            <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                Most Valuable Kills {{#if data.mostValuableTimeRange}}({{data.mostValuableTimeRange}}){{/if}}
-            </div>
-        </div>
-
-        <!-- Content Section -->
-        <div style="padding: 8px 12px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; width: 100%;">
-                {{#each data.mostValuableKills}}
-                <div>
-                    <div data-killmail-id="{{this.killmailId}}" style="min-height: 215px; text-decoration: none; cursor: pointer; display: flex; flex-direction: column; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); overflow: hidden; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--color-accent-blue-light)'; this.style.boxShadow='0 0 8px rgba(74, 158, 255, 0.3)'" onmouseout="this.style.borderColor='var(--color-border-dark)'; this.style.boxShadow='none'" onclick="window.location.href='/killmail/{{this.killmailId}}';">
-                        <!-- Ship Image Container -->
-                        <div style="position: relative; width: 100%; height: 110px; background: linear-gradient(135deg, rgba(74, 158, 255, 0.1), rgba(74, 158, 255, 0.05)); display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                            <!-- Ship image -->
-                            {{> partials/eve-image type="ship" id=this.victim.ship.typeId size=110 alt=this.victim.ship.name lazy=false}}
-
-                            <!-- Ship Name Badge -->
-                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent); padding: 4px 8px 3px 8px; font-size: 9px; font-weight: 600; color: var(--color-text-white); text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">
-                                {{this.victim.ship.name}}
-                            </div>
-                        </div>
-
-                        <!-- Info Section -->
-                        <div style="padding: 10px 12px; display: flex; flex-direction: column; flex: 1;">
-                            <!-- Pilot Name -->
-                            <div style="margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.3;">
-                                <span style="color: #4a9eff; text-decoration: none; font-size: 11px; font-weight: 600; display: block;">
-                                    {{this.victim.character.name}}
-                                </span>
-                            </div>
-
-                            <!-- Corp Ticker -->
-                            <div style="margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.3;">
-                                <span style="color: var(--color-text-secondary); font-size: 9px;">{{this.victim.corporation.name}}</span>
-                            </div>
-
-                            <!-- Value - Pinned to Bottom -->
-                            <div style="margin-top: auto; padding-top: 6px;">
-                                <div style="color: #4ade80; font-weight: 700; font-size: 11px; line-height: 1.3; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{formatISK this.totalValue}}</div>
-                                <div style="font-size: 9px; color: var(--color-text-secondary); line-height: 1.3;">
-                                    {{this.solarSystem.name}}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {{/each}}
-            </div>
-        </div>
-    </div>
+    {{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange=data.mostValuableTimeRange}}
 </section>
-{{/if}}
 
 <div class="killlist-wrapper">
   <!-- Top 10 Stats (Left Sidebar) -->
