@@ -7,7 +7,7 @@ import { database } from '../helpers/database';
  */
 
 export interface MostValuableKill {
-  periodType: 'hour' | 'day' | 'week' | 'month' | 'all';
+  periodType: 'hour' | 'day' | 'week' | '14d' | 'month' | 'all';
   killmailId: number;
   killmailTime: Date;
   solarSystemId: number;
@@ -92,6 +92,8 @@ function getHoursAgo(periodType: string): number {
       return 24;
     case 'week':
       return 168;
+    case '14d':
+      return 336; // 14 days * 24 hours
     case 'month':
       return 720;
     case 'all':
@@ -105,7 +107,7 @@ function getHoursAgo(periodType: string): number {
  * Get most valuable kills for a period
  */
 export async function getMostValuableKillsByPeriod(
-  periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
+  periodType: 'hour' | 'day' | 'week' | '14d' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);
@@ -124,11 +126,11 @@ export async function getMostValuableKillsByPeriod(
 }
 
 /**
- * Get most valuable kills for a specific character
+ * Get most valuable kills for a specific character (as attacker)
  */
 export async function getMostValuableKillsByCharacter(
   characterId: number,
-  periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
+  periodType: 'hour' | 'day' | 'week' | '14d' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);
@@ -137,7 +139,7 @@ export async function getMostValuableKillsByCharacter(
   return database.find<MostValuableKill>(
     `SELECT ${selectClause}
      ${JOIN_CLAUSE}
-     WHERE k."victimCharacterId" = :characterId
+     WHERE k."topAttackerCharacterId" = :characterId
        AND k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT :limit`,
@@ -146,11 +148,11 @@ export async function getMostValuableKillsByCharacter(
 }
 
 /**
- * Get most valuable kills for a specific corporation
+ * Get most valuable kills for a specific corporation (as attacker)
  */
 export async function getMostValuableKillsByCorporation(
   corporationId: number,
-  periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
+  periodType: 'hour' | 'day' | 'week' | '14d' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);
@@ -159,7 +161,7 @@ export async function getMostValuableKillsByCorporation(
   return database.find<MostValuableKill>(
     `SELECT ${selectClause}
      ${JOIN_CLAUSE}
-     WHERE k."victimCorporationId" = :corporationId
+     WHERE k."topAttackerCorporationId" = :corporationId
        AND k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT :limit`,
@@ -168,11 +170,11 @@ export async function getMostValuableKillsByCorporation(
 }
 
 /**
- * Get most valuable kills for a specific alliance
+ * Get most valuable kills for a specific alliance (as attacker)
  */
 export async function getMostValuableKillsByAlliance(
   allianceId: number,
-  periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
+  periodType: 'hour' | 'day' | 'week' | '14d' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);
@@ -181,7 +183,7 @@ export async function getMostValuableKillsByAlliance(
   return database.find<MostValuableKill>(
     `SELECT ${selectClause}
      ${JOIN_CLAUSE}
-     WHERE k."victimAllianceId" = :allianceId
+     WHERE k."topAttackerAllianceId" = :allianceId
        AND k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
      ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
      LIMIT :limit`,
@@ -193,7 +195,7 @@ export async function getMostValuableKillsByAlliance(
  * Get most valuable solo kills
  */
 export async function getMostValuableSoloKills(
-  periodType: 'hour' | 'day' | 'week' | 'month' | 'all',
+  periodType: 'hour' | 'day' | 'week' | '14d' | 'month' | 'all',
   limit: number = 50
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);

@@ -15,13 +15,11 @@ services:
       - LOG_LEVEL=info
       - DATABASE_URL=postgres://edk_user:edk_password@postgres:5432/edk
       - REDIS_URL=redis://redis:6379/0
-      - TYPESENSE_HOST=typesense
     ports:
       - "3000:3000"
     depends_on:
       - postgres
       - redis
-      - typesense
 
   postgres:
     image: postgres:15
@@ -44,19 +42,6 @@ services:
       - redis_data:/data
     ports:
       - "6379:6379"
-
-  typesense:
-    image: typesense/typesense:0.25.2
-    container_name: edk-typesense-prod
-    restart: unless-stopped
-    volumes:
-      - typesense_data:/data
-    environment:
-      - TYPESENSE_DATA_DIR=/data
-      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY} # Make sure to set this in your .env file
-      - TYPESENSE_ENABLE_CORS=true
-    ports:
-      - "8108:8108"
 
 volumes:
   postgres_data:

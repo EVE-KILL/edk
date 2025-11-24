@@ -9,9 +9,10 @@ import {
   getEntityKillmails,
   countEntityKillmails,
 } from '../../../models/killlist';
-import { getEntityStats } from '../../../models/entityStats';
+import { getEntityStatsFromCache, isStatsCachePopulated } from '../../../models/entityStatsCache';
+import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getMostValuableKillsByCorporation } from '../../../models/mostValuableKills';
-import { getTopByKills } from '../../../models/topBoxes';
+import { getTopVictimsByAttacker } from '../../../models/topBoxes';
 import { track } from '../../../utils/performance-decorators';
 
 import { handleError } from '../../../utils/error';
@@ -42,19 +43,29 @@ export default defineEventHandler(async (event: H3Event) => {
     // Fetch all entity data in parallel
     const [
       stats,
-      topSystems,
-      topRegions,
+      topCharacters,
       topCorps,
       topAlliances,
+      topShips,
+      topSystems,
+      topRegions,
       mostValuable,
     ] = await track('corporation:fetch_stats', 'application', async () => {
+      // Use cache if available, fallback to view
+      const useCache = await isStatsCachePopulated();
+      const statsPromise = useCache
+        ? getEntityStatsFromCache(corporationId, 'corporation', 'all')
+        : getEntityStatsFromView(corporationId, 'corporation', 'all');
+      
       return await Promise.all([
-        getEntityStats(corporationId, 'corporation', 'all'),
-        getTopByKills('week', 'system', 10),
-        getTopByKills('week', 'region', 10),
-        getTopByKills('week', 'corporation', 10),
-        getTopByKills('week', 'alliance', 10),
-        getMostValuableKillsByCorporation(corporationId, 'all', 6),
+        statsPromise,
+        getTopVictimsByAttacker(corporationId, 'corporation', 'week', 'character', 10),
+        getTopVictimsByAttacker(corporationId, 'corporation', 'week', 'corporation', 10),
+        getTopVictimsByAttacker(corporationId, 'corporation', 'week', 'alliance', 10),
+        getTopVictimsByAttacker(corporationId, 'corporation', 'week', 'ship', 10),
+        getTopVictimsByAttacker(corporationId, 'corporation', 'week', 'system', 10),
+        getTopVictimsByAttacker(corporationId, 'corporation', 'week', 'region', 10),
+        getMostValuableKillsByCorporation(corporationId, 'week', 6),
       ]);
     });
 
@@ -71,68 +82,87 @@ export default defineEventHandler(async (event: H3Event) => {
       ]);
     });
 
-    const totalPages = Math.ceil(totalKillmails / perPage);
+    const totalPages = await track('corporation:calculate_pagination', 'application', async () => {
+      return Math.ceil(totalKillmails / perPage);
+    });
 
     // Format killmail data for template
-    const recentKillmails = killmails.map((km) => {
-      const normalized = normalizeKillRow(km);
-      return {
-        ...normalized,
-        isLoss: km.victimCorporationId === corporationId,
-        killmailTimeRelative: timeAgo(
-          new Date(km.killmailTime ?? normalized.killmailTime)
-        ),
-      };
+    const recentKillmails = await track('corporation:normalize_killmails', 'application', async () => {
+      return killmails.map((km) => {
+        const normalized = normalizeKillRow(km);
+        return {
+          ...normalized,
+          isLoss: km.victimCorporationId === corporationId,
+          killmailTimeRelative: timeAgo(
+            km.killmailTime ?? normalized.killmailTime
+          ),
+        };
+      });
     });
 
     // Entity header data
-    const entityData = {
-      entityId: corporationId,
-      entityType: 'corporation',
-      name: corporationData.name,
-      type: 'corporation',
-      stats,
-      baseUrl: `/corporation/${corporationId}`,
-      entityBaseUrl: `/corporation/${corporationId}`,
-      currentTab: 'dashboard',
-      parent: corporationData.allianceId
-        ? {
-            id: corporationData.allianceId,
-            name: corporationData.allianceName,
-            ticker: corporationData.allianceTicker,
-          }
-        : null,
-      grandparent: null,
-    };
+    const entityData = await track('corporation:build_entity_data', 'application', async () => {
+      return {
+        entityId: corporationId,
+        entityType: 'corporation',
+        name: corporationData.name,
+        type: 'corporation',
+        stats,
+        baseUrl: `/corporation/${corporationId}`,
+        entityBaseUrl: `/corporation/${corporationId}`,
+        currentTab: 'dashboard',
+        parent: corporationData.allianceId
+          ? {
+              id: corporationData.allianceId,
+              name: corporationData.allianceName,
+              ticker: corporationData.allianceTicker,
+            }
+          : null,
+        grandparent: null,
+      };
+    });
 
-    // Top boxes - for corporations we show systems, regions, corporations, alliances
-    const top10 = {
-      characters: [],
-      systems: (topSystems as any[]).map((s: any) => ({
-        ...s,
-        imageType: 'system',
-        imageId: s.id,
-        link: `/system/${s.id}`,
-      })),
-      regions: (topRegions as any[]).map((r: any) => ({
-        ...r,
-        imageType: 'region',
-        imageId: r.id,
-        link: `/region/${r.id}`,
-      })),
-      corporations: (topCorps as any[]).map((c: any) => ({
-        ...c,
-        imageType: 'corporation',
-        imageId: c.id,
-        link: `/corporation/${c.id}`,
-      })),
-      alliances: (topAlliances as any[]).map((a: any) => ({
-        ...a,
-        imageType: 'alliance',
-        imageId: a.id,
-        link: `/alliance/${a.id}`,
-      })),
-    };
+    // Top boxes - for corporations we show characters, corporations, alliances, ships, systems, regions
+    const top10 = await track('corporation:transform_top10', 'application', async () => {
+      return {
+        characters: (topCharacters as any[]).map((c: any) => ({
+          ...c,
+          imageType: 'character',
+          imageId: c.id,
+          link: `/character/${c.id}`,
+        })),
+        corporations: (topCorps as any[]).map((c: any) => ({
+          ...c,
+          imageType: 'corporation',
+          imageId: c.id,
+          link: `/corporation/${c.id}`,
+        })),
+        alliances: (topAlliances as any[]).map((a: any) => ({
+          ...a,
+          imageType: 'alliance',
+          imageId: a.id,
+          link: `/alliance/${a.id}`,
+        })),
+        ships: (topShips as any[]).map((s: any) => ({
+          ...s,
+          imageType: 'type',
+          imageId: s.id,
+          link: `/type/${s.id}`,
+        })),
+        systems: (topSystems as any[]).map((s: any) => ({
+          ...s,
+          imageType: 'system',
+          imageId: s.id,
+          link: `/system/${s.id}`,
+        })),
+        regions: (topRegions as any[]).map((r: any) => ({
+          ...r,
+          imageType: 'region',
+          imageId: r.id,
+          link: `/region/${r.id}`,
+        })),
+      };
+    });
 
     // Pagination
     const pagination = {
@@ -148,13 +178,15 @@ export default defineEventHandler(async (event: H3Event) => {
     };
 
     // Transform most valuable kills to template format
-    const transformedMostValuable = mostValuable.map((kill) => {
-      const normalized = normalizeKillRow(kill);
-      return {
-        ...normalized,
-        totalValue: kill.totalValue ?? normalized.totalValue,
-        killmailTime: normalized.killmailTime,
-      };
+    const transformedMostValuable = await track('corporation:transform_most_valuable', 'application', async () => {
+      return mostValuable.map((kill) => {
+        const normalized = normalizeKillRow(kill);
+        return {
+          ...normalized,
+          totalValue: kill.totalValue ?? normalized.totalValue,
+          killmailTime: normalized.killmailTime,
+        };
+      });
     });
 
     // Render the template
@@ -168,6 +200,13 @@ export default defineEventHandler(async (event: H3Event) => {
       {
         ...entityData,
         top10Stats: top10,
+        characterTitle: 'Most Hunted Pilots',
+        corporationTitle: 'Most Hunted Corps',
+        allianceTitle: 'Most Hunted Alliances',
+        shipTitle: 'Most Hunted Ships',
+        systemTitle: 'Top Hunting Grounds',
+        regionTitle: 'Top Regions',
+        timeRange: 'Last 7 Days',
         mostValuableKills: transformedMostValuable,
         recentKillmails,
         pagination,
@@ -176,7 +215,8 @@ export default defineEventHandler(async (event: H3Event) => {
           id: corporationId,
           mode: 'all',
         },
-      }
+      },
+      event
     );
   } catch (error) {
     return handleError(event, error);

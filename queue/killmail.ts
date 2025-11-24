@@ -161,55 +161,71 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
 
 /**
  * Publish killmail to Redis for WebSocket broadcast
- * Fetches the killmail with all entity names from kill_list view
+ * Fetches the killmail with all entity names from killmails table with JOINs
  */
 async function publishKillmailToWebSocket(killmailId: number): Promise<void> {
   try {
-    // Query kill_list view for full killmail data with entity names
+    // Query killmails table with JOINs for entity names
     const [killmail] = await database.sql<any[]>`
       SELECT
-        "killmailId",
-        "killmailTime",
-        "solarSystemId",
-        "solarSystemName",
-        "regionId",
-        "regionName",
-        security,
-        "victimCharacterId",
-        "victimCharacterName",
-        "victimCorporationId",
-        "victimCorporationName",
-        "victimCorporationTicker",
-        "victimAllianceId",
-        "victimAllianceName",
-        "victimAllianceTicker",
-        "victimShipTypeId",
-        "victimShipName",
-        "victimShipGroup",
-        "victimShipGroupId",
-        "victimDamageTaken",
-        "attackerCharacterId",
-        "attackerCharacterName",
-        "attackerCorporationId",
-        "attackerCorporationName",
-        "attackerCorporationTicker",
-        "attackerAllianceId",
-        "attackerAllianceName",
-        "attackerAllianceTicker",
-        "attackerShipTypeId",
-        "attackerShipName",
-        "totalValue",
-        "attackerCount",
-        npc,
-        solo,
-        awox
-      FROM kill_list
-      WHERE "killmailId" = ${killmailId}
+        k."killmailId",
+        k."killmailTime",
+        k."solarSystemId",
+        k."regionId",
+        k."securityStatus" as security,
+        k."victimCharacterId",
+        k."victimCorporationId",
+        k."victimAllianceId",
+        k."victimShipTypeId",
+        k."victimDamageTaken",
+        k."topAttackerCharacterId" as "attackerCharacterId",
+        k."topAttackerCorporationId" as "attackerCorporationId",
+        k."topAttackerAllianceId" as "attackerAllianceId",
+        k."topAttackerShipTypeId" as "attackerShipTypeId",
+        k."totalValue",
+        k."attackerCount",
+        k.npc,
+        k.solo,
+        k.awox,
+        
+        -- Entity names from JOINs
+        sys.name as "solarSystemName",
+        reg.name as "regionName",
+        
+        vc.name as "victimCharacterName",
+        vcorp.name as "victimCorporationName",
+        vcorp.ticker as "victimCorporationTicker",
+        va.name as "victimAllianceName",
+        va.ticker as "victimAllianceTicker",
+        vship.name as "victimShipName",
+        vgroup.name as "victimShipGroup",
+        vgroup."groupId" as "victimShipGroupId",
+        
+        ac.name as "attackerCharacterName",
+        acorp.name as "attackerCorporationName",
+        acorp.ticker as "attackerCorporationTicker",
+        aa.name as "attackerAllianceName",
+        aa.ticker as "attackerAllianceTicker",
+        aship.name as "attackerShipName"
+        
+      FROM killmails k
+      LEFT JOIN solarsystems sys ON k."solarSystemId" = sys."solarSystemId"
+      LEFT JOIN regions reg ON k."regionId" = reg."regionId"
+      LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
+      LEFT JOIN corporations vcorp ON k."victimCorporationId" = vcorp."corporationId"
+      LEFT JOIN alliances va ON k."victimAllianceId" = va."allianceId"
+      LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
+      LEFT JOIN groups vgroup ON vship."groupId" = vgroup."groupId"
+      LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
+      LEFT JOIN corporations acorp ON k."topAttackerCorporationId" = acorp."corporationId"
+      LEFT JOIN alliances aa ON k."topAttackerAllianceId" = aa."allianceId"
+      LEFT JOIN types aship ON k."topAttackerShipTypeId" = aship."typeId"
+      WHERE k."killmailId" = ${killmailId}
     `;
 
     if (!killmail) {
       console.warn(
-        `⚠️  [killmail] ${killmailId}: Not found in kill_list view`
+        `⚠️  [killmail] ${killmailId}: Not found in killmails table`
       );
       return;
     }

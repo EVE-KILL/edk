@@ -1,7 +1,8 @@
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
-import { getEntityStats } from '../../../models/entityStats';
+import { getEntityStatsFromCache, isStatsCachePopulated } from '../../../models/entityStatsCache';
+import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getCharacterWithCorporationAndAlliance } from '../../../models/characters';
 import {
   getEntityKillmails,
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Get character stats using the same query as dashboard
-    const stats = await getEntityStats(characterId, 'character', 'all');
+    const stats = await getEntityStatsFromView(characterId, 'character', 'all');
 
     // Get pagination parameters
     const query = getQuery(event);
@@ -67,7 +68,7 @@ export default defineEventHandler(async (event: H3Event) => {
         ...normalized,
         isLoss: true,
         killmailTimeRelative: timeAgo(
-          new Date(km.killmailTime ?? normalized.killmailTime)
+          km.killmailTime ?? normalized.killmailTime
         ),
       };
     });
@@ -113,7 +114,8 @@ export default defineEventHandler(async (event: H3Event) => {
           id: characterId,
           mode: 'losses',
         },
-      }
+      },
+      event
     );
   } catch (error) {
     return handleError(event, error);

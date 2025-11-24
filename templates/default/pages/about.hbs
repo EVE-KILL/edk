@@ -1,245 +1,183 @@
-<h1
-  style='color: var(--color-text-white); margin-bottom: 20px; font-size: 24px;'
->Killboard Statistics</h1>
+<h1 style='color: var(--color-text-white); margin-bottom: 20px; font-size: 24px;'>About EVE Killboard</h1>
 
-<!-- Statistics Section -->
-{{#if data.statistics}}
+<!-- About Section -->
+<section class='section mb-lg'>
+  <div style='background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 20px;'>
+    <div style='padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);'>
+      <div style='color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;'>
+        What is EVE Killboard?
+      </div>
+    </div>
+    <div style='padding: 16px; color: var(--color-text-primary); font-size: 14px; line-height: 1.6;'>
+      <p style='margin: 0 0 12px 0;'>
+        EVE Killboard (EDK) is a real-time killmail tracking and analytics system for EVE Online. We collect, store, and present detailed information about every ship destruction, providing players with valuable insights into PvP activity across New Eden.
+      </p>
+      <p style='margin: 0 0 12px 0;'>
+        Our system ingests killmails from multiple sources including the EVE-KILL WebSocket feed and the ESI API, ensuring comprehensive coverage of all combat events. We track characters, corporations, alliances, and provide detailed statistics about ships, fittings, and combat locations.
+      </p>
+      <p style='margin: 0;'>
+        Built with modern technology including Bun, PostgreSQL, and Redis, EDK delivers fast, reliable access to killmail data for the EVE Online community.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Database Statistics -->
+{{#if data.counts}}
   <section class='section mb-lg'>
-    <div
-      style='background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;'
-    >
-      <!-- Header -->
-      <div
-        style='padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);'
-      >
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <div
-            style='color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;'
-          >
-            Killboard Statistics
-          </div>
-          <div
-            style='color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;'
-          >
-            All Time
-          </div>
+    <div style='background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 20px;'>
+      <div style='padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);'>
+        <div style='color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;'>
+          Database Statistics
         </div>
       </div>
-
-      <!-- Compact Content Grid -->
-      <div
-        style='padding: 12px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;'
-      >
-        <!-- Overall Stats -->
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <span
-            style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-          >Total Killmails</span>
-          <span
-            style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'
-          >{{formatNumber data.statistics.totalKillmails}}</span>
+      <div style='padding: 12px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;'>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Killmails</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.killmails}}</span>
         </div>
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <span
-            style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-          >Total ISK</span>
-          <span
-            style='color: #4ade80; font-size: 13px; font-weight: 600;'
-          >{{formatISK data.statistics.totalISKDestroyed}}</span>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Attackers</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.attackers}}</span>
         </div>
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <span
-            style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-          >Solo Kills</span>
-          <span
-            style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'
-          >{{formatNumber data.statistics.soloKills}}</span>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Items</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.items}}</span>
         </div>
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <span
-            style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-          >Avg Attackers</span>
-          <span
-            style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'
-          >{{data.statistics.averageAttackersPerKill}}</span>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Characters</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.characters}}</span>
         </div>
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <span
-            style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-          >Unique Pilots</span>
-          <span
-            style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'
-          >{{formatNumber data.statistics.uniqueCharacters}}</span>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Corporations</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.corporations}}</span>
         </div>
-
-        <!-- Activity Stats -->
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <span
-            style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-          >Pilots (24h)</span>
-          <span
-            style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'
-          >{{formatNumber data.statistics.activePilotsLast24Hours}}</span>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Alliances</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.alliances}}</span>
         </div>
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <span
-            style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-          >Pilots (7d)</span>
-          <span
-            style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'
-          >{{formatNumber data.statistics.activePilotsLast7Days}}</span>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Solar Systems</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.systems}}</span>
         </div>
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <span
-            style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-          >Kills (24h)</span>
-          <span
-            style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'
-          >{{formatNumber data.statistics.killsLast24Hours}}</span>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Regions</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.regions}}</span>
         </div>
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <span
-            style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-          >Kills (7d)</span>
-          <span
-            style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'
-          >{{formatNumber data.statistics.killsLast7Days}}</span>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Constellations</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.constellations}}</span>
         </div>
-        <div
-          style='display: flex; justify-content: space-between; align-items: center;'
-        >
-          <span
-            style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-          >Kills (30d)</span>
-          <span
-            style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'
-          >{{formatNumber data.statistics.killsLast30Days}}</span>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Item Types</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.types}}</span>
         </div>
-
-        <!-- Top Entities -->
-        {{#if data.statistics.topKiller}}
-          <div
-            style='display: flex; justify-content: space-between; align-items: center; gap: 8px;'
-          >
-            <div
-              style='display: flex; flex-direction: column; gap: 1px; min-width: 0;'
-            >
-              <span
-                style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-              >Top Killer</span>
-              <a
-                href='/character/{{data.statistics.topKiller.id}}'
-                style='color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
-              >{{data.statistics.topKiller.name}}</a>
-            </div>
-            <span
-              style='color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;'
-            >{{data.statistics.topKiller.kills}}</span>
-          </div>
-        {{/if}}
-        {{#if data.statistics.topCorporation}}
-          <div
-            style='display: flex; justify-content: space-between; align-items: center; gap: 8px;'
-          >
-            <div
-              style='display: flex; flex-direction: column; gap: 1px; min-width: 0;'
-            >
-              <span
-                style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-              >Top Corp</span>
-              <a
-                href='/corporation/{{data.statistics.topCorporation.id}}'
-                style='color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
-              >{{data.statistics.topCorporation.name}}</a>
-            </div>
-            <span
-              style='color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;'
-            >{{data.statistics.topCorporation.kills}}</span>
-          </div>
-        {{/if}}
-        {{#if data.statistics.topAlliance}}
-          <div
-            style='display: flex; justify-content: space-between; align-items: center; gap: 8px;'
-          >
-            <div
-              style='display: flex; flex-direction: column; gap: 1px; min-width: 0;'
-            >
-              <span
-                style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-              >Top Alliance</span>
-              <a
-                href='/alliance/{{data.statistics.topAlliance.id}}'
-                style='color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
-              >{{data.statistics.topAlliance.name}}</a>
-            </div>
-            <span
-              style='color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;'
-            >{{data.statistics.topAlliance.kills}}</span>
-          </div>
-        {{/if}}
-
-        <!-- Ships & Systems -->
-        {{#if data.statistics.mostDestroyedShip}}
-          <div
-            style='display: flex; justify-content: space-between; align-items: center; gap: 8px;'
-          >
-            <div
-              style='display: flex; flex-direction: column; gap: 1px; min-width: 0;'
-            >
-              <span
-                style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-              >Most Destroyed</span>
-              <a
-                href='/type/{{data.statistics.mostDestroyedShip.id}}'
-                style='color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
-              >{{data.statistics.mostDestroyedShip.name}}</a>
-            </div>
-            <span
-              style='color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;'
-            >{{data.statistics.mostDestroyedShip.count}}x</span>
-          </div>
-        {{/if}}
-        {{#if data.statistics.mostDangerousSystem}}
-          <div
-            style='display: flex; justify-content: space-between; align-items: center; gap: 8px;'
-          >
-            <div
-              style='display: flex; flex-direction: column; gap: 1px; min-width: 0;'
-            >
-              <span
-                style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'
-              >Most Dangerous</span>
-              <a
-                href='/system/{{data.statistics.mostDangerousSystem.id}}'
-                style='color: var(--color-accent-blue-light); text-decoration: none; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
-              >{{data.statistics.mostDangerousSystem.name}}</a>
-            </div>
-            <span
-              style='color: var(--color-text-white); font-size: 11px; font-weight: 600; flex-shrink: 0;'
-            >{{data.statistics.mostDangerousSystem.count}}</span>
-          </div>
-        {{/if}}
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Item Groups</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.groups}}</span>
+        </div>
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+          <span style='color: var(--color-text-secondary); font-size: 8px; font-weight: 600; text-transform: uppercase;'>Item Categories</span>
+          <span style='color: var(--color-text-white); font-size: 13px; font-weight: 600;'>{{formatNumber data.counts.categories}}</span>
+        </div>
       </div>
     </div>
   </section>
 {{/if}}
+
+<!-- FAQ Section -->
+<section class='section mb-lg'>
+  <div style='background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm);'>
+    <div style='padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);'>
+      <div style='color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;'>
+        Frequently Asked Questions
+      </div>
+    </div>
+    <div style='padding: 16px;'>
+      
+      <!-- FAQ Item 1 -->
+      <details style='margin-bottom: 12px; cursor: pointer;'>
+        <summary style='color: var(--color-text-white); font-size: 14px; font-weight: 600; padding: 8px; background: var(--color-bg-secondary); border-radius: var(--radius-sm); list-style: none; user-select: none;'>
+          <span style='display: inline-block; width: 20px;'>▶</span> What is a killmail?
+        </summary>
+        <div style='color: var(--color-text-primary); font-size: 13px; padding: 12px 28px; line-height: 1.6;'>
+          A killmail is a detailed record generated whenever a ship is destroyed in EVE Online. It includes information about the victim, all attackers involved, the location, time, and items destroyed or dropped.
+        </div>
+      </details>
+
+      <!-- FAQ Item 2 -->
+      <details style='margin-bottom: 12px; cursor: pointer;'>
+        <summary style='color: var(--color-text-white); font-size: 14px; font-weight: 600; padding: 8px; background: var(--color-bg-secondary); border-radius: var(--radius-sm); list-style: none; user-select: none;'>
+          <span style='display: inline-block; width: 20px;'>▶</span> How do killmails get tracked?
+        </summary>
+        <div style='color: var(--color-text-primary); font-size: 13px; padding: 12px 28px; line-height: 1.6;'>
+          We receive killmails in real-time through the EVE-KILL WebSocket feed and also pull historical data from CCP's ESI API. This ensures comprehensive coverage of all ship destructions in New Eden.
+        </div>
+      </details>
+
+      <!-- FAQ Item 3 -->
+      <details style='margin-bottom: 12px; cursor: pointer;'>
+        <summary style='color: var(--color-text-white); font-size: 14px; font-weight: 600; padding: 8px; background: var(--color-bg-secondary); border-radius: var(--radius-sm); list-style: none; user-select: none;'>
+          <span style='display: inline-block; width: 20px;'>▶</span> How accurate is the ISK value?
+        </summary>
+        <div style='color: var(--color-text-primary); font-size: 13px; padding: 12px 28px; line-height: 1.6;'>
+          ISK values are calculated based on current market prices pulled from ESI. Values are approximate and may vary based on market fluctuations and regional pricing. We update price data regularly to maintain accuracy.
+        </div>
+      </details>
+
+      <!-- FAQ Item 4 -->
+      <details style='margin-bottom: 12px; cursor: pointer;'>
+        <summary style='color: var(--color-text-white); font-size: 14px; font-weight: 600; padding: 8px; background: var(--color-bg-secondary); border-radius: var(--radius-sm); list-style: none; user-select: none;'>
+          <span style='display: inline-block; width: 20px;'>▶</span> Can I search for specific killmails?
+        </summary>
+        <div style='color: var(--color-text-primary); font-size: 13px; padding: 12px 28px; line-height: 1.6;'>
+          Yes! You can view killmails by character, corporation, alliance, solar system, region, or ship type. Use the navigation menu to browse different views and filter killmails by various criteria.
+        </div>
+      </details>
+
+      <!-- FAQ Item 5 -->
+      <details style='margin-bottom: 12px; cursor: pointer;'>
+        <summary style='color: var(--color-text-white); font-size: 14px; font-weight: 600; padding: 8px; background: var(--color-bg-secondary); border-radius: var(--radius-sm); list-style: none; user-select: none;'>
+          <span style='display: inline-block; width: 20px;'>▶</span> Why are some character/corporation names missing?
+        </summary>
+        <div style='color: var(--color-text-primary); font-size: 13px; padding: 12px 28px; line-height: 1.6;'>
+          Entity information is fetched from ESI in the background. New characters, corporations, or alliances may take a few minutes to appear with their proper names as they're queued for processing.
+        </div>
+      </details>
+
+      <!-- FAQ Item 6 -->
+      <details style='margin-bottom: 12px; cursor: pointer;'>
+        <summary style='color: var(--color-text-white); font-size: 14px; font-weight: 600; padding: 8px; background: var(--color-bg-secondary); border-radius: var(--radius-sm); list-style: none; user-select: none;'>
+          <span style='display: inline-block; width: 20px;'>▶</span> How can I report a bug or suggest a feature?
+        </summary>
+        <div style='color: var(--color-text-primary); font-size: 13px; padding: 12px 28px; line-height: 1.6;'>
+          EVE Killboard is open source! You can report issues or suggest features on our GitHub repository. We welcome community contributions and feedback.
+        </div>
+      </details>
+
+      <!-- FAQ Item 7 -->
+      <details style='cursor: pointer;'>
+        <summary style='color: var(--color-text-white); font-size: 14px; font-weight: 600; padding: 8px; background: var(--color-bg-secondary); border-radius: var(--radius-sm); list-style: none; user-select: none;'>
+          <span style='display: inline-block; width: 20px;'>▶</span> Is there an API available?
+        </summary>
+        <div style='color: var(--color-text-primary); font-size: 13px; padding: 12px 28px; line-height: 1.6;'>
+          Yes! We provide REST API endpoints for accessing killmail data programmatically. Check the API documentation for available endpoints and usage examples.
+        </div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  details[open] > summary > span {
+    transform: rotate(90deg);
+    display: inline-block;
+  }
+  details > summary:hover {
+    background: var(--color-bg-primary);
+  }
+  details > summary > span {
+    transition: transform 0.2s ease;
+  }
+</style>

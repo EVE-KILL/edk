@@ -1,0 +1,52 @@
+<div class="docs-page">
+  <div class="docs-page__header">
+    <div class="docs-eyebrow">Documentation</div>
+    <div class="docs-title-row">
+      <h1 class="docs-title">{{currentDoc.title}}</h1>
+      <div class="docs-meta">
+        <span class="docs-pill">{{currentDoc.section}}</span>
+        <span class="docs-updated">Updated {{formatDate currentDoc.updatedAt}}</span>
+      </div>
+    </div>
+    {{#if currentDoc.breadcrumbs}}
+      <div class="docs-breadcrumbs">
+        {{#each currentDoc.breadcrumbs}}
+          <a href="{{this.url}}">{{this.label}}</a>
+          {{#unless @last}}
+            <span class="docs-breadcrumbs__separator">/</span>
+          {{/unless}}
+        {{/each}}
+      </div>
+    {{/if}}
+  </div>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar">
+      <div class="docs-sidebar__title">All Pages</div>
+      {{#each navSections}}
+        <div class="docs-nav-section">
+          <div class="docs-nav-section__heading">{{this.title}}</div>
+          <ul class="docs-nav">
+            {{#each this.items}}
+              <li>
+                <a href="/docs/{{this.slug}}" class="{{#ifEquals ../currentDoc.slug this.slug}}is-active{{/ifEquals}}">
+                  <div class="docs-nav__label">{{this.title}}</div>
+                </a>
+              </li>
+            {{/each}}
+          </ul>
+        </div>
+      {{/each}}
+    </aside>
+
+    <section class="docs-content">
+      <div class="docs-content__card">
+        <article class="docs-markdown">
+          {{{currentDoc.contentHtml}}}
+        </article>
+
+        <div class="docs-source">Source: docs/{{currentDoc.relativePath}}.md</div>
+      </div>
+    </section>
+  </div>
+</div>

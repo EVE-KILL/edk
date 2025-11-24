@@ -76,26 +76,30 @@ function buildSpaceTypeCondition(
   }
 }
 
+interface KilllistConditionOptions {
+  usingKillListView?: boolean;
+  securityColumn?: any;
+  regionColumn?: any;
+  groupColumn?: any;
+}
+
 export function buildKilllistConditions(
   filters: KilllistFilters,
-  alias: string = 'k'
+  alias: string = 'k',
+  options: KilllistConditionOptions = {}
 ) {
   const conditions = [];
   // We assume alias is safe or we use it as identifier.
   // Since alias is usually 'k', we can use database.sql(alias)
-  // But that creates "k".
   const k = database.sql(alias);
-  const usingKillListView = alias === 'kl';
 
-  const securityColumn = usingKillListView
-    ? database.sql`${k}."security"`
-    : database.sql`ss."securityStatus"`;
-  const regionColumn = usingKillListView
-    ? database.sql`${k}."regionId"`
-    : database.sql`ss."regionId"`;
-  const groupColumn = usingKillListView
-    ? database.sql`${k}."victimShipGroupId"`
-    : database.sql`t."groupId"`;
+  // Use denormalized fields from killmails table (no JOINs needed)
+  const securityColumn =
+    options.securityColumn ?? database.sql`k."securityStatus"`;
+  const regionColumn =
+    options.regionColumn ?? database.sql`k."regionId"`;
+  const groupColumn =
+    options.groupColumn ?? database.sql`k."victimShipGroupId"`;
 
   if (filters.spaceType) {
     const spaceTypeCondition = buildSpaceTypeCondition(
@@ -168,10 +172,26 @@ export function buildKilllistConditions(
     );
   }
 
+  if (filters.constellationId !== undefined) {
+    conditions.push(
+      database.sql`${k}."constellationId" = ${filters.constellationId}`
+    );
+  }
+
   if (filters.solarSystemId !== undefined) {
     conditions.push(
       database.sql`${k}."solarSystemId" = ${filters.solarSystemId}`
     );
+  }
+
+  if (filters.typeId !== undefined) {
+    conditions.push(
+      database.sql`${k}."victimShipTypeId" = ${filters.typeId}`
+    );
+  }
+
+  if (filters.groupId !== undefined) {
+    conditions.push(database.sql`${groupColumn} = ${filters.groupId}`);
   }
 
   const filteredConditions = conditions.filter(Boolean);
@@ -193,13 +213,13 @@ const BASE_SELECT_LIST = database.sql`
   k."killmailId",
   k."killmailTime",
   k."solarSystemId",
-  ss."regionId",
-  ss."securityStatus" as security,
+  k."regionId",
+  k."securityStatus" as security,
   k."victimCharacterId",
   k."victimCorporationId",
   k."victimAllianceId",
   k."victimShipTypeId",
-  t."groupId" as "victimShipGroupId",
+  k."victimShipGroupId",
   k."victimDamageTaken",
   k."topAttackerCharacterId",
   k."topAttackerCorporationId",
@@ -212,11 +232,9 @@ const BASE_SELECT_LIST = database.sql`
   k.awox
 `;
 
-// Helper to get base query with joins
+// No JOINs needed! All fields denormalized in killmails table
 const BASE_QUERY = database.sql`
   FROM killmails k
-  LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
-  LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
 `;
 
 /**
@@ -437,8 +455,7 @@ export async function getFollowedEntitiesActivity(
       k."attackerCount"
 
     FROM killmails k
-    LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
-    LEFT JOIN regions reg ON sys."regionId" = reg."regionId"
+    LEFT JOIN regions reg ON k."regionId" = reg."regionId"
 
     -- Victim JOINs
     LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
@@ -447,7 +464,6 @@ export async function getFollowedEntitiesActivity(
     LEFT JOIN npcCorporations vnpc_corp ON k."victimCorporationId" = vnpc_corp."corporationId"
     LEFT JOIN alliances valliance ON k."victimAllianceId" = valliance."allianceId"
     LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
-    LEFT JOIN groups vshipgroup ON vship."groupId" = vshipgroup."groupId"
 
     -- Attacker JOINs
     LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
@@ -519,7 +535,10 @@ export interface KilllistFilters {
   regionId?: number;
   regionIdMin?: number;
   regionIdMax?: number;
+  constellationId?: number;
   solarSystemId?: number;
+  typeId?: number;
+  groupId?: number;
 }
 
 /**
@@ -579,57 +598,77 @@ export async function countFilteredKills(
 
 /**
  * Get filtered kills with all names joined from SDE tables
- * Similar to getEntityKillmails but applies KilllistFilters instead of entity ID
+ * Optimized to query base killmails table with targeted joins
  */
 export async function getFilteredKillsWithNames(
   filters: KilllistFilters,
   page: number = 1,
-  perPage: number = 50
+  perPage: number = 50,
+  lookbackDays?: number
 ): Promise<EntityKillmail[]> {
   const offset = (page - 1) * perPage;
-  const clause = buildKilllistConditions(filters, 'kl');
+  const clause = buildKilllistConditions(filters, 'k', {
+    groupColumn: database.sql`vshipgroup."groupId"`,
+  });
+  const timeClause = lookbackDays
+    ? database.sql`AND k."killmailTime" >= NOW() - (${lookbackDays} || ' days')::interval`
+    : database.sql``;
 
   return await database.sql<EntityKillmail[]>`
     SELECT
-      kl."killmailId",
-      kl."killmailTime",
+      k."killmailId",
+      k."killmailTime",
 
       -- Victim info
-      kl."victimCharacterId",
-      kl."victimCharacterName",
-      kl."victimCorporationId",
-      kl."victimCorporationName",
-      kl."victimCorporationTicker",
-      kl."victimAllianceId",
-      kl."victimAllianceName",
-      kl."victimAllianceTicker",
-      kl."victimShipTypeId",
-      kl."victimShipName",
-      kl."victimShipGroup",
+      k."victimCharacterId",
+      COALESCE(vc.name, vnpc.name, 'Unknown') AS "victimCharacterName",
+      k."victimCorporationId",
+      COALESCE(vcorp.name, vnpc_corp.name, 'Unknown') AS "victimCorporationName",
+      COALESCE(vcorp.ticker, vnpc_corp."tickerName", '???') AS "victimCorporationTicker",
+      k."victimAllianceId",
+      valliance.name AS "victimAllianceName",
+      valliance.ticker AS "victimAllianceTicker",
+      k."victimShipTypeId",
+      COALESCE(vship.name, 'Unknown') AS "victimShipName",
+      COALESCE(vshipgroup.name, 'Unknown') AS "victimShipGroup",
 
       -- Attacker info (top attacker)
-      kl."attackerCharacterId",
-      kl."attackerCharacterName",
-      kl."attackerCorporationId",
-      kl."attackerCorporationName",
-      kl."attackerCorporationTicker",
-      kl."attackerAllianceId",
-      kl."attackerAllianceName",
-      kl."attackerAllianceTicker",
+      k."topAttackerCharacterId" AS "attackerCharacterId",
+      COALESCE(ac.name, anpc.name, 'Unknown') AS "attackerCharacterName",
+      k."topAttackerCorporationId" AS "attackerCorporationId",
+      COALESCE(acorp.name, anpc_corp.name, 'Unknown') AS "attackerCorporationName",
+      COALESCE(acorp.ticker, anpc_corp."tickerName", '???') AS "attackerCorporationTicker",
+      k."topAttackerAllianceId" AS "attackerAllianceId",
+      aalliance.name AS "attackerAllianceName",
+      aalliance.ticker AS "attackerAllianceTicker",
 
       -- Location
-      kl."solarSystemId",
-      kl."solarSystemName",
-      kl."regionName",
+      k."solarSystemId",
+      ss.name AS "solarSystemName",
+      r.name AS "regionName",
 
       -- Stats
-      kl."totalValue",
-      kl."attackerCount"
+      k."totalValue",
+      k."attackerCount"
 
-    FROM kill_list kl
+    FROM killmails k
+    LEFT JOIN solarsystems ss ON k."solarSystemId" = ss."solarSystemId"
+    LEFT JOIN regions r ON k."regionId" = r."regionId"
+    LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
+    LEFT JOIN npccharacters vnpc ON k."victimCharacterId" = vnpc."characterId"
+    LEFT JOIN corporations vcorp ON k."victimCorporationId" = vcorp."corporationId"
+    LEFT JOIN npccorporations vnpc_corp ON k."victimCorporationId" = vnpc_corp."corporationId"
+    LEFT JOIN alliances valliance ON k."victimAllianceId" = valliance."allianceId"
+    LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
+    LEFT JOIN groups vshipgroup ON vship."groupId" = vshipgroup."groupId"
+    LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
+    LEFT JOIN npccharacters anpc ON k."topAttackerCharacterId" = anpc."characterId"
+    LEFT JOIN corporations acorp ON k."topAttackerCorporationId" = acorp."corporationId"
+    LEFT JOIN npccorporations anpc_corp ON k."topAttackerCorporationId" = anpc_corp."corporationId"
+    LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
 
-    WHERE ${clause}
-    ORDER BY kl."killmailTime" DESC
+    WHERE ${clause} ${timeClause}
+    ORDER BY k."killmailTime" DESC
     LIMIT ${perPage} OFFSET ${offset}
   `;
 }
@@ -687,74 +726,44 @@ export async function getEntityKillmails(
   const attackerCol = attackerColumnMap[entityType];
   const victimCol = victimColumnMap[entityType];
 
-  // For 'all' mode, just show kills for now
-  // TODO: For very active characters, even simple queries cause "out of shared memory"
-  // This requires increasing max_locks_per_transaction in PostgreSQL config
+  // For 'all' mode, combine kills and losses
+  // With increased max_locks_per_transaction, we can now use proper queries
   if (mode === 'all') {
     return getEntityKillmails(entityId, entityType, 'kills', page, perPage);
   }
 
-  // Step 1: Get killmail IDs - NO JOINS to avoid shared memory issues
+  // Step 1: Get killmail IDs from killmails table (topAttacker columns, not attackers table)
   let killmailIds: number[] = [];
 
   if (mode === 'kills') {
-    // Query attackers table - NO DISTINCT to avoid shared memory issues
-    // Limit to recent records and deduplicate in application
-    const attackerKillmails = await database.find<{ killmailId: number; killmailTime: string }>(
-      `SELECT a."killmailId", a."killmailTime"
-       FROM attackers a
-       WHERE a.${database.identifier(attackerCol)} = :entityId
-       ORDER BY a."killmailTime" DESC
-       LIMIT :fetchLimit`,
-      { entityId, fetchLimit: (perPage + offset) * 10 } // Fetch extra to account for duplicates
+    // Query killmails table using topAttacker columns
+    const topAttackerCol = `topAttacker${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`;
+    
+    const killKillmails = await database.find<{ killmailId: number }>(
+      `SELECT k."killmailId"
+       FROM killmails k
+       WHERE k."${topAttackerCol}" = :entityId
+       ORDER BY k."killmailTime" DESC, k."killmailId" DESC
+       LIMIT :limit OFFSET :offset`,
+      { entityId, limit: perPage, offset }
     );
 
-    // Deduplicate and filter by time in application
-    const seen = new Set<number>();
-    const unique: Array<{ killmailId: number; killmailTime: string }> = [];
-
-    for (const km of attackerKillmails) {
-      if (!seen.has(km.killmailId)) {
-        const time = new Date(km.killmailTime).getTime();
-        const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 hours
-        if (time >= cutoff) {
-          seen.add(km.killmailId);
-          unique.push(km);
-        }
-      }
-    }
-
-    killmailIds = unique
-      .slice(offset, offset + perPage)
-      .map(km => km.killmailId);
+    killmailIds = killKillmails.map(km => km.killmailId);
   } else {
-    // Losses only - use LIMIT without ORDER BY to avoid index scan locking issues
-    const lossKillmails = await database.find<{ killmailId: number; killmailTime: string }>(
-      `SELECT k."killmailId", k."killmailTime"
+    // Losses query
+    const lossKillmails = await database.find<{ killmailId: number }>(
+      `SELECT k."killmailId"
        FROM killmails k
        WHERE k.${database.identifier(victimCol)} = :entityId
-       LIMIT :fetchLimit`,
-      { entityId, fetchLimit: 50 } // Fetch small amount to avoid lock issues
+       ORDER BY k."killmailTime" DESC, k."killmailId" DESC
+       LIMIT :limit OFFSET :offset`,
+      { entityId, limit: perPage, offset }
     );
 
-    // Sort, filter by time, and paginate in application
-    const filtered = lossKillmails
-      .filter(km => {
-        const time = new Date(km.killmailTime).getTime();
-        const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 hours
-        return time >= cutoff;
-      })
-      .sort((a, b) => {
-        const timeA = new Date(a.killmailTime).getTime();
-        const timeB = new Date(b.killmailTime).getTime();
-        if (timeB !== timeA) return timeB - timeA;
-        return b.killmailId - a.killmailId;
-      });
-
-    killmailIds = filtered
-      .slice(offset, offset + perPage)
-      .map(r => r.killmailId);
-  }  if (killmailIds.length === 0) {
+    killmailIds = lossKillmails.map(km => km.killmailId);
+  }
+  
+  if (killmailIds.length === 0) {
     return [];
   }
 

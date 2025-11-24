@@ -221,12 +221,15 @@ export default {
           // Ensure pricing data is available before calculating killmail value totals
           await storePriceDataFromKillmails(newKillmails);
 
-          await storeKillmailsBulk(
+          const { inserted, skippedExisting } = await storeKillmailsBulk(
             esiKillmails.map((k) => ({ esi: k.esi, hash: k.hash })),
             valueOverrides
           );
-          successful += esiKillmails.length;
-          logger.info(`Stored ${esiKillmails.length} killmails in bulk`);
+          successful += inserted;
+          skipped += skippedExisting;
+          logger.info(
+            `Stored ${inserted} killmails in bulk (skipped ${skippedExisting} existing)`
+          );
 
           // Enqueue background jobs to fetch full details (in parallel)
           await Promise.allSettled(

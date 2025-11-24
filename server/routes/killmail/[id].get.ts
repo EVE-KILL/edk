@@ -235,14 +235,16 @@ export default defineEventHandler(async (event: H3Event) => {
     return { itemsBySlot, fittingWheelDestroyed, fittingWheelDropped, totalDestroyed, totalDropped, totalValue, fitValue };
     });
 
-    // Calculate base stats (before attackers are fetched)
+    // Use the stored totalValue from the database (calculated when killmail was stored)
+    // This ensures consistency across all pages
+    const totalKillValue = killmail.totalValue || 0;
     const shipValue = killmail.victimShipValue || 0;
-    const itemsValue = totalValue;
-    const totalKillValue = shipValue + itemsValue;
+    const itemsValue = totalKillValue - shipValue;
+    const killmailTimeIso = ensureUtcString(killmail.killmailTime);
 
     // Fetch attackers and siblings in parallel
     const [attackers, siblings] = await track('killmail:fetch_attackers_siblings', 'application', async () => {
-      const killmailDate = new Date(killmail.killmailTime);
+      const killmailDate = new Date(killmailTimeIso);
       const startDate = new Date(killmailDate.getTime() - 60 * 60 * 1000);
       const endDate = new Date(killmailDate.getTime() + 60 * 60 * 1000);
 
@@ -283,8 +285,8 @@ export default defineEventHandler(async (event: H3Event) => {
         id: killmail.killmailId,
         killmailId: killmail.killmailId,
         hash: killmail.hash,
-        time: killmail.killmailTime,
-        timeAgo: timeAgo(new Date(killmail.killmailTime)),
+        time: killmailTimeIso,
+        timeAgo: timeAgo(killmail.killmailTime),
         systemName: killmail.solarSystemName,
         systemId: killmail.solarSystemId,
         regionName: killmail.regionName,
@@ -378,7 +380,7 @@ export default defineEventHandler(async (event: H3Event) => {
       },
       siblings: siblings.map((s) => ({
         killmailId: s.killmailId,
-        killmailTime: s.killmailTime,
+        killmailTime: ensureUtcString(s.killmailTime),
         victimName: s.victimCharacterName,
         victimCharacterId: s.victimCharacterId,
         shipName: s.victimShipName,
@@ -478,9 +480,20 @@ export default defineEventHandler(async (event: H3Event) => {
         description: `${victimName} lost a ${shipName} worth ${valueBillion}B ISK`,
         keywords: 'eve online, killmail, pvp, kill',
       },
-      templateData
+      templateData,
+      event
     );
   } catch (error) {
     return handleError(event, error);
   }
 });
+
+function ensureUtcString(value: unknown): string {
+  if (!value) return '';
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  const str = String(value);
+  if (/[+-]\d{2}:?\d{2}$/.test(str) || str.endsWith('Z')) return str;
+  return str.includes('T') ? `${str}Z` : `${str.replace(' ', 'T')}Z`;
+}

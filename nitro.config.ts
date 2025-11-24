@@ -67,6 +67,7 @@ export default defineNitroConfig({
     '/api/killmail/*/esi': {
       cache: { maxAge: 3600, staleMaxAge: 3600, base: 'redis' },
     },
+    '/api/auth/**': { cache: false, cors: true },
     '/api/**': { cors: true, cache: { maxAge: 60, base: 'redis' } },
     '/health': { cache: { maxAge: 5 } },
   },

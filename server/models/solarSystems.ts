@@ -40,7 +40,7 @@ export async function getSolarSystem(
   solarSystemId: number
 ): Promise<SolarSystem | null> {
   return database.findOne<SolarSystem>(
-    'SELECT * FROM "solarSystems" WHERE "solarSystemId" = :solarSystemId',
+    'SELECT * FROM solarsystems WHERE "solarSystemId" = :solarSystemId',
     { solarSystemId }
   );
 }
@@ -52,7 +52,7 @@ export async function getSolarSystemsByRegion(
   regionId: number
 ): Promise<SolarSystem[]> {
   return database.find<SolarSystem>(
-    'SELECT * FROM "solarSystems" WHERE "regionId" = :regionId ORDER BY name',
+    'SELECT * FROM solarsystems WHERE "regionId" = :regionId ORDER BY name',
     { regionId }
   );
 }
@@ -64,7 +64,7 @@ export async function getSolarSystemsByConstellation(
   constellationId: number
 ): Promise<SolarSystem[]> {
   return database.find<SolarSystem>(
-    'SELECT * FROM "solarSystems" WHERE "constellationId" = :constellationId ORDER BY name',
+    'SELECT * FROM solarsystems WHERE "constellationId" = :constellationId ORDER BY name',
     { constellationId }
   );
 }
@@ -77,7 +77,7 @@ export async function searchSolarSystems(
   limit: number = 10
 ): Promise<SolarSystem[]> {
   return database.find<SolarSystem>(
-    `SELECT * FROM "solarSystems"
+    `SELECT * FROM solarsystems
        WHERE name ILIKE :pattern
        ORDER BY name
        LIMIT :limit`,
@@ -92,7 +92,7 @@ export async function getSolarSystemName(
   solarSystemId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM "solarSystems" WHERE "solarSystemId" = :solarSystemId',
+    'SELECT name FROM solarsystems WHERE "solarSystemId" = :solarSystemId',
     { solarSystemId }
   );
   return result?.name || null;
@@ -106,7 +106,7 @@ export async function getSecurityClassSystems(
   securityClass: 'A' | 'B' | 'C'
 ): Promise<SolarSystem[]> {
   return database.find<SolarSystem>(
-    `SELECT * FROM "solarSystems"
+    `SELECT * FROM solarsystems
        WHERE "regionId" = :regionId AND "securityClass" = :securityClass
        ORDER BY "securityStatus" DESC`,
     { regionId, securityClass }
@@ -118,7 +118,7 @@ export async function getSecurityClassSystems(
  */
 export async function getTradeHubs(): Promise<SolarSystem[]> {
   return database.find<SolarSystem>(
-    'SELECT * FROM "solarSystems" WHERE hub = 1 ORDER BY "regionId", name'
+    'SELECT * FROM solarsystems WHERE hub = 1 ORDER BY "regionId", name'
   );
 }
 
@@ -127,7 +127,7 @@ export async function getTradeHubs(): Promise<SolarSystem[]> {
  */
 export async function getHubSystems(): Promise<SolarSystem[]> {
   return database.find<SolarSystem>(
-    'SELECT * FROM "solarSystems" WHERE hub = 1 ORDER BY "regionId", name'
+    'SELECT * FROM solarsystems WHERE hub = 1 ORDER BY "regionId", name'
   );
 }
 
@@ -136,7 +136,7 @@ export async function getHubSystems(): Promise<SolarSystem[]> {
  */
 export async function countSolarSystems(): Promise<number> {
   const result = await database.findOne<{ count: number }>(
-    'SELECT count(*) as count FROM "solarSystems"'
+    'SELECT count(*) as count FROM solarsystems'
   );
   return Number(result?.count || 0);
 }

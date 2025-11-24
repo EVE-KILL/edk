@@ -1,3 +1,15 @@
+<script>
+  (function primeDebugCollapsed() {
+    try {
+      if (localStorage.getItem('edk.debug.collapsed') === '1') {
+        document.documentElement.classList.add('debug-bar-collapsed');
+      }
+    } catch (err) {
+      // ignore storage errors
+    }
+  })();
+</script>
+
 <style>
   .debug-bar {
     position: fixed;
@@ -13,6 +25,44 @@
     flex-direction: column;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     border-left: 2px solid #404040;
+  }
+
+  .debug-bar-collapsed .debug-bar {
+    display: none;
+  }
+
+  .debug-debug-toggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 10000;
+    background: rgba(30, 30, 30, 0.85);
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+    display: none;
+  }
+
+  .debug-debug-toggle:hover {
+    transform: translateY(-1px);
+    background: rgba(50, 50, 50, 0.95);
+    border-color: #4CAF50;
+  }
+
+  .debug-debug-toggle:active {
+    transform: translateY(0);
+  }
+
+  .debug-bar-collapsed .debug-debug-toggle {
+    display: flex;
   }
 
   .debug-bar-header {
@@ -39,7 +89,7 @@
     border: none;
     color: #fff;
     padding: 6px 12px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 12px;
     transition: background 0.2s;
@@ -126,7 +176,7 @@
     background: rgba(255, 255, 255, 0.03);
     padding: 10px;
     margin-bottom: 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     position: relative;
   }
 
@@ -147,13 +197,13 @@
   .debug-span-duration {
     font-size: 11px;
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     font-weight: 600;
   }
 
   .debug-span-bar {
     height: 4px;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     margin-top: 6px;
     background: linear-gradient(90deg, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0.4));
   }
@@ -180,7 +230,7 @@
     cursor: pointer;
     padding: 6px 8px;
     background: rgba(0, 0, 0, 0.3);
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     margin-top: 6px;
     white-space: nowrap;
     overflow: hidden;
@@ -208,7 +258,7 @@
     background: #4CAF50;
     color: white;
     padding: 2px 8px;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     font-size: 10px;
     animation: fadeOut 2s forwards;
   }
@@ -225,7 +275,7 @@
     cursor: pointer;
     padding: 6px 8px;
     background: rgba(0, 0, 0, 0.3);
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     margin-top: 6px;
     white-space: nowrap;
     overflow: hidden;
@@ -253,7 +303,7 @@
     background: #4CAF50;
     color: white;
     padding: 2px 8px;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     font-size: 10px;
     animation: fadeOut 2s forwards;
   }
@@ -267,7 +317,7 @@
     background: #4CAF50;
     color: #000;
     padding: 2px 8px;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     font-size: 11px;
     font-weight: 600;
   }
@@ -284,7 +334,7 @@
     background: rgba(255, 255, 255, 0.03);
     padding: 10px;
     margin-bottom: 8px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     border-left: 2px solid #2196F3;
   }
 
@@ -315,7 +365,7 @@
   .debug-bar::-webkit-scrollbar-thumb,
   .debug-bar-content::-webkit-scrollbar-thumb {
     background: #404040;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
   }
 
   .debug-bar::-webkit-scrollbar-thumb:hover,
@@ -329,7 +379,7 @@
     <h3 class='debug-bar-title'>
       <span>⚡</span> Debug Panel
     </h3>
-    <button class='debug-bar-toggle' onclick='document.getElementById("debug-bar").style.display="none"'>✕</button>
+    <button class='debug-bar-toggle' onclick='collapseDebugBar()'>✕</button>
   </div>
 
   <div class='debug-bar-stats'>
@@ -342,16 +392,16 @@
       <span class='debug-stat-label'>Queries</span>
     </div>
     <div class='debug-stat'>
-      <span class='debug-stat-value'>{{performance.dbTime}}ms</span>
-      <span class='debug-stat-label'>Avg Query</span>
+      <span class='debug-stat-value'>~{{performance.dbTimeLongest}}ms</span>
+      <span class='debug-stat-label'>{{performance.dbTime}}ms avg</span>
     </div>
   </div>
 
   <div class='debug-bar-tabs'>
-    <button class='debug-tab active' onclick='switchDebugTab(event, "overview")'>Overview</button>
-    <button class='debug-tab' onclick='switchDebugTab(event, "categories")'>Categories</button>
-    <button class='debug-tab' onclick='switchDebugTab(event, "timeline")'>Timeline</button>
-    <button class='debug-tab' onclick='switchDebugTab(event, "websocket")' id='debug-ws-tab' style='display: none;'>WebSocket</button>
+    <button class='debug-tab active' data-tab='overview' onclick='switchDebugTab(event, "overview")'>Overview</button>
+    <button class='debug-tab' data-tab='categories' onclick='switchDebugTab(event, "categories")'>Categories</button>
+    <button class='debug-tab' data-tab='timeline' onclick='switchDebugTab(event, "timeline")'>Timeline</button>
+    <button class='debug-tab' data-tab='websocket' onclick='switchDebugTab(event, "websocket")' id='debug-ws-tab' style='display: none;'>WebSocket</button>
   </div>
 
   <div class='debug-bar-content'>
@@ -359,21 +409,22 @@
     <div class='debug-tab-panel active' id='debug-panel-overview'>
       <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>Performance Summary</h4>
 
-      <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #4CAF50;'>
+      <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #4CAF50;'>
         <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Total Request Time</strong></div>
         <div style='font-size: 20px; color: #4CAF50; font-weight: bold;'>{{performance.totalTime}}ms</div>
       </div>
 
-      <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #2196F3;'>
+      <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #2196F3;'>
         <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Database Performance</strong></div>
         <div style='font-size: 13px; color: #90CAF9;'>
           {{performance.queryCount}} queries<br>
           {{performance.dbTimeTotal}}ms total<br>
+          {{performance.dbTimeLongest}}ms longest<br>
           {{performance.dbTime}}ms average
         </div>
       </div>
 
-      <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 4px; border-left: 3px solid #FF9800;'>
+      <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: var(--radius-sm); border-left: 3px solid #FF9800;'>
         <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Application Time</strong></div>
         <div style='font-size: 13px; color: #FFB74D;'>{{performance.appTime}}ms</div>
       </div>
@@ -385,7 +436,7 @@
 
       {{#if performance.categoryBreakdown}}
         {{#if (gt performance.categoryBreakdown.database.count 0)}}
-        <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #2196F3;'>
+        <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #2196F3;'>
           <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🗄️ Database</strong></div>
           <div style='font-size: 13px; color: #90CAF9;'>
             {{performance.categoryBreakdown.database.count}} operations<br>
@@ -396,7 +447,7 @@
         {{/if}}
 
         {{#if (gt performance.categoryBreakdown.cache.count 0)}}
-        <div style='background: rgba(156, 39, 176, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #9C27B0;'>
+        <div style='background: rgba(156, 39, 176, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #9C27B0;'>
           <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>💾 Cache (Redis)</strong></div>
           <div style='font-size: 13px; color: #CE93D8;'>
             {{performance.categoryBreakdown.cache.count}} operations<br>
@@ -407,7 +458,7 @@
         {{/if}}
 
         {{#if (gt performance.categoryBreakdown.search.count 0)}}
-        <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #FF9800;'>
+        <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #FF9800;'>
           <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🔍 Search (Typesense)</strong></div>
           <div style='font-size: 13px; color: #FFB74D;'>
             {{performance.categoryBreakdown.search.count}} operations<br>
@@ -418,7 +469,7 @@
         {{/if}}
 
         {{#if (gt performance.categoryBreakdown.http.count 0)}}
-        <div style='background: rgba(244, 67, 54, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #f44336;'>
+        <div style='background: rgba(244, 67, 54, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #f44336;'>
           <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🌐 HTTP Requests</strong></div>
           <div style='font-size: 13px; color: #EF9A9A;'>
             {{performance.categoryBreakdown.http.count}} requests<br>
@@ -429,7 +480,7 @@
         {{/if}}
 
         {{#if (gt performance.categoryBreakdown.template.count 0)}}
-        <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #4CAF50;'>
+        <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #4CAF50;'>
           <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🎨 Template Rendering</strong></div>
           <div style='font-size: 13px; color: #A5D6A7;'>
             {{performance.categoryBreakdown.template.count}} operations<br>
@@ -440,7 +491,7 @@
         {{/if}}
 
         {{#if (gt performance.categoryBreakdown.application.count 0)}}
-        <div style='background: rgba(103, 58, 183, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #673AB7;'>
+        <div style='background: rgba(103, 58, 183, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #673AB7;'>
           <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>⚙️ Application Code</strong></div>
           <div style='font-size: 13px; color: #B39DDB;'>
             {{performance.categoryBreakdown.application.count}} operations<br>
@@ -462,7 +513,7 @@
       <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>Operation Timeline</h4>
 
       {{#if performance.spans}}
-        <div style='margin-bottom: 15px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-size: 11px; color: #999;'>
+        <div style='margin-bottom: 15px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-sm); font-size: 11px; color: #999;'>
           <div style='display: flex; justify-content: space-between; margin-bottom: 4px;'>
             <span>Total operations:</span>
             <strong style='color: #4CAF50;'>{{performance.spans.length}}</strong>
@@ -505,7 +556,7 @@
 
     <!-- WebSocket Tab -->
     <div class='debug-tab-panel' id='debug-panel-websocket'>
-      <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>WebSocket Statistics</h4>
+      <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>WebSocket Connection</h4>
 
       <div id='ws-not-connected' style='text-align: center; padding: 40px 20px; color: #666;'>
         <div style='font-size: 40px; margin-bottom: 10px;'>🔌</div>
@@ -513,45 +564,88 @@
       </div>
 
       <div id='ws-stats-container' style='display: none;'>
-        <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #4CAF50;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Connection Status</strong></div>
-          <div style='font-size: 13px; color: #A5D6A7;'>
+        <!-- Connection & Worker Status Combined -->
+        <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #4CAF50;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>🔌 Connection</strong></div>
+          <div style='font-size: 13px; color: #A5D6A7; line-height: 1.6;'>
             Status: <span id='ws-status' style='font-weight: bold;'>●</span><br>
             Connected: <span id='ws-connected-time'>-</span><br>
-            Reconnects: <span id='ws-reconnect-count'>0</span>
+            Reconnects: <span id='ws-reconnect-count'>0</span><br>
+            Worker Ports: <span id='ws-port-count'>0</span>
           </div>
         </div>
 
-        <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #2196F3;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Subscriptions</strong></div>
+        <!-- Subscriptions -->
+        <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #2196F3;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>📡 Subscriptions</strong></div>
           <div style='font-size: 13px; color: #90CAF9;'>
-            Topics: <span id='ws-topics'>-</span><br>
-            <div id='ws-topics-list' style='margin-top: 6px; font-size: 11px; color: #64B5F6;'></div>
+            Active topics: <span id='ws-topics-count'>0</span>
+            <div id='ws-topics-list' style='margin-top: 8px; font-size: 11px; color: #64B5F6;'></div>
           </div>
         </div>
 
-        <div style='background: rgba(156, 39, 176, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #9C27B0;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Message Stats</strong></div>
-          <div style='font-size: 13px; color: #CE93D8;'>
-            Total received: <span id='ws-msg-total'>0</span><br>
+        <!-- Message Statistics -->
+        <div style='background: rgba(156, 39, 176, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #9C27B0;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>📊 Message Stats</strong></div>
+          <div style='font-size: 13px; color: #CE93D8; line-height: 1.6;'>
+            Total: <span id='ws-msg-total'>0</span><br>
             Killmails: <span id='ws-msg-killmails'>0</span><br>
-            Last message: <span id='ws-msg-last'>-</span>
+            Worker msgs: <span id='ws-msg-worker'>0</span><br>
+            Last: <span id='ws-msg-last'>-</span>
           </div>
         </div>
 
-        <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 15px; border-left: 3px solid #FF9800;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Recent Messages</strong></div>
+        <!-- Recent Messages -->
+        <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #FF9800;'>
+          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>📨 Recent Messages (last 10)</strong></div>
           <div id='ws-recent-messages' style='font-size: 11px; color: #FFB74D; max-height: 200px; overflow-y: auto;'>
             <div style='color: #999; font-style: italic;'>No messages yet</div>
           </div>
         </div>
+
+        <!-- Worker Debug Info (Collapsible) -->
+        <details style='background: rgba(255, 255, 255, 0.04); padding: 12px; border-radius: var(--radius-sm); border-left: 3px solid #607D8B; cursor: pointer;'>
+          <summary style='font-size: 12px; color: #ccc; font-weight: bold; cursor: pointer; user-select: none;'>
+            🔧 Worker Debug Info
+          </summary>
+          <div id='ws-worker-info' style='font-size: 11px; color: #cfd8dc; line-height: 1.6; margin-top: 8px; font-family: monospace;'>
+            Awaiting worker state…
+          </div>
+        </details>
       </div>
     </div>
 
   </div>
 </div>
 
+<button class='debug-debug-toggle' id='debug-toggle' title='Open debug panel' onclick='openDebugBar()'>🐞</button>
+
 <script>
+const DEBUG_TAB_KEY = 'edk.debug.lastTab';
+const DEBUG_COLLAPSE_KEY = 'edk.debug.collapsed';
+
+function applyDebugCollapsed(isCollapsed) {
+  const root = document.documentElement;
+  if (isCollapsed) {
+    root.classList.add('debug-bar-collapsed');
+  } else {
+    root.classList.remove('debug-bar-collapsed');
+  }
+  try {
+    localStorage.setItem(DEBUG_COLLAPSE_KEY, isCollapsed ? '1' : '0');
+  } catch (err) {
+    // ignore
+  }
+}
+
+function collapseDebugBar() {
+  applyDebugCollapsed(true);
+}
+
+function openDebugBar() {
+  applyDebugCollapsed(false);
+}
+
 function switchDebugTab(event, tabName) {
   // Hide all panels
   const panels = document.querySelectorAll('.debug-tab-panel');
@@ -566,6 +660,14 @@ function switchDebugTab(event, tabName) {
 
   // Activate clicked tab
   event.target.classList.add('active');
+
+  try {
+    if (tabName) {
+      localStorage.setItem(DEBUG_TAB_KEY, tabName);
+    }
+  } catch (err) {
+    // ignore storage errors
+  }
 }
 
 function toggleSQL(element) {
@@ -592,8 +694,11 @@ window.debugWS = {
     topics: [],
     messagesTotal: 0,
     messagesKillmails: 0,
+    messagesWorker: 0,
     lastMessageTime: null,
-    recentMessages: []
+    recentMessages: [],
+    workerState: null,
+    portCount: 0
   },
 
   enable() {
@@ -601,12 +706,19 @@ window.debugWS = {
     document.getElementById('debug-ws-tab').style.display = 'block';
   },
 
-  setConnected(isConnected) {
+  setConnected(isConnected, url) {
     this.stats.connected = isConnected;
-    if (isConnected) {
+    if (isConnected && !this.stats.connectedAt) {
       this.stats.connectedAt = new Date();
-      document.getElementById('ws-not-connected').style.display = 'none';
-      document.getElementById('ws-stats-container').style.display = 'block';
+    }
+    if (!isConnected) {
+      this.stats.connectedAt = null;
+    }
+    const notConnectedEl = document.getElementById('ws-not-connected');
+    const statsContainerEl = document.getElementById('ws-stats-container');
+    if (notConnectedEl && statsContainerEl) {
+      notConnectedEl.style.display = isConnected ? 'none' : 'block';
+      statsContainerEl.style.display = isConnected ? 'block' : 'none';
     }
     this.updateUI();
   },
@@ -617,7 +729,13 @@ window.debugWS = {
   },
 
   setTopics(topics) {
-    this.stats.topics = topics || [];
+    this.stats.topics = Array.isArray(topics) ? topics : [];
+    this.updateUI();
+  },
+
+  setWorkerState(state) {
+    this.stats.workerState = state;
+    this.stats.portCount = state?.portCount || 0;
     this.updateUI();
   },
 
@@ -625,27 +743,46 @@ window.debugWS = {
     this.stats.messagesTotal++;
     this.stats.lastMessageTime = new Date();
 
+    let messageText = type;
+    let messageIcon = '📩';
+    let shouldShow = true;
+
     if (type === 'killmail') {
       this.stats.messagesKillmails++;
-      const killmailId = data?.killmailId || '?';
-      const victimName = data?.victim?.character?.name || data?.victim?.corporation?.name || 'Unknown';
-      const shipName = data?.victim?.ship?.name || 'Unknown Ship';
-      this.stats.recentMessages.unshift({
-        time: new Date(),
-        type,
-        text: `KM #${killmailId}: ${victimName} (${shipName})`
-      });
-    } else {
-      this.stats.recentMessages.unshift({
-        time: new Date(),
-        type,
-        text: type
-      });
+      // Parse killmail data - structure is { type: 'killmail', data: { killmailId, victim: {...}, ... } }
+      const kmData = data?.data || data;
+      const killmailId = kmData?.killmailId || '?';
+      const victim = kmData?.victim;
+      const victimName = victim?.character?.name || victim?.corporation?.name || 'Unknown';
+      const shipName = victim?.ship?.name || 'Unknown Ship';
+      messageText = `KM #${killmailId}: ${victimName} (${shipName})`;
+      messageIcon = '💀';
+    } else if (type === 'debug-state') {
+      // Don't show debug-state messages in recent messages
+      this.stats.messagesWorker++;
+      shouldShow = false;
+    } else if (type === 'ws-open' || type === 'ws-close' || type === 'ws-reconnect') {
+      // Worker/debug messages
+      this.stats.messagesWorker++;
+      messageIcon = '🔧';
+      if (type === 'ws-open') messageText = 'WebSocket Connected';
+      else if (type === 'ws-close') messageText = 'WebSocket Disconnected';
+      else if (type === 'ws-reconnect') messageText = 'Reconnecting...';
     }
 
-    // Keep only last 10 messages
-    if (this.stats.recentMessages.length > 10) {
-      this.stats.recentMessages = this.stats.recentMessages.slice(0, 10);
+    // Only add to recent messages if we should show it
+    if (shouldShow) {
+      this.stats.recentMessages.unshift({
+        time: new Date(),
+        type,
+        text: messageText,
+        icon: messageIcon
+      });
+
+      // Keep only last 10 messages
+      if (this.stats.recentMessages.length > 10) {
+        this.stats.recentMessages = this.stats.recentMessages.slice(0, 10);
+      }
     }
 
     this.updateUI();
@@ -663,9 +800,15 @@ window.debugWS = {
 
     // Connected time
     const connTimeEl = document.getElementById('ws-connected-time');
-    if (connTimeEl && this.stats.connectedAt) {
-      const duration = Math.floor((new Date() - this.stats.connectedAt) / 1000);
-      connTimeEl.textContent = duration + 's ago';
+    if (connTimeEl) {
+      if (this.stats.connectedAt) {
+        const duration = Math.floor((new Date() - this.stats.connectedAt) / 1000);
+        const mins = Math.floor(duration / 60);
+        const secs = duration % 60;
+        connTimeEl.textContent = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      } else {
+        connTimeEl.textContent = '-';
+      }
     }
 
     // Reconnect count
@@ -674,17 +817,28 @@ window.debugWS = {
       reconnectEl.textContent = this.stats.reconnectCount;
     }
 
-    // Topics
-    const topicsEl = document.getElementById('ws-topics');
-    if (topicsEl) {
-      topicsEl.textContent = this.stats.topics.length;
+    // Port count
+    const portCountEl = document.getElementById('ws-port-count');
+    if (portCountEl) {
+      portCountEl.textContent = this.stats.portCount;
     }
 
+    // Topics count
+    const topicsCountEl = document.getElementById('ws-topics-count');
+    if (topicsCountEl) {
+      topicsCountEl.textContent = this.stats.topics.length;
+    }
+
+    // Topics list
     const topicsListEl = document.getElementById('ws-topics-list');
-    if (topicsListEl && this.stats.topics.length > 0) {
-      topicsListEl.innerHTML = this.stats.topics.map(t =>
-        `<div style="padding: 2px 0;">• ${t}</div>`
-      ).join('');
+    if (topicsListEl) {
+      if (this.stats.topics.length > 0) {
+        topicsListEl.innerHTML = this.stats.topics.map(t =>
+          `<div style="padding: 2px 0; color: #64B5F6;">• ${t}</div>`
+        ).join('');
+      } else {
+        topicsListEl.innerHTML = '<div style="color: #999; font-style: italic;">No active subscriptions</div>';
+      }
     }
 
     // Message stats
@@ -698,22 +852,60 @@ window.debugWS = {
       msgKillmailsEl.textContent = this.stats.messagesKillmails;
     }
 
+    const msgWorkerEl = document.getElementById('ws-msg-worker');
+    if (msgWorkerEl) {
+      msgWorkerEl.textContent = this.stats.messagesWorker;
+    }
+
     const msgLastEl = document.getElementById('ws-msg-last');
-    if (msgLastEl && this.stats.lastMessageTime) {
-      const ago = Math.floor((new Date() - this.stats.lastMessageTime) / 1000);
-      msgLastEl.textContent = ago < 60 ? ago + 's ago' : Math.floor(ago / 60) + 'm ago';
+    if (msgLastEl) {
+      if (this.stats.lastMessageTime) {
+        const ago = Math.floor((new Date() - this.stats.lastMessageTime) / 1000);
+        msgLastEl.textContent = ago < 60 ? ago + 's ago' : Math.floor(ago / 60) + 'm ago';
+      } else {
+        msgLastEl.textContent = '-';
+      }
     }
 
     // Recent messages
     const recentEl = document.getElementById('ws-recent-messages');
-    if (recentEl && this.stats.recentMessages.length > 0) {
-      recentEl.innerHTML = this.stats.recentMessages.map(msg => {
-        const timeAgo = Math.floor((new Date() - msg.time) / 1000);
-        const timeStr = timeAgo < 60 ? timeAgo + 's' : Math.floor(timeAgo / 60) + 'm';
-        return `<div style="padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-          <span style="color: #999; font-size: 10px;">[${timeStr} ago]</span> ${msg.text}
-        </div>`;
-      }).join('');
+    if (recentEl) {
+      if (this.stats.recentMessages.length > 0) {
+        recentEl.innerHTML = this.stats.recentMessages.map(msg => {
+          const timeAgo = Math.floor((new Date() - msg.time) / 1000);
+          const timeStr = timeAgo < 60 ? timeAgo + 's' : Math.floor(timeAgo / 60) + 'm';
+          return `<div style="padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <span style="margin-right: 4px;">${msg.icon || '📩'}</span>
+            <span style="color: #999; font-size: 10px;">[${timeStr}]</span>
+            <span style="margin-left: 4px;">${msg.text}</span>
+          </div>`;
+        }).join('');
+      } else {
+        recentEl.innerHTML = '<div style="color: #999; font-style: italic;">No messages yet</div>';
+      }
+    }
+
+    // Worker debug info
+    const workerInfoEl = document.getElementById('ws-worker-info');
+    if (workerInfoEl) {
+      if (this.stats.workerState) {
+        const st = this.stats.workerState;
+        const lines = [];
+        if (st.url) lines.push(`URL: ${st.url}`);
+        lines.push(`Connected: ${st.connected ? '✓ yes' : '✗ no'}`);
+        if (st.portCount) lines.push(`Ports: ${st.portCount}`);
+        if (st.reconnectAttempts) lines.push(`Reconnects: ${st.reconnectAttempts}`);
+        if (st.backoff) lines.push(`Backoff: ${st.backoff}ms`);
+        if (st.topics && st.topics.length > 0) lines.push(`Topics: ${st.topics.join(', ')}`);
+        if (st.lastError) lines.push(`Last error: ${st.lastError.error || st.lastError}`);
+        if (st.lastClose) lines.push(`Last close: ${st.lastClose.code} ${st.lastClose.reason || ''}`);
+        
+        workerInfoEl.innerHTML = lines.map(line =>
+          `<div style="padding: 2px 0;">${line}</div>`
+        ).join('');
+      } else {
+        workerInfoEl.textContent = 'Awaiting worker state…';
+      }
     }
   }
 };
@@ -724,4 +916,34 @@ setInterval(() => {
     window.debugWS.updateUI();
   }
 }, 1000);
+
+// Restore last selected tab on load
+(function restoreDebugTab() {
+  try {
+    const last = localStorage.getItem(DEBUG_TAB_KEY);
+    if (last) {
+      const tabButton = document.querySelector(`.debug-tab[data-tab="${last}"]`);
+      const panel = document.getElementById('debug-panel-' + last);
+      if (tabButton && panel) {
+        document.querySelectorAll('.debug-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.debug-tab-panel').forEach(p => p.classList.remove('active'));
+        tabButton.classList.add('active');
+        panel.classList.add('active');
+      }
+    }
+  } catch (err) {
+    // ignore
+  }
+})();
+
+// Poll worker debug info every 3 seconds if client exposes it
+setInterval(() => {
+  try {
+    if (window.__edkWS && window.__edkWS.requestDebugState) {
+      window.__edkWS.requestDebugState();
+    }
+  } catch (err) {
+    // ignore
+  }
+}, 3000);
 </script>

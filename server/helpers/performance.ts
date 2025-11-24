@@ -144,6 +144,7 @@ export class PerformanceTracker {
     const totalTime = Date.now() - this.startTime;
     const dbTimeTotal = this.queries.reduce((sum, q) => sum + q.duration, 0);
     const dbTimeAvg = this.queries.length > 0 ? dbTimeTotal / this.queries.length : 0;
+    const dbTimeLongest = this.queries.length > 0 ? Math.max(...this.queries.map(q => q.duration)) : 0;
     const queryCount = this.queries.length;
 
     // Calculate category breakdowns
@@ -182,6 +183,7 @@ export class PerformanceTracker {
       totalTime: totalTime.toFixed(2),
       trackedTotalTime: trackedTotalTime.toFixed(2),
       dbTime: dbTimeAvg.toFixed(2),
+      dbTimeLongest: dbTimeLongest.toFixed(2),
       dbTimeTotal: dbTimeTotal.toFixed(2),
       appTime: appTime.toFixed(2),
       queryCount,

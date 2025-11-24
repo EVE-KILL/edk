@@ -32,7 +32,7 @@
             table-layout: fixed;
             background: transparent;
             border: none;
-            border-radius: 0;
+            border-radius: var(--radius-sm);
             padding: 0;
             margin: 0;
             gap: 0;
@@ -49,6 +49,16 @@
 
         .navigation td:not(:last-child) {
             border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .navigation td.nav-help {
+            width: 40px;
+            flex: 0 0 40px;
+        }
+
+        .navigation td.nav-user {
+            width: 40px;
+            flex: 0 0 40px;
         }
 
         .navigation td > a {
@@ -98,11 +108,134 @@
             width: 100%;
             z-index: 1000;
             border: 1px solid var(--color-border-dark);
-            border-radius: 4px;
+            border-radius: var(--radius-sm);
             margin-top: 4px;
             left: 0;
             top: 100%;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Right-aligned dropdown for items on right side of screen */
+        .nav-dropdown-content.align-right {
+            left: auto;
+            right: 0;
+        }
+
+        .nav-user {
+            position: relative;
+            height: 100%;
+        }
+
+        .nav-user .avatar-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 6px;
+            cursor: pointer;
+        }
+
+        .nav-user .avatar-trigger img {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 1px solid var(--color-border-dark);
+            box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.1);
+        }
+
+        .nav-user .user-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            min-width: 240px;
+            background: rgba(20, 20, 20, 0.96);
+            border: 1px solid var(--color-border-dark);
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+            padding: 12px;
+            z-index: 1000;
+        }
+
+        .nav-user:hover .user-dropdown,
+        .nav-user:focus-within .user-dropdown {
+            display: block;
+        }
+
+        .nav-user .user-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .nav-user .user-header img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--color-border-dark);
+        }
+
+        .nav-user .user-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .nav-user .user-meta .name {
+            font-size: 12px;
+            font-weight: 700;
+            color: #e7ecf5;
+            letter-spacing: 0.3px;
+        }
+
+        .nav-user .user-meta .line {
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+        }
+
+        .nav-user .user-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .nav-user .user-actions a {
+            flex: 1;
+            text-align: center;
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            padding: 8px 10px;
+            border: 1px solid var(--color-border-dark);
+            border-radius: 4px;
+            transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .nav-user .user-actions a:hover {
+            color: #4a9eff;
+            border-color: rgba(74, 158, 255, 0.7);
+            background-color: rgba(74, 158, 255, 0.08);
+        }
+
+        .nav-user .login-link {
+            display: inline-block;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #4a9eff;
+            text-decoration: none;
+            border: 1px solid rgba(74, 158, 255, 0.5);
+            border-radius: 4px;
+            background: rgba(74, 158, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .nav-user .login-link:hover {
+            background: rgba(74, 158, 255, 0.15);
+            border-color: rgba(74, 158, 255, 0.8);
+            color: #7ab6ff;
         }
 
         /* Multi-column layout for dropdowns with many items */
@@ -192,7 +325,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             background: rgba(255, 255, 255, 0.02);
             color: var(--color-text-secondary);
-            border-radius: 3px;
+            border-radius: var(--radius-sm);
             box-sizing: border-box;
             font-weight: 600;
             letter-spacing: 0.3px;
@@ -221,7 +354,7 @@
             background: rgba(26, 26, 26, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid var(--color-border-dark);
-            border-radius: 4px;
+            border-radius: var(--radius-sm);
             max-height: 500px;
             overflow-y: auto;
             z-index: 1000;
@@ -391,6 +524,57 @@
                             <div id="searchResults" class="search-results"></div>
                         </div>
                     </td>
+                    <td class="nav-dropdown nav-help">
+                        <div class="nav-dropdown-wrapper">
+                            <a href="#">?</a>
+                            <div class="nav-dropdown-content">
+                                <a href="/docs">Docs</a>
+                                <a href="/about">About</a>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="nav-user">
+                        <div class="auth-block auth-logged-in" data-auth-section="in" style="display:none;">
+                            <div class="avatar-trigger">
+                                <img data-auth-avatar src="{{config.imageServerUrl}}/characters/0/portrait?size=64" alt="User portrait" loading="lazy" />
+                            </div>
+                            <div class="user-dropdown">
+                                <div class="user-header">
+                                    <img data-auth-avatar-large src="{{config.imageServerUrl}}/characters/0/portrait?size=128" alt="User portrait" loading="lazy" />
+                                    <div class="user-meta">
+                                        <div class="name" data-auth-name>...</div>
+                                        <div class="line" data-auth-corp style="display:none;"></div>
+                                        <div class="line" data-auth-alliance style="display:none;"></div>
+                                    </div>
+                                </div>
+                                <div class="user-actions">
+                                    <a data-auth-profile href="#">Profile</a>
+                                    <a href="/settings">Settings</a>
+                                    <a data-auth-admin href="/admin" style="display:none;">Admin</a>
+                                    <a data-auth-logout href="/logout">Logout</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="auth-block auth-logged-out" data-auth-section="out">
+                            <div class="avatar-trigger">
+                                <img src="{{config.imageServerUrl}}/characters/0/portrait?size=64" alt="Login placeholder portrait" loading="lazy" />
+                            </div>
+                            <div class="user-dropdown">
+                                <div class="user-header">
+                                    <img src="{{config.imageServerUrl}}/characters/0/portrait?size=128" alt="Login placeholder portrait" loading="lazy" />
+                                    <div class="user-meta">
+                                        <div class="name">Login</div>
+                                        <div class="line">Choose how you want to log in</div>
+                                    </div>
+                                </div>
+                                <div class="user-actions">
+                                    <a data-auth-login href="/login?killmailAccess=1">With killmail access</a>
+                                    <a data-auth-login href="/login?killmailAccess=0">Without killmail access</a>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
                 </tr>
             </table>
         </nav>
@@ -459,14 +643,53 @@
     {{/each}}
     {{/if}}
 
+    <script>
+      window.__EDK_IMAGE_URL = '{{config.imageServerUrl}}';
+      (function setWsUrl() {
+        const wsFromEnv = '{{env.WS_URL}}';
+        if (wsFromEnv && wsFromEnv !== 'undefined' && wsFromEnv !== 'null') {
+          const trimmed = wsFromEnv.endsWith('/ws') ? wsFromEnv : `${wsFromEnv}/ws`;
+          window.__EDK_WS_URL = trimmed;
+        }
+      })();
+    </script>
+    <script type="text/javascript" src="/ws-ident.js"></script>
+    <script type="text/javascript" src="/site-ws.js"></script>
+    <script type="text/javascript" src="/auth-nav.js"></script>
+    <script type="text/javascript" src="/auth-state.js"></script>
+    <script type="text/javascript" src="/auth-ws.js"></script>
+
     <!-- Fitting Wheel Script -->
     <script type="text/javascript" src="/fitting-wheel.js"></script>
 
     <!-- Search Script -->
     <script type="text/javascript" src="/search.js"></script>
 
-    <!-- Real-time Site Updates (Entity names, prices, killlist) -->
-    <script type="text/javascript" src="/site-updates.js"></script>
+    <!-- Dropdown Positioning Script -->
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dynamically position dropdowns based on screen position
+            const dropdowns = document.querySelectorAll('.nav-dropdown');
+            
+            dropdowns.forEach(function(dropdown) {
+                const content = dropdown.querySelector('.nav-dropdown-content');
+                if (!content) return;
+                
+                dropdown.addEventListener('mouseenter', function() {
+                    const rect = dropdown.getBoundingClientRect();
+                    const screenWidth = window.innerWidth;
+                    const midpoint = screenWidth / 2;
+                    
+                    // If dropdown is in right half of screen, align to right
+                    if (rect.left > midpoint) {
+                        content.classList.add('align-right');
+                    } else {
+                        content.classList.remove('align-right');
+                    }
+                });
+            });
+        });
+    </script>
 
     {{{footerContent}}}
 </body>

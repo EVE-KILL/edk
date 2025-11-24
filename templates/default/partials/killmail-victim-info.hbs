@@ -1,15 +1,15 @@
 {{!-- Killmail Victim Information Box --}}
 
 <!-- Victim Character/Corp/Alliance -->
-<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 10px; overflow: visible; position: relative;">
+<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 10px; overflow: visible; position: relative;">
     <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
         <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
             Victim
             {{#if data.stats.isSolo}}
-            <span style="margin-left: 8px; font-size: 9px; padding: 2px 6px; border-radius: 3px; background: #3b82f6; color: white;">SOLO</span>
+            <span style="margin-left: 8px; font-size: 9px; padding: 2px 6px; border-radius: var(--radius-sm); background: #3b82f6; color: white;">SOLO</span>
             {{/if}}
             {{#if (gte data.stats.totalValue 1000000000)}}
-            <span style="margin-left: 8px; font-size: 9px; padding: 2px 6px; border-radius: 3px; background: #dc2626; color: white;">HIGH VALUE</span>
+            <span style="margin-left: 8px; font-size: 9px; padding: 2px 6px; border-radius: var(--radius-sm); background: #dc2626; color: white;">HIGH VALUE</span>
             {{/if}}
         </div>
     </div>
@@ -89,7 +89,7 @@
 </div>
 
 <!-- Kill Details -->
-<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 10px; overflow: visible; position: relative;">
+<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 10px; overflow: visible; position: relative;">
     <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
         <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
             Kill Details
@@ -104,7 +104,7 @@
                 {{else}}
                 <b>{{data.killmail.systemName}}</b>
                 {{/if}}
-                <span style="padding: 1px 4px; font-size: 9px; border-radius: 2px; margin-left: 4px; {{#if (gte data.killmail.securityStatus 0.5)}}background: #2F75FE; color: white;{{else}}{{#if (gte data.killmail.securityStatus 0.1)}}background: #F9A825; color: black;{{else}}background: #D32F2F; color: white;{{/if}}{{/if}}">
+                <span style="padding: 1px 4px; font-size: 9px; border-radius: var(--radius-sm); margin-left: 4px; {{#if (gte data.killmail.securityStatus 0.5)}}background: #2F75FE; color: white;{{else}}{{#if (gte data.killmail.securityStatus 0.1)}}background: #F9A825; color: black;{{else}}background: #D32F2F; color: white;{{/if}}{{/if}}">
                     {{formatSecurity data.killmail.securityStatus}}
                 </span>
                 {{#if data.killmail.regionName}}
@@ -123,7 +123,7 @@
 </div>
 
 <!-- ISK Value -->
-<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; overflow: visible; position: relative;">
+<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); overflow: visible; position: relative;">
     <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
         <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
             ISK Value

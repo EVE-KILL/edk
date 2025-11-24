@@ -6,6 +6,7 @@
 
 import type { PriceAPIResponse } from '../models/prices';
 import { fetchESI } from '../helpers/esi';
+import { logger } from '../helpers/logger';
 
 let allPrices: PriceAPIResponse[] = [];
 let lastPriceFetch = 0;

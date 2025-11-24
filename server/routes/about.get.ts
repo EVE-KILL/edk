@@ -1,71 +1,30 @@
-import { defineEventHandler } from 'h3';
+import type { H3Event } from 'h3';
 import { database } from '../helpers/database';
 import { logger } from '../helpers/logger';
 import { render } from '../helpers/templates';
 import { handleError } from '../utils/error';
+import { track } from '../utils/performance-decorators';
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event: H3Event) => {
   try {
     const pageContext = {
       title: 'About - EVE Killboard',
       activeNav: 'about',
     };
 
-    // Get stats sequentially to avoid connection issues
-    const totalKills = await getTotalKillmailCount();
-    logger.info('About page stats', { totalKills });
-    const totalISK = await getTotalISKDestroyed();
-    const characters = await getUniqueEntityCount('character');
-    const corporations = await getUniqueEntityCount('corporation');
-    const alliances = await getUniqueEntityCount('alliance');
-    const soloKills = await getSoloKillsCount();
-    const avgAttackers = await getAverageAttackersPerKill();
-    const activity24h = await getActivityStats(24);
-    const activity7d = await getActivityStats(168);
-    const topCharacters = await getTopCharactersByKills(5);
-    const topCorporations = await getTopCorporationsByKills(5);
-    const topAlliances = await getTopAlliancesByKills(5);
-    const mostDestroyedShips = await getMostDestroyedShips(5);
-    const mostDangerousSystems = await getMostDangerousSystems(5);
-
-    logger.info('About page all stats', {
-      totalKills,
-      characters,
-      corporations,
-      alliances,
-      soloKills,
+    // Get simple counts (fast queries using table statistics)
+    const counts = await track('about:get_db_counts', 'database', async () => {
+      return await getDatabaseCounts();
     });
+    
+    logger.info('About page counts', { counts });
 
-    const statistics = {
-      totalKillmails: totalKills,
-      totalISKDestroyed: totalISK,
-      uniqueCharacters: characters,
-      uniqueCorporations: corporations,
-      uniqueAlliances: alliances,
-      soloKills: soloKills,
-      soloPercentage:
-        totalKills > 0 ? ((soloKills / totalKills) * 100).toFixed(1) : '0.0',
-      averageAttackersPerKill: avgAttackers.toFixed(1),
-      activePilotsLast24Hours: activity24h.pilots,
-      activePilotsLast7Days: activity7d.pilots,
-      killsLast24Hours: activity24h.kills,
-      killsLast7Days: activity7d.kills,
-      killsLast30Days: 0, // TODO: Add 30 day tracking
-      topKiller: topCharacters[0] || null,
-      topCorporation: topCorporations[0] || null,
-      topAlliance: topAlliances[0] || null,
-      mostDestroyedShip: mostDestroyedShips[0] || null,
-      mostDangerousSystem: mostDangerousSystems[0] || null,
-      topCharactersAll: topCharacters.slice(0, 5),
-      topCorporationsAll: topCorporations.slice(0, 5),
-      topAlliancesAll: topAlliances.slice(0, 5),
-      mostDestroyedShipsAll: mostDestroyedShips.slice(0, 5),
-      mostDangerousSystemsAll: mostDangerousSystems.slice(0, 5),
-    };
-
-    const data = {
-      statistics,
-    };
+    // Build data object
+    const data = await track('about:build_data', 'application', async () => {
+      return {
+        counts,
+      };
+    });
 
     // Render template
     return render('pages/about.hbs', pageContext, data, event);
@@ -75,193 +34,54 @@ export default defineEventHandler(async (event) => {
 });
 
 /**
- * Get total killmail count
+ * Get database counts for all major tables (using fast estimates from pg_class)
+ * Note: These are approximate counts based on PostgreSQL statistics.
+ * For partitioned tables, reltuples on the parent table includes child partitions.
  */
-async function getTotalKillmailCount(): Promise<number> {
-  const result = await database.findOne<{ count: number }>(
-    `SELECT count(*) as count FROM killmails`
-  );
-  return Number(result?.count) || 0;
-}
-
-/**
- * Get total ISK destroyed across all killmails
- */
-async function getTotalISKDestroyed(): Promise<number> {
-  const result = await database.findOne<{ sum: number }>(
-    `SELECT sum("totalValue") as sum FROM killmails`
-  );
-  return Number(result?.sum) || 0;
-}
-
-/**
- * Get count of unique entities (character, corporation, alliance)
- */
-async function getUniqueEntityCount(
-  type: 'character' | 'corporation' | 'alliance'
-): Promise<number> {
-  const columnName =
-    type === 'character'
-      ? 'victimCharacterId'
-      : type === 'corporation'
-        ? 'victimCorporationId'
-        : 'victimAllianceId';
-
-  const column = database.identifier(columnName);
-  const result = await database.findOne<{ count: number }>(
-    `SELECT count(DISTINCT ${column}) as count FROM killmails WHERE ${column} > 0`
-  );
-
-  return Number(result?.count) || 0;
-}
-
-/**
- * Get count of solo kills (killmails with only 1 attacker)
- */
-async function getSoloKillsCount(): Promise<number> {
-  const result = await database.findOne<{ count: number }>(
-    `SELECT count(*) as count FROM killmails WHERE solo = true`
-  );
-  return Number(result?.count) || 0;
-}
-
-/**
- * Get average attackers per killmail
- */
-async function getAverageAttackersPerKill(): Promise<number> {
-  const result = await database.findOne<{ avg: number }>(
-    `SELECT avg("attackerCount") as avg FROM killmails`
-  );
-  return Number(result?.avg) || 0;
-}
-
-/**
- * Get activity statistics for a given time period (in hours)
- */
-async function getActivityStats(
-  hours: number
-): Promise<{ pilots: number; kills: number }> {
-  const pilotsResult = await database.findOne<{ count: number }>(
-    `SELECT count(DISTINCT "victimCharacterId") as count FROM killmails
-     WHERE "killmailTime" >= NOW() - (:hours || ' hours')::interval`,
-    { hours }
-  );
-
-  const killsResult = await database.findOne<{ count: number }>(
-    `SELECT count(*) as count FROM killmails
-     WHERE "killmailTime" >= NOW() - (:hours || ' hours')::interval`,
-    { hours }
-  );
+async function getDatabaseCounts() {
+  // Use reltuples from pg_class for super fast approximate counts
+  // For partitioned tables, the parent table's reltuples includes all partitions
+  const result = await database.query<{
+    killmails: string;
+    attackers: string;
+    items: string;
+    characters: string;
+    corporations: string;
+    alliances: string;
+    systems: string;
+    regions: string;
+    constellations: string;
+    types: string;
+    groups: string;
+    categories: string;
+  }>(`
+    SELECT 
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'killmails'), 0) as killmails,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'attackers'), 0) as attackers,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'items'), 0) as items,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'characters'), 0) as characters,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'corporations'), 0) as corporations,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'alliances'), 0) as alliances,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'solarsystems'), 0) as systems,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'regions'), 0) as regions,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'constellations'), 0) as constellations,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'types'), 0) as types,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'groups'), 0) as groups,
+      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'categories'), 0) as categories
+  `);
 
   return {
-    pilots: Number(pilotsResult?.count) || 0,
-    kills: Number(killsResult?.count) || 0,
+    killmails: Number(result[0]?.killmails) || 0,
+    attackers: Number(result[0]?.attackers) || 0,
+    items: Number(result[0]?.items) || 0,
+    characters: Number(result[0]?.characters) || 0,
+    corporations: Number(result[0]?.corporations) || 0,
+    alliances: Number(result[0]?.alliances) || 0,
+    systems: Number(result[0]?.systems) || 0,
+    regions: Number(result[0]?.regions) || 0,
+    constellations: Number(result[0]?.constellations) || 0,
+    types: Number(result[0]?.types) || 0,
+    groups: Number(result[0]?.groups) || 0,
+    categories: Number(result[0]?.categories) || 0,
   };
-}
-
-/**
- * Get top characters by kill count (as attacker with final blow)
- */
-async function getTopCharactersByKills(
-  limit: number = 5
-): Promise<Array<{ id: number; name: string; kills: number }>> {
-  return database.find<{ id: number; name: string; kills: number }>(
-    `SELECT
-      km."topAttackerCharacterId" as id,
-      COALESCE(c.name, nc.name, 'Unknown') as name,
-      count(*) as kills
-    FROM killmails km
-    LEFT JOIN characters c ON km."topAttackerCharacterId" = c."characterId"
-    LEFT JOIN npcCharacters nc ON km."topAttackerCharacterId" = nc."characterId"
-    WHERE km."topAttackerCharacterId" > 0
-    GROUP BY km."topAttackerCharacterId", c.name, nc.name
-    ORDER BY kills DESC
-    LIMIT :limit`,
-    { limit }
-  );
-}
-
-/**
- * Get top corporations by kill count (as attacker with final blow)
- */
-async function getTopCorporationsByKills(
-  limit: number = 5
-): Promise<Array<{ id: number; name: string; kills: number }>> {
-  return database.find<{ id: number; name: string; kills: number }>(
-    `SELECT
-      km."topAttackerCorporationId" as id,
-      COALESCE(c.name, nc.name, 'Unknown') as name,
-      count(*) as kills
-    FROM killmails km
-    LEFT JOIN corporations c ON km."topAttackerCorporationId" = c."corporationId"
-    LEFT JOIN npcCorporations nc ON km."topAttackerCorporationId" = nc."corporationId"
-    WHERE km."topAttackerCorporationId" > 0
-    GROUP BY km."topAttackerCorporationId", c.name, nc.name
-    ORDER BY kills DESC
-    LIMIT :limit`,
-    { limit }
-  );
-}
-
-/**
- * Get top alliances by kill count (as attacker with final blow)
- */
-async function getTopAlliancesByKills(
-  limit: number = 5
-): Promise<Array<{ id: number; name: string; kills: number }>> {
-  return database.find<{ id: number; name: string; kills: number }>(
-    `SELECT
-      km."topAttackerAllianceId" as id,
-      COALESCE(a.name, 'Unknown') as name,
-      count(*) as kills
-    FROM killmails km
-    LEFT JOIN alliances a ON km."topAttackerAllianceId" = a."allianceId"
-    WHERE km."topAttackerAllianceId" > 0
-    GROUP BY km."topAttackerAllianceId", a.name
-    ORDER BY kills DESC
-    LIMIT :limit`,
-    { limit }
-  );
-}
-
-/**
- * Get most destroyed ship types
- */
-async function getMostDestroyedShips(
-  limit: number = 5
-): Promise<Array<{ id: number; name: string; count: number }>> {
-  return database.find<{ id: number; name: string; count: number }>(
-    `SELECT
-      km."victimShipTypeId" as id,
-      COALESCE(t.name, 'Unknown Ship') as name,
-      count(*) as count
-    FROM killmails km
-    LEFT JOIN types t ON km."victimShipTypeId" = t."typeId"
-    WHERE km."victimShipTypeId" > 0
-    GROUP BY km."victimShipTypeId", t.name
-    ORDER BY count DESC
-    LIMIT :limit`,
-    { limit }
-  );
-}
-
-/**
- * Get most dangerous systems (by kill count)
- */
-async function getMostDangerousSystems(
-  limit: number = 5
-): Promise<Array<{ id: number; name: string; count: number }>> {
-  return database.find<{ id: number; name: string; count: number }>(
-    `SELECT
-      km."solarSystemId" as id,
-      COALESCE(sys.name, 'Unknown') as name,
-      count(*) as count
-    FROM killmails km
-    LEFT JOIN solarSystems sys ON km."solarSystemId" = sys."solarSystemId"
-    WHERE km."solarSystemId" > 0
-    GROUP BY km."solarSystemId", sys.name
-    ORDER BY count DESC
-    LIMIT :limit`,
-    { limit }
-  );
 }

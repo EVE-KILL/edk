@@ -3,6 +3,7 @@ import {
   storeAlliance as storeAllianceInDB,
   getAlliance,
 } from '../models/alliances';
+import { logger } from '../helpers/logger';
 
 /**
  * ESI Alliance Data - Fields we store
@@ -11,7 +12,7 @@ import {
 export interface ESIAlliance {
   creator_corporation_id: number;
   creator_id: number;
-  date_founded: string;
+  date_founded: string | null;
   executor_corporation_id: number;
   name: string;
   ticker: string;

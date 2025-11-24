@@ -4,6 +4,7 @@ import {
   getCorporation,
 } from '../models/corporations';
 import { getNPCCorporation } from '../models/npcCorporations';
+import { logger } from '../helpers/logger';
 
 /**
  * ESI Corporation Data - Fields we store
@@ -13,7 +14,7 @@ export interface ESICorporation {
   alliance_id: number | null;
   ceo_id: number;
   creator_id: number;
-  date_founded: string;
+  date_founded: string | null;
   description: string;
   home_station_id: number | null;
   member_count: number;

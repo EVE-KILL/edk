@@ -3,6 +3,7 @@ import {
   storeCharacter as storeCharacterInDB,
   getCharacter,
 } from '../models/characters';
+import { logger } from '../helpers/logger';
 
 /**
  * ESI Character Data - Fields we store
@@ -10,7 +11,7 @@ import {
  */
 export interface ESICharacter {
   alliance_id: number | null;
-  birthday: string;
+  birthday: string | null;
   bloodline_id: number;
   corporation_id: number;
   description: string;

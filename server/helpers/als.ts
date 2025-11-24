@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'async_hooks';
 
-export interface RequestContext {
+export interface AlsContext {
   correlationId: string;
 }
 
-export const als = new AsyncLocalStorage<RequestContext>();
+export const als = new AsyncLocalStorage<AlsContext>();

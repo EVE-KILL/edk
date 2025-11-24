@@ -547,7 +547,7 @@ export async function getCharacterKillmailCount(
 export interface Character {
   characterId: number;
   allianceId: number | null;
-  birthday: string;
+  birthday: string | null;
   bloodlineId: number;
   corporationId: number;
   description: string;
@@ -555,7 +555,6 @@ export interface Character {
   name: string;
   raceId: number;
   securityStatus: number;
-  updatedAt: Date;
 }
 
 /**
@@ -657,7 +656,7 @@ export async function storeCharacter(
   characterId: number,
   data: {
     allianceId: number | null;
-    birthday: string;
+    birthday: string | null;
     bloodlineId: number;
     corporationId: number;
     description: string;
@@ -683,7 +682,6 @@ export async function storeCharacter(
         name: data.name,
         raceId: data.raceId,
         securityStatus: data.securityStatus,
-        updatedAt: new Date(now * 1000),
       },
     ],
     ['characterId']
@@ -697,7 +695,7 @@ export async function storeCharactersBulk(
   characters: Array<{
     characterId: number;
     allianceId: number | null;
-    birthday: string;
+    birthday: string | null;
     bloodlineId: number;
     corporationId: number;
     description: string;
@@ -722,10 +720,9 @@ export async function storeCharactersBulk(
     name: char.name,
     raceId: char.raceId,
     securityStatus: char.securityStatus,
-    updatedAt: new Date(now * 1000),
   }));
 
-  await database.bulkInsert('characters', records);
+  await database.bulkUpsert('characters', records, ['characterId']);
 }
 
 /**
@@ -737,4 +734,16 @@ export async function characterExists(characterId: number): Promise<boolean> {
     { characterId }
   );
   return Number(result?.count) > 0;
+}
+
+/**
+ * Get approximate character count (very fast, uses PostgreSQL statistics)
+ */
+export async function getApproximateCharacterCount(): Promise<number> {
+  const result = await database.findOne<{ count: number }>(
+    `SELECT COALESCE(reltuples::bigint, 0) as count 
+     FROM pg_class 
+     WHERE relname = 'characters'`
+  );
+  return Number(result?.count || 0);
 }

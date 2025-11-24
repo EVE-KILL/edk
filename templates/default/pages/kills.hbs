@@ -4,11 +4,11 @@
 <!-- Most Valuable Kills Section - Full Width -->
 {{#if data.mostValuableKills}}
 <section style="margin-bottom: 20px;">
-    <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: 4px; margin-bottom: 20px; overflow: visible; position: relative;">
+    <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 20px; overflow: visible; position: relative;">
         <!-- Header Section -->
         <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
             <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                Most Valuable Kills
+                Most Valuable Kills {{#if data.mostValuableTimeRange}}({{data.mostValuableTimeRange}}){{/if}}
             </div>
         </div>
 
@@ -17,7 +17,7 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; width: 100%;">
                 {{#each data.mostValuableKills}}
                 <div>
-                    <div data-killmail-id="{{this.killmailId}}" style="min-height: 215px; text-decoration: none; cursor: pointer; display: flex; flex-direction: column; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border-dark); border-radius: 4px; overflow: hidden; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--color-accent-blue-light)'; this.style.boxShadow='0 0 8px rgba(74, 158, 255, 0.3)'" onmouseout="this.style.borderColor='var(--color-border-dark)'; this.style.boxShadow='none'" onclick="window.location.href='/killmail/{{this.killmailId}}';">
+                    <div data-killmail-id="{{this.killmailId}}" style="min-height: 215px; text-decoration: none; cursor: pointer; display: flex; flex-direction: column; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); overflow: hidden; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--color-accent-blue-light)'; this.style.boxShadow='0 0 8px rgba(74, 158, 255, 0.3)'" onmouseout="this.style.borderColor='var(--color-border-dark)'; this.style.boxShadow='none'" onclick="window.location.href='/killmail/{{this.killmailId}}';">
                         <!-- Ship Image Container -->
                         <div style="position: relative; width: 100%; height: 110px; background: linear-gradient(135deg, rgba(74, 158, 255, 0.1), rgba(74, 158, 255, 0.05)); display: flex; align-items: center; justify-content: center; overflow: hidden;">
                             <!-- Ship image -->
@@ -65,11 +65,11 @@
   {{#if data.topCharactersFormatted}}
   {{#if data.topCharactersFormatted.length}}
   <div class="top-10-container">
-    {{> partials/top-10-box title="Top Characters" items=data.topCharactersFormatted}}
-    {{> partials/top-10-box title="Top Corporations" items=data.topCorporationsFormatted}}
-    {{> partials/top-10-box title="Top Alliances" items=data.topAlliancesFormatted}}
-    {{> partials/top-10-box title="Top Systems" items=data.topSystemsFormatted}}
-    {{> partials/top-10-box title="Top Regions" items=data.topRegionsFormatted}}
+    {{> partials/top-10-box title="Top Characters" items=data.topCharactersFormatted timeRange=data.topTimeRangeLabel}}
+    {{> partials/top-10-box title="Top Corporations" items=data.topCorporationsFormatted timeRange=data.topTimeRangeLabel}}
+    {{> partials/top-10-box title="Top Alliances" items=data.topAlliancesFormatted timeRange=data.topTimeRangeLabel}}
+    {{> partials/top-10-box title="Top Systems" items=data.topSystemsFormatted timeRange=data.topTimeRangeLabel}}
+    {{> partials/top-10-box title="Top Regions" items=data.topRegionsFormatted timeRange=data.topTimeRangeLabel}}
   </div>
   {{/if}}
   {{/if}}

@@ -1,27 +1,51 @@
 {{#if stats}}
 <div class="top-10-container">
-  {{#if stats.ships}}
-    {{> partials/top-10-box title="Top Ships" items=stats.ships timeRange="Last 30 Days"}}
-  {{/if}}
-
   {{#if stats.characters}}
-    {{> partials/top-10-box title="Top Characters" items=stats.characters timeRange="Last 7 Days"}}
+    {{#if characterTitle}}
+      {{> partials/top-10-box title=characterTitle items=stats.characters timeRange=timeRange}}
+    {{else}}
+      {{> partials/top-10-box title="Top Characters" items=stats.characters timeRange="Last 7 Days"}}
+    {{/if}}
   {{/if}}
 
   {{#if stats.corporations}}
-    {{> partials/top-10-box title="Top Corporations" items=stats.corporations timeRange="Last 7 Days"}}
+    {{#if corporationTitle}}
+      {{> partials/top-10-box title=corporationTitle items=stats.corporations timeRange=timeRange}}
+    {{else}}
+      {{> partials/top-10-box title="Top Corporations" items=stats.corporations timeRange="Last 7 Days"}}
+    {{/if}}
   {{/if}}
 
   {{#if stats.alliances}}
-    {{> partials/top-10-box title="Top Alliances" items=stats.alliances timeRange="Last 7 Days"}}
+    {{#if allianceTitle}}
+      {{> partials/top-10-box title=allianceTitle items=stats.alliances timeRange=timeRange}}
+    {{else}}
+      {{> partials/top-10-box title="Top Alliances" items=stats.alliances timeRange="Last 7 Days"}}
+    {{/if}}
+  {{/if}}
+
+  {{#if stats.ships}}
+    {{#if shipTitle}}
+      {{> partials/top-10-box title=shipTitle items=stats.ships timeRange=timeRange}}
+    {{else}}
+      {{> partials/top-10-box title="Top Ships" items=stats.ships timeRange="Last 7 Days"}}
+    {{/if}}
   {{/if}}
 
   {{#if stats.systems}}
-    {{> partials/top-10-box title="Top Systems" items=stats.systems timeRange="Last 30 Days"}}
+    {{#if systemTitle}}
+      {{> partials/top-10-box title=systemTitle items=stats.systems timeRange=timeRange}}
+    {{else}}
+      {{> partials/top-10-box title="Top Systems" items=stats.systems timeRange="Last 7 Days"}}
+    {{/if}}
   {{/if}}
 
   {{#if stats.regions}}
-    {{> partials/top-10-box title="Top Regions" items=stats.regions timeRange="Last 30 Days"}}
+    {{#if regionTitle}}
+      {{> partials/top-10-box title=regionTitle items=stats.regions timeRange=timeRange}}
+    {{else}}
+      {{> partials/top-10-box title="Top Regions" items=stats.regions timeRange="Last 7 Days"}}
+    {{/if}}
   {{/if}}
 </div>
 
@@ -36,7 +60,7 @@
 .top-10-box {
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-dark);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
@@ -87,7 +111,7 @@
 .top-10-img {
   width: 24px;
   height: 24px;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   display: inline-block;
   flex-shrink: 0;
 }
@@ -100,7 +124,7 @@
   color: #ffffff;
   width: 14px;
   height: 14px;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;

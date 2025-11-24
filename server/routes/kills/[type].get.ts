@@ -85,6 +85,8 @@ const VALID_KILL_TYPES = [
 ] as const;
 
 type KillType = (typeof VALID_KILL_TYPES)[number];
+const TOP_BOX_LOOKBACK_DAYS = 7;
+const MOST_VALUABLE_LOOKBACK_DAYS = 7;
 
 /**
  * Build filters based on the kill type
@@ -286,7 +288,7 @@ export default defineEventHandler(async (event: H3Event) => {
       return {
         ...normalized,
         killmailTimeRelative: timeAgo(
-          new Date(km.killmailTime ?? normalized.killmailTime)
+          km.killmailTime ?? normalized.killmailTime
         ),
       };
     });
@@ -299,11 +301,11 @@ export default defineEventHandler(async (event: H3Event) => {
       topCorporations,
       topAlliances,
     ] = await Promise.all([
-      getTopSystemsFiltered(filters, 10),
-      getTopRegionsFiltered(filters, 10),
-      getTopCharactersFiltered(filters, 10),
-      getTopCorporationsFiltered(filters, 10),
-      getTopAlliancesFiltered(filters, 10),
+      getTopSystemsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
+      getTopRegionsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
+      getTopCharactersFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
+      getTopCorporationsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
+      getTopAlliancesFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
     ]);
 
     // Get Most Valuable Kills for this filter
@@ -311,7 +313,8 @@ export default defineEventHandler(async (event: H3Event) => {
     const mostValuableKillsData = await getFilteredKillsWithNames(
       { ...filters, minValue: undefined },
       1,
-      6
+      6,
+      MOST_VALUABLE_LOOKBACK_DAYS
     );
     // Sort by value descending (in case the query doesn't)
     mostValuableKillsData.sort((a, b) => b.totalValue - a.totalValue);
@@ -411,7 +414,10 @@ export default defineEventHandler(async (event: H3Event) => {
           topic: killType,
           mode: 'kills',
         },
-      }
+        topTimeRangeLabel: `Last ${TOP_BOX_LOOKBACK_DAYS} Days`,
+        mostValuableTimeRange: `Last ${MOST_VALUABLE_LOOKBACK_DAYS} Days`,
+      },
+      event
     );
   } catch (error) {
     return handleError(event, error);

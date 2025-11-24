@@ -2,6 +2,7 @@ import { database } from '../helpers/database';
 import { logger } from '../helpers/logger';
 import { createHash } from 'crypto';
 import { getLatestPricesForTypes } from './prices';
+import { getSolarSystem } from './solarSystems';
 
 /**
  * Killmails Model
@@ -13,6 +14,8 @@ export interface Killmail {
   killmailId: number;
   killmailTime: string;
   solarSystemId: number;
+  regionId?: number;
+  constellationId?: number;
   victimAllianceId?: number;
   victimCharacterId: number;
   victimCorporationId: number;
@@ -21,7 +24,6 @@ export interface Killmail {
   positionX: number;
   positionY: number;
   positionZ: number;
-  createdAt: string;
 }
 
 export interface ESIKillmailItem {
@@ -95,13 +97,25 @@ function accumulateItemValues(
 ): void {
   if (!items) return;
   for (const item of items) {
-    const price = priceMap.get(item.item_type_id) ?? 0;
-    const droppedQty = item.quantity_dropped ?? 0;
-    const destroyedQty = item.quantity_destroyed ?? 0;
-    totals.dropped += price * droppedQty;
-    totals.destroyed += price * destroyedQty;
+    // Only count item value if it doesn't have nested items
+    // Containers with contents should only count the contents
+    const hasNestedItems = item.items && item.items.length > 0;
+    
+    if (!hasNestedItems) {
+      let price = priceMap.get(item.item_type_id) ?? 0.01;
+      
+      // Blueprint Copies (singleton === 2) are worth 1/100th of BPO price
+      if (item.singleton === 2) {
+        price = price / 100;
+      }
+      
+      const droppedQty = item.quantity_dropped ?? 0;
+      const destroyedQty = item.quantity_destroyed ?? 0;
+      totals.dropped += price * droppedQty;
+      totals.destroyed += price * destroyedQty;
+    }
 
-    if (item.items && item.items.length > 0) {
+    if (hasNestedItems) {
       accumulateItemValues(item.items, priceMap, totals);
     }
   }
@@ -125,6 +139,15 @@ export async function calculateKillmailValues(
     PRICE_REGION_ID,
     priceDate
   );
+
+  // Exclude blueprints by setting their price to 0.01
+  const blueprintTypes = await database.find<{ typeId: number }>(
+    `SELECT "typeId" FROM types WHERE "typeId" = ANY(:typeIds) AND name LIKE '%Blueprint%'`,
+    { typeIds: Array.from(typeIds) }
+  );
+  for (const bp of blueprintTypes) {
+    priceMap.set(bp.typeId, 0.01);
+  }
 
   const shipValue = priceMap.get(victim.ship_type_id) ?? 0;
   const itemTotals = { dropped: 0, destroyed: 0 };
@@ -265,11 +288,16 @@ export async function getKillmail(
 }
 
 /**
- * Calculate MD5 hash of ESI killmail JSON (used for ESI endpoints)
+ * Calculate SHA1 hash of ESI killmail JSON (used for ESI endpoints)
+ * NOTE: This is a fallback - proper hashes should come from ESI/everef data
+ * The hash calculation here will NOT match CCP's algorithm
  */
 function calculateKillmailHash(esiData: ESIKillmail): string {
+  // WARNING: This is just a placeholder hash when we don't have the real one
+  // CCP's actual hash algorithm is proprietary and we can't reproduce it
+  // Always prefer passing the real hash from the data source
   const json = JSON.stringify(esiData);
-  return createHash('md5').update(json).digest('hex');
+  return createHash('sha1').update(json).digest('hex');
 }
 
 /**
@@ -281,9 +309,20 @@ export async function storeKillmail(
 ): Promise<void> {
   try {
     const victim = esiData.victim;
-    const nowUnix = Math.floor(Date.now() / 1000);
     const killmailHash = hash || calculateKillmailHash(esiData);
-    const valueBreakdown = await calculateKillmailValues(esiData);
+  const valueBreakdown = await calculateKillmailValues(esiData);
+  const killmailIso =
+    esiData.killmail_time ??
+    new Date().toISOString(); // ESI already provides Z; keep it UTC
+
+  // Get location info (region/constellation/security) from solar system
+  const systemInfo = await getSolarSystem(esiData.solar_system_id);
+
+    // Get victim ship group from types
+    const victimShipType = await database.findOne<{ groupId: number }>(
+      'SELECT "groupId" FROM types WHERE "typeId" = :typeId',
+      { typeId: victim?.ship_type_id }
+    );
 
     // Find top attacker (final blow or highest damage)
     const finalBlowAttacker = esiData.attackers.find((a) => a.final_blow);
@@ -307,10 +346,11 @@ export async function storeKillmail(
     // Insert main killmail record
     const killmailRecord = {
       killmailId: esiData.killmail_id ?? 0,
-      killmailTime:
-        esiData.killmail_time?.replace('Z', '').replace('T', ' ') ??
-        new Date().toISOString().replace('Z', '').replace('T', ' '),
+      killmailTime: killmailIso,
       solarSystemId: esiData.solar_system_id ?? 0,
+      regionId: systemInfo?.regionId ?? null,
+      constellationId: systemInfo?.constellationId ?? null,
+      securityStatus: systemInfo?.securityStatus ?? null,
 
       // Victim information
       victimAllianceId: victim?.alliance_id ?? null,
@@ -318,6 +358,7 @@ export async function storeKillmail(
       victimCorporationId: victim?.corporation_id ?? 0,
       victimDamageTaken: victim?.damage_taken ?? 0,
       victimShipTypeId: victim?.ship_type_id ?? 0,
+      victimShipGroupId: victimShipType?.groupId ?? null,
 
       // Victim position
       positionX: victim?.position?.x ?? null,
@@ -332,6 +373,12 @@ export async function storeKillmail(
       topAttackerCorporationId: topAttacker?.corporation_id ?? null,
       topAttackerAllianceId: topAttacker?.alliance_id ?? null,
       topAttackerShipTypeId: topAttacker?.ship_type_id ?? null,
+      topAttackerShipGroupId: topAttacker?.ship_type_id
+        ? (await database.findOne<{ groupId: number }>(
+            'SELECT "groupId" FROM types WHERE "typeId" = :typeId',
+            { typeId: topAttacker.ship_type_id }
+          ))?.groupId ?? null
+        : null,
 
       // Aggregate stats
       totalValue: valueBreakdown?.totalValue ?? 0,
@@ -341,8 +388,6 @@ export async function storeKillmail(
       npc: npc ?? false,
       solo: solo ?? false,
       awox: awox ?? false,
-
-      createdAt: new Date(nowUnix * 1000).toISOString(),
     };
 
     // Insert killmail
@@ -354,7 +399,7 @@ export async function storeKillmail(
     // Insert attackers
     const attackerRecords = esiData.attackers.map((attacker) => ({
       killmailId: esiData.killmail_id,
-      killmailTime: esiData.killmail_time.replace('Z', '').replace('T', ' '),
+      killmailTime: killmailIso,
       allianceId: attacker.alliance_id ?? null,
       corporationId: attacker.corporation_id ?? null,
       characterId: attacker.character_id ?? null,
@@ -363,7 +408,6 @@ export async function storeKillmail(
       securityStatus: attacker.security_status ?? null,
       shipTypeId: attacker.ship_type_id ?? null,
       weaponTypeId: attacker.weapon_type_id ?? null,
-      createdAt: new Date(nowUnix * 1000).toISOString(),
     }));
 
     if (attackerRecords.length > 0) {
@@ -374,13 +418,12 @@ export async function storeKillmail(
     if (victim.items && victim.items.length > 0) {
       const itemRecords = victim.items.map((item) => ({
         killmailId: esiData.killmail_id,
-        killmailTime: esiData.killmail_time.replace('Z', '').replace('T', ' '),
+        killmailTime: killmailIso,
         flag: item.flag ?? 0,
         itemTypeId: item.item_type_id ?? 0,
         quantityDropped: item.quantity_dropped ?? 0,
         quantityDestroyed: item.quantity_destroyed ?? 0,
         singleton: item.singleton ?? 0,
-        createdAt: new Date(nowUnix * 1000).toISOString(),
       }));
 
       await database.bulkInsert('items', itemRecords);
@@ -392,27 +435,130 @@ export async function storeKillmail(
 }
 
 /**
+ * Fetch region, constellation, and security status for solar systems in bulk
+ */
+async function fetchSolarSystemData(
+  solarSystemIds: number[]
+): Promise<
+  Map<
+    number,
+    { regionId: number; constellationId: number; securityStatus: number }
+  >
+> {
+  if (solarSystemIds.length === 0) return new Map();
+
+  const results = await database.find<{
+    solarSystemId: number;
+    regionId: number;
+    constellationId: number;
+    securityStatus: number;
+  }>(
+    'SELECT "solarSystemId", "regionId", "constellationId", "securityStatus" FROM solarsystems WHERE "solarSystemId" = ANY(:ids)',
+    { ids: solarSystemIds }
+  );
+
+  return new Map(
+    results.map((row) => [
+      row.solarSystemId,
+      {
+        regionId: row.regionId,
+        constellationId: row.constellationId,
+        securityStatus: row.securityStatus,
+      },
+    ])
+  );
+}
+
+/**
  * Store multiple ESI killmails with related records in bulk
  * More efficient than calling storeKillmail repeatedly
  */
+export interface StoreKillmailsResult {
+  inserted: number;
+  skippedExisting: number;
+}
+
 export async function storeKillmailsBulk(
   esiDataArray: Array<{ esi: ESIKillmail; hash?: string }>,
   valueOverrides?: Map<number, KillmailValueBreakdown>
-): Promise<void> {
-  if (esiDataArray.length === 0) return;
+): Promise<StoreKillmailsResult> {
+  if (esiDataArray.length === 0) return { inserted: 0, skippedExisting: 0 };
 
   try {
-    const nowUnix = Math.floor(Date.now() / 1000);
+
+    const uniqueKillmails: Array<{ esi: ESIKillmail; hash?: string }> = [];
+    const seenIds = new Set<number>();
+    for (const entry of esiDataArray) {
+      const killmailId = entry.esi.killmail_id;
+      if (!killmailId || seenIds.has(killmailId)) continue;
+      seenIds.add(killmailId);
+      uniqueKillmails.push(entry);
+    }
+    const duplicateInBatch = esiDataArray.length - uniqueKillmails.length;
+
+    const existingRows =
+      uniqueKillmails.length === 0
+        ? []
+        : await database.find<{ killmailId: number }>(
+            'SELECT "killmailId" FROM killmails WHERE "killmailId" = ANY(:ids)',
+            { ids: Array.from(seenIds) }
+          );
+    const existingIds = new Set(existingRows.map((row) => row.killmailId));
+
+    const newKillmails = uniqueKillmails.filter(
+      ({ esi }) => !existingIds.has(esi.killmail_id)
+    );
+    const skippedExisting =
+      uniqueKillmails.length - newKillmails.length + duplicateInBatch;
+
+    if (newKillmails.length === 0) {
+      logger.info(
+        `[Killmail] Skipping batch; ${skippedExisting} killmails already present`
+      );
+      return { inserted: 0, skippedExisting };
+    }
+
     const valueBreakdowns = await resolveKillmailValueBreakdowns(
-      esiDataArray,
+      newKillmails,
       valueOverrides
     );
 
+    // Fetch region/constellation/security for all unique solar systems
+    const uniqueSolarSystemIds = Array.from(
+      new Set(newKillmails.map(({ esi }) => esi.solar_system_id))
+    );
+    const solarSystemData = await fetchSolarSystemData(uniqueSolarSystemIds);
+
+    // Fetch ship group IDs for all unique victim and attacker ship types
+    const uniqueShipTypeIds = Array.from(
+      new Set([
+        ...newKillmails.map(({ esi }) => esi.victim.ship_type_id),
+        ...newKillmails.flatMap(({ esi }) =>
+          esi.attackers
+            .filter((a) => a.ship_type_id)
+            .map((a) => a.ship_type_id!)
+        ),
+      ])
+    );
+    const shipGroupData = await database.find<{
+      typeId: number;
+      groupId: number;
+    }>(
+      'SELECT "typeId", "groupId" FROM types WHERE "typeId" = ANY(:ids)',
+      { ids: uniqueShipTypeIds }
+    );
+    const shipGroupMap = new Map(
+      shipGroupData.map((row) => [row.typeId, row.groupId])
+    );
+
     // Prepare all killmail records
-    const killmailRecords = esiDataArray.map(({ esi, hash }, index) => {
+    const killmailRecords = newKillmails.map(({ esi, hash }, index) => {
       const victim = esi.victim;
       const killmailHash = hash || calculateKillmailHash(esi);
       const valueBreakdown = valueBreakdowns[index];
+      const systemData = solarSystemData.get(esi.solar_system_id);
+      const killmailIso =
+        esi.killmail_time ?? new Date().toISOString(); // preserve UTC input
 
       // Find top attacker (final blow or highest damage)
       const finalBlowAttacker = esi.attackers.find((a) => a.final_blow);
@@ -435,15 +581,17 @@ export async function storeKillmailsBulk(
 
       return {
         killmailId: esi.killmail_id ?? 0,
-        killmailTime:
-          esi.killmail_time?.replace('Z', '').replace('T', ' ') ??
-          new Date().toISOString().replace('Z', '').replace('T', ' '),
+        killmailTime: killmailIso,
         solarSystemId: esi.solar_system_id ?? 0,
+        regionId: systemData?.regionId ?? null,
+        constellationId: systemData?.constellationId ?? null,
+        securityStatus: systemData?.securityStatus ?? null,
         victimAllianceId: victim?.alliance_id ?? null,
         victimCharacterId: victim?.character_id ?? null,
         victimCorporationId: victim?.corporation_id ?? 0,
         victimDamageTaken: victim?.damage_taken ?? 0,
         victimShipTypeId: victim?.ship_type_id ?? 0,
+        victimShipGroupId: shipGroupMap.get(victim?.ship_type_id ?? 0) ?? null,
         positionX: victim?.position?.x ?? null,
         positionY: victim?.position?.y ?? null,
         positionZ: victim?.position?.z ?? null,
@@ -452,28 +600,32 @@ export async function storeKillmailsBulk(
         topAttackerCorporationId: topAttacker?.corporation_id ?? null,
         topAttackerAllianceId: topAttacker?.alliance_id ?? null,
         topAttackerShipTypeId: topAttacker?.ship_type_id ?? null,
+        topAttackerShipGroupId:
+          shipGroupMap.get(topAttacker?.ship_type_id ?? 0) ?? null,
         totalValue: valueBreakdown?.totalValue ?? 0,
         attackerCount: attackerCount ?? 0,
         npc: npc ?? false,
         solo: solo ?? false,
         awox: awox ?? false,
-        createdAt: new Date(nowUnix * 1000).toISOString(),
       };
     });
 
-    // Insert all killmails at once
-    await database.bulkInsert('killmails', killmailRecords);
+    // Insert all killmails at once (DO NOTHING on conflict to handle duplicates)
+    await database.bulkUpsert(
+      'killmails',
+      killmailRecords,
+      ['killmailId', 'killmailTime'],
+      [] // Empty update list = DO NOTHING on conflict
+    );
     logger.info(
-      `[Killmail] Stored ${killmailRecords.length} killmails in bulk`
+      `[Killmail] Stored ${killmailRecords.length} new killmails (skipped ${skippedExisting} existing)`
     );
 
     // Prepare all attacker records
-    const allAttackerRecords = esiDataArray.flatMap(({ esi }) =>
+    const allAttackerRecords = newKillmails.flatMap(({ esi }) =>
       esi.attackers.map((attacker) => ({
         killmailId: esi.killmail_id ?? 0,
-        killmailTime:
-          esi.killmail_time?.replace('Z', '').replace('T', ' ') ??
-          new Date().toISOString().replace('Z', '').replace('T', ' '),
+        killmailTime: esi.killmail_time ?? new Date().toISOString(),
         allianceId: attacker.alliance_id ?? null,
         corporationId: attacker.corporation_id ?? null,
         characterId: attacker.character_id ?? null,
@@ -482,42 +634,50 @@ export async function storeKillmailsBulk(
         securityStatus: attacker.security_status ?? null,
         shipTypeId: attacker.ship_type_id ?? null,
         weaponTypeId: attacker.weapon_type_id ?? null,
-        createdAt: new Date(nowUnix * 1000).toISOString(),
       }))
     );
 
-    // Insert all attackers at once
+    // Insert attackers in chunks to avoid parameter limit (65534)
+    // Each attacker has ~9 columns, so max ~7000 attackers per batch
     if (allAttackerRecords.length > 0) {
-      await database.bulkInsert('attackers', allAttackerRecords);
+      const ATTACKER_CHUNK_SIZE = 5000;
+      for (let i = 0; i < allAttackerRecords.length; i += ATTACKER_CHUNK_SIZE) {
+        const chunk = allAttackerRecords.slice(i, i + ATTACKER_CHUNK_SIZE);
+        await database.bulkInsert('attackers', chunk);
+      }
       logger.info(
         `[Killmail] Stored ${allAttackerRecords.length} attackers in bulk`
       );
     }
 
     // Prepare all item records
-    const allItemRecords = esiDataArray.flatMap(({ esi }) => {
+    const allItemRecords = newKillmails.flatMap(({ esi }) => {
       const victim = esi.victim;
       if (!victim.items || victim.items.length === 0) return [];
 
       return victim.items.map((item) => ({
         killmailId: esi.killmail_id ?? 0,
-        killmailTime:
-          esi.killmail_time?.replace('Z', '').replace('T', ' ') ??
-          new Date().toISOString().replace('Z', '').replace('T', ' '),
+        killmailTime: esi.killmail_time ?? new Date().toISOString(),
         flag: item.flag ?? 0,
         itemTypeId: item.item_type_id ?? 0,
         quantityDropped: item.quantity_dropped ?? 0,
         quantityDestroyed: item.quantity_destroyed ?? 0,
         singleton: item.singleton ?? 0,
-        createdAt: new Date(nowUnix * 1000).toISOString(),
       }));
     });
 
-    // Insert all items at once
+    // Insert items in chunks to avoid parameter limit (65534)
+    // Each item has ~8 columns, so max ~8000 items per batch
     if (allItemRecords.length > 0) {
-      await database.bulkInsert('items', allItemRecords);
+      const ITEM_CHUNK_SIZE = 5000;
+      for (let i = 0; i < allItemRecords.length; i += ITEM_CHUNK_SIZE) {
+        const chunk = allItemRecords.slice(i, i + ITEM_CHUNK_SIZE);
+        await database.bulkInsert('items', chunk);
+      }
       logger.info(`[Killmail] Stored ${allItemRecords.length} items in bulk`);
     }
+
+    return { inserted: killmailRecords.length, skippedExisting };
   } catch (error) {
     logger.error(`[Killmail] Error storing killmails in bulk:`, { error });
     throw error;
@@ -544,6 +704,7 @@ export interface KillmailDetails {
   victimShipName: string;
   victimShipGroup: string;
   victimShipValue: number;
+  totalValue: number;
   solarSystemId: number;
   solarSystemName: string;
   regionName: string;
@@ -611,6 +772,7 @@ export async function getKillmailDetails(
       coalesce(vship.name, 'Unknown') as "victimShipName",
       coalesce(vship_group.name, 'Unknown') as "victimShipGroup",
       coalesce(vship_price."averagePrice", 0.0) as "victimShipValue",
+      coalesce(k."totalValue", 0.0) as "totalValue",
       k."solarSystemId" as "solarSystemId",
       coalesce(sys.name, 'Unknown') as "solarSystemName",
       coalesce(reg.name, 'Unknown') as "regionName",
@@ -635,10 +797,8 @@ export async function getKillmailDetails(
         "averagePrice"
       FROM prices
       WHERE "regionId" = 10000002
-        AND "priceDate" = (
-          SELECT max("priceDate") FROM prices WHERE "regionId" = 10000002
-        )
-      ORDER BY "typeId"
+        AND "volume" > 100
+      ORDER BY "typeId", "priceDate" DESC
     ) vship_price ON k."victimShipTypeId" = vship_price."typeId"
 
     LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
@@ -657,27 +817,47 @@ export async function getKillmailItems(
   killmailId: number
 ): Promise<KillmailItem[]> {
   return database.find<KillmailItem>(
-    `SELECT
+    `WITH killmail_date AS (
+      SELECT DATE("killmailTime") AS killmail_date
+      FROM killmails
+      WHERE "killmailId" = :killmailId
+    ),
+    killmail_items AS (
+      SELECT *
+      FROM items
+      WHERE "killmailId" = :killmailId
+        AND "itemTypeId" IS NOT NULL
+    ),
+    latest_prices AS (
+      SELECT DISTINCT ON (p."typeId")
+        p."typeId",
+        p."averagePrice"
+      FROM prices p
+      JOIN killmail_items i ON p."typeId" = i."itemTypeId"
+      CROSS JOIN killmail_date kd
+      WHERE p."regionId" = 10000002
+        AND p."volume" > 100
+        AND p."priceDate" <= kd.killmail_date
+        AND p."priceDate" >= kd.killmail_date - INTERVAL '30 days'
+      ORDER BY p."typeId", p."priceDate" DESC
+    )
+    SELECT
       i."itemTypeId",
       t.name,
       i."quantityDropped",
       i."quantityDestroyed",
       i.flag,
-      coalesce(p."averagePrice", 0) as price
-    FROM items i
-
+      i.singleton,
+      CASE 
+        -- Blueprint Copies (BPCs) are essentially worthless
+        WHEN i.singleton = 2 THEN coalesce(p."averagePrice", 0.01) / 100
+        -- All other blueprints (BPOs) set to 0.01 since market prices are unreliable
+        WHEN t.name LIKE '%Blueprint%' THEN 0.01
+        ELSE coalesce(p."averagePrice", 0.01)
+      END as price
+    FROM killmail_items i
     LEFT JOIN types t ON i."itemTypeId" = t."typeId"
-    LEFT JOIN (
-      SELECT DISTINCT ON ("typeId")
-        "typeId",
-        "averagePrice"
-      FROM prices
-      WHERE "regionId" = 10000002
-      AND "priceDate" = (SELECT max("priceDate") FROM prices WHERE "regionId" = 10000002)
-      ORDER BY "typeId"
-    ) p ON i."itemTypeId" = p."typeId"
-    WHERE i."killmailId" = :killmailId
-    AND i."itemTypeId" IS NOT NULL`,
+    LEFT JOIN latest_prices p ON i."itemTypeId" = p."typeId"`,
     { killmailId }
   );
 }
@@ -769,4 +949,17 @@ export async function killmailExists(killmailId: number): Promise<boolean> {
     { killmailId }
   );
   return Number(result?.count || 0) > 0;
+}
+
+/**
+ * Get approximate total killmail count (very fast, uses PostgreSQL statistics)
+ * Note: Includes all partitions automatically
+ */
+export async function getApproximateKillmailCount(): Promise<number> {
+  const result = await database.findOne<{ count: number }>(
+    `SELECT COALESCE(reltuples::bigint, 0) as count 
+     FROM pg_class 
+     WHERE relname = 'killmails'`
+  );
+  return Number(result?.count || 0);
 }

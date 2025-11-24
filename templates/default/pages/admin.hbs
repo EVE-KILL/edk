@@ -1,0 +1,42 @@
+<div style="display: flex; gap: 16px; min-height: 400px;">
+  <div style="width: 200px; background: rgba(255,255,255,0.03); border: 1px solid var(--color-border-dark); padding: 12px; border-radius: 4px;">
+    <div style="font-size: 12px; font-weight: 700; color: #e7ecf5; margin-bottom: 8px;">Admin</div>
+    {{#each sidebar}}
+      <a href="{{this.href}}" style="display: block; padding: 8px 10px; margin-bottom: 6px; font-size: 11px; color: {{#if this.active}}#4a9eff{{else}}var(--color-text-secondary){{/if}}; text-decoration: none; border: 1px solid var(--color-border-dark); border-radius: 4px; background: {{#if this.active}}rgba(74,158,255,0.08){{else}}transparent{{/if}};">{{this.label}}</a>
+    {{/each}}
+  </div>
+
+  <div style="flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--color-border-dark); padding: 16px; border-radius: 4px;">
+    <div style="font-size: 14px; font-weight: 700; color: #e7ecf5; margin-bottom: 12px;">Admin Dashboard</div>
+    <div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 10px;">
+      Placeholder admin area. Add panels here for moderation, maintenance tasks, or dashboards.
+    </div>
+    <div style="font-size: 12px; color: var(--color-text-tertiary);">
+      Logged in as: {{user.name}} ({{user.characterId}})
+    </div>
+
+    <div style="margin-top: 16px;">
+      <div style="font-size: 13px; font-weight: 700; color: #e7ecf5; margin-bottom: 8px;">Client Associations</div>
+      {{#if devices.length}}
+        <table class="kb-table" cellspacing="1" style="width:100%; font-size: 11px;">
+          <tr class="kb-table-header">
+            <td>User ID</td>
+            <td>Client ID</td>
+            <td>User Agent</td>
+            <td>Last Seen</td>
+          </tr>
+          {{#each devices}}
+          <tr class="kb-table-row-odd">
+            <td>{{this.userId}}</td>
+            <td style="word-break: break-all;">{{this.clientId}}</td>
+            <td style="word-break: break-all;">{{this.userAgent}}</td>
+            <td>{{#if this.lastSeen}}{{this.lastSeen}}{{else}}Unknown{{/if}}</td>
+          </tr>
+          {{/each}}
+        </table>
+      {{else}}
+        <div style="font-size: 11px; color: var(--color-text-tertiary);">No client associations found.</div>
+      {{/if}}
+    </div>
+  </div>
+</div>

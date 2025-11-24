@@ -1,0 +1,29 @@
+<!-- Region Detail - EDK Style -->
+
+<!-- Region Stats Header -->
+{{> partials/entity-stats}}
+
+<!-- Most Valuable Kills -->
+{{#if data.mostValuableKills}}
+{{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange="Last 7 Days"}}
+{{/if}}
+
+<!-- Recent Activity with Top 10 Sidebar -->
+<div style="display: grid; grid-template-columns: minmax(200px, 225px) 1fr; gap: 12px; width: 100%; box-sizing: border-box; margin-bottom: 20px;">
+  <!-- Top 10 Sidebar -->
+  <aside style="min-width: 0; overflow: hidden;">
+    {{#if data.top10Stats}}
+      {{> components/top-10-stats stats=data.top10Stats timeRange="Last 7 Days"}}
+    {{/if}}
+  </aside>
+
+  <!-- Recent Killmails -->
+  <section style="min-width: 0; overflow: hidden;">
+      {{> partials/killmail-list killmails=data.recentKillmails wsFilter=data.wsFilter}}
+  </section>
+</div>
+
+<!-- Pagination -->
+{{#if data.pagination}}
+    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+{{/if}}

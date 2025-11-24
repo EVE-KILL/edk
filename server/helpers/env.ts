@@ -15,6 +15,19 @@ const envSchema = z.object({
   SITE_SUBTITLE: z.string().default('Real-time Killmail Tracking'),
   IMAGE_SERVER_URL: z.string().url().default('https://images.evetech.net'),
   ESI_SERVER_URL: z.string().url().default('https://esi.evetech.net'),
+  EVE_CLIENT_ID: z.string().optional(),
+  EVE_CLIENT_SECRET: z.string().optional(),
+  EVE_CLIENT_REDIRECT: z.string().optional(),
+  EVE_CLIENT_ID_DEV: z.string().optional(),
+  EVE_CLIENT_SECRET_DEV: z.string().optional(),
+  EVE_CLIENT_REDIRECT_DEV: z.string().optional(),
+  EVE_CLIENT_SCOPES: z
+    .string()
+    .default(
+      'publicData esi-killmails.read_killmails.v1 esi-killmails.read_corporation_killmails.v1'
+    ),
+  SESSION_COOKIE_NAME: z.string().default('edk_session'),
+  SESSION_TTL_DAYS: z.coerce.number().default(30),
   FOLLOWED_CHARACTER_IDS: z.string().optional(),
   FOLLOWED_CORPORATION_IDS: z.string().optional(),
   FOLLOWED_ALLIANCE_IDS: z.string().optional(),

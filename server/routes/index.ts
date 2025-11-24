@@ -8,6 +8,7 @@ import { getMostValuableKillsByPeriod } from '../models/mostValuableKills';
 import { normalizeKillRow } from '../helpers/templates';
 import { handleError } from '../utils/error';
 import { track } from '../utils/performance-decorators';
+import { timeAgo } from '../helpers/time';
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
@@ -85,8 +86,10 @@ export default defineEventHandler(async (event: H3Event) => {
       return { totalPages, top10 };
     });
 
-    // Fetch most valuable kills (weekly, top 6)
-    const mostValuableKillsData = await getMostValuableKillsByPeriod('week', 6);
+    // Fetch most valuable kills (7-day, top 6)
+    const mostValuableKillsData = await track('frontpage:fetch_most_valuable', 'application', async () => {
+      return await getMostValuableKillsByPeriod('week', 6);
+    });
 
     // Normalize killmail data to a consistent template-friendly shape
     const killmails = await track('frontpage:normalize_killmails', 'application', async () => {
@@ -96,7 +99,19 @@ export default defineEventHandler(async (event: H3Event) => {
           km.killmailTime ?? km.killmail_time ?? normalized.killmailTime;
         return {
           ...normalized,
-          killmailTimeRelative: timeAgo(new Date(killmailDate)),
+          killmailTimeRelative: timeAgo(killmailDate),
+        };
+      });
+    });
+
+    // Transform most valuable kills
+    const mostValuableKills = await track('frontpage:transform_most_valuable', 'application', async () => {
+      return mostValuableKillsData.map((mvk) => {
+        const normalized = normalizeKillRow(mvk);
+        return {
+          ...normalized,
+          totalValue: mvk.totalValue ?? normalized.totalValue,
+          killmailTime: mvk.killmailTime ?? normalized.killmailTime,
         };
       });
     });
@@ -105,17 +120,19 @@ export default defineEventHandler(async (event: H3Event) => {
     const data = await track('frontpage:build_data', 'application', async () => {
       return {
         // Real Most Valuable Kills from database (last 7 days)
-        mostValuableKills: mostValuableKillsData.map((mvk) => {
-          const normalized = normalizeKillRow(mvk);
-          return {
-            ...normalized,
-            totalValue: mvk.totalValue ?? normalized.totalValue,
-            killmailTime: mvk.killmailTime ?? normalized.killmailTime,
-          };
-        }),
+        mostValuableKills,
 
         // Real top 10 stats from database (last 7 days)
         top10Stats: top10,
+        
+        // Top box titles for front page
+        characterTitle: 'Top Characters',
+        corporationTitle: 'Top Corporations',
+        allianceTitle: 'Top Alliances',
+        shipTitle: 'Top Ships',
+        systemTitle: 'Top Systems',
+        regionTitle: 'Top Regions',
+        timeRange: 'Last 7 Days',
 
         // Real killmail data from database
         killmails,
@@ -146,31 +163,5 @@ export default defineEventHandler(async (event: H3Event) => {
     return handleError(event, error);
   }
 });
-
-// Helper function to format time ago
-function timeAgo(date: Date): string {
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (seconds < 60) return `${seconds} sec ago`;
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} min${minutes !== 1 ? 's' : ''} ago`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} day${days !== 1 ? 's' : ''} ago`;
-
-  const weeks = Math.floor(days / 7);
-  if (weeks < 4) return `${weeks} week${weeks !== 1 ? 's' : ''} ago`;
-
-  const months = Math.floor(days / 30);
-  if (months < 12) return `${months} month${months !== 1 ? 's' : ''} ago`;
-
-  const years = Math.floor(days / 365);
-  return `${years} year${years !== 1 ? 's' : ''} ago`;
-}
 
 import { generatePageNumbers } from '../helpers/pagination';

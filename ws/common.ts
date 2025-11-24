@@ -8,6 +8,7 @@ export interface ClientData {
   connectedAt: Date;
   lastPing?: Date;
   lastPong?: Date;
+  clientId: string;
 }
 
 export interface WebSocketMessage {

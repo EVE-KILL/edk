@@ -41,7 +41,7 @@ interface ColumnDefinition {
 /**
  * Split SQL content into individual statements
  * Handles multiple statements separated by semicolons,
- * SQL comments (line and block), empty lines, and whitespace.
+ * SQL comments (line and block), empty lines, whitespace, and dollar-quoted strings.
  */
 function splitSqlStatements(content: string): string[] {
   const statements: string[] = [];
@@ -49,71 +49,106 @@ function splitSqlStatements(content: string): string[] {
   let inBlockComment = false;
   let inString = false;
   let stringDelimiter = '';
+  let inDollarQuote = false;
+  let dollarQuoteTag = '';
 
-  const lines = content.split('\n');
+  // Process character by character across the entire content
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    const nextChar = i + 1 < content.length ? content[i + 1] : '';
+    const prevChar = i > 0 ? content[i - 1] : '';
 
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-    let processedLine = '';
-
-    // Process line character by character to handle comments and strings
-    for (let j = 0; j < line.length; j++) {
-      const char = line[j];
-      const nextChar = j + 1 < line.length ? line[j + 1] : '';
-      const prevChar = j > 0 ? line[j - 1] : '';
-
-      // Handle block comments
-      if (!inString && char === '/' && nextChar === '*') {
-        inBlockComment = true;
-        j++; // Skip the *
-        continue;
+    // Handle dollar-quoted strings (PostgreSQL function bodies)
+    if (!inString && !inBlockComment && char === '$') {
+      // Look for dollar quote pattern: $tag$ or $$
+      let tag = '$';
+      let k = i + 1;
+      while (k < content.length && content[k] !== '$') {
+        tag += content[k];
+        k++;
       }
-      if (inBlockComment && char === '*' && nextChar === '/') {
-        inBlockComment = false;
-        j++; // Skip the /
-        continue;
+      if (k < content.length && content[k] === '$') {
+        tag += '$';
+        if (!inDollarQuote) {
+          // Start of dollar quote
+          inDollarQuote = true;
+          dollarQuoteTag = tag;
+          currentStatement += tag;
+          i = k;
+          continue;
+        } else if (tag === dollarQuoteTag) {
+          // End of dollar quote
+          inDollarQuote = false;
+          currentStatement += tag;
+          dollarQuoteTag = '';
+          i = k;
+          continue;
+        }
       }
-      if (inBlockComment) {
-        continue;
-      }
-
-      // Handle line comments
-      if (!inString && char === '-' && nextChar === '-') {
-        // Rest of line is a comment
-        break;
-      }
-
-      // Handle strings
-      if (!inString && (char === "'" || char === '"')) {
-        inString = true;
-        stringDelimiter = char;
-        processedLine += char;
-        continue;
-      }
-      if (inString && char === stringDelimiter && prevChar !== '\\') {
-        inString = false;
-        stringDelimiter = '';
-        processedLine += char;
-        continue;
-      }
-
-      processedLine += char;
     }
 
-    // Add processed line to current statement
-    if (processedLine.trim().length > 0) {
-      currentStatement += processedLine + '\n';
+    // Inside dollar quote - just add everything
+    if (inDollarQuote) {
+      currentStatement += char;
+      continue;
     }
+
+    // Handle block comments
+    if (!inString && char === '/' && nextChar === '*') {
+      inBlockComment = true;
+      i++; // Skip the *
+      continue;
+    }
+    if (inBlockComment && char === '*' && nextChar === '/') {
+      inBlockComment = false;
+      i++; // Skip the /
+      continue;
+    }
+    if (inBlockComment) {
+      continue;
+    }
+
+    // Handle line comments
+    if (!inString && char === '-' && nextChar === '-') {
+      // Skip rest of line
+      while (i < content.length && content[i] !== '\n') {
+        i++;
+      }
+      continue;
+    }
+
+    // Handle strings
+    if (!inString && (char === "'" || char === '"')) {
+      inString = true;
+      stringDelimiter = char;
+      currentStatement += char;
+      continue;
+    }
+    if (inString && char === stringDelimiter && prevChar !== '\\') {
+      inString = false;
+      stringDelimiter = '';
+      currentStatement += char;
+      continue;
+    }
+
+    // Handle statement terminators (semicolon)
+    if (!inString && char === ';') {
+      const trimmed = currentStatement.trim();
+      if (trimmed.length > 0) {
+        statements.push(trimmed);
+      }
+      currentStatement = '';
+      continue;
+    }
+
+    // Add character to current statement
+    currentStatement += char;
   }
 
-  // Split by semicolons (now that comments are removed)
-  const parts = currentStatement.split(';');
-
-  for (const part of parts) {
-    const trimmed = part.trim();
-    if (trimmed.length > 0) {
-      statements.push(trimmed);
-    }
+  // Add any remaining statement
+  const trimmed = currentStatement.trim();
+  if (trimmed.length > 0) {
+    statements.push(trimmed);
   }
 
   return statements;
@@ -425,6 +460,8 @@ async function syncTableSchema(statement: string) {
           int4: 'integer',
           int8: 'bigint',
           serial: 'integer',
+          bigserial: 'bigint',
+          serial8: 'bigint',
           varchar: 'character varying',
           bool: 'boolean',
         };

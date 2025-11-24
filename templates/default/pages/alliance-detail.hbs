@@ -16,7 +16,11 @@
 
 <!-- Most Valuable Kills -->
 {{#if data.mostValuableKills}}
+{{#if data.timeRange}}
+{{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange=data.timeRange}}
+{{else}}
 {{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange="Last 7 Days"}}
+{{/if}}
 {{/if}}
 
 <!-- Recent Activity with Top 10 Sidebar -->
@@ -24,7 +28,7 @@
   <!-- Top 10 Sidebar -->
   <aside style="min-width: 0; overflow: hidden;">
     {{#if data.top10Stats}}
-      {{> components/top-10-stats stats=data.top10Stats}}
+      {{> components/top-10-stats stats=data.top10Stats characterTitle=data.characterTitle corporationTitle=data.corporationTitle shipTitle=data.shipTitle systemTitle=data.systemTitle regionTitle=data.regionTitle timeRange=data.timeRange}}
     {{/if}}
   </aside>
 

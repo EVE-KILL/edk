@@ -11,7 +11,7 @@ export interface Corporation {
   allianceId: number | null;
   ceoId: number;
   creatorId: number;
-  dateFounded: string;
+  dateFounded: string | null;
   description: string;
   homeStationId: number | null;
   memberCount: number;
@@ -20,7 +20,6 @@ export interface Corporation {
   taxRate: number;
   ticker: string;
   url: string;
-  updatedAt: Date;
 }
 
 /**
@@ -159,7 +158,7 @@ export async function storeCorporation(
     allianceId: number | null;
     ceoId: number;
     creatorId: number;
-    dateFounded: string;
+    dateFounded: string | null;
     description: string;
     homeStationId: number | null;
     memberCount: number;
@@ -189,7 +188,6 @@ export async function storeCorporation(
         taxRate: data.taxRate,
         ticker: data.ticker,
         url: data.url,
-        updatedAt: new Date(now * 1000),
       },
     ],
     ['corporationId']
@@ -205,7 +203,7 @@ export async function storeCorporationsBulk(
     allianceId: number | null;
     ceoId: number;
     creatorId: number;
-    dateFounded: string;
+    dateFounded: string | null;
     description: string;
     homeStationId: number | null;
     memberCount: number;
@@ -234,10 +232,9 @@ export async function storeCorporationsBulk(
     taxRate: corp.taxRate,
     ticker: corp.ticker,
     url: corp.url,
-    updatedAt: new Date(now * 1000),
   }));
 
-  await database.bulkInsert('corporations', records);
+  await database.bulkUpsert('corporations', records, ['corporationId']);
 }
 
 /**
@@ -284,4 +281,16 @@ export async function getCorporationWithAlliance(
     LIMIT 1`,
     { corporationId }
   );
+}
+
+/**
+ * Get approximate corporation count (very fast, uses PostgreSQL statistics)
+ */
+export async function getApproximateCorporationCount(): Promise<number> {
+  const result = await database.findOne<{ count: number }>(
+    `SELECT COALESCE(reltuples::bigint, 0) as count 
+     FROM pg_class 
+     WHERE relname = 'corporations'`
+  );
+  return Number(result?.count || 0);
 }

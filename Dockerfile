@@ -20,6 +20,8 @@ RUN bun install --frozen-lockfile --production
 
 # Copy built artifacts from the build stage
 COPY --from=build /app/.output ./.output
+# Copy docs so the /docs route can render content at runtime
+COPY --from=build /app/docs ./docs
 
 # Expose port and start the application
 EXPOSE 3000

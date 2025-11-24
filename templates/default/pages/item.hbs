@@ -1,0 +1,31 @@
+<!-- Item Detail - EDK Style -->
+
+<!-- Item Stats Header -->
+{{> partials/entity-stats}}
+
+<!-- Item Info -->
+{{#if data.item}}
+<div style="margin-bottom: 20px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 16px;">
+    <div style="display: grid; grid-template-columns: auto 1fr; gap: 12px 24px; max-width: 800px;">
+        {{#if data.group}}
+        <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Group:</span>
+        <span><a href="/group/{{data.group.groupId}}" style="color: var(--color-accent-blue-bright); text-decoration: none;">{{data.group.name}}</a></span>
+        {{/if}}
+        
+        {{#if data.category}}
+        <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Category:</span>
+        <span>{{data.category.name}}</span>
+        {{/if}}
+        
+        {{#if data.item.mass}}
+        <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Mass:</span>
+        <span>{{formatNumber data.item.mass}} kg</span>
+        {{/if}}
+        
+        {{#if data.item.volume}}
+        <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Volume:</span>
+        <span>{{formatNumber data.item.volume}} m³</span>
+        {{/if}}
+    </div>
+</div>
+{{/if}}

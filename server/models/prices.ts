@@ -16,7 +16,6 @@ export interface Price {
   lowestPrice: number;
   orderCount: number;
   volume: number;
-  updatedAt: string;
 }
 
 export interface PriceAPIResponse {
@@ -57,13 +56,11 @@ export async function getPrice(
       "highestPrice",
       "lowestPrice",
       "orderCount",
-      "volume",
-      TO_CHAR("updatedAt", 'YYYY-MM-DD HH24:MI:SS') as "updatedAt"
+      "volume"
     FROM prices
     WHERE "typeId" = :typeId
       AND "regionId" = :regionId
       AND "priceDate" = :queryDate
-    ORDER BY "updatedAt" DESC
     LIMIT 1`,
     { typeId, regionId, queryDate }
   );
@@ -90,8 +87,7 @@ export async function getPriceHistory(
       "highestPrice",
       "lowestPrice",
       "orderCount",
-      "volume",
-      TO_CHAR("updatedAt", 'YYYY-MM-DD HH24:MI:SS') as "updatedAt"
+      "volume"
     FROM prices
     WHERE "typeId" = :typeId
       AND "regionId" = :regionId
@@ -120,12 +116,11 @@ export async function getLatestPrice(
       "highestPrice",
       "lowestPrice",
       "orderCount",
-      "volume",
-      TO_CHAR("updatedAt", 'YYYY-MM-DD HH24:MI:SS') as "updatedAt"
+      "volume"
     FROM prices
     WHERE "typeId" = :typeId
       AND "regionId" = :regionId
-    ORDER BY "priceDate" DESC, "updatedAt" DESC
+    ORDER BY "priceDate" DESC
     LIMIT 1`,
     { typeId, regionId }
   );
@@ -151,7 +146,6 @@ export async function storePrices(data: PriceAPIResponse[]): Promise<void> {
       lowestPrice: price.lowest || price.average_price || 0,
       orderCount: price.order_count || 0,
       volume: price.volume || 0,
-      updatedAt: new Date(), // Postgres timestamp
     }));
 
   try {
@@ -229,6 +223,7 @@ export async function getLatestPricesForTypes(
     FROM prices
     WHERE "regionId" = :regionId
       AND "typeId" = ANY(:typeIds)
+      AND "volume" > 100
       ${dateClause}
     ORDER BY "typeId", "priceDate" DESC`,
     params
@@ -236,7 +231,7 @@ export async function getLatestPricesForTypes(
 
   const priceMap = new Map<number, number>();
   for (const row of rows) {
-    priceMap.set(row.typeId, row.averagePrice ?? 0);
+    priceMap.set(row.typeId, row.averagePrice ?? 0.01);
   }
 
   return priceMap;

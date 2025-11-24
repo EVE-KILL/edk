@@ -49,8 +49,8 @@ export function normalizeKillRow(km: any): NormalizedKillmail {
   const killmailRawTime = km.killmailTime ?? km.killmail_time ?? '';
   const killmailTime =
     killmailRawTime instanceof Date
-      ? killmailRawTime.toISOString()
-      : String(killmailRawTime);
+      ? formatNaiveDateAsUtcString(killmailRawTime)
+      : normalizeTimeString(String(killmailRawTime));
 
   const victimShipTypeId = Number(
     km.victimShipTypeId ?? km.victim_ship_type_id ?? 0
@@ -200,9 +200,22 @@ export function normalizeKillRow(km: any): NormalizedKillmail {
   const attackerCount =
     km.attackerCount ?? km.attacker_count ?? attackers.length;
 
+  // Calculate relative time
+  const now = new Date();
+  const past = new Date(killmailTime);
+  const diffMs = now.getTime() - past.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  let killmailTimeRelative = 'Just now';
+  if (days > 0) killmailTimeRelative = `${days} day${days > 1 ? 's' : ''} ago`;
+  else if (hours > 0) killmailTimeRelative = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  else if (minutes > 0) killmailTimeRelative = `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+
   return {
     killmailId,
     killmailTime,
+    killmailTimeRelative,
     victim: {
       ship: {
         typeId: victimShipTypeId,
@@ -240,6 +253,28 @@ export function normalizeKillRow(km: any): NormalizedKillmail {
     isSolo: Boolean(km.isSolo ?? km.is_solo ?? attackerCount === 1),
     isNpc: Boolean(km.isNpc ?? km.is_npc ?? false),
   };
+}
+
+function formatNaiveDateAsUtcString(date: Date): string {
+  // Treat the wall-clock value as UTC (timestamp without tz from DB) using UTC getters
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+  const millis = String(date.getUTCMilliseconds()).padStart(3, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${millis}Z`;
+}
+
+function normalizeTimeString(value: string): string {
+  if (!value) return value;
+  // If the string already has timezone info, keep it. Otherwise append Z so it is treated as UTC.
+  if (/[+-]\d{2}:?\d{2}$/.test(value) || value.endsWith('Z')) {
+    return value;
+  }
+  // Handle cases where value may already have a space separator from DB
+  return value.includes('T') ? `${value}Z` : `${value.replace(' ', 'T')}Z`;
 }
 
 // Template cache for compiled templates
@@ -823,8 +858,11 @@ export async function render(
     if (loadSpanId) performance?.endSpan(loadSpanId);
 
     // Merge page context with defaults
+    const requestUrl =
+      event?.node?.req?.url || (event ? event.path : undefined) || '/';
     const page: DefaultPageContext = {
       ...getDefaultPageContext(),
+      ...(requestUrl ? { url: requestUrl } : {}),
       ...pageContext,
     };
 
@@ -885,9 +923,10 @@ export async function render(
 
     // Set response headers if event provided
     if (event) {
+      const isAuthenticated = Boolean(event.context?.authUser);
       setResponseHeaders(event, {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=60',
+        'Cache-Control': isAuthenticated ? 'private, no-store, max-age=0' : 'public, max-age=60',
       });
     }
 

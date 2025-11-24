@@ -10,7 +10,7 @@
         <div class="kb-kl-col kb-kl-col--time">Time</div>
     </div>
 
-    {{#each killmails}}
+      {{#each killmails}}
   <div class="kb-kl-row{{#if isLoss}} kb-kl-row--loss{{/if}}" data-killmail-id="{{killmailId}}" data-killmail-time="{{killmailTime}}" onclick="window.location.href='/killmail/{{killmailId}}';" style="cursor: pointer;">
         <div class="kb-kl-col kb-kl-col--ship">
             <div class="kb-kl-ship">
@@ -121,7 +121,7 @@
   gap: 0;
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-dark);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   width: 100%;
   box-sizing: border-box;
@@ -238,7 +238,7 @@
   height: 48px;
   border: 0;
   display: block;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .kb-kl-info {
@@ -359,21 +359,13 @@
 </style>
 
 <script type="module">
-  // WebSocket configuration
-  const WS_PORT = 3002;
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.hostname}:${WS_PORT}/ws`;
+  // No-op placeholder to maintain structure after removing client time-ago helper
+  const refreshTimes = () => {};
 
-  let ws;
-  let reconnectInterval = 1000;
-  const MAX_RECONNECT_INTERVAL = 30000;
-
-  // Get filter configuration from the killmail list
   const killmailList = document.querySelector('.kb-kl-list');
   if (!killmailList) {
-    console.log('No killmail list found, skipping WebSocket setup');
+    console.log('[Killlist] No killmail list found, skipping WebSocket setup');
   } else {
-    // Client-side kill type filters to match server filters for websocket updates
     const SHIP_GROUPS = {
       big: [547, 485, 513, 902, 941, 30, 659],
       frigates: [324, 893, 25, 831, 237],
@@ -404,108 +396,98 @@
     const filterId = killmailList.dataset.wsFilterId;
     const filterMode = killmailList.dataset.wsFilterMode; // 'all', 'kills', 'losses'
     const filterTopic = killmailList.dataset.wsFilterTopic; // For kill type pages
+    const subscriptionKey = `killlist:${filterType || 'all'}:${filterId || 'all'}:${filterMode || 'all'}:${filterTopic || 'latest'}`;
+    const topics = buildTopics();
+    let unsubscribeTopics = null;
+    let removeKillmailHandler = null;
+    let cleanupTimer = null;
 
-    function connect() {
-      console.log('Connecting to WebSocket:', wsUrl);
-      ws = new WebSocket(wsUrl);
+    function startKillmailStream() {
+      const client = window.__edkWS;
+      if (!client) return false;
 
-      ws.onopen = () => {
-        console.log('✅ WebSocket connected');
-        reconnectInterval = 1000;
+      unsubscribeTopics = client.setTopics(subscriptionKey, topics);
+      removeKillmailHandler = client.on('killmail', (message) => {
+        const killmail = message?.data ?? message;
+        if (killmail) handleNewKillmail(killmail);
+      });
+      return true;
+    }
 
-        // Enable debug panel WebSocket tab
-        if (window.debugWS) {
-          window.debugWS.enable();
-          window.debugWS.setConnected(true);
-        }
-
-        // Subscribe based on filter configuration
-        let topics = ['all']; // Default to all
-
-        if (filterType === 'killType' && filterTopic) {
-          // Kill type pages (latest, solo, big, etc.)
-          topics = [filterTopic];
-        } else if (filterType && filterId) {
-          // Build topic based on entity type and ID
-          if (filterType === 'character') {
-            if (filterMode === 'kills') {
-              topics = [`attacker.${filterId}`];
-            } else if (filterMode === 'losses') {
-              topics = [`victim.${filterId}`];
-            } else {
-              // Dashboard - both kills and losses
-              topics = [`victim.${filterId}`, `attacker.${filterId}`];
-            }
-          } else if (filterType === 'corporation') {
-            if (filterMode === 'kills') {
-              topics = [`attacker.${filterId}`];
-            } else if (filterMode === 'losses') {
-              topics = [`victim.${filterId}`];
-            } else {
-              topics = [`victim.${filterId}`, `attacker.${filterId}`];
-            }
-          } else if (filterType === 'alliance') {
-            if (filterMode === 'kills') {
-              topics = [`attacker.${filterId}`];
-            } else if (filterMode === 'losses') {
-              topics = [`victim.${filterId}`];
-            } else {
-              topics = [`victim.${filterId}`, `attacker.${filterId}`];
-            }
-          }
-        }
-
-        console.log('📡 Subscribing to topics:', topics);
-        ws.send(JSON.stringify({ type: 'subscribe', topics }));
-
-        // Update debug panel with topics
-        if (window.debugWS) {
-          window.debugWS.setTopics(topics);
+    if (!startKillmailStream()) {
+      const readyListener = () => {
+        if (startKillmailStream()) {
+          window.removeEventListener('edk-ws-ready', readyListener);
         }
       };
+      window.addEventListener('edk-ws-ready', readyListener);
+    }
 
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
+    function cleanup() {
+      if (unsubscribeTopics) unsubscribeTopics();
+      if (removeKillmailHandler) removeKillmailHandler();
+      cleanupTimer = null;
+    }
 
-          if (message.type === 'subscribed') {
-            console.log('✅ Subscribed to topics:', message.topics);
-            if (window.debugWS) {
-              window.debugWS.setTopics(message.topics);
-            }
-          } else if (message.type === 'killmail' && message.data) {
-            if (window.debugWS) {
-              window.debugWS.addMessage('killmail', message.data);
-            }
-            handleNewKillmail(message.data);
-          } else if (message.type === 'ping') {
-            ws.send(JSON.stringify({ type: 'pong' }));
-            if (window.debugWS) {
-              window.debugWS.addMessage('ping', null);
-            }
-          } else {
-            if (window.debugWS) {
-              window.debugWS.addMessage(message.type, message);
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error processing message:', error);
+    function scheduleCleanup() {
+      if (cleanupTimer) return;
+      cleanupTimer = setTimeout(() => {
+        cleanup();
+        const client = window.__edkWS;
+        if (client) {
+          // Inform worker to drop this namespace promptly
+          client.clearTopics(subscriptionKey);
         }
-      };
+      }, 3000); // linger a bit to survive fast navigations
+    }
 
-      ws.onclose = (event) => {
-        console.log('🔴 WebSocket disconnected:', event.code, event.reason);
-        if (window.debugWS) {
-          window.debugWS.setConnected(false);
-          window.debugWS.setReconnectCount((window.debugWS.stats.reconnectCount || 0) + 1);
+    function cancelCleanup() {
+      if (cleanupTimer) {
+        clearTimeout(cleanupTimer);
+        cleanupTimer = null;
+      }
+    }
+
+    window.addEventListener('pagehide', scheduleCleanup);
+    window.addEventListener('beforeunload', cleanup);
+    window.addEventListener('pageshow', cancelCleanup);
+
+    function buildTopics() {
+      if (filterType === 'killType' && filterTopic) {
+        return [filterTopic];
+      }
+
+      if (filterType === 'character' && filterId) {
+        if (filterMode === 'kills') {
+          return [`attacker.${filterId}`];
         }
-        setTimeout(connect, reconnectInterval);
-        reconnectInterval = Math.min(reconnectInterval * 2, MAX_RECONNECT_INTERVAL);
-      };
+        if (filterMode === 'losses') {
+          return [`victim.${filterId}`];
+        }
+        return [`victim.${filterId}`, `attacker.${filterId}`];
+      }
 
-      ws.onerror = (error) => {
-        console.error('⚠️  WebSocket error:', error);
-      };
+      if (filterType === 'corporation' && filterId) {
+        if (filterMode === 'kills') {
+          return [`attacker.${filterId}`];
+        }
+        if (filterMode === 'losses') {
+          return [`victim.${filterId}`];
+        }
+        return [`victim.${filterId}`, `attacker.${filterId}`];
+      }
+
+      if (filterType === 'alliance' && filterId) {
+        if (filterMode === 'kills') {
+          return [`attacker.${filterId}`];
+        }
+        if (filterMode === 'losses') {
+          return [`victim.${filterId}`];
+        }
+        return [`victim.${filterId}`, `attacker.${filterId}`];
+      }
+
+      return ['all'];
     }
 
     function handleNewKillmail(killmail) {
@@ -685,6 +667,9 @@
         rows[rows.length - 1].remove();
       }
 
+      // Update relative time display for new/affected rows
+      refreshTimes();
+
       console.log('✅ Added killmail to list:', killmail.killmailId);
     }
 
@@ -752,8 +737,5 @@
           return true;
       }
     }
-
-    // Start connection
-    connect();
   }
 </script>

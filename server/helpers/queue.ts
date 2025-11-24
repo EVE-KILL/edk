@@ -11,6 +11,7 @@ export enum QueueType {
   CORPORATION = 'corporation',
   ALLIANCE = 'alliance',
   PRICE = 'price',
+  AUTH = 'auth',
 }
 
 /**
@@ -22,6 +23,7 @@ export interface QueueJobData {
   [QueueType.CORPORATION]: { id: number };
   [QueueType.ALLIANCE]: { id: number };
   [QueueType.PRICE]: { typeId: number; date?: number };
+  [QueueType.AUTH]: { userId: number };
 }
 
 /**

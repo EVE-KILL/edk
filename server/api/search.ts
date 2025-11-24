@@ -4,8 +4,8 @@
  *   get:
  *     summary: Performs a search for EVE Online entities.
  *     description: |
- *       Queries the Typesense search index for various EVE Online entities, including characters, corporations, alliances, items, and solar systems.
- *       Results are grouped by entity type.
+ *       Queries PostgreSQL full-text search for various EVE Online entities, including characters, corporations, alliances, items, and solar systems.
+ *       Results are ranked by relevance using ts_rank and trigram similarity.
  *     tags:
  *       - Search
  *     parameters:
@@ -19,11 +19,11 @@
  *       - name: limit
  *         in: query
  *         required: false
- *         description: The maximum number of results to return per group.
+ *         description: The maximum number of results to return per entity type.
  *         schema:
  *           type: integer
- *           default: 20
- *           maximum: 50
+ *           default: 5
+ *           maximum: 20
  *     responses:
  *       '200':
  *         description: An object containing the search results.
@@ -47,61 +47,23 @@
  *         description: Internal server error if the search operation fails.
  */
 import { defineEventHandler, getQuery } from 'h3';
-import { typesense } from '~/helpers/typesense';
+import { searchEntities } from '~/models/search';
 import { logger } from '~/helpers/logger';
 
 export default defineEventHandler(async (event) => {
-  const { q, limit = '20' } = getQuery(event);
+  const { q, limit = '5' } = getQuery(event);
 
   if (!q || typeof q !== 'string' || q.trim().length < 2) {
-    return {};
+    return { results: [] };
   }
 
   try {
-    const searchParameters = {
-      q: q.trim(),
-      query_by: 'name',
-      per_page: Math.min(parseInt(limit as string, 10), 50),
-      group_by: 'type',
-      group_limit: 5,
-      sort_by: 'name:asc',
-    };
-
-    const searchResult = await typesense
-      .collections('search')
-      .documents()
-      .search(searchParameters);
-
-    const results: any[] = [];
-
-    for (const group of searchResult.grouped_hits || []) {
-      const type = group.group_key[0];
-      if (!type) continue;
-
-      for (const hit of group.hits) {
-        const doc = hit.document as any;
-        const rawId = doc.id as string;
-        const entityId =
-          typeof rawId === 'string' ? rawId.replace(`${type}-`, '') : rawId;
-
-        results.push({
-          id: entityId,
-          entityId,
-          name: doc.name,
-          type: doc.type ?? type,
-          rawId: rawId,
-        });
-      }
-    }
+    const maxLimit = Math.min(parseInt(limit as string, 10) || 5, 20);
+    const results = await searchEntities(q.trim(), maxLimit);
 
     return { results };
   } catch (error: any) {
-    logger.error('Typesense search error:', { err: error });
-
-    // If collection doesn't exist, return empty results
-    if (error.httpStatus === 404) {
-      return {};
-    }
+    logger.error('Search error:', { err: error, query: q });
 
     throw createError({
       statusCode: 500,

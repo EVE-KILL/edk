@@ -93,6 +93,63 @@ sql`${left} AND ${right}`
 - **Local services:** Postgres, Redis, and Typesense are already installed/configured in the environment; `docker compose up` will bring them online if needed.
 - **Materialized views:** `bun cli db:refresh` refreshes all MVs (`top_*_weekly`, `celestials`). `kill_list` is now a regular view (not materialized) to avoid storing 90M+ rows. `bun cli sde:refresh-mv` refreshes `celestials` after SDE imports.
 
+## Performance Tracking
+
+The project includes automatic performance tracking for routes to measure query execution times, template rendering, and overall page load times.
+
+### How Performance Tracking Works
+
+- **Automatic tracking:** Performance metrics are automatically collected via the `requestContext` middleware
+- **Database queries:** All queries through `database.query()`, `database.find()`, `database.findOne()`, etc. are automatically tracked
+- **Metrics displayed:** Performance data appears in the footer of pages (in development/debug mode) showing:
+  - Total page load time
+  - Query count and average database time
+  - Template rendering time
+  - Layout rendering time
+
+### Using Performance Tracking in Routes
+
+**✅ CORRECT - Database queries are tracked:**
+```typescript
+// Use database.query() or other database helper methods
+const result = await database.query<MyType>(`SELECT * FROM table WHERE id = :id`, { id: 123 });
+```
+
+**❌ WRONG - Bypasses tracking:**
+```typescript
+// DO NOT use database.sql directly - it bypasses performance tracking
+const sql = database.sql;
+const result = await sql`SELECT * FROM table WHERE id = ${id}`;
+```
+
+### Wrapping Operations with track()
+
+For custom tracking of application logic (non-database operations):
+
+```typescript
+import { track } from '../utils/performance-decorators';
+
+// Track parallel queries
+const [data1, data2] = await track('route:parallel_queries', 'database', async () => {
+  return await Promise.all([
+    database.query('SELECT ...'),
+    database.query('SELECT ...')
+  ]);
+});
+
+// Track data transformation
+const processedData = await track('route:transform_data', 'application', async () => {
+  return data.map(transformFn);
+});
+```
+
+### Performance Best Practices
+
+1. **Always use `database.query()`** instead of `database.sql` in routes to ensure queries are tracked
+2. **Use `track()` for application logic** to measure non-database operations
+3. **Group related operations** under meaningful span names (e.g., `about:get_db_counts`, `frontpage:parallel_queries`)
+4. **Check the footer** during development to verify performance metrics are being collected
+
 ## Environment Variables
 
 Key variables (see `.env.example`):

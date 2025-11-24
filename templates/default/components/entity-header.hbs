@@ -25,180 +25,210 @@
   - stats: object (entity statistics)
 --}}
 <div class="entity-hero">
-  <!-- Entity Name Header - Full Width with Logos -->
-  <div class="entity-hero__header">
-    <div class="entity-hero__title-section">
-      <h1 class="entity-hero__title">
-        {{name}}{{#if ticker}} <span class="entity-hero__ticker">[{{ticker}}]</span>{{/if}}
-      </h1>
-
-      {{#if entityList}}
-      <div class="entity-hero__relations">
-        <span class="color-secondary">Tracking:</span>
-        {{#each entityList}}
-          <a href="/{{this.type}}/{{this.id}}" class="entity-hero__link">{{this.name}}</a>{{#unless @last}},{{/unless}}
-        {{/each}}
-      </div>
-      {{else}}
-      {{#if parent}}
-      <div class="entity-hero__relations">
-        {{#ifEquals type "character"}}
-          <span data-corporation-id="{{parent.id}}">
-          <a href="/corporation/{{parent.id}}" class="entity-hero__link">
-            {{parent.name}}{{#if parent.ticker}} [{{parent.ticker}}]{{/if}}
-          </a>
-          </span>
-          {{#if grandparent}}
-            <span class="entity-hero__relations-sep">•</span>
-            <span data-alliance-id="{{grandparent.id}}">
-            <a href="/alliance/{{grandparent.id}}" class="entity-hero__link">
-              {{grandparent.name}}{{#if grandparent.ticker}} [{{grandparent.ticker}}]{{/if}}
+  <!-- Single container box for entire entity header -->
+  <div class="entity-hero__container">
+    <!-- Top: Name/breadcrumb on left, parent/grandparent logos on right (full width) -->
+    <div class="entity-hero__header">
+      <div class="entity-hero__header-left">
+        <h1 class="entity-hero__title">
+          {{name}}{{#if ticker}} <span class="entity-hero__ticker">[{{ticker}}]</span>{{/if}}
+        </h1>
+        
+        {{#if entityList}}
+        <div class="entity-hero__relations">
+          <span class="color-secondary">Tracking:</span>
+          {{#each entityList}}
+            <a href="/{{this.type}}/{{this.id}}" class="entity-hero__link">{{this.name}}</a>{{#unless @last}},{{/unless}}
+          {{/each}}
+        </div>
+        {{else}}
+        {{#if parent}}
+        <div class="entity-hero__relations">
+          {{#ifEquals type "character"}}
+            <span data-corporation-id="{{parent.id}}">
+            <a href="/corporation/{{parent.id}}" class="entity-hero__link">
+              {{parent.name}}{{#if parent.ticker}} [{{parent.ticker}}]{{/if}}
             </a>
             </span>
-          {{/if}}
-        {{else ifEquals type "corporation"}}
-          {{!-- Corporation breadcrumb shows parent alliance --}}
-          <span data-alliance-id="{{parent.id}}">
-          <a href="/alliance/{{parent.id}}" class="entity-hero__link">
-            {{parent.name}}{{#if parent.ticker}} [{{parent.ticker}}]{{/if}}
+            {{#if grandparent}}
+              <span class="entity-hero__relations-sep">•</span>
+              <span data-alliance-id="{{grandparent.id}}">
+              <a href="/alliance/{{grandparent.id}}" class="entity-hero__link">
+                {{grandparent.name}}{{#if grandparent.ticker}} [{{grandparent.ticker}}]{{/if}}
+              </a>
+              </span>
+            {{/if}}
+          {{else ifEquals type "corporation"}}
+            <span data-alliance-id="{{parent.id}}">
+            <a href="/alliance/{{parent.id}}" class="entity-hero__link">
+              {{parent.name}}{{#if parent.ticker}} [{{parent.ticker}}]{{/if}}
+            </a>
+            </span>
+          {{/ifEquals}}
+        </div>
+        {{else if grandparent}}
+        <div class="entity-hero__relations">
+          <span data-alliance-id="{{grandparent.id}}">
+          <a href="/alliance/{{grandparent.id}}" class="entity-hero__link">
+            {{grandparent.name}}{{#if grandparent.ticker}} [{{grandparent.ticker}}]{{/if}}
           </a>
           </span>
-        {{/ifEquals}}
+        </div>
+        {{/if}}
+        {{/if}}
       </div>
-      {{else if grandparent}}
-      {{!-- Handle corporations in alliances (no parent, but has grandparent) --}}
-      <div class="entity-hero__relations">
-        <span data-alliance-id="{{grandparent.id}}">
-        <a href="/alliance/{{grandparent.id}}" class="entity-hero__link">
-          {{grandparent.name}}{{#if grandparent.ticker}} [{{grandparent.ticker}}]{{/if}}
-        </a>
-        </span>
-      </div>
-      {{/if}}
-      {{/if}}
-    </div>
-
-    <!-- Parent/Grandparent Logos -->
-    <div class="entity-hero__logos">
-      {{#if parent}}
-        {{#ifEquals type "character"}}
-          <a href="/corporation/{{parent.id}}" class="entity-hero__logo-link" title="{{parent.name}}">
-            {{> partials/eve-image type="corporation" id=parent.id size=64 alt=parent.name class="entity-hero__logo"}}
-          </a>
-          {{#if grandparent}}
-            <a href="/alliance/{{grandparent.id}}" class="entity-hero__logo-link" title="{{grandparent.name}}">
-              {{> partials/eve-image type="alliance" id=grandparent.id size=64 alt=grandparent.name class="entity-hero__logo"}}
+      
+      <!-- Parent/Grandparent logos on the right side of header -->
+      <div class="entity-hero__header-right">
+        {{#if parent}}
+          {{#ifEquals type "character"}}
+            <a href="/corporation/{{parent.id}}" class="entity-hero__logo-link" title="{{parent.name}}">
+              {{> partials/eve-image type="corporation" id=parent.id size=64 alt=parent.name class="entity-hero__logo"}}
             </a>
-          {{/if}}
-        {{else ifEquals type "corporation"}}
-          {{!-- Corporation breadcrumb shows parent alliance logo --}}
-          <a href="/alliance/{{parent.id}}" class="entity-hero__logo-link" title="{{parent.name}}">
-            {{> partials/eve-image type="alliance" id=parent.id size=64 alt=parent.name class="entity-hero__logo"}}
+            {{#if grandparent}}
+              <a href="/alliance/{{grandparent.id}}" class="entity-hero__logo-link" title="{{grandparent.name}}">
+                {{> partials/eve-image type="alliance" id=grandparent.id size=64 alt=grandparent.name class="entity-hero__logo"}}
+              </a>
+            {{/if}}
+          {{else ifEquals type "corporation"}}
+            <a href="/alliance/{{parent.id}}" class="entity-hero__logo-link" title="{{parent.name}}">
+              {{> partials/eve-image type="alliance" id=parent.id size=64 alt=parent.name class="entity-hero__logo"}}
+            </a>
+          {{/ifEquals}}
+        {{else if grandparent}}
+          <a href="/alliance/{{grandparent.id}}" class="entity-hero__logo-link" title="{{grandparent.name}}">
+            {{> partials/eve-image type="alliance" id=grandparent.id size=64 alt=grandparent.name class="entity-hero__logo"}}
           </a>
-        {{/ifEquals}}
-      {{else if grandparent}}
-      {{!-- Handle corporations in alliances (no parent, but has grandparent) --}}
-        <a href="/alliance/{{grandparent.id}}" class="entity-hero__logo-link" title="{{grandparent.name}}">
-          {{> partials/eve-image type="alliance" id=grandparent.id size=64 alt=grandparent.name class="entity-hero__logo"}}
-        </a>
-      {{/if}}
-    </div>
-  </div>
-
-  <!-- Image and Stats - Below Header -->
-  <div class="entity-hero__content">
-    <!-- Entity Image -->
-    <div class="entity-hero__image-section">
-      {{#if entityImages}}
-      {{!-- Multi-entity collage (for entities page with multiple tracked entities) --}}
-      <div class="entity-hero__collage">
-        {{#each entityImages}}
-        <img src="{{this}}" alt="Entity {{@index}}" class="entity-hero__collage-image" />
-        {{/each}}
-      </div>
-      {{else}}
-      {{!-- Single entity image with lazy loading --}}
-      {{#if entityId}}
-        {{!-- Use eve-image partial for proper lazy loading and sizing (512px for retina displays) --}}
-        <div class="entity-hero__image-wrapper">
-          {{> partials/eve-image type=entityType id=entityId size=256 alt=name lazy=false class="entity-hero__image"}}
-        </div>
-      {{else}}
-        {{!-- Fallback for legacy imageUrl prop --}}
-        <img src="{{imageUrl}}" alt="{{name}}" class="entity-hero__image" />
-      {{/if}}
-      {{/if}}
-    </div>
-
-    <!-- Stats Table -->
-    {{#if stats}}
-    <div class="entity-stats">
-      <div class="entity-stats__header">Statistics</div>
-      <div class="entity-stats__content">
-        <div class="entity-stats__row">
-          <span class="entity-stats__label">Kills:</span>
-          <span class="entity-stats__value color-green">{{stats.kills}}</span>
-        </div>
-        <div class="entity-stats__row">
-          <span class="entity-stats__label">Losses:</span>
-          <span class="entity-stats__value color-red">{{stats.losses}}</span>
-        </div>
-        <div class="entity-stats__row">
-          <span class="entity-stats__label">Kill/Loss Ratio:</span>
-          <span class="entity-stats__value color-gold">{{formatNumber stats.killLossRatio}}</span>
-        </div>
-        <div class="entity-stats__row">
-          <span class="entity-stats__label">Efficiency:</span>
-          <span class="entity-stats__value color-gold">{{formatNumber stats.efficiency}}%</span>
-        </div>
-        <div class="entity-stats__row">
-          <span class="entity-stats__label">ISK Destroyed:</span>
-          <span class="entity-stats__value color-green">{{formatISK stats.iskDestroyed}}</span>
-        </div>
-        <div class="entity-stats__row">
-          <span class="entity-stats__label">ISK Lost:</span>
-          <span class="entity-stats__value color-red">{{formatISK stats.iskLost}}</span>
-        </div>
-        <div class="entity-stats__row">
-          <span class="entity-stats__label">ISK Efficiency:</span>
-          <span class="entity-stats__value color-gold">{{formatNumber stats.iskEfficiency}}%</span>
-        </div>
+        {{/if}}
       </div>
     </div>
-    {{/if}}
+    
+    <!-- Bottom: Big entity image on left, stats taking up rest of width on right -->
+    <div class="entity-hero__content">
+      <!-- Entity Image -->
+      <div class="entity-hero__image-section">
+        {{#if entityImages}}
+        {{!-- Multi-entity collage (for entities page with multiple tracked entities) --}}
+        <div class="entity-hero__collage">
+          {{#each entityImages}}
+          <img src="{{this}}" alt="Entity {{@index}}" class="entity-hero__collage-image" />
+          {{/each}}
+        </div>
+        {{else}}
+        {{!-- Single entity image with lazy loading --}}
+        {{#if entityId}}
+          {{!-- Use eve-image partial for proper lazy loading and sizing (512px for retina displays) --}}
+          <div class="entity-hero__image-wrapper">
+            {{> partials/eve-image type=entityType id=entityId size=256 alt=name lazy=false class="entity-hero__image"}}
+          </div>
+        {{else}}
+          {{!-- Fallback for legacy imageUrl prop --}}
+          <img src="{{imageUrl}}" alt="{{name}}" class="entity-hero__image" />
+        {{/if}}
+        {{/if}}
+      </div>
+      
+      <!-- Stats Table -->
+      {{#if stats}}
+      <div class="entity-stats">
+        <div class="entity-stats__header">Statistics</div>
+        <div class="entity-stats__content">
+          <div class="entity-stats__row">
+            <span class="entity-stats__label">Kills:</span>
+            <span class="entity-stats__value color-green">
+              {{stats.kills}}
+              {{#if stats.kills30d}}
+                <span class="entity-stats__subtext">(30d: {{stats.kills30d}}, 14d: {{stats.kills14d}})</span>
+              {{/if}}
+            </span>
+          </div>
+          <div class="entity-stats__row">
+            <span class="entity-stats__label">Losses:</span>
+            <span class="entity-stats__value color-red">
+              {{stats.losses}}
+              {{#if stats.losses30d}}
+                <span class="entity-stats__subtext">(30d: {{stats.losses30d}}, 14d: {{stats.losses14d}})</span>
+              {{/if}}
+            </span>
+          </div>
+          <div class="entity-stats__row">
+            <span class="entity-stats__label">Kill/Loss Ratio:</span>
+            <span class="entity-stats__value color-gold">
+              {{formatNumber stats.killLossRatio}}
+              {{#if stats.killLossRatio30d}}
+                <span class="entity-stats__subtext">(30d: {{formatNumber stats.killLossRatio30d}}, 14d: {{formatNumber stats.killLossRatio7d}})</span>
+              {{/if}}
+            </span>
+          </div>
+          <div class="entity-stats__row">
+            <span class="entity-stats__label">Efficiency:</span>
+            <span class="entity-stats__value color-gold">{{formatNumber stats.efficiency}}%</span>
+          </div>
+          <div class="entity-stats__row">
+            <span class="entity-stats__label">ISK Destroyed:</span>
+            <span class="entity-stats__value color-green">{{formatISK stats.iskDestroyed}}</span>
+          </div>
+          <div class="entity-stats__row">
+            <span class="entity-stats__label">ISK Lost:</span>
+            <span class="entity-stats__value color-red">{{formatISK stats.iskLost}}</span>
+          </div>
+          <div class="entity-stats__row">
+            <span class="entity-stats__label">ISK Efficiency:</span>
+            <span class="entity-stats__value color-gold">{{formatNumber stats.iskEfficiency}}%</span>
+          </div>
+        </div>
+      </div>
+      {{/if}}
+    </div>
   </div>
 </div>
 
 <style>
 .entity-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   margin-bottom: var(--spacing-lg);
+  width: 100%;
+}
+
+.entity-hero__container {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: 100%;
 }
 
 .entity-hero__header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-secondary) 100%);
-  border-radius: 4px;
-  border-left: 4px solid var(--color-accent-blue-bright);
+  align-items: center;
   gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-dark);
+  min-height: 88px;
 }
 
-.entity-hero__title-section {
+.entity-hero__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   flex: 1;
   min-width: 0;
 }
 
+.entity-hero__header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .entity-hero__title {
-  margin: 0 0 4px 0;
-  font-size: 22px;
+  margin: 0;
+  font-size: 20px;
   color: var(--color-accent-blue-bright);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   word-break: break-word;
+  line-height: 1.2;
 }
 
 .entity-hero__ticker {
@@ -209,7 +239,6 @@
 .entity-hero__relations {
   font-size: 12px;
   color: var(--color-text-light);
-  margin-top: 0;
 }
 
 .entity-hero__relations-sep {
@@ -228,21 +257,15 @@
   text-decoration: underline;
 }
 
-.entity-hero__logos {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-  align-items: flex-start;
-}
-
 .entity-hero__logo-link {
   display: block;
   width: 64px;
   height: 64px;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   flex-shrink: 0;
   transition: transform 0.2s ease;
+  border: 1px solid var(--color-border-dark);
 }
 
 .entity-hero__logo-link:hover {
@@ -256,14 +279,17 @@
 }
 
 .entity-hero__content {
-  display: grid;
-  grid-template-columns: 256px 1fr;
-  gap: 12px;
+  display: flex;
+  gap: 16px;
+  align-items: start;
+  padding: 16px;
 }
 
 .entity-hero__image-section {
+  flex-shrink: 0;
   display: flex;
-  justify-content: flex-start;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .entity-hero__image-wrapper {
@@ -274,7 +300,7 @@
 .entity-hero__image {
   width: 100%;
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: block;
 }
 
@@ -284,7 +310,7 @@
   height: 256px;
   display: grid;
   gap: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
@@ -324,10 +350,12 @@
 }
 
 .entity-stats {
-  background: var(--color-bg-tertiary);
+  background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--color-border-dark);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
+  flex: 1;
+  min-width: 0;
 }
 
 .entity-stats__header {
@@ -379,6 +407,17 @@
   font-weight: 700;
   font-size: 11px;
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.entity-stats__subtext {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  opacity: 0.8;
 }
 
 .color-green {
@@ -394,22 +433,22 @@
 }
 
 @media (max-width: 768px) {
-  .entity-hero__content {
-    grid-template-columns: 1fr;
-  }
-
   .entity-hero__header {
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
   }
 
-  .entity-hero__title-section {
-    text-align: center;
+  .entity-hero__header-right {
+    align-self: flex-end;
   }
 
-  .entity-hero__logos {
-    width: 100%;
-    justify-content: center;
+  .entity-hero__content {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .entity-hero__image-section {
+    margin: 0 auto;
   }
 }
 </style>

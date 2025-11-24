@@ -95,13 +95,14 @@ export async function createPartitionsForTable(
 }
 
 /**
- * Create all missing partitions for killmails, attackers, and items
+ * Create all missing partitions for killmails, attackers, items, and prices
  * From 2007 through current + 1 year
  */
 export async function createMissingPartitions(): Promise<{
   killmails: number;
   attackers: number;
   items: number;
+  prices: number;
 }> {
   const startYear = 2007;
   const endYear = new Date().getFullYear() + 1; // Current year + 1
@@ -128,9 +129,16 @@ export async function createMissingPartitions(): Promise<{
     endYear
   );
 
+  const pricesCreated = await createPartitionsForTable(
+    'prices',
+    startYear,
+    endYear
+  );
+
   return {
     killmails: killmailsCreated,
     attackers: attackersCreated,
     items: itemsCreated,
+    prices: pricesCreated,
   };
 }

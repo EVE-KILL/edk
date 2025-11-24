@@ -1,12 +1,14 @@
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
-import { getEntityStats } from '../../../models/entityStats';
+import { getEntityStatsFromCache, isStatsCachePopulated } from '../../../models/entityStatsCache';
+import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getAlliance } from '../../../models/alliances';
 import {
   getEntityKillmails,
   countEntityKillmails,
 } from '../../../models/killlist';
+import { track } from '../../../utils/performance-decorators';
 
 import { handleError } from '../../../utils/error';
 
@@ -22,7 +24,9 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Fetch alliance basic info using model
-    const allianceData = await getAlliance(allianceId);
+    const allianceData = await track('alliance:kills:fetch_basic_info', 'application', async () => {
+      return await getAlliance(allianceId);
+    });
 
     if (!allianceData) {
       throw createError({
@@ -32,7 +36,10 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Get alliance stats
-    const stats = await getEntityStats(allianceId, 'alliance');
+    const stats = await track('alliance:kills:fetch_stats', 'application', async () => {
+      const useCache = await isStatsCachePopulated();
+      return useCache ? await getEntityStatsFromCache(allianceId, 'alliance', 'all') : await getEntityStatsFromView(allianceId, 'alliance', 'all');
+    });
 
     // Get pagination parameters
     const query = getQuery(event);
@@ -40,10 +47,12 @@ export default defineEventHandler(async (event: H3Event) => {
     const perPage = 30;
 
     // Fetch killmails where alliance was attacker (kills) using model
-    const [killmailsData, totalKillmails] = await Promise.all([
-      getEntityKillmails(allianceId, 'alliance', 'kills', page, perPage),
-      countEntityKillmails(allianceId, 'alliance', 'kills'),
-    ]);
+    const [killmailsData, totalKillmails] = await track('alliance:kills:fetch_killmails', 'application', async () => {
+      return await Promise.all([
+        getEntityKillmails(allianceId, 'alliance', 'kills', page, perPage),
+        countEntityKillmails(allianceId, 'alliance', 'kills'),
+      ]);
+    });
 
     // Calculate pagination
     const totalPages = Math.ceil(totalKillmails / perPage);
@@ -65,7 +74,7 @@ export default defineEventHandler(async (event: H3Event) => {
       return {
         ...normalized,
         killmailTimeRelative: timeAgo(
-          new Date(km.killmailTime ?? normalized.killmailTime)
+          km.killmailTime ?? normalized.killmailTime
         ),
       };
     });
@@ -101,7 +110,8 @@ export default defineEventHandler(async (event: H3Event) => {
           id: allianceId,
           mode: 'kills',
         },
-      }
+      },
+      event
     );
   } catch (error) {
     return handleError(event, error);

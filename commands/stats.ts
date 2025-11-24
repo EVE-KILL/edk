@@ -394,9 +394,12 @@ class StatsDashboard {
 
     const tableStats = await Promise.all(
       tablesToCheck.map(async (tableName) => {
-        // Count from the main table (partitioned tables will aggregate)
+        // Use approximate count from pg_class.reltuples (MUCH faster)
         const countResult = await database.findOne<{ count: number }>(
-          `SELECT COUNT(*) as count FROM "${tableName}"`
+          `SELECT COALESCE(reltuples::bigint, 0) as count 
+           FROM pg_class 
+           WHERE relname = :tableName`,
+          { tableName }
         );
         
         // Get size including all partitions
@@ -418,7 +421,7 @@ class StatsDashboard {
     // Sort by count descending
     tableStats.sort((a, b) => b.count - a.count);
 
-    // Get recent killmails (last 24 hours)
+    // Get recent killmails (last 24 hours) - use exact count since it's filtered
     const recentKillmails = await database.findOne<{ count: number }>(
       `SELECT COUNT(*) as count FROM killmails WHERE "killmailTime" > NOW() - INTERVAL '24 hours'`
     );

@@ -3,7 +3,7 @@
     ⚡ Performance Tracking Demo
   </h1>
 
-  <div style="background: rgba(76, 175, 80, 0.1); border-left: 4px solid #4CAF50; padding: 20px; margin-bottom: 30px; border-radius: 4px;">
+  <div style="background: rgba(76, 175, 80, 0.1); border-left: 4px solid #4CAF50; padding: 20px; margin-bottom: 30px; border-radius: var(--radius-sm);">
     <h2 style="color: #4CAF50; margin-top: 0;">✅ All Categories Tracked</h2>
     <p style="margin-bottom: 0; color: var(--color-text-secondary);">
       This page exercises all performance tracking categories. Check the debug bar on the right to see detailed metrics! →
@@ -12,7 +12,7 @@
 
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
     {{#each categories}}
-    <div style="background: var(--color-background-elevated); padding: 20px; border-radius: 8px; border: 1px solid var(--color-border);">
+    <div style="background: var(--color-background-elevated); padding: 20px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
       <div style="font-size: 32px; margin-bottom: 10px;">{{this.icon}}</div>
       <h3 style="color: var(--color-text-primary); margin: 0 0 8px 0;">{{this.name}}</h3>
       <p style="color: var(--color-text-secondary); margin: 0; font-size: 14px;">{{this.description}}</p>
@@ -20,33 +20,33 @@
     {{/each}}
   </div>
 
-  <div style="background: var(--color-background-elevated); padding: 25px; border-radius: 8px; border: 1px solid var(--color-border);">
+  <div style="background: var(--color-background-elevated); padding: 25px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
     <h2 style="color: var(--color-text-primary); margin-top: 0; margin-bottom: 20px;">📊 Test Results</h2>
 
     <div style="display: grid; gap: 15px;">
-      <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: var(--radius-sm);">
         <span style="color: var(--color-text-secondary);">Killmails fetched:</span>
         <strong style="color: #2196F3;">{{results.killmails}}</strong>
       </div>
 
-      <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(156, 39, 176, 0.1); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(156, 39, 176, 0.1); border-radius: var(--radius-sm);">
         <span style="color: var(--color-text-secondary);">Cache hit:</span>
         <strong style="color: #9C27B0;">{{#if results.cached}}✅ Yes{{else}}❌ No{{/if}}</strong>
       </div>
 
-      <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(244, 67, 54, 0.1); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(244, 67, 54, 0.1); border-radius: var(--radius-sm);">
         <span style="color: var(--color-text-secondary);">System name (from ESI):</span>
         <strong style="color: #f44336;">{{results.system}}</strong>
       </div>
 
-      <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(76, 175, 80, 0.1); border-radius: 4px;">
+      <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(76, 175, 80, 0.1); border-radius: var(--radius-sm);">
         <span style="color: var(--color-text-secondary);">Timestamp:</span>
         <strong style="color: #4CAF50;">{{results.timestamp}}</strong>
       </div>
     </div>
   </div>
 
-  <div style="margin-top: 30px; padding: 20px; background: rgba(255, 152, 0, 0.1); border-radius: 8px; border-left: 4px solid #FF9800;">
+  <div style="margin-top: 30px; padding: 20px; background: rgba(255, 152, 0, 0.1); border-radius: var(--radius-sm); border-left: 4px solid #FF9800;">
     <h3 style="color: #FF9800; margin-top: 0;">💡 How It Works</h3>
     <ul style="color: var(--color-text-secondary); line-height: 1.8;">
       <li><strong>Automatic tracking</strong> for infrastructure (DB, Redis, Typesense, HTTP, Templates)</li>
@@ -58,7 +58,7 @@
   </div>
 
   <div style="margin-top: 20px; text-align: center;">
-    <a href="/" style="display: inline-block; padding: 12px 24px; background: var(--color-primary); color: white; text-decoration: none; border-radius: 4px; font-weight: 600;">
+    <a href="/" style="display: inline-block; padding: 12px 24px; background: var(--color-primary); color: white; text-decoration: none; border-radius: var(--radius-sm); font-weight: 600;">
       ← Back to Home
     </a>
   </div>

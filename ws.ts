@@ -22,10 +22,13 @@ const HOST = env.WS_HOST;
 const PING_INTERVAL = env.WS_PING_INTERVAL; // 30 seconds
 const PING_TIMEOUT = env.WS_PING_TIMEOUT; // 10 seconds
 const CLEANUP_INTERVAL = env.WS_CLEANUP_INTERVAL; // 1 minute
+const CLIENT_COOKIE = 'edk_ws_id';
+const DIRECT_CHANNEL = 'site-direct';
 
 type KillmailSocket = ServerWebSocket;
 
 const clients = new Map<KillmailSocket, ClientData>();
+const clientIndex = new Map<string, Set<KillmailSocket>>();
 let redis: ReturnType<typeof createRedisClient>; // Subscriber client (pub/sub only)
 let redisWriter: ReturnType<typeof createRedisClient>; // Writer client (for stats, etc)
 let pingInterval: Timer | null = null;
@@ -58,14 +61,27 @@ async function setupRedis(): Promise<void> {
     logger.info(`Subscribed to ${count} Redis channel(s)`);
   });
 
+  // Subscribe to direct channel for targeted events
+  redis.subscribe(DIRECT_CHANNEL, (err) => {
+    if (err) {
+      logger.error('Failed to subscribe to direct channel:', err);
+    } else {
+      logger.info('Subscribed to site-direct channel');
+    }
+  });
+
   // Handle Redis messages
   redis.on('message', (channel, message) => {
     try {
       const data = JSON.parse(message);
-      const normalizedKillmail = data.normalizedKillmail || data.data || data;
-
-      if (normalizedKillmail) {
-        broadcastKillmail(normalizedKillmail);
+      if (channel === 'killmails') {
+        const normalizedKillmail = data.normalizedKillmail || data.data || data;
+        if (normalizedKillmail) {
+          broadcastKillmail(normalizedKillmail);
+        }
+      }
+      if (channel === DIRECT_CHANNEL) {
+        broadcastDirect(data);
       }
     } catch (error) {
       logger.error('Failed to process Redis message:', { error });
@@ -115,6 +131,39 @@ function broadcastKillmail(killmail: any): void {
       `Broadcasted ${messageType} ${logId} to ${sentCount}/${clients.size} clients`,
       { correlationId }
     );
+  }
+}
+
+function broadcastDirect(event: any): void {
+  const targetIds: string[] = Array.isArray(event?.clientIds)
+    ? event.clientIds
+    : event?.clientId
+      ? [event.clientId]
+      : [];
+
+  if (targetIds.length === 0) {
+    logger.warn('Direct event missing clientId', { event });
+    return;
+  }
+
+  let sent = 0;
+  for (const id of targetIds) {
+    const sockets = clientIndex.get(id);
+    if (!sockets) continue;
+    for (const ws of sockets) {
+      if (ws.readyState === 1) {
+        try {
+          ws.send(JSON.stringify({ type: 'direct', data: event.data ?? event }));
+          sent++;
+        } catch (error) {
+          logger.error('Error sending direct event', { error });
+        }
+      }
+    }
+  }
+
+  if (sent > 0) {
+    logger.debug(`Sent direct event to ${sent} socket(s)`, { targetIds });
   }
 }
 
@@ -320,7 +369,10 @@ Bun.serve({
       const url = new URL(req.url);
 
       if (url.pathname === '/ws' || url.pathname === '/killmails') {
-        const upgraded = server.upgrade(req);
+        const clientId = extractClientId(req);
+        const upgraded = server.upgrade(req, {
+          data: { clientId },
+        });
         if (!upgraded) {
           return new Response('WebSocket upgrade failed', { status: 400 });
         }
@@ -348,12 +400,19 @@ Bun.serve({
         clients.set(ws, {
           topics: ['all'], // Default subscription
           connectedAt: new Date(),
+          clientId: (ws.data as any)?.clientId,
         });
+        const cid = (ws.data as any)?.clientId;
+        if (cid) {
+          if (!clientIndex.has(cid)) clientIndex.set(cid, new Set());
+          clientIndex.get(cid)!.add(ws);
+        }
 
         ws.send(
           JSON.stringify({
             type: 'connected',
             message: 'Welcome to EVE-KILL WebSocket',
+            clientId: (ws.data as any)?.clientId,
           })
         );
 
@@ -375,6 +434,14 @@ Bun.serve({
 
       close(ws: KillmailSocket) {
         clients.delete(ws);
+        const cid = (ws.data as any)?.clientId;
+        if (cid) {
+          const set = clientIndex.get(cid);
+          if (set) {
+            set.delete(ws);
+            if (set.size === 0) clientIndex.delete(cid);
+          }
+        }
         logger.info(`Client disconnected. Total: ${clients.size}`);
         
         // Update stats
@@ -405,3 +472,37 @@ startServer().catch((error) => {
   logger.error('Failed to start server:', { error });
   process.exit(1);
 });
+/**
+ * Parse cookies from incoming request
+ */
+function parseCookies(req: Request): Record<string, string> {
+  const cookieHeader = req.headers.get('cookie');
+  if (!cookieHeader) return {};
+  const entries = cookieHeader
+    .split(';')
+    .map((part) => part.trim().split('=' as any))
+    .filter((pair) => pair.length === 2) as [string, string][];
+  const map: Record<string, string> = {};
+  for (const [k, v] of entries) {
+    map[k] = decodeURIComponent(v);
+  }
+  return map;
+}
+
+/**
+ * Extract or generate client identifier
+ */
+function extractClientId(req: Request): string {
+  const cookies = parseCookies(req);
+  if (cookies[CLIENT_COOKIE]) return cookies[CLIENT_COOKIE];
+
+  // Fallback to query param if present
+  try {
+    const url = new URL(req.url);
+    if (url.searchParams.has('cid')) return url.searchParams.get('cid') || randomUUID();
+  } catch {
+    // ignore
+  }
+
+  return randomUUID();
+}

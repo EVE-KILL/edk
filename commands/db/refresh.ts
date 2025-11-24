@@ -1,8 +1,7 @@
 import { database } from '../../server/helpers/database';
 import { logger } from '../../server/helpers/logger';
 
-// Note: kill_list is now a regular view (not materialized) as of the latest migration
-// Only refresh materialized views here
+// Only refresh materialized views (kill_list view has been removed)
 const materializedViews = [
   'top_characters_weekly',
   'top_corporations_weekly',
@@ -37,6 +36,6 @@ async function action() {
 
 export default () => ({
   description:
-    'Refreshes all materialized views (top_* weekly, celestials). Note: kill_list is now a regular view.',
+    'Refreshes all materialized views (top_* weekly, celestials).',
   action,
 });

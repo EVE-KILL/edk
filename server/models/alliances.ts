@@ -11,11 +11,10 @@ export interface Alliance {
   allianceId: number;
   creatorCorporationId: number;
   creatorId: number;
-  dateFounded: string;
+  dateFounded: string | null;
   executorCorporationId: number;
   name: string;
   ticker: string;
-  updatedAt: Date;
 }
 
 /**
@@ -126,7 +125,7 @@ export async function storeAlliance(
   data: {
     creatorCorporationId: number;
     creatorId: number;
-    dateFounded: string;
+    dateFounded: string | null;
     executorCorporationId: number;
     name: string;
     ticker: string;
@@ -141,11 +140,10 @@ export async function storeAlliance(
         allianceId: allianceId,
         creatorCorporationId: data.creatorCorporationId,
         creatorId: data.creatorId,
-        dateFounded: data.dateFounded, // Changed from snake_case (date_founded) to camelCase to match schema if needed, but check schema.
+        dateFounded: data.dateFounded,
         executorCorporationId: data.executorCorporationId,
         name: data.name,
         ticker: data.ticker,
-        updatedAt: new Date(now * 1000), // Changed from updated_at to updatedAt and using Date
       },
     ],
     ['allianceId']
@@ -160,7 +158,7 @@ export async function storeAlliancesBulk(
     allianceId: number;
     creatorCorporationId: number;
     creatorId: number;
-    dateFounded: string;
+    dateFounded: string | null;
     executorCorporationId: number;
     name: string;
     ticker: string;
@@ -178,10 +176,9 @@ export async function storeAlliancesBulk(
     executorCorporationId: alliance.executorCorporationId,
     name: alliance.name,
     ticker: alliance.ticker,
-    updatedAt: new Date(now * 1000),
   }));
 
-  await database.bulkInsert('alliances', records);
+  await database.bulkUpsert('alliances', records, ['allianceId']);
 }
 
 /**
@@ -193,4 +190,16 @@ export async function allianceExists(allianceId: number): Promise<boolean> {
     { allianceId }
   );
   return Number(result?.count) > 0;
+}
+
+/**
+ * Get approximate alliance count (very fast, uses PostgreSQL statistics)
+ */
+export async function getApproximateAllianceCount(): Promise<number> {
+  const result = await database.findOne<{ count: number }>(
+    `SELECT COALESCE(reltuples::bigint, 0) as count 
+     FROM pg_class 
+     WHERE relname = 'alliances'`
+  );
+  return Number(result?.count || 0);
 }
