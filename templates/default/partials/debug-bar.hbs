@@ -736,6 +736,22 @@ window.debugWS = {
   setWorkerState(state) {
     this.stats.workerState = state;
     this.stats.portCount = state?.portCount || 0;
+    
+    // Update connection status from worker state
+    if (state?.connected !== undefined) {
+      this.setConnected(state.connected, state.url);
+    }
+    
+    // Update topics from worker state
+    if (state?.topics) {
+      this.setTopics(state.topics);
+    }
+    
+    // Update reconnect count
+    if (state?.reconnectAttempts !== undefined) {
+      this.setReconnectCount(state.reconnectAttempts);
+    }
+    
     this.updateUI();
   },
 
