@@ -1,5 +1,6 @@
 import { defineEventHandler, getMethod, getRequestURL } from 'h3';
 import chalk from 'chalk';
+import { logger } from '../helpers/logger';
 
 export default defineEventHandler((event) => {
   const startTime = Date.now();
