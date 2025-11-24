@@ -4,8 +4,6 @@
  *
  * Automatically discovers and runs cron jobs from the /cronjobs directory
  * Usage:
-import { logger } from './server/helpers/logger';
-
  *   bun cronjobs              - Run all cron jobs on their schedule
  *   bun cronjobs --now        - Run all jobs that are due right now (UTC) and exit
  *   bun cronjobs <job-name>   - Run a specific job immediately
@@ -15,6 +13,7 @@ import { readdirSync, statSync } from 'fs';
 import { join, parse } from 'path';
 import { CronJob, CronTime } from 'cron';
 import { env } from './server/helpers/env';
+import { logger } from './server/helpers/logger';
 
 interface CronJobModule {
   name: string;
