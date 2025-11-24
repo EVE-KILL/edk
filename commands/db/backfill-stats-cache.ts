@@ -10,7 +10,7 @@
 import { database } from '../../server/helpers/database';
 import { logger } from '../../server/helpers/logger';
 
-interface BackfillProgress {
+interface _BackfillProgress {
   entityType: 'character' | 'corporation' | 'alliance';
   phase: 'all-time' | '90d' | '30d' | '14d';
   processed: number;

@@ -15,7 +15,7 @@ let errorLimitRemain = 100;
 let errorLimitReset = 60;
 let errorsLastMinute = 0;
 let lastErrorCheck = Date.now();
-let requestQueue: (() => void)[] = [];
+const requestQueue: (() => void)[] = [];
 let isProcessing = false;
 
 async function processQueue() {
@@ -54,11 +54,10 @@ export function fetchESI<T = any>(
   } = {}
 ): Promise<FetcherResponse<T>> {
   const performance = requestContext.getStore()?.performance;
-  const spanId = performance?.startSpan(
-    `ESI ${path}`,
-    'http',
-    { path, method: options.method || 'GET' }
-  );
+  const spanId = performance?.startSpan(`ESI ${path}`, 'http', {
+    path,
+    method: options.method || 'GET',
+  });
 
   const promise = new Promise<FetcherResponse<T>>((resolve, reject) => {
     const executeRequest = async () => {

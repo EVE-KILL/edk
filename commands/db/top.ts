@@ -1,25 +1,24 @@
-/* eslint-disable no-console */
 import blessed from 'blessed';
 import { database } from '../../server/helpers/database';
 import { logger } from '../../server/helpers/logger';
 
 /**
  * EDK Database Top Command
- * 
+ *
  * Displays real-time database statistics:
  * - Currently running queries
  * - Connection stats
  * - Database size and activity
  * - Slow queries
  * - Lock information
- * 
+ *
  * Usage:
  *   bun cli db:top              # Live updating dashboard
  *   bun cli db:top --interval 2 # Custom update interval (seconds)
  */
 export default {
   description: 'Display live database statistics and running queries',
-  
+
   options: [
     {
       flags: '-i, --interval <seconds>',
@@ -70,7 +69,7 @@ class DatabaseTopDashboard {
 
   private async runTUI(interval: number): Promise<void> {
     this.running = true;
-    
+
     this.screen = blessed.screen({
       smartCSR: true,
       title: 'EDK Database Top',
@@ -166,7 +165,8 @@ class DatabaseTopDashboard {
       left: 0,
       width: '100%',
       height: 1,
-      content: '{center}{gray-fg}Press \'q\' or ESC to exit | Arrow keys to scroll{/}{/center}',
+      content:
+        "{center}{gray-fg}Press 'q' or ESC to exit | Arrow keys to scroll{/}{/center}",
       tags: true,
       style: {
         fg: 'white',
@@ -188,13 +188,15 @@ class DatabaseTopDashboard {
       ]);
 
       const timestamp = new Date().toLocaleString();
-      this.widgets.header.setContent(`{center}🗄️  EDK Database Top - ${timestamp}{/center}`);
+      this.widgets.header.setContent(
+        `{center}🗄️  EDK Database Top - ${timestamp}{/center}`
+      );
 
       // Update database info
       this.widgets.dbInfo.setContent(
         `  {yellow-fg}Size:{/} ${dbInfo.size}  ` +
-        `{cyan-fg}Cache Hit:{/} ${dbInfo.cacheHitRatio.toFixed(1)}%  ` +
-        `{magenta-fg}Recent KMs (24h):{/} ${dbInfo.recentKillmails.toLocaleString()}`
+          `{cyan-fg}Cache Hit:{/} ${dbInfo.cacheHitRatio.toFixed(1)}%  ` +
+          `{magenta-fg}Recent KMs (24h):{/} ${dbInfo.recentKillmails.toLocaleString()}`
       );
 
       // Update connection stats
@@ -204,13 +206,13 @@ class DatabaseTopDashboard {
         if (val >= warn) return 'yellow';
         return 'green';
       };
-      
+
       this.widgets.connections.setContent(
         `  {white-fg}Total:{/} {${connColor(conn.total, 50, 80)}-fg}${conn.total}{/}  ` +
-        `{green-fg}Active:{/} {${connColor(conn.active, 20, 40)}-fg}${conn.active}{/}  ` +
-        `{blue-fg}Idle:{/} ${conn.idle}  ` +
-        `{yellow-fg}Idle in Txn:{/} ${conn.idleInTransaction}` +
-        (conn.waiting > 0 ? `  {red-fg}Waiting:{/} ${conn.waiting}` : '')
+          `{green-fg}Active:{/} {${connColor(conn.active, 20, 40)}-fg}${conn.active}{/}  ` +
+          `{blue-fg}Idle:{/} ${conn.idle}  ` +
+          `{yellow-fg}Idle in Txn:{/} ${conn.idleInTransaction}` +
+          (conn.waiting > 0 ? `  {red-fg}Waiting:{/} ${conn.waiting}` : '')
       );
 
       // Update running queries
@@ -221,7 +223,7 @@ class DatabaseTopDashboard {
         for (const q of queries) {
           const stateColor = q.state === 'active' ? 'green' : 'yellow';
           const durationColor = this.getDurationColor(q.duration);
-          
+
           queriesContent += `  {${stateColor}-fg}●{/} `;
           queriesContent += `{white-fg}PID ${q.pid}{/} `;
           queriesContent += `{${durationColor}-fg}[${q.duration}]{/} `;
@@ -230,27 +232,29 @@ class DatabaseTopDashboard {
             queriesContent += ` {dim}(${q.clientAddr}){/}`;
           }
           queriesContent += '\n';
-          
+
           // Format query - truncate if too long, remove newlines
           const cleanQuery = q.query.replace(/\s+/g, ' ').trim();
           const maxLen = 120;
-          const displayQuery = cleanQuery.length > maxLen 
-            ? cleanQuery.substring(0, maxLen) + '...' 
-            : cleanQuery;
-          
+          const displayQuery =
+            cleanQuery.length > maxLen
+              ? cleanQuery.substring(0, maxLen) + '...'
+              : cleanQuery;
+
           queriesContent += `    {cyan-fg}${displayQuery}{/}\n\n`;
         }
       }
       this.widgets.queries.setContent(queriesContent);
-
     } catch (error) {
       if (this.widgets.header) {
-        this.widgets.header.setContent('{center}{red-fg}⚠ Error fetching database stats{/}{/center}');
+        this.widgets.header.setContent(
+          '{center}{red-fg}⚠ Error fetching database stats{/}{/center}'
+        );
       }
-      logger.error('Failed to update database top', { 
-        error, 
+      logger.error('Failed to update database top', {
+        error,
         message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined 
+        stack: error instanceof Error ? error.stack : undefined,
       });
     }
   }
@@ -258,13 +262,13 @@ class DatabaseTopDashboard {
   private getDurationColor(duration: string): string {
     const match = duration.match(/^(\d+):(\d+):(\d+)/);
     if (!match) return 'white';
-    
+
     const hours = Number.parseInt(match[1]);
     const minutes = Number.parseInt(match[2]);
     const seconds = Number.parseInt(match[3]);
-    
+
     const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-    
+
     if (totalSeconds > 60) return 'red';
     if (totalSeconds > 10) return 'yellow';
     return 'green';
@@ -279,7 +283,7 @@ class DatabaseTopDashboard {
       database.query<{ count: string }>(
         `SELECT COUNT(*) as count FROM killmails WHERE "killmailTime" > NOW() - INTERVAL '24 hours'`
       ),
-      database.query<{ 
+      database.query<{
         blks_hit: string;
         blks_read: string;
       }>(
@@ -289,9 +293,8 @@ class DatabaseTopDashboard {
 
     const blksHit = Number.parseFloat(stats[0]?.blks_hit || '0');
     const blksRead = Number.parseFloat(stats[0]?.blks_read || '0');
-    const cacheHitRatio = blksHit + blksRead > 0 
-      ? (blksHit / (blksHit + blksRead)) * 100 
-      : 0;
+    const cacheHitRatio =
+      blksHit + blksRead > 0 ? (blksHit / (blksHit + blksRead)) * 100 : 0;
 
     return {
       size: sizeResult[0]?.size || 'N/A',
@@ -354,7 +357,7 @@ class DatabaseTopDashboard {
       LIMIT 50`
     );
 
-    return results.map(r => ({
+    return results.map((r) => ({
       pid: r.pid,
       duration: this.formatInterval(r.duration),
       state: r.state,
@@ -367,11 +370,11 @@ class DatabaseTopDashboard {
   private formatInterval(interval: string): string {
     const match = interval.match(/(\d+):(\d+):(\d+)\.(\d+)/);
     if (!match) return interval;
-    
+
     const hours = Number.parseInt(match[1]);
     const minutes = Number.parseInt(match[2]);
     const seconds = Number.parseInt(match[3]);
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m ${seconds}s`;
     } else if (minutes > 0) {
