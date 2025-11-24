@@ -666,8 +666,6 @@ export async function storeCharacter(
     securityStatus: number;
   }
 ): Promise<void> {
-  const now = Math.floor(Date.now() / 1000);
-
   await database.bulkUpsert(
     'characters',
     [
@@ -706,8 +704,6 @@ export async function storeCharactersBulk(
   }>
 ): Promise<void> {
   if (characters.length === 0) return;
-
-  const now = Math.floor(Date.now() / 1000);
 
   const records = characters.map((char) => ({
     characterId: char.characterId,

@@ -1,10 +1,4 @@
-import {
-  deleteCookie,
-  getCookie,
-  getQuery,
-  sendRedirect,
-  type H3Event,
-} from 'h3';
+import { deleteCookie, getCookie, type H3Event } from 'h3';
 import { env } from '../helpers/env';
 import { deleteSessionByToken } from '../models/user-auth';
 

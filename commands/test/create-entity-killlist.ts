@@ -1,20 +1,22 @@
+import logger from '../../server/helpers/logger';
+
 import { database } from '../../server/helpers/database';
 
 export const description = 'Create entity_killlist materialized view';
 
 export async function action() {
   try {
-    console.log('🔧 Creating entity_killlist materialized view...');
+    logger.info('🔧 Creating entity_killlist materialized view...');
 
     // Drop existing objects
-    console.log('  Dropping existing objects...');
+    logger.info('  Dropping existing objects...');
     await database.execute('DROP TABLE IF EXISTS entity_killlist_mv');
     await database.execute('DROP TABLE IF EXISTS entity_killlist');
     await database.execute('DROP VIEW IF EXISTS entity_killlist');
-    console.log('  ✅ Dropped existing objects');
+    logger.info('  ✅ Dropped existing objects');
 
     // Create materialized view
-    console.log('  Creating materialized view...');
+    logger.info('  Creating materialized view...');
     const viewSql = `
 CREATE MATERIALIZED VIEW IF NOT EXISTS entity_killlist
 ENGINE = ReplacingMergeTree(version)
@@ -161,11 +163,11 @@ LEFT JOIN (
     `;
 
     await database.execute(viewSql);
-    console.log('  ✅ Created materialized view');
+    logger.info('  ✅ Created materialized view');
 
-    console.log('✅ Entity killlist view created successfully!');
+    logger.info('✅ Entity killlist view created successfully!');
   } catch (error) {
-    console.error(
+    logger.error(
       '❌ Error:',
       error instanceof Error ? error.message : String(error)
     );

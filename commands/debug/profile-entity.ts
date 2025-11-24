@@ -1,3 +1,5 @@
+import logger from '../../server/helpers/logger';
+
 import { database } from '../../server/helpers/database';
 import { logger } from '../../server/helpers/logger';
 import {
@@ -144,7 +146,7 @@ export async function action(options: CommandOptions) {
         (a, b) => b.durationMs - a.durationMs
       );
 
-      console.log(
+      logger.info(
         `\nIteration ${iterationIndex} (${formatMs(iterationResult.wallTimeMs)} ms wall time)`
       );
       for (const measurement of measurementsByDuration) {
@@ -155,7 +157,7 @@ export async function action(options: CommandOptions) {
         if (measurement.note) {
           details.push(measurement.note);
         }
-        console.log(
+        logger.info(
           `  - ${measurement.label.padEnd(32)} ${details.join(' | ')}`
         );
       }
@@ -184,17 +186,17 @@ export async function action(options: CommandOptions) {
       }
     }
 
-    console.log('\n=== Average duration per task ===');
+    logger.info('\n=== Average duration per task ===');
     printTaskTable(taskStats);
 
-    console.log('\n=== Average duration by category ===');
+    logger.info('\n=== Average duration by category ===');
     printCategoryTable(categoryStats);
 
     if (wallTimes.length > 0) {
       const averageWall = average(wallTimes);
       const minWall = Math.min(...wallTimes);
       const maxWall = Math.max(...wallTimes);
-      console.log(
+      logger.info(
         `\nOverall wall time (parallel fetch): avg=${formatMs(averageWall)} ms | min=${formatMs(minWall)} ms | max=${formatMs(
           maxWall
         )} ms`
@@ -365,7 +367,7 @@ function printTaskTable(stats: Map<string, any>): void {
   }
 
   if (rows.length === 0) {
-    console.log('  (no data)');
+    logger.info('  (no data)');
     return;
   }
 
@@ -374,7 +376,7 @@ function printTaskTable(stats: Map<string, any>): void {
 
   for (const row of rows) {
     const notes = row.notes ? ` | ${row.notes}` : '';
-    console.log(
+    logger.info(
       `  ${row.label.padEnd(32)} avg=${formatMs(row.avg)} | min=${formatMs(row.min)} | max=${formatMs(row.max)}${notes}`
     );
   }
@@ -400,7 +402,7 @@ function printCategoryTable(stats: Map<EntityCategory, number[]>): void {
   }
 
   if (rows.length === 0) {
-    console.log('  (no data)');
+    logger.info('  (no data)');
     return;
   }
 
@@ -408,7 +410,7 @@ function printCategoryTable(stats: Map<EntityCategory, number[]>): void {
   rows.sort((a, b) => b.avg - a.avg);
 
   for (const row of rows) {
-    console.log(
+    logger.info(
       `  ${row.category.padEnd(20)} avg=${formatMs(row.avg)} | min=${formatMs(row.min)} | max=${formatMs(row.max)}`
     );
   }

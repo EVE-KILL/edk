@@ -122,7 +122,7 @@ export async function getCachedAlliance(
       name: result.name,
       ticker: result.ticker,
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 }

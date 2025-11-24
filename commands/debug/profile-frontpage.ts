@@ -1,3 +1,5 @@
+import logger from '../../server/helpers/logger';
+
 import { database } from '../../server/helpers/database';
 import { logger } from '../../server/helpers/logger';
 import {
@@ -112,7 +114,7 @@ export async function action(options: CommandOptions) {
         (a, b) => b.durationMs - a.durationMs
       );
 
-      console.log(
+      logger.info(
         `\nIteration ${iterationIndex} (${formatMs(iterationResult.wallTimeMs)} ms wall time)`
       );
       for (const measurement of measurementsByDuration) {
@@ -123,7 +125,7 @@ export async function action(options: CommandOptions) {
         if (measurement.note) {
           details.push(measurement.note);
         }
-        console.log(
+        logger.info(
           `  - ${measurement.label.padEnd(32)} ${details.join(' | ')}`
         );
       }
@@ -152,17 +154,17 @@ export async function action(options: CommandOptions) {
       }
     }
 
-    console.log('\n=== Average duration per task ===');
+    logger.info('\n=== Average duration per task ===');
     printTaskTable(taskStats);
 
-    console.log('\n=== Average duration by category ===');
+    logger.info('\n=== Average duration by category ===');
     printCategoryTable(categoryStats);
 
     if (wallTimes.length > 0) {
       const averageWall = average(wallTimes);
       const minWall = Math.min(...wallTimes);
       const maxWall = Math.max(...wallTimes);
-      console.log(
+      logger.info(
         `\nOverall wall time (parallel fetch): avg=${formatMs(averageWall)} ms | min=${formatMs(minWall)} ms | max=${formatMs(
           maxWall
         )} ms`
@@ -304,7 +306,7 @@ function printTaskTable(
   >
 ): void {
   if (stats.size === 0) {
-    console.log('No task measurements recorded.');
+    logger.info('No task measurements recorded.');
     return;
   }
 
@@ -329,8 +331,8 @@ function printTaskTable(
     'Max'.padStart(10) +
     'Rows'.padStart(8) +
     ' Note';
-  console.log(header);
-  console.log('-'.repeat(header.length));
+  logger.info(header);
+  logger.info('-'.repeat(header.length));
 
   for (const row of rows) {
     const parts = [
@@ -342,7 +344,7 @@ function printTaskTable(
       (row.rowCount !== undefined ? String(row.rowCount) : '-').padStart(8),
       row.note ? ` ${row.note}` : '',
     ];
-    console.log(parts.join(''));
+    logger.info(parts.join(''));
   }
 }
 
@@ -350,7 +352,7 @@ function printCategoryTable(
   categoryStats: Map<FrontpageCategory, number[]>
 ): void {
   if (categoryStats.size === 0) {
-    console.log('No category measurements recorded.');
+    logger.info('No category measurements recorded.');
     return;
   }
 
@@ -368,8 +370,8 @@ function printCategoryTable(
     'Avg (ms)'.padStart(10) +
     'Min'.padStart(10) +
     'Max'.padStart(10);
-  console.log(header);
-  console.log('-'.repeat(header.length));
+  logger.info(header);
+  logger.info('-'.repeat(header.length));
 
   for (const row of rows) {
     const parts = [
@@ -378,7 +380,7 @@ function printCategoryTable(
       formatMs(row.minMs).padStart(10),
       formatMs(row.maxMs).padStart(10),
     ];
-    console.log(parts.join(''));
+    logger.info(parts.join(''));
   }
 }
 

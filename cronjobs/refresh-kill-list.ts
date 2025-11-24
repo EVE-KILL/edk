@@ -1,6 +1,8 @@
+import logger from '../server/helpers/logger';
+
 const logger = {
-  info: (message: string) => console.log(`[INFO] ${message}`),
-  error: (message: string) => console.error(`[ERROR] ${message}`),
+  info: (message: string) => logger.info(`[INFO] ${message}`),
+  error: (message: string) => logger.error(`[ERROR] ${message}`),
 };
 
 export const name = 'refresh-kill-list';

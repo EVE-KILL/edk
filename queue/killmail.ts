@@ -224,7 +224,7 @@ async function publishKillmailToWebSocket(killmailId: number): Promise<void> {
     `;
 
     if (!killmail) {
-      console.warn(
+      logger.warn(
         `⚠️  [killmail] ${killmailId}: Not found in killmails table`
       );
       return;
@@ -313,7 +313,7 @@ async function publishKillmailToWebSocket(killmailId: number): Promise<void> {
     await redis.publish('killmails', JSON.stringify(websocketData));
     await redis.quit();
 
-    console.log(`[killmail] ${killmailId}: Published to WebSocket`);
+    logger.info(`[killmail] ${killmailId}: Published to WebSocket`);
   } catch (error) {
     logger.warn(
       `⚠️  [killmail] ${killmailId}: Failed to publish to WebSocket:`,

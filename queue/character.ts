@@ -1,5 +1,6 @@
 import { Worker, Job } from 'bullmq';
 import { fetchAndStoreCharacter } from '../server/fetchers/character';
+import logger from '../server/helpers/logger';
 
 /**
  * Character Queue Processor
@@ -13,20 +14,20 @@ export const name = 'character';
 export async function processor(job: Job): Promise<void> {
   const { id } = job.data as { id: number };
 
-  console.log(`[character] Processing character ${id}...`);
+  logger.info(`[character] Processing character ${id}...`);
 
   try {
     const result = await fetchAndStoreCharacter(id);
 
     if (result) {
-      console.log(`✅ [character] Successfully processed character ${id}`);
+      logger.success(`✅ [character] Successfully processed character ${id}`);
     } else {
-      console.warn(
+      logger.warn(
         `⚠️  [character] Character ${id} not found or failed to fetch`
       );
     }
   } catch (error) {
-    console.error(`❌ [character] Error processing character ${id}:`, error);
+    logger.error(`❌ [character] Error processing character ${id}:`, error);
     throw error; // Re-throw for BullMQ retry handling
   }
 }

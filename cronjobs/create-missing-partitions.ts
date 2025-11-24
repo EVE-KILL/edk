@@ -1,10 +1,6 @@
 import { createMissingPartitions } from '../server/helpers/partitions';
 
-const logger = {
-  info: (message: string) => console.log(`[INFO] ${message}`),
-  success: (message: string) => console.log(`[SUCCESS] ${message}`),
-  error: (message: string) => console.error(`[ERROR] ${message}`),
-};
+import logger from '../server/helpers/logger';
 
 export const name = 'create-missing-partitions';
 export const description =

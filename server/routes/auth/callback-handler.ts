@@ -4,7 +4,6 @@ import {
   getRequestHeader,
   getRequestIP,
   readBody,
-  sendRedirect,
   setCookie,
   type H3Event,
 } from 'h3';

@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+/* eslint-disable no-console */
 import blessed from 'blessed';
 import { database } from '../../server/helpers/database';
 import { logger } from '../../server/helpers/logger';

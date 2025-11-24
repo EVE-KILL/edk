@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { Worker } from 'bullmq';
 import chalk from 'chalk';
 import { env } from './server/helpers/env';
+import logger from './server/helpers/logger';
 
 /**
  * Queue Runner - Main Entry Point
@@ -57,20 +58,20 @@ async function loadQueueModules(): Promise<Map<string, QueueModule>> {
         const module = await import(modulePath);
 
         if (!module.name || !module.processor || !module.createWorker) {
-          console.warn(
+          logger.warn(
             `⚠️  Queue module ${file} missing required exports (name, processor, createWorker)`
           );
           continue;
         }
 
         queues.set(queueName, module as QueueModule);
-        console.log(`✅ Loaded queue: ${chalk.cyan(queueName)}`);
+        logger.info(`✅ Loaded queue: ${chalk.cyan(queueName)}`);
       } catch (error) {
-        console.error(`❌ Failed to load queue ${file}:`, error);
+        logger.error(`❌ Failed to load queue ${file}:`, error);
       }
     }
   } catch (error) {
-    console.error(`❌ Failed to read queue directory:`, error);
+    logger.error(`❌ Failed to read queue directory:`, error);
   }
 
   return queues;
@@ -86,7 +87,7 @@ async function startQueues(
   const queues = await loadQueueModules();
 
   if (queues.size === 0) {
-    console.error('❌ No queues found');
+    logger.error('❌ No queues found');
     process.exit(1);
   }
 
@@ -99,21 +100,21 @@ async function startQueues(
     queuesToStart = queuesToStart.filter((q) => queueNames.includes(q));
 
     if (queuesToStart.length === 0) {
-      console.error(`❌ No queues found matching: ${queueNames.join(', ')}`);
-      console.error(
+      logger.error(`❌ No queues found matching: ${queueNames.join(', ')}`);
+      logger.error(
         `Available queues: ${Array.from(queues.keys()).join(', ')}`
       );
       process.exit(1);
     }
   }
 
-  console.log('');
-  console.log(chalk.blue.bold('🚀 Starting Queue Workers'));
-  console.log(chalk.dim(`Queues to start: ${queuesToStart.join(', ')}`));
+  logger.info('');
+  logger.info(chalk.blue.bold('🚀 Starting Queue Workers'));
+  logger.info(chalk.dim(`Queues to start: ${queuesToStart.join(', ')}`));
   if (options.limit) {
-    console.log(chalk.dim(`Job limit: ${options.limit} per queue`));
+    logger.info(chalk.dim(`Job limit: ${options.limit} per queue`));
   }
-  console.log('');
+  logger.info('');
 
   // Create and start workers
   for (const queueName of queuesToStart) {
@@ -128,7 +129,7 @@ async function startQueues(
 
       // Add event listeners
       worker.on('completed', (job, _result) => {
-        console.log(`✅ [${queueName}] Job ${job.id} completed`);
+        logger.info(`✅ [${queueName}] Job ${job.id} completed`);
 
         // Track job count if limit is set
         if (options.limit) {
@@ -136,7 +137,7 @@ async function startQueues(
           jobCounts.set(queueName, count);
 
           if (count >= options.limit) {
-            console.log(
+            logger.info(
               chalk.yellow(
                 `⏹️  [${queueName}] Reached limit of ${options.limit} jobs, stopping worker...`
               )
@@ -145,7 +146,7 @@ async function startQueues(
               // Check if all workers are done
               const allDone = workers.every((w) => w.isRunning() === false);
               if (allDone) {
-                console.log(
+                logger.info(
                   chalk.green('✅ All workers finished processing limited jobs')
                 );
                 process.exit(0);
@@ -156,7 +157,7 @@ async function startQueues(
       });
 
       worker.on('failed', (job, error) => {
-        console.error(
+        logger.error(
           `❌ [${queueName}] Job ${job?.id} failed:`,
           error.message
         );
@@ -167,7 +168,7 @@ async function startQueues(
           jobCounts.set(queueName, count);
 
           if (count >= options.limit) {
-            console.log(
+            logger.info(
               chalk.yellow(
                 `⏹️  [${queueName}] Reached limit of ${options.limit} jobs, stopping worker...`
               )
@@ -176,7 +177,7 @@ async function startQueues(
               // Check if all workers are done
               const allDone = workers.every((w) => w.isRunning() === false);
               if (allDone) {
-                console.log(
+                logger.info(
                   chalk.green('✅ All workers finished processing limited jobs')
                 );
                 process.exit(0);
@@ -187,22 +188,22 @@ async function startQueues(
       });
 
       worker.on('error', (error) => {
-        console.error(`❌ [${queueName}] Worker error:`, error);
+        logger.error(`❌ [${queueName}] Worker error:`, error);
       });
 
       workers.push(worker);
-      console.log(`▶️  Started worker for queue: ${chalk.green(queueName)}`);
+      logger.info(`▶️  Started worker for queue: ${chalk.green(queueName)}`);
     } catch (error) {
-      console.error(`❌ Failed to start queue ${queueName}:`, error);
+      logger.error(`❌ Failed to start queue ${queueName}:`, error);
     }
   }
 
-  console.log('');
-  console.log(chalk.green(`✅ All ${workers.length} queue worker(s) started`));
+  logger.info('');
+  logger.info(chalk.green(`✅ All ${workers.length} queue worker(s) started`));
   if (!options.limit) {
-    console.log(chalk.dim('Press Ctrl+C to stop'));
+    logger.info(chalk.dim('Press Ctrl+C to stop'));
   }
-  console.log('');
+  logger.info('');
 
   return workers;
 }
@@ -211,18 +212,18 @@ async function startQueues(
  * Graceful shutdown
  */
 async function shutdown(workers: Worker[]) {
-  console.log('');
-  console.log(chalk.yellow('⏹️  Shutting down queue workers...'));
+  logger.info('');
+  logger.info(chalk.yellow('⏹️  Shutting down queue workers...'));
 
   for (const worker of workers) {
     try {
       await worker.close();
     } catch (error) {
-      console.error(`Error closing worker:`, error);
+      logger.error(`Error closing worker:`, error);
     }
   }
 
-  console.log(chalk.green('✅ All workers shut down'));
+  logger.info(chalk.green('✅ All workers shut down'));
   process.exit(0);
 }
 
@@ -260,6 +261,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  logger.error('Fatal error:', error);
   process.exit(1);
 });

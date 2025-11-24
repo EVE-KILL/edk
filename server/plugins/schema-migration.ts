@@ -555,7 +555,7 @@ export async function migrateSchema() {
         if (fileChecksums) {
           storedChecksums = { ...fileChecksums, ...storedChecksums };
         }
-      } catch (error) {
+      } catch {
         // Ignore error
       }
     }
@@ -686,7 +686,9 @@ export async function migrateSchema() {
           JSON.stringify(storedChecksums, null, 2),
           'utf-8'
         );
-      } catch (e) {}
+      } catch {
+        // Ignore write errors
+      }
     } else {
       logger.info(
         chalk.yellow(

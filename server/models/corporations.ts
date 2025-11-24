@@ -169,8 +169,6 @@ export async function storeCorporation(
     url: string;
   }
 ): Promise<void> {
-  const now = Math.floor(Date.now() / 1000);
-
   await database.bulkUpsert(
     'corporations',
     [
@@ -215,8 +213,6 @@ export async function storeCorporationsBulk(
   }>
 ): Promise<void> {
   if (corporations.length === 0) return;
-
-  const now = Math.floor(Date.now() / 1000);
 
   const records = corporations.map((corp) => ({
     corporationId: corp.corporationId,

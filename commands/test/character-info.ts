@@ -1,3 +1,5 @@
+import logger from '../../server/helpers/logger';
+
 import { database } from '../../server/helpers/database';
 import { getCharacterInfo } from '../../server/models/characters';
 
@@ -13,10 +15,10 @@ export default {
   async action(options: { id: string }) {
     const characterId = Number.parseInt(options.id);
 
-    console.log(`\n🔍 Testing character info fetch for ID: ${characterId}\n`);
+    logger.info(`\n🔍 Testing character info fetch for ID: ${characterId}\n`);
 
     // Test the basic query first
-    console.log('📊 Testing basic character query...');
+    logger.info('📊 Testing basic character query...');
 
     const basicQuery = await database.find<any>(
       `SELECT
@@ -38,9 +40,9 @@ export default {
       { characterId }
     );
 
-    console.log('Results from attackers (kills):', basicQuery.length, 'rows');
+    logger.info('Results from attackers (kills):', basicQuery.length, 'rows');
     if (basicQuery.length > 0) {
-      console.log('Sample:', JSON.stringify(basicQuery[0], null, 2));
+      logger.info('Sample:', JSON.stringify(basicQuery[0], null, 2));
     }
 
     const lossQuery = await database.find<any>(
@@ -62,28 +64,28 @@ export default {
       { characterId }
     );
 
-    console.log('\nResults from killmails (losses):', lossQuery.length, 'rows');
+    logger.info('\nResults from killmails (losses):', lossQuery.length, 'rows');
     if (lossQuery.length > 0) {
-      console.log('Sample:', JSON.stringify(lossQuery[0], null, 2));
+      logger.info('Sample:', JSON.stringify(lossQuery[0], null, 2));
     }
 
     // Test the full getCharacterInfo function
-    console.log('\n📋 Testing getCharacterInfo() function...');
+    logger.info('\n📋 Testing getCharacterInfo() function...');
     try {
       const characterInfo = await getCharacterInfo(characterId);
 
       if (characterInfo) {
-        console.log('✅ Character found!');
-        console.log(JSON.stringify(characterInfo, null, 2));
+        logger.info('✅ Character found!');
+        logger.info(JSON.stringify(characterInfo, null, 2));
       } else {
-        console.log('❌ Character not found (returned null)');
+        logger.info('❌ Character not found (returned null)');
       }
     } catch (error) {
-      console.error('❌ Error:', error);
+      logger.error('❌ Error:', error);
     }
 
     // Test stats query
-    console.log('\n📈 Testing stats query...');
+    logger.info('\n📈 Testing stats query...');
     const statsQuery = await database.findOne<{ kills: number; losses: number }>(
       `SELECT
          (SELECT count(*) FROM attackers WHERE "characterId" = :characterId) as kills,
@@ -91,9 +93,9 @@ export default {
       { characterId }
     );
 
-    console.log('Stats:', statsQuery);
+    logger.info('Stats:', statsQuery);
 
-    console.log('\n✅ Test complete\n');
+    logger.info('\n✅ Test complete\n');
     process.exit(0);
   },
 };

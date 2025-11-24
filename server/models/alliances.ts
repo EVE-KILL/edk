@@ -131,8 +131,6 @@ export async function storeAlliance(
     ticker: string;
   }
 ): Promise<void> {
-  const now = Math.floor(Date.now() / 1000);
-
   await database.bulkUpsert(
     'alliances',
     [
@@ -165,8 +163,6 @@ export async function storeAlliancesBulk(
   }>
 ): Promise<void> {
   if (alliances.length === 0) return;
-
-  const now = Math.floor(Date.now() / 1000);
 
   const records = alliances.map((alliance) => ({
     allianceId: alliance.allianceId,

@@ -1,3 +1,5 @@
+import logger from '../../server/helpers/logger';
+
 import chalk from 'chalk';
 import { enqueueJob, JobPriority } from '../../server/helpers/queue';
 import { QueueType } from '../../server/helpers/queue';
@@ -146,7 +148,7 @@ class RedisQImporter {
   }
 
   private log(message: string): void {
-    console.log(message);
+    logger.info(message);
   }
 
   private error(message: string): void {

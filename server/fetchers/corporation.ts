@@ -176,7 +176,7 @@ export async function getCachedCorporation(
       ticker: result.ticker,
       url: result.url,
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 }

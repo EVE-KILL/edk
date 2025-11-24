@@ -263,7 +263,7 @@ export async function getTopByPoints(
     | 'ship'
     | 'system'
     | 'region',
-  limit: number = 10
+  _limit: number = 10
 ): Promise<TopBoxWithName[]> {
   // Points not implemented without aggregations, return empty
   return [];
@@ -273,15 +273,15 @@ export async function getTopByPoints(
  * Get stats for a specific entity
  */
 export async function getEntityTopBoxStats(
-  entityId: number,
-  entityType:
+  _entityId: number,
+  _entityType:
     | 'character'
     | 'corporation'
     | 'alliance'
     | 'ship'
     | 'system'
     | 'region',
-  periodType: 'hour' | 'day' | 'week' | 'month'
+  _periodType: 'hour' | 'day' | 'week' | 'month'
 ): Promise<TopBoxWithName | null> {
   return null;
 }

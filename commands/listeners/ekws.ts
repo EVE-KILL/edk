@@ -1,3 +1,5 @@
+import logger from '../../server/helpers/logger';
+
 import { enqueueJob, JobPriority } from '../../server/helpers/queue';
 import { QueueType } from '../../server/helpers/queue';
 import { killmailExists } from '../../server/models/killmails';
@@ -385,7 +387,7 @@ class EkwsListener {
    * Utility methods
    */
   private log(message: string): void {
-    console.log(message);
+    logger.info(message);
   }
 
   private error(message: string): void {

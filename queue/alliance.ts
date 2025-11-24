@@ -1,5 +1,6 @@
 import { Worker, Job } from 'bullmq';
 import { fetchAndStoreAlliance } from '../server/fetchers/alliance';
+import logger from '../server/helpers/logger';
 
 /**
  * Alliance Queue Processor
@@ -13,20 +14,20 @@ export const name = 'alliance';
 export async function processor(job: Job): Promise<void> {
   const { id } = job.data as { id: number };
 
-  console.log(`[alliance] Processing alliance ${id}...`);
+  logger.info(`[alliance] Processing alliance ${id}...`);
 
   try {
     const result = await fetchAndStoreAlliance(id);
 
     if (result) {
-      console.log(`✅ [alliance] Successfully processed alliance ${id}`);
+      logger.success(`✅ [alliance] Successfully processed alliance ${id}`);
     } else {
-      console.warn(
+      logger.warn(
         `⚠️  [alliance] Alliance ${id} not found or failed to fetch`
       );
     }
   } catch (error) {
-    console.error(`❌ [alliance] Error processing alliance ${id}:`, error);
+    logger.error(`❌ [alliance] Error processing alliance ${id}:`, error);
     throw error; // Re-throw for BullMQ retry handling
   }
 }

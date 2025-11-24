@@ -1,7 +1,6 @@
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
-import { getEntityStatsFromCache, isStatsCachePopulated } from '../../../models/entityStatsCache';
 import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getCharacterWithCorporationAndAlliance } from '../../../models/characters';
 import {

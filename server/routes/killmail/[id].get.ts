@@ -149,7 +149,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Organize items by slot
-    const { itemsBySlot, fittingWheelDestroyed, fittingWheelDropped, totalDestroyed, totalDropped, totalValue, fitValue } = await track('killmail:organize_items', 'application', async () => {
+    const { itemsBySlot, fittingWheelDestroyed, fittingWheelDropped, totalDestroyed, totalDropped, fitValue } = await track('killmail:organize_items', 'application', async () => {
     const itemsBySlot: ItemsBySlot = {
       highSlots: [],
       medSlots: [],

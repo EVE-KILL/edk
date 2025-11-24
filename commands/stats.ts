@@ -1,10 +1,11 @@
+/* eslint-disable no-console */
 import chalk from 'chalk';
 import blessed from 'blessed';
 import contrib from 'blessed-contrib';
 import { Queue } from 'bullmq';
 import { database } from '../server/helpers/database';
 import { createRedisClient } from '../server/helpers/redis';
-import { QueueType, getAllQueues } from '../server/helpers/queue';
+import { QueueType } from '../server/helpers/queue';
 import { logger } from '../server/helpers/logger';
 import { registry } from '../server/helpers/metrics';
 import { env } from '../server/helpers/env';
@@ -286,7 +287,7 @@ class StatsDashboard {
       systemContent += `  {gray-fg}Press 'q' or ESC{/}`;
       this.widgets.system.setContent(systemContent);
 
-    } catch (error) {
+    } catch {
       if (this.widgets.header) {
         this.widgets.header.setContent('{center}{red-fg}⚠ Error fetching stats{/}{/center}');
       }
@@ -377,14 +378,13 @@ class StatsDashboard {
       this.displayWebSocketStats(wsStats);
       this.displayPrometheusMetrics();
 
-    } catch (error) {
+    } catch {
       logger.error('Failed to fetch stats', { error });
       console.log(chalk.red(`\n❌ Error fetching stats: ${error}`));
     }
   }
 
   private async getDatabaseStats(): Promise<DatabaseStats> {
-    const sql = database.sql;
 
     // Get table counts and sizes for key tables (including partitions)
     const tablesToCheck = [
@@ -483,7 +483,7 @@ class StatsDashboard {
             failed: counts.failed || 0,
             delayed: counts.delayed || 0,
           };
-        } catch (error) {
+        } catch {
           stats[queueType] = {
             active: 0,
             waiting: 0,
@@ -497,7 +497,7 @@ class StatsDashboard {
       
       // Close all queue connections
       await Promise.all(queues.map(q => q.close()));
-    } catch (error) {
+    } catch {
       // Clean up any open queues
       await Promise.all(queues.map(q => q.close().catch(() => {})));
       logger.error('Failed to fetch queue stats', { error });
@@ -536,7 +536,7 @@ class StatsDashboard {
         keys,
         uptime,
       };
-    } catch (error) {
+    } catch {
       if (redis) {
         try {
           await redis.quit();
@@ -573,7 +573,7 @@ class StatsDashboard {
       }
       
       return { connectedClients: 0, available: false };
-    } catch (error) {
+    } catch {
       if (redis) {
         try {
           await redis.quit();
@@ -671,7 +671,7 @@ class StatsDashboard {
       
       console.log(chalk.gray(`  Full metrics: GET /metrics`));
       console.log('');
-    } catch (error) {
+    } catch {
       // Silently ignore if metrics aren't available
     }
   }

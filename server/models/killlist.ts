@@ -723,7 +723,6 @@ export async function getEntityKillmails(
   perPage: number = 30
 ): Promise<EntityKillmail[]> {
   const offset = (page - 1) * perPage;
-  const attackerCol = attackerColumnMap[entityType];
   const victimCol = victimColumnMap[entityType];
 
   // For 'all' mode, combine kills and losses

@@ -331,7 +331,7 @@ function cleanupUnresponsiveClients(): void {
   for (const ws of clientsToRemove) {
     try {
       ws.close(1000, 'Unresponsive to ping');
-    } catch (error) {
+    } catch {
       // Ignore errors when closing
     }
     clients.delete(ws);

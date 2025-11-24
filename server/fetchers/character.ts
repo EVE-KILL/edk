@@ -134,7 +134,7 @@ export async function getCachedCharacter(
       race_id: result.raceId,
       security_status: result.securityStatus,
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 }
