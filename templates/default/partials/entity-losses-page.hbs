@@ -1,0 +1,28 @@
+<!-- Entity Stats Header -->
+{{> partials/entity-stats}}
+
+<!-- Entity Navigation Tabs -->
+{{> partials/entity-navbar}}
+
+<!-- Ship Group Statistics (Losses) -->
+{{#if data.shipGroupStats}}
+<div style="margin-bottom: 20px;">
+    <div class="block-header2">Ship Groups (Last 30 Days - Losses)</div>
+    {{> components/ship-group-stats columns=data.shipGroupColumns}}
+</div>
+{{/if}}
+
+<!-- Pagination (Top) -->
+{{#if data.pagination}}
+    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+{{/if}}
+
+<!-- Losses List -->
+<div style="margin-bottom: 20px;">
+    {{> partials/killmail-list killmails=data.killmails wsFilter=data.wsFilter}}
+</div>
+
+<!-- Pagination (Bottom) -->
+{{#if data.pagination}}
+    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+{{/if}}
