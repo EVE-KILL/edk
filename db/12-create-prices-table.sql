@@ -21,7 +21,11 @@ CREATE INDEX IF NOT EXISTS "idx_prices_type" ON prices ("typeId");
 CREATE INDEX IF NOT EXISTS "idx_prices_region" ON prices ("regionId");
 CREATE INDEX IF NOT EXISTS "idx_prices_date" ON prices ("priceDate");
 
--- Partial index for high-volume regional price lookups
+-- Partial indexes for high-volume regional price lookups
 CREATE INDEX IF NOT EXISTS "idx_prices_region_type_date_volume"
   ON prices ("regionId", "typeId", "priceDate" DESC)
+  WHERE "volume" > 100;
+
+CREATE INDEX IF NOT EXISTS "idx_prices_region_volume_type_date"
+  ON prices ("regionId", "volume", "typeId", "priceDate" DESC)
   WHERE "volume" > 100;

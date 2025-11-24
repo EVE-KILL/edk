@@ -464,6 +464,8 @@ async function syncTableSchema(statement: string) {
           serial8: 'bigint',
           varchar: 'character varying',
           bool: 'boolean',
+          timestamptz: 'timestamp with time zone',
+          'timestamp with time zone': 'timestamptz',
         };
 
         const type1 = aliases[normDefType] || normDefType;

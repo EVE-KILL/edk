@@ -47,113 +47,151 @@ export default defineEventHandler(async (event: H3Event) => {
     });
 
     // Transform top10 stats to add imageType and link properties
-    const { totalPages, top10 } = await track('frontpage:transform_top10', 'application', async () => {
-      const totalPages = Math.ceil(totalKillmails / perPage);
+    const { totalPages, top10 } = await track(
+      'frontpage:transform_top10',
+      'application',
+      async () => {
+        const totalPages = Math.ceil(totalKillmails / perPage);
 
-      const top10 = {
-        characters: topCharacters.map((c) => ({
-          ...c,
-          imageType: 'character',
-          imageId: c.id,
-          link: `/character/${c.id}`,
-        })),
-        corporations: topCorporations.map((c) => ({
-          ...c,
-          imageType: 'corporation',
-          imageId: c.id,
-          link: `/corporation/${c.id}`,
-        })),
-        alliances: topAlliances.map((a) => ({
-          ...a,
-          imageType: 'alliance',
-          imageId: a.id,
-          link: `/alliance/${a.id}`,
-        })),
-        systems: topSystems.map((s) => ({
-          ...s,
-          imageType: 'system',
-          imageId: s.id,
-          link: `/system/${s.id}`,
-        })),
-        regions: topRegions.map((r) => ({
-          ...r,
-          imageType: 'region',
-          imageId: r.id,
-          link: `/region/${r.id}`,
-        })),
-      };
+        const top10 = {
+          characters: topCharacters.map((c) => ({
+            ...c,
+            imageType: 'character',
+            imageId: c.id,
+            link: `/character/${c.id}`,
+          })),
+          corporations: topCorporations.map((c) => ({
+            ...c,
+            imageType: 'corporation',
+            imageId: c.id,
+            link: `/corporation/${c.id}`,
+          })),
+          alliances: topAlliances.map((a) => ({
+            ...a,
+            imageType: 'alliance',
+            imageId: a.id,
+            link: `/alliance/${a.id}`,
+          })),
+          systems: topSystems.map((s) => ({
+            ...s,
+            imageType: 'system',
+            imageId: s.id,
+            link: `/system/${s.id}`,
+          })),
+          regions: topRegions.map((r) => ({
+            ...r,
+            imageType: 'region',
+            imageId: r.id,
+            link: `/region/${r.id}`,
+          })),
+        };
 
-      return { totalPages, top10 };
-    });
+        return { totalPages, top10 };
+      }
+    );
 
-    // Fetch most valuable kills (7-day, top 6)
-    const mostValuableKillsData = await track('frontpage:fetch_most_valuable', 'application', async () => {
-      return await getMostValuableKillsByPeriod('week', 6);
-    });
+    // Fetch most valuable kills (7-day, top 6) - all three variants
+    const [
+      mostValuableKillsData,
+      mostValuableShipsData,
+      mostValuableStructuresData,
+    ] = await track(
+      'frontpage:fetch_most_valuable',
+      'application',
+      async () => {
+        return await Promise.all([
+          getMostValuableKillsByPeriod('week', 6),
+          getMostValuableKillsByPeriod('week', 6, { excludeStructures: true }),
+          getMostValuableKillsByPeriod('week', 6, { structuresOnly: true }),
+        ]);
+      }
+    );
 
     // Normalize killmail data to a consistent template-friendly shape
-    const killmails = await track('frontpage:normalize_killmails', 'application', async () => {
-      return killmailsData.map((km: any) => {
-        const normalized = normalizeKillRow(km);
-        const killmailDate =
-          km.killmailTime ?? km.killmail_time ?? normalized.killmailTime;
-        return {
-          ...normalized,
-          killmailTimeRelative: timeAgo(killmailDate),
-        };
-      });
-    });
+    const killmails = await track(
+      'frontpage:normalize_killmails',
+      'application',
+      async () => {
+        return killmailsData.map((km: any) => {
+          const normalized = normalizeKillRow(km);
+          const killmailDate =
+            km.killmailTime ?? km.killmail_time ?? normalized.killmailTime;
+          return {
+            ...normalized,
+            killmailTimeRelative: timeAgo(killmailDate),
+          };
+        });
+      }
+    );
 
-    // Transform most valuable kills
-    const mostValuableKills = await track('frontpage:transform_most_valuable', 'application', async () => {
-      return mostValuableKillsData.map((mvk) => {
-        const normalized = normalizeKillRow(mvk);
-        return {
-          ...normalized,
-          totalValue: mvk.totalValue ?? normalized.totalValue,
-          killmailTime: mvk.killmailTime ?? normalized.killmailTime,
-        };
-      });
-    });
+    // Transform most valuable kills (all three variants)
+    const [mostValuableKills, mostValuableShips, mostValuableStructures] =
+      await track(
+        'frontpage:transform_most_valuable',
+        'application',
+        async () => {
+          const transformData = (data: any[]) =>
+            data.map((mvk) => {
+              const normalized = normalizeKillRow(mvk);
+              return {
+                ...normalized,
+                totalValue: mvk.totalValue ?? normalized.totalValue,
+                killmailTime: mvk.killmailTime ?? normalized.killmailTime,
+              };
+            });
+
+          return [
+            transformData(mostValuableKillsData),
+            transformData(mostValuableShipsData),
+            transformData(mostValuableStructuresData),
+          ];
+        }
+      );
 
     // Data for the home page
-    const data = await track('frontpage:build_data', 'application', async () => {
-      return {
-        // Real Most Valuable Kills from database (last 7 days)
-        mostValuableKills,
+    const data = await track(
+      'frontpage:build_data',
+      'application',
+      async () => {
+        return {
+          // Real Most Valuable Kills from database (last 7 days) - all three variants
+          mostValuableKills,
+          mostValuableShips,
+          mostValuableStructures,
 
-        // Real top 10 stats from database (last 7 days)
-        top10Stats: top10,
-        
-        // Top box titles for front page
-        characterTitle: 'Top Characters',
-        corporationTitle: 'Top Corporations',
-        allianceTitle: 'Top Alliances',
-        shipTitle: 'Top Ships',
-        systemTitle: 'Top Systems',
-        regionTitle: 'Top Regions',
-        timeRange: 'Last 7 Days',
+          // Real top 10 stats from database (last 7 days)
+          top10Stats: top10,
 
-        // Real killmail data from database
-        killmails,
+          // Top box titles for front page
+          characterTitle: 'Top Characters',
+          corporationTitle: 'Top Corporations',
+          allianceTitle: 'Top Alliances',
+          shipTitle: 'Top Ships',
+          systemTitle: 'Top Systems',
+          regionTitle: 'Top Regions',
+          timeRange: 'Last 7 Days',
 
-        // Real pagination based on actual killmail count
-        pagination: {
-          currentPage: page,
-          totalPages: totalPages,
-          totalKillmails: totalKillmails,
-          perPage: perPage,
-          pages: generatePageNumbers(page, totalPages),
-          hasPrev: page > 1,
-          hasNext: page < totalPages,
-          prevPage: page - 1,
-          nextPage: page + 1,
-          showFirst: page > 3 && totalPages > 5,
-          showLast: page < totalPages - 2 && totalPages > 5,
-        },
-        baseUrl: '/',
-      };
-    });
+          // Real killmail data from database
+          killmails,
+
+          // Real pagination based on actual killmail count
+          pagination: {
+            currentPage: page,
+            totalPages: totalPages,
+            totalKillmails: totalKillmails,
+            perPage: perPage,
+            pages: generatePageNumbers(page, totalPages),
+            hasPrev: page > 1,
+            hasNext: page < totalPages,
+            prevPage: page - 1,
+            nextPage: page + 1,
+            showFirst: page > 3 && totalPages > 5,
+            showLast: page < totalPages - 2 && totalPages > 5,
+          },
+          baseUrl: '/',
+        };
+      }
+    );
 
     // Render template using the new layout system
     const result = await render('pages/home.hbs', pageContext, data, event);

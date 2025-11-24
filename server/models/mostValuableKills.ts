@@ -108,10 +108,76 @@ function getHoursAgo(periodType: string): number {
  */
 export async function getMostValuableKillsByPeriod(
   periodType: 'hour' | 'day' | 'week' | '14d' | 'month' | 'all',
-  limit: number = 50
+  limit: number = 50,
+  options?: {
+    excludeStructures?: boolean;
+    structuresOnly?: boolean;
+  }
 ): Promise<MostValuableKill[]> {
   const hoursAgo = getHoursAgo(periodType);
   const selectClause = getSelectClause(periodType);
+
+  // Actual structures and deployables (for Structures tab)
+  const actualStructureGroupIds = [
+    1657,
+    1406,
+    1404,
+    1408,
+    2017,
+    2016, // Citadels, Engineering Complex, Refinery, Jump Bridge, Cyno Jammer/Beacon
+    4744, // Upwell Moon Drill
+    1246,
+    1247,
+    1249,
+    1250,
+    1274,
+    1275,
+    1276,
+    1297, // Mobile Depot, Siphon, Cyno Inhibitor, Tractor, Decoy, Scan Inhibitor, Micro Jump, Vault
+    4093,
+    4107,
+    4137,
+    4913, // Mobile Cyno Beacon, Observatory, Analysis Beacon, Phase Anchor
+    336,
+    361,
+    364,
+    414,
+    417,
+    418,
+    426,
+    430,
+    438,
+    449,
+    1149, // Mobile Sentries, Warp Disruptor, Storage, Power Core, Shield Gen, Reactor, Jump Disruptor
+  ];
+
+  // All non-combat ships and structures (for Ships tab exclusion)
+  const nonCombatGroupIds = [
+    ...actualStructureGroupIds,
+    513,
+    902, // Freighter, Jump Freighter
+    28,
+    380,
+    883,
+    941,
+    1895,
+    1925,
+    4975, // Hauler (T1 Industrial), Deep Space Transport (Bustard etc), Capital Industrial (Bowhead), Industrial Command Ship (Orca/Porpoise), Irregular variants
+    1202, // Blockade Runner (Viator, Deluge, etc)
+    463,
+    543,
+    1762, // Mining Barge, Exhumer, Irregular Mining Barge
+    1283,
+    4902,
+    4945, // Expedition Frigate (Prospect, Endurance), Expedition Command Ship (Magus, Squall), Irregular variants
+  ];
+
+  let structureFilter = '';
+  if (options?.excludeStructures) {
+    structureFilter = `AND vship."groupId" NOT IN (${nonCombatGroupIds.join(',')})`;
+  } else if (options?.structuresOnly) {
+    structureFilter = `AND vship."groupId" IN (${actualStructureGroupIds.join(',')})`;
+  }
 
   return database.find<MostValuableKill>(
     `SELECT
@@ -119,6 +185,7 @@ export async function getMostValuableKillsByPeriod(
     ${JOIN_CLAUSE}
     WHERE k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
       AND k."attackerCount" > 0
+      ${structureFilter}
     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
     LIMIT :limit`,
     { hoursAgo, limit }

@@ -45,3 +45,7 @@ CREATE TABLE IF NOT EXISTS npcCharacters (
     "gender" INTEGER,
     "raceId" INTEGER
 );
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS "idx_npccharacters_characterid" ON npcCharacters ("characterId");
+CREATE INDEX IF NOT EXISTS "idx_npccorporations_corporationid" ON npcCorporations ("corporationId");

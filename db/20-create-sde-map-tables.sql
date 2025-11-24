@@ -120,3 +120,6 @@ CREATE TABLE IF NOT EXISTS asteroidBelts (
     "positionY" DOUBLE PRECISION,
     "positionZ" DOUBLE PRECISION
 );
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS "idx_solarsystems_system_region" ON solarSystems ("solarSystemId", "regionId");

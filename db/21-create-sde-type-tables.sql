@@ -56,3 +56,7 @@ CREATE TABLE IF NOT EXISTS metaGroups (
     "description" TEXT,
     "iconId" INTEGER
 );
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS "idx_groups_groupid" ON groups ("groupId");
+CREATE INDEX IF NOT EXISTS "idx_types_name_pattern" ON types (name text_pattern_ops) WHERE name LIKE '%Blueprint%';

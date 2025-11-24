@@ -1,10 +1,10 @@
 <!-- Home Page - EDK Style -->
 
-<!-- Most Valuable Kills - Full Width at Top -->
+<!-- Most Valuable Kills - Full Width at Top with Tabs -->
 {{#if data.timeRange}}
-{{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange=data.timeRange}}
+{{> partials/mostvaluable-tabbed mostValuableKills=data.mostValuableKills mostValuableShips=data.mostValuableShips mostValuableStructures=data.mostValuableStructures timeRange=data.timeRange}}
 {{else}}
-{{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange="Last 7 Days"}}
+{{> partials/mostvaluable-tabbed mostValuableKills=data.mostValuableKills mostValuableShips=data.mostValuableShips mostValuableStructures=data.mostValuableStructures timeRange="Last 7 Days"}}
 {{/if}}
 
 <!-- Two Column Layout: Sidebar + Killmail List -->

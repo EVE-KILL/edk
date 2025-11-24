@@ -100,15 +100,15 @@ function accumulateItemValues(
     // Only count item value if it doesn't have nested items
     // Containers with contents should only count the contents
     const hasNestedItems = item.items && item.items.length > 0;
-    
+
     if (!hasNestedItems) {
       let price = priceMap.get(item.item_type_id) ?? 0.01;
-      
+
       // Blueprint Copies (singleton === 2) are worth 1/100th of BPO price
       if (item.singleton === 2) {
         price = price / 100;
       }
-      
+
       const droppedQty = item.quantity_dropped ?? 0;
       const destroyedQty = item.quantity_destroyed ?? 0;
       totals.dropped += price * droppedQty;
@@ -310,13 +310,11 @@ export async function storeKillmail(
   try {
     const victim = esiData.victim;
     const killmailHash = hash || calculateKillmailHash(esiData);
-  const valueBreakdown = await calculateKillmailValues(esiData);
-  const killmailIso =
-    esiData.killmail_time ??
-    new Date().toISOString(); // ESI already provides Z; keep it UTC
+    const valueBreakdown = await calculateKillmailValues(esiData);
+    const killmailIso = esiData.killmail_time ?? new Date().toISOString(); // ESI already provides Z; keep it UTC
 
-  // Get location info (region/constellation/security) from solar system
-  const systemInfo = await getSolarSystem(esiData.solar_system_id);
+    // Get location info (region/constellation/security) from solar system
+    const systemInfo = await getSolarSystem(esiData.solar_system_id);
 
     // Get victim ship group from types
     const victimShipType = await database.findOne<{ groupId: number }>(
@@ -374,10 +372,12 @@ export async function storeKillmail(
       topAttackerAllianceId: topAttacker?.alliance_id ?? null,
       topAttackerShipTypeId: topAttacker?.ship_type_id ?? null,
       topAttackerShipGroupId: topAttacker?.ship_type_id
-        ? (await database.findOne<{ groupId: number }>(
-            'SELECT "groupId" FROM types WHERE "typeId" = :typeId',
-            { typeId: topAttacker.ship_type_id }
-          ))?.groupId ?? null
+        ? ((
+            await database.findOne<{ groupId: number }>(
+              'SELECT "groupId" FROM types WHERE "typeId" = :typeId',
+              { typeId: topAttacker.ship_type_id }
+            )
+          )?.groupId ?? null)
         : null,
 
       // Aggregate stats
@@ -485,7 +485,6 @@ export async function storeKillmailsBulk(
   if (esiDataArray.length === 0) return { inserted: 0, skippedExisting: 0 };
 
   try {
-
     const uniqueKillmails: Array<{ esi: ESIKillmail; hash?: string }> = [];
     const seenIds = new Set<number>();
     for (const entry of esiDataArray) {
@@ -543,10 +542,9 @@ export async function storeKillmailsBulk(
     const shipGroupData = await database.find<{
       typeId: number;
       groupId: number;
-    }>(
-      'SELECT "typeId", "groupId" FROM types WHERE "typeId" = ANY(:ids)',
-      { ids: uniqueShipTypeIds }
-    );
+    }>('SELECT "typeId", "groupId" FROM types WHERE "typeId" = ANY(:ids)', {
+      ids: uniqueShipTypeIds,
+    });
     const shipGroupMap = new Map(
       shipGroupData.map((row) => [row.typeId, row.groupId])
     );
@@ -557,8 +555,7 @@ export async function storeKillmailsBulk(
       const killmailHash = hash || calculateKillmailHash(esi);
       const valueBreakdown = valueBreakdowns[index];
       const systemData = solarSystemData.get(esi.solar_system_id);
-      const killmailIso =
-        esi.killmail_time ?? new Date().toISOString(); // preserve UTC input
+      const killmailIso = esi.killmail_time ?? new Date().toISOString(); // preserve UTC input
 
       // Find top attacker (final blow or highest damage)
       const finalBlowAttacker = esi.attackers.find((a) => a.final_blow);
@@ -754,7 +751,9 @@ export interface SiblingKillmail {
 export async function getKillmailDetails(
   killmailId: number
 ): Promise<KillmailDetails | null> {
-  return database.findOne<KillmailDetails>(
+  const details = await database.findOne<
+    Omit<KillmailDetails, 'victimShipValue'>
+  >(
     `SELECT
       k."killmailId" as "killmailId",
       k."killmailTime" as "killmailTime",
@@ -771,14 +770,12 @@ export async function getKillmailDetails(
       k."victimShipTypeId" as "victimShipTypeId",
       coalesce(vship.name, 'Unknown') as "victimShipName",
       coalesce(vship_group.name, 'Unknown') as "victimShipGroup",
-      coalesce(vship_price."averagePrice", 0.0) as "victimShipValue",
       coalesce(k."totalValue", 0.0) as "totalValue",
       k."solarSystemId" as "solarSystemId",
       coalesce(sys.name, 'Unknown') as "solarSystemName",
       coalesce(reg.name, 'Unknown') as "regionName",
       coalesce(sys."securityStatus", 0.0) as "solarSystemSecurity"
     FROM killmails k
-
 
     LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
     LEFT JOIN npcCharacters vnpc ON k."victimCharacterId" = vnpc."characterId"
@@ -791,16 +788,6 @@ export async function getKillmailDetails(
     LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
     LEFT JOIN groups vship_group ON vship."groupId" = vship_group."groupId"
 
-    LEFT JOIN (
-      SELECT DISTINCT ON ("typeId")
-        "typeId",
-        "averagePrice"
-      FROM prices
-      WHERE "regionId" = 10000002
-        AND "volume" > 100
-      ORDER BY "typeId", "priceDate" DESC
-    ) vship_price ON k."victimShipTypeId" = vship_price."typeId"
-
     LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
     LEFT JOIN regions reg ON sys."regionId" = reg."regionId"
 
@@ -808,6 +795,23 @@ export async function getKillmailDetails(
     LIMIT 1`,
     { killmailId }
   );
+
+  if (!details) {
+    return null;
+  }
+
+  // Fetch ship price separately using the optimized function
+  const priceMap = await getLatestPricesForTypes(
+    [details.victimShipTypeId],
+    PRICE_REGION_ID,
+    details.killmailTime
+  );
+  const victimShipValue = priceMap.get(details.victimShipTypeId) ?? 0.0;
+
+  return {
+    ...details,
+    victimShipValue,
+  };
 }
 
 /**
@@ -816,50 +820,78 @@ export async function getKillmailDetails(
 export async function getKillmailItems(
   killmailId: number
 ): Promise<KillmailItem[]> {
-  return database.find<KillmailItem>(
-    `WITH killmail_date AS (
-      SELECT DATE("killmailTime") AS killmail_date
-      FROM killmails
-      WHERE "killmailId" = :killmailId
-    ),
-    killmail_items AS (
-      SELECT *
-      FROM items
-      WHERE "killmailId" = :killmailId
-        AND "itemTypeId" IS NOT NULL
-    ),
-    latest_prices AS (
-      SELECT DISTINCT ON (p."typeId")
-        p."typeId",
-        p."averagePrice"
-      FROM prices p
-      JOIN killmail_items i ON p."typeId" = i."itemTypeId"
-      CROSS JOIN killmail_date kd
-      WHERE p."regionId" = 10000002
-        AND p."volume" > 100
-        AND p."priceDate" <= kd.killmail_date
-        AND p."priceDate" >= kd.killmail_date - INTERVAL '30 days'
-      ORDER BY p."typeId", p."priceDate" DESC
-    )
-    SELECT
+  // First, get the killmail date and items
+  const itemsWithTypes = await database.find<{
+    itemTypeId: number;
+    name: string | null;
+    quantityDropped: number;
+    quantityDestroyed: number;
+    flag: number;
+    singleton: number;
+    killmailTime: string;
+  }>(
+    `SELECT
       i."itemTypeId",
       t.name,
       i."quantityDropped",
       i."quantityDestroyed",
       i.flag,
       i.singleton,
-      CASE 
-        -- Blueprint Copies (BPCs) are essentially worthless
-        WHEN i.singleton = 2 THEN coalesce(p."averagePrice", 0.01) / 100
-        -- All other blueprints (BPOs) set to 0.01 since market prices are unreliable
-        WHEN t.name LIKE '%Blueprint%' THEN 0.01
-        ELSE coalesce(p."averagePrice", 0.01)
-      END as price
-    FROM killmail_items i
+      k."killmailTime"
+    FROM items i
     LEFT JOIN types t ON i."itemTypeId" = t."typeId"
-    LEFT JOIN latest_prices p ON i."itemTypeId" = p."typeId"`,
+    JOIN killmails k ON i."killmailId" = k."killmailId"
+    WHERE i."killmailId" = :killmailId
+      AND i."itemTypeId" IS NOT NULL`,
     { killmailId }
   );
+
+  if (itemsWithTypes.length === 0) {
+    return [];
+  }
+
+  // Get unique type IDs and killmail date
+  const typeIds = Array.from(
+    new Set(itemsWithTypes.map((item) => item.itemTypeId))
+  );
+  const killmailDate = itemsWithTypes[0].killmailTime;
+
+  // Fetch prices for all types at once
+  const priceMap = await getLatestPricesForTypes(
+    typeIds,
+    PRICE_REGION_ID,
+    killmailDate
+  );
+
+  // Get blueprint types
+  const blueprintTypes = await database.find<{ typeId: number }>(
+    `SELECT "typeId" FROM types WHERE "typeId" = ANY(:typeIds) AND name LIKE '%Blueprint%'`,
+    { typeIds }
+  );
+  const blueprintTypeIds = new Set(blueprintTypes.map((bp) => bp.typeId));
+
+  // Combine items with their prices
+  return itemsWithTypes.map((item) => {
+    let price = priceMap.get(item.itemTypeId) ?? 0.01;
+
+    // Blueprint Copies (singleton === 2) are worth 1/100th of BPO price
+    if (item.singleton === 2) {
+      price = price / 100;
+    }
+    // All other blueprints (BPOs) set to 0.01 since market prices are unreliable
+    else if (blueprintTypeIds.has(item.itemTypeId)) {
+      price = 0.01;
+    }
+
+    return {
+      itemTypeId: item.itemTypeId,
+      name: item.name ?? 'Unknown',
+      quantityDropped: item.quantityDropped,
+      quantityDestroyed: item.quantityDestroyed,
+      flag: item.flag,
+      price,
+    };
+  });
 }
 
 /**

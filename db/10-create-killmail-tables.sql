@@ -141,6 +141,7 @@ CREATE INDEX IF NOT EXISTS "idx_items_killmail_id" ON items ("killmailId");
 CREATE INDEX IF NOT EXISTS "idx_items_item_type" ON items ("itemTypeId");
 CREATE INDEX IF NOT EXISTS "idx_items_flag" ON items ("flag");
 CREATE INDEX IF NOT EXISTS "idx_items_time" ON items ("killmailTime");
+CREATE INDEX IF NOT EXISTS "idx_items_killmail_type" ON items ("killmailId", "itemTypeId") WHERE "itemTypeId" IS NOT NULL;
 
 -- Restore normal message level
 SET client_min_messages TO NOTICE;
