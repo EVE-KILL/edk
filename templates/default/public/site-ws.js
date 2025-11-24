@@ -16,16 +16,11 @@
   function createWorkerClient() {
     const worker = new SharedWorker('/site-ws-worker.js', { name: 'edk-ws' });
     const port = worker.port;
-    port.start();
-
-    // Provide WS URL hint if set
-    if (window.__EDK_WS_URL) {
-      port.postMessage({ type: 'init', wsUrl: window.__EDK_WS_URL });
-    }
 
     let lastTopics = [];
     let connected = false;
 
+    // Set up message handler BEFORE calling port.start()
     port.onmessage = (event) => {
       const msg = event.data;
       if (!msg) return;
@@ -61,6 +56,14 @@
           break;
       }
     };
+
+    // Start the port and send init message AFTER handler is set up
+    port.start();
+
+    // Provide WS URL hint if set
+    if (window.__EDK_WS_URL) {
+      port.postMessage({ type: 'init', wsUrl: window.__EDK_WS_URL });
+    }
 
     function on(type, handler) {
       if (!listeners.has(type)) listeners.set(type, new Set());
