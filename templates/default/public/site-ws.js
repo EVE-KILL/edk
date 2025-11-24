@@ -29,6 +29,10 @@
         case 'worker-ready':
           console.info('[EDK WS] SharedWorker ready');
           window.dispatchEvent(new CustomEvent('edk-ws-ready'));
+          // Enable debug panel WebSocket tab
+          if (window.debugWS) {
+            window.debugWS.enable();
+          }
           break;
         case 'ws-open':
           connected = true;
