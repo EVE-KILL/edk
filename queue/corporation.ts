@@ -1,6 +1,6 @@
 import { Worker, Job } from 'bullmq';
 import { fetchAndStoreCorporation } from '../server/fetchers/corporation';
-import logger from '../server/helpers/logger';
+import { logger } from '../server/helpers/logger';
 
 /**
  * Corporation Queue Processor
@@ -20,17 +20,16 @@ export async function processor(job: Job): Promise<void> {
     const result = await fetchAndStoreCorporation(id);
 
     if (result) {
-      logger.success(`✅ [corporation] Successfully processed corporation ${id}`);
+      logger.success(
+        `✅ [corporation] Successfully processed corporation ${id}`
+      );
     } else {
       logger.warn(
         `⚠️  [corporation] Corporation ${id} not found or failed to fetch`
       );
     }
   } catch (error) {
-    logger.error(
-      `❌ [corporation] Error processing corporation ${id}:`,
-      error
-    );
+    logger.error(`❌ [corporation] Error processing corporation ${id}:`, error);
     throw error; // Re-throw for BullMQ retry handling
   }
 }

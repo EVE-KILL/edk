@@ -1,4 +1,4 @@
-import logger from './logger';
+import { logger } from './logger';
 
 import { Client } from 'typesense';
 import { requestContext } from '../utils/request-context';

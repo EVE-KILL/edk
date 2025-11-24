@@ -1,6 +1,6 @@
 import { Worker, Job } from 'bullmq';
 import { fetchAndStoreAlliance } from '../server/fetchers/alliance';
-import logger from '../server/helpers/logger';
+import { logger } from '../server/helpers/logger';
 
 /**
  * Alliance Queue Processor
@@ -22,9 +22,7 @@ export async function processor(job: Job): Promise<void> {
     if (result) {
       logger.success(`✅ [alliance] Successfully processed alliance ${id}`);
     } else {
-      logger.warn(
-        `⚠️  [alliance] Alliance ${id} not found or failed to fetch`
-      );
+      logger.warn(`⚠️  [alliance] Alliance ${id} not found or failed to fetch`);
     }
   } catch (error) {
     logger.error(`❌ [alliance] Error processing alliance ${id}:`, error);

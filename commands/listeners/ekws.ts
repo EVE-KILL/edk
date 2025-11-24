@@ -1,4 +1,4 @@
-import logger from '../../server/helpers/logger';
+import { logger } from '../../server/helpers/logger';
 
 import { enqueueJob, JobPriority } from '../../server/helpers/queue';
 import { QueueType } from '../../server/helpers/queue';

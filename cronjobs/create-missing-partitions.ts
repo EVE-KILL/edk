@@ -1,6 +1,6 @@
 import { createMissingPartitions } from '../server/helpers/partitions';
 
-import logger from '../server/helpers/logger';
+import { logger } from '../server/helpers/logger';
 
 export const name = 'create-missing-partitions';
 export const description =

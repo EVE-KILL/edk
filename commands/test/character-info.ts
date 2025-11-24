@@ -1,4 +1,4 @@
-import logger from '../../server/helpers/logger';
+import { logger } from '../../server/helpers/logger';
 
 import { database } from '../../server/helpers/database';
 import { getCharacterInfo } from '../../server/models/characters';
@@ -86,7 +86,10 @@ export default {
 
     // Test stats query
     logger.info('\n📈 Testing stats query...');
-    const statsQuery = await database.findOne<{ kills: number; losses: number }>(
+    const statsQuery = await database.findOne<{
+      kills: number;
+      losses: number;
+    }>(
       `SELECT
          (SELECT count(*) FROM attackers WHERE "characterId" = :characterId) as kills,
          (SELECT count(*) FROM killmails WHERE "victimCharacterId" = :characterId) as losses`,

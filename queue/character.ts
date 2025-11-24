@@ -1,6 +1,6 @@
 import { Worker, Job } from 'bullmq';
 import { fetchAndStoreCharacter } from '../server/fetchers/character';
-import logger from '../server/helpers/logger';
+import { logger } from '../server/helpers/logger';
 
 /**
  * Character Queue Processor

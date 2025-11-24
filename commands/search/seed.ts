@@ -1,4 +1,4 @@
-import logger from '../../server/helpers/logger';
+import { logger } from '../../server/helpers/logger';
 
 import {
   typesense,

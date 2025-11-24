@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { Worker } from 'bullmq';
 import chalk from 'chalk';
 import { env } from './server/helpers/env';
-import logger from './server/helpers/logger';
+import { logger } from './server/helpers/logger';
 
 /**
  * Queue Runner - Main Entry Point
@@ -32,7 +32,10 @@ const REDIS_CONFIG = {
 interface QueueModule {
   name: string;
   processor: (job: any) => Promise<void>;
-  createWorker: (connection?: any, options?: { concurrency?: number }) => Worker;
+  createWorker: (
+    connection?: any,
+    options?: { concurrency?: number }
+  ) => Worker;
 }
 
 interface QueueOptions {
@@ -101,9 +104,7 @@ async function startQueues(
 
     if (queuesToStart.length === 0) {
       logger.error(`❌ No queues found matching: ${queueNames.join(', ')}`);
-      logger.error(
-        `Available queues: ${Array.from(queues.keys()).join(', ')}`
-      );
+      logger.error(`Available queues: ${Array.from(queues.keys()).join(', ')}`);
       process.exit(1);
     }
   }
@@ -157,10 +158,7 @@ async function startQueues(
       });
 
       worker.on('failed', (job, error) => {
-        logger.error(
-          `❌ [${queueName}] Job ${job?.id} failed:`,
-          error.message
-        );
+        logger.error(`❌ [${queueName}] Job ${job?.id} failed:`, error.message);
 
         // Still count failed jobs towards the limit
         if (options.limit) {

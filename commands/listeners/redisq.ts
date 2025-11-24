@@ -1,4 +1,4 @@
-import logger from '../../server/helpers/logger';
+import { logger } from '../../server/helpers/logger';
 
 import chalk from 'chalk';
 import { enqueueJob, JobPriority } from '../../server/helpers/queue';

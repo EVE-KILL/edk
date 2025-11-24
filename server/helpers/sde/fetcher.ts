@@ -1,4 +1,4 @@
-import logger from '../logger';
+import { logger } from '../logger';
 
 import { mkdir, readFile, writeFile, rm } from 'fs/promises';
 import { existsSync } from 'fs';
