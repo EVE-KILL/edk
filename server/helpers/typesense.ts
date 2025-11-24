@@ -1,3 +1,5 @@
+import logger from './logger';
+
 import { Client } from 'typesense';
 import { requestContext } from '../utils/request-context';
 import { env } from './env';
@@ -36,7 +38,10 @@ let searchCollectionEnsured = false;
  */
 export async function ensureSearchCollection(): Promise<void> {
   const performance = requestContext.getStore()?.performance;
-  const spanId = performance?.startSpan('typesense:ensure_collection', 'search');
+  const spanId = performance?.startSpan(
+    'typesense:ensure_collection',
+    'search'
+  );
 
   try {
     if (searchCollectionEnsured) {
@@ -50,7 +55,7 @@ export async function ensureSearchCollection(): Promise<void> {
     } catch (error: any) {
       if (error?.httpStatus && error.httpStatus !== 404) {
         if (env.NODE_ENV === 'development') {
-          console.error('Failed to check Typesense search collection:', error);
+          logger.error('Failed to check Typesense search collection:', error);
         }
         throw error;
       }
@@ -66,7 +71,7 @@ export async function ensureSearchCollection(): Promise<void> {
       }
 
       if (env.NODE_ENV === 'development') {
-        console.error('Failed to create Typesense search collection:', error);
+        logger.error('Failed to create Typesense search collection:', error);
       }
       throw error;
     }
@@ -91,7 +96,10 @@ export async function updateSearchEntity(
     | 'region'
 ): Promise<void> {
   const performance = requestContext.getStore()?.performance;
-  const spanId = performance?.startSpan('typesense:upsert', 'search', { type, id });
+  const spanId = performance?.startSpan('typesense:upsert', 'search', {
+    type,
+    id,
+  });
 
   try {
     await ensureSearchCollection();
@@ -117,7 +125,7 @@ export async function updateSearchEntity(
     // Silently fail - search index updates shouldn't break entity storage
     // Only log in development
     if (env.NODE_ENV === 'development') {
-      console.error(`Failed to update search index for ${type} ${id}:`, error);
+      logger.error(`Failed to update search index for ${type} ${id}:`, error);
     }
   } finally {
     if (spanId) performance?.endSpan(spanId);

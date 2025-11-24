@@ -4,7 +4,7 @@ import { refreshEnv } from '../server/helpers/env';
 
 // Mock logger for tests since it's auto-imported in Nitro but not available in test context
 beforeAll(() => {
-  // @ts-ignore - logger is auto-imported in Nitro context
+  // @ts-expect-error - logger is auto-imported in Nitro context
   global.logger = {
     info: () => {},
     warn: () => {},

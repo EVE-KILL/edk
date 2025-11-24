@@ -61,7 +61,7 @@ export default {
 
       // Display results
       displayInspectionResults(result);
-    } catch (error) {
+    } catch {
       logger.error('Error inspecting table:', { error: String(error) });
       process.exit(1);
     }
@@ -95,7 +95,7 @@ async function inspectTable(
 
       // Analyze field types
       analyzeObject(data, '', fields);
-    } catch (error) {
+    } catch {
       logger.warn(`Skipped invalid JSON line ${rowCount}`);
     }
   }

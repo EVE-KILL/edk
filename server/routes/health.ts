@@ -1,4 +1,3 @@
-
 import { defineEventHandler } from 'h3';
 import { database } from '../helpers/database';
 import { cache } from '../helpers/cache';
@@ -14,8 +13,8 @@ async function getGitCommitHash() {
   try {
     const { stdout } = await execAsync('git rev-parse --short HEAD');
     return stdout.trim();
-  } catch (error) {
-    console.error('Error getting git commit hash:', error);
+  } catch {
+    logger.error('Error getting git commit hash:', error);
     return 'unknown';
   }
 }
@@ -26,10 +25,14 @@ async function getDbStatus() {
     await database.sql`SELECT 1`;
     const latency = Date.now() - startTime;
     return { status: 'ok', latency: `${latency}ms` };
-  } catch (error) {
-    console.error('Error checking database status:', error);
+  } catch {
+    logger.error('Error checking database status:', error);
     const latency = Date.now() - startTime;
-    return { status: 'error', latency: `${latency}ms`, error: "Connection failed" };
+    return {
+      status: 'error',
+      latency: `${latency}ms`,
+      error: 'Connection failed',
+    };
   }
 }
 
@@ -39,39 +42,52 @@ async function getRedisStatus() {
     await cache.get('healthcheck');
     const latency = Date.now() - startTime;
     return { status: 'ok', latency: `${latency}ms` };
-  } catch (error) {
-    console.error('Error checking Redis status:', error);
+  } catch {
+    logger.error('Error checking Redis status:', error);
     const latency = Date.now() - startTime;
-    return { status: 'error', latency: `${latency}ms`, error: "Connection failed" };
+    return {
+      status: 'error',
+      latency: `${latency}ms`,
+      error: 'Connection failed',
+    };
   }
 }
 
 async function getQueueStatus() {
-    const REDIS_CONFIG = {
-        host: env.REDIS_HOST,
-        port: env.REDIS_PORT,
-        password: env.REDIS_PASSWORD,
-        db: 0,
-    };
+  const REDIS_CONFIG = {
+    host: env.REDIS_HOST,
+    port: env.REDIS_PORT,
+    password: env.REDIS_PASSWORD,
+    db: 0,
+  };
 
-    const queueNames = ['alliance', 'character', 'corporation', 'killmail', 'price'];
-    const status: Record<string, { waiting: number; active: number; failed: number }> = {};
+  const queueNames = [
+    'alliance',
+    'character',
+    'corporation',
+    'killmail',
+    'price',
+  ];
+  const status: Record<
+    string,
+    { waiting: number; active: number; failed: number }
+  > = {};
 
-    for (const name of queueNames) {
-        try {
-            const queue = new Queue(name, { connection: REDIS_CONFIG });
-            const [waiting, active, failed] = await Promise.all([
-                queue.getWaitingCount(),
-                queue.getActiveCount(),
-                queue.getFailedCount(),
-            ]);
-            status[name] = { waiting, active, failed };
-            await queue.close();
-        } catch (error) {
-            status[name] = { waiting: -1, active: -1, failed: -1 };
-        }
+  for (const name of queueNames) {
+    try {
+      const queue = new Queue(name, { connection: REDIS_CONFIG });
+      const [waiting, active, failed] = await Promise.all([
+        queue.getWaitingCount(),
+        queue.getActiveCount(),
+        queue.getFailedCount(),
+      ]);
+      status[name] = { waiting, active, failed };
+      await queue.close();
+    } catch {
+      status[name] = { waiting: -1, active: -1, failed: -1 };
     }
-    return status;
+  }
+  return status;
 }
 
 async function getMemoryUsage() {
@@ -82,48 +98,44 @@ async function getMemoryUsage() {
       rss: `${(memUsage.rss / 1024 / 1024).toFixed(2)}MB`,
       heap_total: `${(memUsage.heapTotal / 1024 / 1024).toFixed(2)}MB`,
     };
-  } catch (error) {
+  } catch {
     return { error: (error as Error).message };
   }
 }
 
 async function getDiskSpace() {
-    try {
-        const stats = await statfs('/');
-        const free = stats.bavail * stats.bsize;
-        const total = stats.blocks * stats.bsize;
-        const used = total - free;
-        return {
-            total: `${(total / 1024 / 1024 / 1024).toFixed(2)}GB`,
-            used: `${(used / 1024 / 1024 / 1024).toFixed(2)}GB`,
-            free: `${(free / 1024 / 1024 / 1024).toFixed(2)}GB`,
-            used_percentage: `${((used / total) * 100).toFixed(2)}%`
-        }
-    } catch (error) {
-        return { error: (error as Error).message };
-    }
+  try {
+    const stats = await statfs('/');
+    const free = stats.bavail * stats.bsize;
+    const total = stats.blocks * stats.bsize;
+    const used = total - free;
+    return {
+      total: `${(total / 1024 / 1024 / 1024).toFixed(2)}GB`,
+      used: `${(used / 1024 / 1024 / 1024).toFixed(2)}GB`,
+      free: `${(free / 1024 / 1024 / 1024).toFixed(2)}GB`,
+      used_percentage: `${((used / total) * 100).toFixed(2)}%`,
+    };
+  } catch {
+    return { error: (error as Error).message };
+  }
 }
 
-
 export default defineEventHandler(async () => {
-    const [
-        dbStatus,
-        redisStatus,
-        queues,
-        memory,
-        disk,
-        commitHash,
-    ] = await Promise.all([
-        getDbStatus(),
-        getRedisStatus(),
-        getQueueStatus(),
-        getMemoryUsage(),
-        getDiskSpace(),
-        getGitCommitHash(),
+  const [dbStatus, redisStatus, queues, memory, disk, commitHash] =
+    await Promise.all([
+      getDbStatus(),
+      getRedisStatus(),
+      getQueueStatus(),
+      getMemoryUsage(),
+      getDiskSpace(),
+      getGitCommitHash(),
     ]);
 
-    const overallStatus = dbStatus.status === 'ok' && redisStatus.status === 'ok' ? 'healthy' : 'unhealthy';
-    const packageJson = JSON.parse(await readFile('./package.json', 'utf-8'));
+  const overallStatus =
+    dbStatus.status === 'ok' && redisStatus.status === 'ok'
+      ? 'healthy'
+      : 'unhealthy';
+  const packageJson = JSON.parse(await readFile('./package.json', 'utf-8'));
 
   return {
     status: overallStatus,

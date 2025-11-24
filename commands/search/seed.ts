@@ -1,3 +1,5 @@
+import logger from '../../server/helpers/logger';
+
 import {
   typesense,
   searchCollectionSchema,
@@ -6,72 +8,74 @@ import { database } from '../../server/helpers/database';
 
 export default {
   action: async () => {
-    console.log('Seeding search index...');
+    logger.info('Seeding search index...');
 
     try {
       // Test Typesense connection first
       try {
         await typesense.collections().retrieve();
-        console.log('✅ Connected to Typesense');
+        logger.info('✅ Connected to Typesense');
       } catch (error: any) {
-        console.error('❌ Failed to connect to Typesense:', error.message);
-        console.error('Make sure Typesense is running (docker-compose up -d typesense)');
+        logger.error('❌ Failed to connect to Typesense:', error.message);
+        logger.error(
+          'Make sure Typesense is running (docker-compose up -d typesense)'
+        );
         await database.close();
         process.exit(1);
       }
 
       try {
         await typesense.collections('search').delete();
-        console.log('Deleted existing search collection');
-      } catch (error) {
+        logger.info('Deleted existing search collection');
+      } catch {
         // Ignore if collection doesn't exist
       }
 
       await typesense.collections().create(searchCollectionSchema);
-      console.log('Created search collection');
+      logger.info('Created search collection');
 
       // Fetch data from database
-      console.log('Fetching characters...');
+      logger.info('Fetching characters...');
       const characters = await database.find<{ id: number; name: string }>(
         `SELECT "characterId" as id, name FROM characters WHERE name IS NOT NULL`
       );
-      console.log(`Found ${characters.length} characters`);
+      logger.info(`Found ${characters.length} characters`);
 
-      console.log('Fetching corporations...');
+      logger.info('Fetching corporations...');
       const corporations = await database.find<{ id: number; name: string }>(
         `SELECT "corporationId" as id, name FROM corporations WHERE name IS NOT NULL`
       );
-      console.log(`Found ${corporations.length} corporations`);
+      logger.info(`Found ${corporations.length} corporations`);
 
-      console.log('Fetching alliances...');
+      logger.info('Fetching alliances...');
       const alliances = await database.find<{ id: number; name: string }>(
         `SELECT "allianceId" as id, name FROM alliances WHERE name IS NOT NULL`
       );
-      console.log(`Found ${alliances.length} alliances`);
+      logger.info(`Found ${alliances.length} alliances`);
 
-      console.log('Fetching ship types...');
+      logger.info('Fetching ship types...');
       const shipTypes = await database.find<{ id: number; name: string }>(
         `SELECT "typeId" as id, name FROM types WHERE name IS NOT NULL AND "published" = true`
       );
-      console.log(`Found ${shipTypes.length} ship types`);
+      logger.info(`Found ${shipTypes.length} ship types`);
 
-      console.log('Fetching solar systems...');
+      logger.info('Fetching solar systems...');
       const systems = await database.find<{ id: number; name: string }>(
         `SELECT "solarSystemId" as id, name FROM solarSystems WHERE name IS NOT NULL`
       );
-      console.log(`Found ${systems.length} solar systems`);
+      logger.info(`Found ${systems.length} solar systems`);
 
-      console.log('Fetching constellations...');
+      logger.info('Fetching constellations...');
       const constellations = await database.find<{ id: number; name: string }>(
         `SELECT "constellationId" as id, name FROM constellations WHERE name IS NOT NULL`
       );
-      console.log(`Found ${constellations.length} constellations`);
+      logger.info(`Found ${constellations.length} constellations`);
 
-      console.log('Fetching regions...');
+      logger.info('Fetching regions...');
       const regions = await database.find<{ id: number; name: string }>(
         `SELECT "regionId" as id, name FROM regions WHERE name IS NOT NULL`
       );
-      console.log(`Found ${regions.length} regions`);
+      logger.info(`Found ${regions.length} regions`);
 
       // Build documents array - Typesense requires id to be a string
       const documents = [
@@ -112,7 +116,7 @@ export default {
         })),
       ];
 
-      console.log(`Importing ${documents.length} documents to Typesense...`);
+      logger.info(`Importing ${documents.length} documents to Typesense...`);
 
       // Import in batches to avoid timeout issues
       const batchSize = 1000;
@@ -123,7 +127,7 @@ export default {
             .collections('search')
             .documents()
             .import(batch, { action: 'upsert' });
-          console.log(
+          logger.info(
             `Imported batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(documents.length / batchSize)}`
           );
 
@@ -131,19 +135,19 @@ export default {
           if (result && Array.isArray(result)) {
             const errors = result.filter((r: any) => !r.success);
             if (errors.length > 0) {
-              console.log(
+              logger.info(
                 `⚠️  ${errors.length} documents failed in this batch`
               );
-              console.log('First error:', JSON.stringify(errors[0], null, 2));
+              logger.info('First error:', JSON.stringify(errors[0], null, 2));
             }
           }
         } catch (error: any) {
-          console.error(
+          logger.error(
             `❌ Error importing batch ${Math.floor(i / batchSize) + 1}:`,
             error.message
           );
           if (error.importResults && error.importResults.length > 0) {
-            console.log(
+            logger.info(
               'First failed document:',
               JSON.stringify(error.importResults[0], null, 2)
             );
@@ -152,9 +156,9 @@ export default {
         }
       }
 
-      console.log('✅ Search index seeded successfully!');
-    } catch (error) {
-      console.error('Error seeding search index:', error);
+      logger.info('✅ Search index seeded successfully!');
+    } catch {
+      logger.error('Error seeding search index:', error);
       process.exit(1);
     } finally {
       await database.close();

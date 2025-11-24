@@ -60,8 +60,8 @@ export async function parseJSONLines(filepath: string): Promise<any[]> {
     try {
       const data = JSON.parse(line);
       rows.push(normalizeSDERow(data));
-    } catch (error) {
-      console.warn(
+    } catch {
+      logger.warn(
         `⚠️  Skipped invalid JSON line: ${line.substring(0, 100)}...`
       );
     }
@@ -84,8 +84,8 @@ export async function* streamParseJSONLines(
     try {
       const data = JSON.parse(lines[i]);
       yield normalizeSDERow(data);
-    } catch (error) {
-      console.warn(
+    } catch {
+      logger.warn(
         `⚠️  Skipped invalid JSON line ${i + 1}: ${lines[i].substring(0, 100)}...`
       );
     }

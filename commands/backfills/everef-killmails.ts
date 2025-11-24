@@ -64,8 +64,7 @@ export default {
   }) => {
     const defaultStartDate = '2007-12-05';
     const startDate = options.startDate || defaultStartDate;
-    const endDate =
-      options.endDate || new Date().toISOString().split('T')[0];
+    const endDate = options.endDate || new Date().toISOString().split('T')[0];
     const tempDir = options.tempDir || '/tmp/everef-killmails';
     const batchSize = options.batchSize
       ? Number.parseInt(options.batchSize)
@@ -163,7 +162,7 @@ export default {
           totalStats.killmailsSkipped += stats.skipped;
 
           logger.info(`Completed ${date}`, stats);
-        } catch (error) {
+        } catch {
           logger.error(`Failed to process ${date}`, {
             error: error instanceof Error ? error.message : String(error),
           });
@@ -183,7 +182,7 @@ export default {
       });
 
       process.exit(0);
-    } catch (error) {
+    } catch {
       logger.error('Import failed', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
@@ -366,7 +365,7 @@ async function processDate(
     await execAsync(`rm -rf ${extractDir}`);
 
     return { processed, stored, skipped };
-  } catch (error) {
+  } catch {
     // Cleanup on error
     await unlink(archivePath).catch(() => {});
     await execAsync(`rm -rf ${extractDir}`).catch(() => {});

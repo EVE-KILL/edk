@@ -1,3 +1,5 @@
+import logger from '../server/helpers/logger';
+
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 import { database } from '../server/helpers/database';
 import { migrateSchema } from '../server/plugins/schema-migration';
@@ -16,7 +18,7 @@ describe('Schema Migration', () => {
       if (existsSync(TEST_MIGRATION_PATH)) {
         unlinkSync(TEST_MIGRATION_PATH);
       }
-    } catch (e) {
+    } catch {
       // Ignore cleanup errors
     }
   });
@@ -29,8 +31,8 @@ describe('Schema Migration', () => {
       if (existsSync(TEST_MIGRATION_PATH)) {
         unlinkSync(TEST_MIGRATION_PATH);
       }
-    } catch (e) {
-      console.error('Cleanup failed', e);
+    } catch {
+      logger.error('Cleanup failed', e);
     }
   });
 

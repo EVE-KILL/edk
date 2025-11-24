@@ -88,7 +88,7 @@ export class Database {
     try {
       await this.findOne('SELECT 1 as ok');
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -210,8 +210,8 @@ export class Database {
     const conflicts = Array.isArray(conflictColumns)
       ? conflictColumns
       : [conflictColumns];
-    const updates = updateColumns ??
-      columns.filter((column) => !conflicts.includes(column));
+    const updates =
+      updateColumns ?? columns.filter((column) => !conflicts.includes(column));
 
     const params: NamedParams = {};
     const valuesClause = rows
@@ -247,12 +247,15 @@ export class Database {
 
     // Use sql.unsafe directly to avoid array parameter expansion issues
     const sql = this.sql;
-    const valuesData = rows.map(row => columns.map(col => row[col]));
-    await sql.unsafe(query.replace(/:(\w+)_(\d+)/g, (_, col, idx) => {
-      const rowIdx = parseInt(idx);
-      const colIdx = columns.indexOf(col);
-      return `$${rowIdx * columns.length + colIdx + 1}`;
-    }), valuesData.flat() as any[]);
+    const valuesData = rows.map((row) => columns.map((col) => row[col]));
+    await sql.unsafe(
+      query.replace(/:(\w+)_(\d+)/g, (_, col, idx) => {
+        const rowIdx = parseInt(idx);
+        const colIdx = columns.indexOf(col);
+        return `$${rowIdx * columns.length + colIdx + 1}`;
+      }),
+      valuesData.flat() as any[]
+    );
 
     return true;
   }
@@ -267,7 +270,9 @@ export class Database {
     return Number(row?.exists) === 1;
   }
 
-  async getTableSchema(tableName: string): Promise<
+  async getTableSchema(
+    tableName: string
+  ): Promise<
     { name: string; type: string; default_expression: string | null }[]
   > {
     return this.find(
@@ -345,14 +350,18 @@ export class Database {
 
     if (!this.sqlInstance) {
       const url =
-        this.options.url || this.currentUrl || env.DATABASE_URL || DEFAULT_DATABASE_URL;
+        this.options.url ||
+        this.currentUrl ||
+        env.DATABASE_URL ||
+        DEFAULT_DATABASE_URL;
 
       this.currentUrl = url;
 
       this.sqlInstance = postgres(url, {
         max: this.options.maxConnections ?? env.DB_POOL_MAX,
         idle_timeout: this.options.idleTimeoutSeconds ?? env.DB_IDLE_TIMEOUT,
-        connect_timeout: this.options.connectTimeoutSeconds ?? env.DB_CONNECT_TIMEOUT,
+        connect_timeout:
+          this.options.connectTimeoutSeconds ?? env.DB_CONNECT_TIMEOUT,
       });
     }
 
@@ -373,7 +382,10 @@ export class Database {
       : sql;
 
     // Extract table name for span naming (simple heuristic)
-    const tableName = sql.match(/(?:FROM|UPDATE|INSERT INTO|DELETE FROM)\s+([a-zA-Z0-9_"]+)/i)?.[1] || 'query';
+    const tableName =
+      sql.match(
+        /(?:FROM|UPDATE|INSERT INTO|DELETE FROM)\s+([a-zA-Z0-9_"]+)/i
+      )?.[1] || 'query';
 
     // Capture current parent span before query starts
     const parentSpanId = performance?.['currentSpanId'];
@@ -382,8 +394,11 @@ export class Database {
 
     // Debug logging if DEBUG env var is set
     if (env.DEBUG) {
-      console.log('[DB Query]', finalSql.substring(0, 200) + (finalSql.length > 200 ? '...' : ''));
-      console.log('[DB Params]', values);
+      logger.info(
+        '[DB Query]',
+        finalSql.substring(0, 200) + (finalSql.length > 200 ? '...' : '')
+      );
+      logger.info('[DB Params]', values);
     }
 
     try {
@@ -394,7 +409,9 @@ export class Database {
       if (performance) {
         performance.addQuery(finalSql, values, duration);
         // Create span with accurate query duration and parent
-        const spanId = performance.startSpan(`db:${tableName}`, 'database', { sql: finalSql });
+        const spanId = performance.startSpan(`db:${tableName}`, 'database', {
+          sql: finalSql,
+        });
         const span = performance['spans'].get(spanId);
         if (span) {
           span.startTime = start;
@@ -405,18 +422,20 @@ export class Database {
       }
 
       if (env.DEBUG) {
-        console.log(`[DB Duration] ${duration}ms, rows: ${rows.length}`);
+        logger.info(`[DB Duration] ${duration}ms, rows: ${rows.length}`);
       }
 
       return rows;
-    } catch (error) {
+    } catch {
       const duration = Date.now() - start;
       dbQueryDurationHistogram.observe({ query: finalSql }, duration / 1000);
 
       if (performance) {
         performance.addQuery(finalSql, values, duration);
         // Create span with accurate query duration even on error and set parent
-        const spanId = performance.startSpan(`db:${tableName}`, 'database', { sql: finalSql });
+        const spanId = performance.startSpan(`db:${tableName}`, 'database', {
+          sql: finalSql,
+        });
         const span = performance['spans'].get(spanId);
         if (span) {
           span.startTime = start;
@@ -427,14 +446,17 @@ export class Database {
       }
 
       if (env.DEBUG) {
-        console.error('[DB Error]', error);
+        logger.error('[DB Error]', error);
       }
 
       throw error;
     }
   }
 
-  private prepare(query: string, params: NamedParams): { sql: string; values: any[] } {
+  private prepare(
+    query: string,
+    params: NamedParams
+  ): { sql: string; values: any[] } {
     const values: any[] = [];
     const replacements = new Map<string, string>();
 
@@ -509,12 +531,7 @@ export class Database {
         continue;
       }
 
-      if (
-        !inSingle &&
-        !inDouble &&
-        char === ':' &&
-        this.isParamStart(next)
-      ) {
+      if (!inSingle && !inDouble && char === ':' && this.isParamStart(next)) {
         // Skip casts like ::interval
         if (i > 0 && query[i - 1] === ':') {
           result += char;
@@ -528,7 +545,13 @@ export class Database {
         const beforeParam = result.slice(Math.max(0, result.length - 20));
         const isInsideAny = /ANY\s*\(\s*$/i.test(beforeParam);
 
-        const replacement = this.getPlaceholder(name, params, replacements, values, isInsideAny);
+        const replacement = this.getPlaceholder(
+          name,
+          params,
+          replacements,
+          values,
+          isInsideAny
+        );
         result += replacement;
         i = offset;
         continue;

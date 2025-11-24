@@ -204,6 +204,6 @@ export const killmailMessageHandler: MessageHandler = {
   isValidTopic,
   generateRoutingKeys,
   shouldSendToClient,
-  getMessageType: (data: any) => 'killmail',
+  getMessageType: (_data: any) => 'killmail',
   getLogIdentifier: (data: any) => data.killmailId || 'unknown',
 };

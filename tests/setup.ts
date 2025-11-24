@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import postgres from 'postgres';
 import { unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -51,14 +52,7 @@ beforeAll(async () => {
     await sql.unsafe(`CREATE DATABASE "${testDbName}"`);
   } catch (e) {
     console.error('Failed to recreate test database:', e);
-    console.error(
-      'Database:',
-      dbHost,
-      'Port:',
-      dbPort,
-      'Name:',
-      adminDatabase
-    );
+    console.error('Database:', dbHost, 'Port:', dbPort, 'Name:', adminDatabase);
     process.exit(1);
   } finally {
     await sql.end();

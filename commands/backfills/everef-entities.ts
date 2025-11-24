@@ -98,40 +98,39 @@ export default {
       const charactersFile = `${tempDir}/characters.json`;
       try {
         logger.info('Processing characters...');
-        const {
-          processed,
-          stored,
-          queuedIds,
-          invalidLines,
-        } = await processEntityFile({
-          filePath: charactersFile,
-          batchSize,
-          entityName: 'characters',
-          enqueueUpdates,
-          mapEntity: (char: any) => {
-            const characterId = Number(char.character_id);
-            const corporationId = Number(char.corporation_id);
+        const { processed, stored, queuedIds, invalidLines } =
+          await processEntityFile({
+            filePath: charactersFile,
+            batchSize,
+            entityName: 'characters',
+            enqueueUpdates,
+            mapEntity: (char: any) => {
+              const characterId = Number(char.character_id);
+              const corporationId = Number(char.corporation_id);
 
-            if (!Number.isFinite(characterId) || !Number.isFinite(corporationId)) {
-              return null;
-            }
+              if (
+                !Number.isFinite(characterId) ||
+                !Number.isFinite(corporationId)
+              ) {
+                return null;
+              }
 
-            return {
-              characterId,
-              allianceId: char.alliance_id ?? null,
-              birthday: parseNullableDate(char.birthday),
-              bloodlineId: char.bloodline_id ?? 0,
-              corporationId,
-              description: char.description ?? '',
-              gender: char.gender ?? '',
-              name: char.name,
-              raceId: char.race_id ?? 0,
-              securityStatus: char.security_status ?? 0,
-            };
-          },
-          collectId: (char: any) => Number(char.character_id),
-          storeBatch: storeCharactersBulk,
-        });
+              return {
+                characterId,
+                allianceId: char.alliance_id ?? null,
+                birthday: parseNullableDate(char.birthday),
+                bloodlineId: char.bloodline_id ?? 0,
+                corporationId,
+                description: char.description ?? '',
+                gender: char.gender ?? '',
+                name: char.name,
+                raceId: char.race_id ?? 0,
+                securityStatus: char.security_status ?? 0,
+              };
+            },
+            collectId: (char: any) => Number(char.character_id),
+            storeBatch: storeCharactersBulk,
+          });
 
         stats.characters.processed = processed;
         stats.characters.stored = stored;
@@ -150,7 +149,7 @@ export default {
             { priority: JobPriority.LOW, delay: 60000 }
           );
         }
-      } catch (error) {
+      } catch {
         logger.warn('Failed to process characters', {
           error: error instanceof Error ? error.message : String(error),
         });
@@ -160,42 +159,38 @@ export default {
       const corporationsFile = `${tempDir}/corporations.json`;
       try {
         logger.info('Processing corporations...');
-        const {
-          processed,
-          stored,
-          queuedIds,
-          invalidLines,
-        } = await processEntityFile({
-          filePath: corporationsFile,
-          batchSize,
-          entityName: 'corporations',
-          enqueueUpdates,
-          mapEntity: (corp: any) => {
-            const corporationId = Number(corp.corporation_id);
+        const { processed, stored, queuedIds, invalidLines } =
+          await processEntityFile({
+            filePath: corporationsFile,
+            batchSize,
+            entityName: 'corporations',
+            enqueueUpdates,
+            mapEntity: (corp: any) => {
+              const corporationId = Number(corp.corporation_id);
 
-            if (!Number.isFinite(corporationId)) {
-              return null;
-            }
+              if (!Number.isFinite(corporationId)) {
+                return null;
+              }
 
-            return {
-              corporationId,
-              allianceId: corp.alliance_id ?? null,
-              ceoId: corp.ceo_id ?? 0,
-              creatorId: corp.creator_id ?? 0,
-              dateFounded: parseNullableDate(corp.date_founded),
-              description: corp.description ?? '',
-              homeStationId: corp.home_station_id ?? null,
-              memberCount: corp.member_count ?? 0,
-              name: corp.name,
-              shares: corp.shares ?? 0,
-              taxRate: corp.tax_rate ?? 0,
-              ticker: corp.ticker ?? '',
-              url: corp.url ?? '',
-            };
-          },
-          collectId: (corp: any) => Number(corp.corporation_id),
-          storeBatch: storeCorporationsBulk,
-        });
+              return {
+                corporationId,
+                allianceId: corp.alliance_id ?? null,
+                ceoId: corp.ceo_id ?? 0,
+                creatorId: corp.creator_id ?? 0,
+                dateFounded: parseNullableDate(corp.date_founded),
+                description: corp.description ?? '',
+                homeStationId: corp.home_station_id ?? null,
+                memberCount: corp.member_count ?? 0,
+                name: corp.name,
+                shares: corp.shares ?? 0,
+                taxRate: corp.tax_rate ?? 0,
+                ticker: corp.ticker ?? '',
+                url: corp.url ?? '',
+              };
+            },
+            collectId: (corp: any) => Number(corp.corporation_id),
+            storeBatch: storeCorporationsBulk,
+          });
 
         stats.corporations.processed = processed;
         stats.corporations.stored = stored;
@@ -214,7 +209,7 @@ export default {
             { priority: JobPriority.LOW, delay: 60000 }
           );
         }
-      } catch (error) {
+      } catch {
         logger.warn('Failed to process corporations', {
           error: error instanceof Error ? error.message : String(error),
         });
@@ -224,36 +219,32 @@ export default {
       const alliancesFile = `${tempDir}/alliances.json`;
       try {
         logger.info('Processing alliances...');
-        const {
-          processed,
-          stored,
-          queuedIds,
-          invalidLines,
-        } = await processEntityFile({
-          filePath: alliancesFile,
-          batchSize,
-          entityName: 'alliances',
-          enqueueUpdates,
-          mapEntity: (alliance: any) => {
-            const allianceId = Number(alliance.alliance_id);
+        const { processed, stored, queuedIds, invalidLines } =
+          await processEntityFile({
+            filePath: alliancesFile,
+            batchSize,
+            entityName: 'alliances',
+            enqueueUpdates,
+            mapEntity: (alliance: any) => {
+              const allianceId = Number(alliance.alliance_id);
 
-            if (!Number.isFinite(allianceId)) {
-              return null;
-            }
+              if (!Number.isFinite(allianceId)) {
+                return null;
+              }
 
-            return {
-              allianceId,
-              creatorCorporationId: alliance.creator_corporation_id ?? 0,
-              creatorId: alliance.creator_id ?? 0,
-              dateFounded: parseNullableDate(alliance.date_founded),
-              executorCorporationId: alliance.executor_corporation_id ?? 0,
-              name: alliance.name,
-              ticker: alliance.ticker ?? '',
-            };
-          },
-          collectId: (alliance: any) => Number(alliance.alliance_id),
-          storeBatch: storeAlliancesBulk,
-        });
+              return {
+                allianceId,
+                creatorCorporationId: alliance.creator_corporation_id ?? 0,
+                creatorId: alliance.creator_id ?? 0,
+                dateFounded: parseNullableDate(alliance.date_founded),
+                executorCorporationId: alliance.executor_corporation_id ?? 0,
+                name: alliance.name,
+                ticker: alliance.ticker ?? '',
+              };
+            },
+            collectId: (alliance: any) => Number(alliance.alliance_id),
+            storeBatch: storeAlliancesBulk,
+          });
 
         stats.alliances.processed = processed;
         stats.alliances.stored = stored;
@@ -272,7 +263,7 @@ export default {
             { priority: JobPriority.LOW, delay: 60000 }
           );
         }
-      } catch (error) {
+      } catch {
         logger.warn('Failed to process alliances', {
           error: error instanceof Error ? error.message : String(error),
         });
@@ -294,7 +285,7 @@ export default {
       });
 
       process.exit(0);
-    } catch (error) {
+    } catch {
       logger.error('Import failed', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,

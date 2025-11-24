@@ -193,7 +193,7 @@ function generateRecord(data: any): Record<string, any> | null {
       orderCount: data.order_count ? parseInt(data.order_count, 10) : 0,
       volume: data.volume ? BigInt(data.volume) : BigInt(0),
     };
-  } catch (e) {
+  } catch {
     logger.warn('Skipping invalid record:', { data });
     return null;
   }

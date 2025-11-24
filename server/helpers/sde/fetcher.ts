@@ -1,3 +1,5 @@
+import logger from '../logger';
+
 import { mkdir, readFile, writeFile, rm } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join, basename } from 'path';
@@ -47,7 +49,7 @@ export class SDEFetcher {
    */
   enableForceReimport(): void {
     this.forceReimport = true;
-    console.log('⚠️  Force reimport mode enabled - will re-import all tables');
+    logger.info('⚠️  Force reimport mode enabled - will re-import all tables');
   }
 
   /**
@@ -55,7 +57,7 @@ export class SDEFetcher {
    */
   disableForceReimport(): void {
     this.forceReimport = false;
-    console.log('✅ Force reimport mode disabled');
+    logger.info('✅ Force reimport mode disabled');
   }
   /**
    * Ensure directories exist
@@ -76,8 +78,8 @@ export class SDEFetcher {
       }
       const data = await readFile(METADATA_FILE, 'utf-8');
       return JSON.parse(data);
-    } catch (error) {
-      console.error('Failed to load metadata:', error);
+    } catch {
+      logger.error('Failed to load metadata:', error);
       return null;
     }
   }
@@ -93,7 +95,7 @@ export class SDEFetcher {
    * Fetch latest build number and download URL
    */
   async getLatestBuild(): Promise<{ buildNumber: number; url: string }> {
-    console.log('📡 Fetching latest SDE build number...');
+    logger.info('📡 Fetching latest SDE build number...');
 
     try {
       const response = await fetch(SDE_LATEST_BUILD_URL);
@@ -112,14 +114,14 @@ export class SDEFetcher {
           const variant = 'jsonl'; // We're using JSON Lines format
           const url = `${SDE_BASE_URL}/eve-online-static-data-${buildNumber}-${variant}.zip`;
 
-          console.log(`✅ Latest build: ${buildNumber}`);
+          logger.info(`✅ Latest build: ${buildNumber}`);
           return { buildNumber, url };
         }
       }
 
       throw new Error('Could not find build number in latest.jsonl response');
-    } catch (error) {
-      console.error('❌ Error fetching latest build:', error);
+    } catch {
+      logger.error('❌ Error fetching latest build:', error);
       throw error;
     }
   }
@@ -134,7 +136,7 @@ export class SDEFetcher {
     const filename = `eve-online-static-data-${buildNumber}-jsonl.zip`;
     const filepath = join(SDE_DOWNLOADS_DIR, filename);
 
-    console.log(`📥 Downloading SDE (${buildNumber})...`);
+    logger.info(`📥 Downloading SDE (${buildNumber})...`);
 
     try {
       const response = await fetch(url);
@@ -150,22 +152,22 @@ export class SDEFetcher {
 
       if (contentLength) {
         const sizeMB = (parseInt(contentLength) / 1024 / 1024).toFixed(2);
-        console.log(`   Size: ${sizeMB} MB`);
+        logger.info(`   Size: ${sizeMB} MB`);
       }
 
       // Write to file
       const buffer = await response.arrayBuffer();
       await writeFile(filepath, new Uint8Array(buffer));
 
-      console.log(`✅ Downloaded: ${filename}`);
+      logger.info(`✅ Downloaded: ${filename}`);
 
       return {
         file: filepath,
         eTag: eTag || undefined,
         lastModified: lastModified || undefined,
       };
-    } catch (error) {
-      console.error('❌ Error downloading SDE:', error);
+    } catch {
+      logger.error('❌ Error downloading SDE:', error);
       throw error;
     }
   }
@@ -174,7 +176,7 @@ export class SDEFetcher {
    * Extract zip file
    */
   private async extractZip(filepath: string, outputDir: string): Promise<void> {
-    console.log('📦 Extracting SDE zip...');
+    logger.info('📦 Extracting SDE zip...');
 
     try {
       const filename = basename(filepath);
@@ -187,9 +189,9 @@ export class SDEFetcher {
       // Extract
       await execAsync(`unzip -q "${filepath}" -d "${outputDir}"`);
 
-      console.log(`✅ Extracted: ${filename}`);
-    } catch (error) {
-      console.error('❌ Error extracting SDE:', error);
+      logger.info(`✅ Extracted: ${filename}`);
+    } catch {
+      logger.error('❌ Error extracting SDE:', error);
       throw error;
     }
   }
@@ -207,8 +209,8 @@ export class SDEFetcher {
       const files = readdirSync(SDE_EXTRACTED_DIR);
 
       return files.filter((f) => f.endsWith('.jsonl')).sort();
-    } catch (error) {
-      console.error('Error listing tables:', error);
+    } catch {
+      logger.error('Error listing tables:', error);
       return [];
     }
   }
@@ -242,7 +244,7 @@ export class SDEFetcher {
 
     // Check if we need to download
     if (metadata && metadata.buildNumber === buildNumber) {
-      console.log(`✅ Already have build ${buildNumber}`);
+      logger.info(`✅ Already have build ${buildNumber}`);
       return metadata;
     }
 
@@ -282,7 +284,7 @@ export class SDEFetcher {
    * Clean up old downloads (keep latest 2)
    */
   async cleanup(): Promise<void> {
-    console.log('🧹 Cleaning up old SDE downloads...');
+    logger.info('🧹 Cleaning up old SDE downloads...');
 
     try {
       const { readdirSync } = await import('fs');
@@ -295,10 +297,10 @@ export class SDEFetcher {
       for (let i = 2; i < files.length; i++) {
         const filepath = join(SDE_DOWNLOADS_DIR, files[i]);
         await rm(filepath);
-        console.log(`   Deleted: ${files[i]}`);
+        logger.info(`   Deleted: ${files[i]}`);
       }
-    } catch (error) {
-      console.error('Error during cleanup:', error);
+    } catch {
+      logger.error('Error during cleanup:', error);
     }
   }
 
@@ -317,7 +319,7 @@ export class SDEFetcher {
         { configKey: `sde_imported_${tableName}`, buildNumber }
       );
       return result !== null;
-    } catch (error) {
+    } catch {
       // If query fails, assume not imported
       return false;
     }
@@ -348,8 +350,8 @@ export class SDEFetcher {
         ],
         ['configKey']
       );
-    } catch (error) {
-      console.error(`⚠️  Failed to mark ${tableName} as imported:`, error);
+    } catch {
+      logger.error(`⚠️  Failed to mark ${tableName} as imported:`, error);
       // Don't throw - import succeeded even if we can't mark it
     }
   }
@@ -360,7 +362,7 @@ export class SDEFetcher {
    */
   async optimizeViews(): Promise<void> {
     try {
-      console.log('🔧 Optimizing tables...');
+      logger.info('🔧 Optimizing tables...');
 
       // List of all SDE tables to optimize
       const tables = [
@@ -396,9 +398,9 @@ export class SDEFetcher {
           `VACUUM ANALYZE ${database.identifier(table.toLowerCase())}`
         );
       }
-      console.log(`   ✓ Optimized ${tables.length} SDE tables`);
-    } catch (error) {
-      console.warn('⚠️  Failed to optimize tables:', error);
+      logger.info(`   ✓ Optimized ${tables.length} SDE tables`);
+    } catch {
+      logger.warn('⚠️  Failed to optimize tables:', error);
       // Don't throw - optimization is not critical
     }
   }
@@ -411,7 +413,7 @@ export class SDEFetcher {
     if (!buildNumber) {
       const metadata = await this.getMetadata();
       if (!metadata) {
-        console.error('❌ No build number available for mapSolarSystems');
+        logger.error('❌ No build number available for mapSolarSystems');
         return;
       }
       buildNumber = metadata.buildNumber;
@@ -424,18 +426,18 @@ export class SDEFetcher {
         buildNumber
       );
       if (alreadyImported) {
-        console.log(
+        logger.info(
           `⏭️  Skipping mapSolarSystems (already imported for build ${buildNumber})`
         );
         return;
       }
     }
 
-    console.log('📥 Importing mapSolarSystems...');
+    logger.info('📥 Importing mapSolarSystems...');
 
     const filepath = this.getTablePath('mapSolarSystems');
     if (!existsSync(filepath)) {
-      console.error(`❌ mapSolarSystems.jsonl not found at ${filepath}`);
+      logger.error(`❌ mapSolarSystems.jsonl not found at ${filepath}`);
       return;
     }
 
@@ -484,7 +486,7 @@ export class SDEFetcher {
         // Batch insert
         if (records.length >= BATCH_SIZE) {
           await database.bulkUpsert('solarsystems', records, 'solarSystemId');
-          console.log(`   Inserted ${imported} rows...`);
+          logger.info(`   Inserted ${imported} rows...`);
           records.length = 0;
         }
       }
@@ -497,9 +499,9 @@ export class SDEFetcher {
       // Mark as imported
       await this.markTableAsImported('mapSolarSystems', buildNumber, imported);
 
-      console.log(`✅ Imported ${imported} solar systems`);
-    } catch (error) {
-      console.error('❌ Error importing mapSolarSystems:', error);
+      logger.info(`✅ Imported ${imported} solar systems`);
+    } catch {
+      logger.error('❌ Error importing mapSolarSystems:', error);
       throw error;
     }
   }
@@ -512,7 +514,7 @@ export class SDEFetcher {
     if (!buildNumber) {
       const metadata = await this.getMetadata();
       if (!metadata) {
-        console.error('❌ No build number available for mapRegions');
+        logger.error('❌ No build number available for mapRegions');
         return;
       }
       buildNumber = metadata.buildNumber;
@@ -525,18 +527,18 @@ export class SDEFetcher {
         buildNumber
       );
       if (alreadyImported) {
-        console.log(
+        logger.info(
           `⏭️  Skipping mapRegions (already imported for build ${buildNumber})`
         );
         return;
       }
     }
 
-    console.log('📥 Importing mapRegions...');
+    logger.info('📥 Importing mapRegions...');
 
     const filepath = this.getTablePath('mapRegions');
     if (!existsSync(filepath)) {
-      console.error(`❌ mapRegions.jsonl not found at ${filepath}`);
+      logger.error(`❌ mapRegions.jsonl not found at ${filepath}`);
       return;
     }
 
@@ -566,7 +568,7 @@ export class SDEFetcher {
         // Batch insert
         if (records.length >= BATCH_SIZE) {
           await database.bulkUpsert('regions', records, 'regionId');
-          console.log(`   Inserted ${imported} rows...`);
+          logger.info(`   Inserted ${imported} rows...`);
           records.length = 0;
         }
       }
@@ -579,9 +581,9 @@ export class SDEFetcher {
       // Mark as imported
       await this.markTableAsImported('mapRegions', buildNumber, imported);
 
-      console.log(`✅ Imported ${imported} regions`);
-    } catch (error) {
-      console.error('❌ Error importing mapRegions:', error);
+      logger.info(`✅ Imported ${imported} regions`);
+    } catch {
+      logger.error('❌ Error importing mapRegions:', error);
       throw error;
     }
   }
@@ -594,7 +596,7 @@ export class SDEFetcher {
     if (!buildNumber) {
       const metadata = await this.getMetadata();
       if (!metadata) {
-        console.error('❌ No build number available for mapConstellations');
+        logger.error('❌ No build number available for mapConstellations');
         return;
       }
       buildNumber = metadata.buildNumber;
@@ -602,17 +604,17 @@ export class SDEFetcher {
 
     // Check if already imported
     if (await this.isTableAlreadyImported('mapConstellations', buildNumber)) {
-      console.log(
+      logger.info(
         '⏭️  mapConstellations already imported for this build, skipping'
       );
       return;
     }
 
-    console.log('📥 Importing mapConstellations...');
+    logger.info('📥 Importing mapConstellations...');
 
     const filepath = this.getTablePath('mapConstellations');
     if (!existsSync(filepath)) {
-      console.error(`❌ mapConstellations.jsonl not found at ${filepath}`);
+      logger.error(`❌ mapConstellations.jsonl not found at ${filepath}`);
       return;
     }
 
@@ -645,7 +647,7 @@ export class SDEFetcher {
             records,
             'constellationId'
           );
-          console.log(`   Inserted ${imported} rows...`);
+          logger.info(`   Inserted ${imported} rows...`);
           records.length = 0;
         }
       }
@@ -662,9 +664,9 @@ export class SDEFetcher {
         imported
       );
 
-      console.log(`✅ Imported ${imported} constellations`);
-    } catch (error) {
-      console.error('❌ Error importing mapConstellations:', error);
+      logger.info(`✅ Imported ${imported} constellations`);
+    } catch {
+      logger.error('❌ Error importing mapConstellations:', error);
       throw error;
     }
   }
@@ -674,7 +676,7 @@ export class SDEFetcher {
    * Must be called after importing regions, constellations, and solarsystems
    */
   async postProcessMapTables(): Promise<void> {
-    console.log('🔧 Post-processing map tables...');
+    logger.info('🔧 Post-processing map tables...');
 
     try {
       // Populate regionId in solarsystems from constellations
@@ -686,9 +688,9 @@ export class SDEFetcher {
          AND ss."regionId" IS NULL`
       );
 
-      console.log(`   ✓ Updated regionId in solarsystems`);
-    } catch (error) {
-      console.error('⚠️  Error post-processing map tables:', error);
+      logger.info(`   ✓ Updated regionId in solarsystems`);
+    } catch {
+      logger.error('⚠️  Error post-processing map tables:', error);
       // Don't throw - this is not critical
     }
   }
@@ -713,7 +715,7 @@ export class SDEFetcher {
     if (!buildNumber) {
       const metadata = await this.getMetadata();
       if (!metadata) {
-        console.error(`❌ No build number available for ${tableName}`);
+        logger.error(`❌ No build number available for ${tableName}`);
         return 0;
       }
       buildNumber = metadata.buildNumber;
@@ -726,19 +728,19 @@ export class SDEFetcher {
         buildNumber
       );
       if (alreadyImported) {
-        console.log(
+        logger.info(
           `⏭️  Skipping ${tableName} (already imported for build ${buildNumber})`
         );
         return 0;
       }
     }
 
-    console.log(`📥 Importing ${tableName}...`);
+    logger.info(`📥 Importing ${tableName}...`);
 
     const sourceName = sourceTableName ?? tableName;
     const filepath = this.getTablePath(sourceName);
     if (!existsSync(filepath)) {
-      console.error(`❌ ${sourceName}.jsonl not found at ${filepath}`);
+      logger.error(`❌ ${sourceName}.jsonl not found at ${filepath}`);
       return 0;
     }
 
@@ -775,7 +777,7 @@ export class SDEFetcher {
           } else {
             await database.bulkInsert(tableName.toLowerCase(), records);
           }
-          console.log(`   Inserted ${imported} rows...`);
+          logger.info(`   Inserted ${imported} rows...`);
           records.length = 0;
         }
       }
@@ -795,10 +797,10 @@ export class SDEFetcher {
       // Mark as imported
       await this.markTableAsImported(tableName, buildNumber, imported);
 
-      console.log(`✅ Imported ${imported} ${tableName}`);
+      logger.info(`✅ Imported ${imported} ${tableName}`);
       return imported;
-    } catch (error) {
-      console.error(`❌ Error importing ${tableName}:`, error);
+    } catch {
+      logger.error(`❌ Error importing ${tableName}:`, error);
       throw error;
     }
   }

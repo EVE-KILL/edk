@@ -123,15 +123,15 @@ function shouldRunNow(schedule: string): boolean {
 
     // @ts-expect-error - CronTime types might not expose these internal maps but they exist
     if (!time.second[now.getUTCSeconds()]) return false;
-    // @ts-expect-error
+    // @ts-expect-error - Type inference limitation
     if (!time.minute[now.getUTCMinutes()]) return false;
-    // @ts-expect-error
+    // @ts-expect-error - Type inference limitation
     if (!time.hour[now.getUTCHours()]) return false;
-    // @ts-expect-error
+    // @ts-expect-error - Type inference limitation
     if (!time.dayOfMonth[now.getUTCDate()]) return false;
-    // @ts-expect-error
+    // @ts-expect-error - Type inference limitation
     if (!time.month[now.getUTCMonth() + 1]) return false; // Month is 0-11 in JS, 1-12 in Cron
-    // @ts-expect-error
+    // @ts-expect-error - Type inference limitation
     if (!time.dayOfWeek[now.getUTCDay()]) return false;
 
     return true;
