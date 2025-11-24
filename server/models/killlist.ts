@@ -96,8 +96,7 @@ export function buildKilllistConditions(
   // Use denormalized fields from killmails table (no JOINs needed)
   const securityColumn =
     options.securityColumn ?? database.sql`k."securityStatus"`;
-  const regionColumn =
-    options.regionColumn ?? database.sql`k."regionId"`;
+  const regionColumn = options.regionColumn ?? database.sql`k."regionId"`;
   const groupColumn =
     options.groupColumn ?? database.sql`k."victimShipGroupId"`;
 
@@ -141,7 +140,9 @@ export function buildKilllistConditions(
   }
 
   if (filters.shipGroupIds && filters.shipGroupIds.length > 0) {
-    conditions.push(database.sql`${groupColumn} = ANY(${filters.shipGroupIds})`);
+    conditions.push(
+      database.sql`${groupColumn} = ANY(${filters.shipGroupIds})`
+    );
   }
 
   if (filters.minSecurityStatus !== undefined) {
@@ -185,9 +186,7 @@ export function buildKilllistConditions(
   }
 
   if (filters.typeId !== undefined) {
-    conditions.push(
-      database.sql`${k}."victimShipTypeId" = ${filters.typeId}`
-    );
+    conditions.push(database.sql`${k}."victimShipTypeId" = ${filters.typeId}`);
   }
 
   if (filters.groupId !== undefined) {
@@ -577,7 +576,9 @@ export async function countFilteredKills(
   // This avoids locking all partitions which causes "out of shared memory"
   // We can check if clause is exactly '1=1' fragment? No, hard to check fragment content.
   // But we can check if filters are empty.
-  const hasFilters = Object.keys(filters).length > 0 && Object.values(filters).some(v => v !== undefined);
+  const hasFilters =
+    Object.keys(filters).length > 0 &&
+    Object.values(filters).some((v) => v !== undefined);
 
   if (!hasFilters) {
     const [result] = await database.sql<{ count: string }[]>`
@@ -608,7 +609,7 @@ export async function getFilteredKillsWithNames(
 ): Promise<EntityKillmail[]> {
   const offset = (page - 1) * perPage;
   const clause = buildKilllistConditions(filters, 'k', {
-    groupColumn: database.sql`vshipgroup."groupId"`,
+    groupColumn: database.sql`k."victimShipGroupId"`,
   });
   const timeClause = lookbackDays
     ? database.sql`AND k."killmailTime" >= NOW() - (${lookbackDays} || ' days')::interval`
@@ -737,7 +738,7 @@ export async function getEntityKillmails(
   if (mode === 'kills') {
     // Query killmails table using topAttacker columns
     const topAttackerCol = `topAttacker${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`;
-    
+
     const killKillmails = await database.find<{ killmailId: number }>(
       `SELECT k."killmailId"
        FROM killmails k
@@ -747,7 +748,7 @@ export async function getEntityKillmails(
       { entityId, limit: perPage, offset }
     );
 
-    killmailIds = killKillmails.map(km => km.killmailId);
+    killmailIds = killKillmails.map((km) => km.killmailId);
   } else {
     // Losses query
     const lossKillmails = await database.find<{ killmailId: number }>(
@@ -759,9 +760,9 @@ export async function getEntityKillmails(
       { entityId, limit: perPage, offset }
     );
 
-    killmailIds = lossKillmails.map(km => km.killmailId);
+    killmailIds = lossKillmails.map((km) => km.killmailId);
   }
-  
+
   if (killmailIds.length === 0) {
     return [];
   }
@@ -834,8 +835,6 @@ const victimColumnMap: EntityColumnMap = {
   alliance: 'victimAllianceId',
 };
 
-
-
 export async function countEntityKillmails(
   entityId: number,
   entityType: 'character' | 'corporation' | 'alliance',
@@ -845,7 +844,7 @@ export async function countEntityKillmails(
   const victimCol = victimColumnMap[entityType];
 
   // Time range: last 7 days (matching getEntityKillmails)
-  const timeFilter = "k.\"killmailTime\" >= NOW() - INTERVAL '7 days'";
+  const timeFilter = 'k."killmailTime" >= NOW() - INTERVAL \'7 days\'';
 
   if (mode === 'kills') {
     // Count distinct killmails from attackers table directly
@@ -1001,10 +1000,9 @@ export async function getFollowedEntitiesLosses(
     return [];
   }
 
-  const whereClause = conditions.slice(1).reduce(
-    (acc, clause) => database.sql`${acc} OR ${clause}`,
-    conditions[0]
-  );
+  const whereClause = conditions
+    .slice(1)
+    .reduce((acc, clause) => database.sql`${acc} OR ${clause}`, conditions[0]);
 
   return database.sql<EntityKillmail[]>`
     SELECT DISTINCT ON (k."killmailTime", k."killmailId")

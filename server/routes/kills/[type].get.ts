@@ -273,25 +273,35 @@ export default defineEventHandler(async (event: H3Event) => {
     const filters = buildFiltersForType(killType);
 
     // Fetch killmails and count in parallel using model functions
-    const [killmailsData, totalKillmails] = await track(`kills:fetch_${killType}`, 'application', async () => {
-      return await Promise.all([
-        getFilteredKillsWithNames(filters, page, perPage),
-        countFilteredKills(filters),
-      ]);
-    });
+    const [killmailsData, totalKillmails] = await track(
+      `kills:fetch_${killType}`,
+      'application',
+      async () => {
+        return await Promise.all([
+          getFilteredKillsWithNames(filters, page, perPage),
+          countFilteredKills(filters),
+        ]);
+      }
+    );
 
     const totalPages = Math.ceil(totalKillmails / perPage);
 
     // Format killmail data for template
-    const recentKillmails = killmailsData.map((km) => {
-      const normalized = normalizeKillRow(km);
-      return {
-        ...normalized,
-        killmailTimeRelative: timeAgo(
-          km.killmailTime ?? normalized.killmailTime
-        ),
-      };
-    });
+    const recentKillmails = await track(
+      `kills_${killType}:normalize_killmails`,
+      'application',
+      async () => {
+        return killmailsData.map((km) => {
+          const normalized = normalizeKillRow(km);
+          return {
+            ...normalized,
+            killmailTimeRelative: timeAgo(
+              km.killmailTime ?? normalized.killmailTime
+            ),
+          };
+        });
+      }
+    );
 
     // Get Top Boxes data using model functions with conditions
     const [
@@ -300,80 +310,104 @@ export default defineEventHandler(async (event: H3Event) => {
       topCharacters,
       topCorporations,
       topAlliances,
-    ] = await Promise.all([
-      getTopSystemsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
-      getTopRegionsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
-      getTopCharactersFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
-      getTopCorporationsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
-      getTopAlliancesFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
-    ]);
+    ] = await track(`kills_${killType}:top_boxes`, 'application', async () => {
+      return await Promise.all([
+        getTopSystemsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
+        getTopRegionsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
+        getTopCharactersFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
+        getTopCorporationsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
+        getTopAlliancesFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
+      ]);
+    });
 
     // Get Most Valuable Kills for this filter
     // Note: Using the filtered killmails function with ordering by value
-    const mostValuableKillsData = await getFilteredKillsWithNames(
-      { ...filters, minValue: undefined },
-      1,
-      6,
-      MOST_VALUABLE_LOOKBACK_DAYS
+    const mostValuableKillsData = await track(
+      `kills_${killType}:most_valuable`,
+      'application',
+      async () => {
+        return await getFilteredKillsWithNames(
+          { ...filters, minValue: undefined },
+          1,
+          6,
+          MOST_VALUABLE_LOOKBACK_DAYS
+        );
+      }
     );
     // Sort by value descending (in case the query doesn't)
     mostValuableKillsData.sort((a, b) => b.totalValue - a.totalValue);
 
-    const mostValuableKills = mostValuableKillsData.map((k) => {
-      const normalized = normalizeKillRow(k);
-      const killmailTimeRaw: unknown =
-        k.killmailTime ?? normalized.killmailTime;
-      const killmailTimeValue =
-        killmailTimeRaw instanceof Date
-          ? killmailTimeRaw.toISOString()
-          : String(killmailTimeRaw);
-      return {
-        ...normalized,
-        totalValue: k.totalValue ?? normalized.totalValue,
-        killmailTime: killmailTimeValue,
-      };
-    });
+    const mostValuableKills = await track(
+      `kills_${killType}:normalize_valuable`,
+      'application',
+      async () => {
+        return mostValuableKillsData.map((k) => {
+          const normalized = normalizeKillRow(k);
+          const killmailTimeRaw: unknown =
+            k.killmailTime ?? normalized.killmailTime;
+          const killmailTimeValue =
+            killmailTimeRaw instanceof Date
+              ? killmailTimeRaw.toISOString()
+              : String(killmailTimeRaw);
+          return {
+            ...normalized,
+            totalValue: k.totalValue ?? normalized.totalValue,
+            killmailTime: killmailTimeValue,
+          };
+        });
+      }
+    );
 
     // Format top boxes data for partial
-    const topCharactersFormatted = topCharacters.map((c) => ({
-      name: c.name,
-      kills: c.kills,
-      imageType: 'character',
-      imageId: c.id,
-      link: `/character/${c.id}`,
-    }));
-
-    const topCorporationsFormatted = topCorporations.map((c) => ({
-      name: c.name,
-      kills: c.kills,
-      imageType: 'corporation',
-      imageId: c.id,
-      link: `/corporation/${c.id}`,
-    }));
-
-    const topAlliancesFormatted = topAlliances.map((a) => ({
-      name: a.name,
-      kills: a.kills,
-      imageType: 'alliance',
-      imageId: a.id,
-      link: `/alliance/${a.id}`,
-    }));
-
-    const topSystemsFormatted = topSystems.map((s) => ({
-      name: s.name,
-      kills: s.kills,
-      imageType: 'system',
-      imageId: s.id,
-      link: `/system/${s.id}`,
-    }));
-
-    const topRegionsFormatted = topRegions.map((r) => ({
-      name: r.name,
-      kills: r.kills,
-      imageType: 'region',
-      imageId: r.id,
-      link: `/region/${r.id}`,
-    }));
+    const {
+      topCharactersFormatted,
+      topCorporationsFormatted,
+      topAlliancesFormatted,
+      topSystemsFormatted,
+      topRegionsFormatted,
+    } = await track(
+      `kills_${killType}:format_top_boxes`,
+      'application',
+      async () => {
+        return {
+          topCharactersFormatted: topCharacters.map((c) => ({
+            name: c.name,
+            kills: c.kills,
+            imageType: 'character',
+            imageId: c.id,
+            link: `/character/${c.id}`,
+          })),
+          topCorporationsFormatted: topCorporations.map((c) => ({
+            name: c.name,
+            kills: c.kills,
+            imageType: 'corporation',
+            imageId: c.id,
+            link: `/corporation/${c.id}`,
+          })),
+          topAlliancesFormatted: topAlliances.map((a) => ({
+            name: a.name,
+            kills: a.kills,
+            imageType: 'alliance',
+            imageId: a.id,
+            link: `/alliance/${a.id}`,
+          })),
+          topSystemsFormatted: topSystems.map((s) => ({
+            name: s.name,
+            kills: s.kills,
+            imageType: 'system',
+            imageId: s.id,
+            link: `/system/${s.id}`,
+          })),
+          topRegionsFormatted: topRegions.map((r) => ({
+            name: r.name,
+            kills: r.kills,
+            imageType: 'region',
+            imageId: r.id,
+            link: `/region/${r.id}`,
+          })),
+        };
+      }
+    );
 
     // Pagination
     const pagination = {
