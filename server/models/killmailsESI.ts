@@ -59,7 +59,7 @@ SELECT
       'weapon_type_id', a."weaponTypeId"
     ))
     FROM attackers a
-    WHERE a."killmailId" = k."killmailId"
+    WHERE a."killmailId" = k."killmailId" AND a."killmailTime" = k."killmailTime"
   ), '[]'::json) as attackers,
 
   COALESCE((
@@ -71,7 +71,7 @@ SELECT
       'singleton', i.singleton
     ))
     FROM items i
-    WHERE i."killmailId" = k."killmailId"
+    WHERE i."killmailId" = k."killmailId" AND i."killmailTime" = k."killmailTime"
   ), '[]'::json) as items,
 
   k."totalValue",

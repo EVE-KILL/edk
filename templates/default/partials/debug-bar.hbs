@@ -401,6 +401,7 @@
     <button class='debug-tab active' data-tab='overview' onclick='switchDebugTab(event, "overview")'>Overview</button>
     <button class='debug-tab' data-tab='categories' onclick='switchDebugTab(event, "categories")'>Categories</button>
     <button class='debug-tab' data-tab='timeline' onclick='switchDebugTab(event, "timeline")'>Timeline</button>
+    <button class='debug-tab' data-tab='seo' onclick='switchDebugTab(event, "seo")'>SEO</button>
     <button class='debug-tab' data-tab='websocket' onclick='switchDebugTab(event, "websocket")' id='debug-ws-tab' style='display: none;'>WebSocket</button>
   </div>
 
@@ -552,6 +553,80 @@
           <div>No operations recorded</div>
         </div>
       {{/if}}
+    </div>
+
+    <!-- SEO Tab -->
+    <div class='debug-tab-panel' id='debug-panel-seo'>
+      <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>SEO Metadata</h4>
+
+      <div id='seo-loading' style='text-align: center; padding: 40px 20px; color: var(--color-text-tertiary);'>
+        <div style='font-size: 40px; margin-bottom: 10px;'>🔍</div>
+        <div>Analyzing page SEO...</div>
+      </div>
+
+      <div id='seo-content' style='display: none;'>
+        <!-- Title -->
+        <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #4CAF50;'>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>📋 Page Title</strong></div>
+          <div id='seo-title' style='font-size: 13px; color: #A5D6A7; word-wrap: break-word;'>-</div>
+          <div id='seo-title-length' style='font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px;'>Length: 0 chars</div>
+        </div>
+
+        <!-- Description -->
+        <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #2196F3;'>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>📝 Meta Description</strong></div>
+          <div id='seo-description' style='font-size: 13px; color: #90CAF9; word-wrap: break-word;'>-</div>
+          <div id='seo-description-length' style='font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px;'>Length: 0 chars</div>
+        </div>
+
+        <!-- Keywords -->
+        <div style='background: rgba(156, 39, 176, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #9C27B0;'>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>🏷️ Keywords</strong></div>
+          <div id='seo-keywords' style='font-size: 13px; color: #CE93D8; word-wrap: break-word;'>-</div>
+        </div>
+
+        <!-- Canonical URL -->
+        <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #FF9800;'>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>🔗 Canonical URL</strong></div>
+          <div id='seo-canonical' style='font-size: 13px; color: #FFB74D; word-wrap: break-word;'>-</div>
+        </div>
+
+        <!-- Open Graph -->
+        <div style='background: rgba(3, 169, 244, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #03A9F4;'>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>📱 Open Graph</strong></div>
+          <div style='font-size: 13px; color: #4FC3F7; line-height: 1.6;'>
+            <div><strong>Type:</strong> <span id='seo-og-type'>-</span></div>
+            <div><strong>Title:</strong> <span id='seo-og-title'>-</span></div>
+            <div><strong>Description:</strong> <span id='seo-og-description' style='word-wrap: break-word;'>-</span></div>
+            <div><strong>Image:</strong> <span id='seo-og-image' style='word-wrap: break-word; font-size: 11px;'>-</span></div>
+            <div><strong>URL:</strong> <span id='seo-og-url' style='word-wrap: break-word;'>-</span></div>
+          </div>
+        </div>
+
+        <!-- Twitter Card -->
+        <div style='background: rgba(0, 188, 212, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #00BCD4;'>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>𝕏 Twitter Card</strong></div>
+          <div style='font-size: 13px; color: #4DD0E1; line-height: 1.6;'>
+            <div><strong>Card Type:</strong> <span id='seo-twitter-card'>-</span></div>
+            <div><strong>Title:</strong> <span id='seo-twitter-title'>-</span></div>
+            <div><strong>Description:</strong> <span id='seo-twitter-description' style='word-wrap: break-word;'>-</span></div>
+            <div><strong>Image:</strong> <span id='seo-twitter-image' style='word-wrap: break-word; font-size: 11px;'>-</span></div>
+          </div>
+        </div>
+
+        <!-- Structured Data -->
+        <div style='background: rgba(233, 30, 99, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #E91E63;'>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>🏗️ Structured Data (JSON-LD)</strong></div>
+          <div id='seo-structured-data' style='font-size: 11px; color: #F48FB1; font-family: monospace; max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 8px; border-radius: var(--radius-sm); white-space: pre-wrap; word-break: break-all;'>-</div>
+        </div>
+
+        <!-- SEO Score -->
+        <div id='seo-score-container' style='background: rgba(103, 58, 183, 0.1); padding: 12px; border-radius: var(--radius-sm); border-left: 3px solid #673AB7;'>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>⭐ SEO Score</strong></div>
+          <div id='seo-score' style='font-size: 24px; color: #B39DDB; font-weight: bold;'>-</div>
+          <div id='seo-issues' style='font-size: 11px; color: var(--color-text-secondary); margin-top: 8px;'></div>
+        </div>
+      </div>
     </div>
 
     <!-- WebSocket Tab -->
@@ -962,4 +1037,220 @@ setInterval(() => {
     // ignore
   }
 }, 3000);
+
+// SEO Tab functionality
+window.debugSEO = {
+  analyzed: false,
+  
+  getMeta(name, property = false) {
+    const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+    const el = document.querySelector(selector);
+    return el ? el.getAttribute('content') : null;
+  },
+  
+  getStructuredData() {
+    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+    const data = [];
+    scripts.forEach(script => {
+      try {
+        data.push(JSON.parse(script.textContent));
+      } catch (e) {
+        // ignore
+      }
+    });
+    return data;
+  },
+  
+  analyze() {
+    if (this.analyzed) return;
+    this.analyzed = true;
+    
+    const loading = document.getElementById('seo-loading');
+    const content = document.getElementById('seo-content');
+    
+    // Get all meta data
+    const title = document.title;
+    const description = this.getMeta('description');
+    const keywords = this.getMeta('keywords');
+    const canonical = document.querySelector('link[rel="canonical"]')?.href || '-';
+    
+    const ogType = this.getMeta('og:type', true);
+    const ogTitle = this.getMeta('og:title', true);
+    const ogDescription = this.getMeta('og:description', true);
+    const ogImage = this.getMeta('og:image', true);
+    const ogUrl = this.getMeta('og:url', true);
+    
+    const twitterCard = this.getMeta('twitter:card');
+    const twitterTitle = this.getMeta('twitter:title');
+    const twitterDescription = this.getMeta('twitter:description');
+    const twitterImage = this.getMeta('twitter:image');
+    
+    const structuredData = this.getStructuredData();
+    
+    // Update UI
+    document.getElementById('seo-title').textContent = title || '-';
+    document.getElementById('seo-title-length').textContent = `Length: ${title.length} chars ${this.getLengthStatus(title.length, 60)}`;
+    document.getElementById('seo-title-length').style.color = this.getLengthColor(title.length, 60);
+    
+    document.getElementById('seo-description').textContent = description || '-';
+    if (description) {
+      document.getElementById('seo-description-length').textContent = `Length: ${description.length} chars ${this.getLengthStatus(description.length, 160)}`;
+      document.getElementById('seo-description-length').style.color = this.getLengthColor(description.length, 160);
+    }
+    
+    document.getElementById('seo-keywords').textContent = keywords || '-';
+    document.getElementById('seo-canonical').textContent = canonical;
+    
+    document.getElementById('seo-og-type').textContent = ogType || '-';
+    document.getElementById('seo-og-title').textContent = ogTitle || '-';
+    document.getElementById('seo-og-description').textContent = ogDescription || '-';
+    document.getElementById('seo-og-image').textContent = ogImage || '-';
+    document.getElementById('seo-og-url').textContent = ogUrl || '-';
+    
+    document.getElementById('seo-twitter-card').textContent = twitterCard || '-';
+    document.getElementById('seo-twitter-title').textContent = twitterTitle || '-';
+    document.getElementById('seo-twitter-description').textContent = twitterDescription || '-';
+    document.getElementById('seo-twitter-image').textContent = twitterImage || '-';
+    
+    if (structuredData.length > 0) {
+      document.getElementById('seo-structured-data').textContent = JSON.stringify(structuredData, null, 2);
+    } else {
+      document.getElementById('seo-structured-data').textContent = 'No structured data found';
+      document.getElementById('seo-structured-data').style.color = 'var(--color-text-tertiary)';
+    }
+    
+    // Calculate SEO score
+    this.calculateScore({
+      title, description, keywords, canonical,
+      ogType, ogTitle, ogDescription, ogImage, ogUrl,
+      twitterCard, twitterTitle, twitterDescription, twitterImage,
+      structuredData
+    });
+    
+    // Show content
+    if (loading) loading.style.display = 'none';
+    if (content) content.style.display = 'block';
+  },
+  
+  getLengthStatus(length, optimal) {
+    if (length === 0) return '⚠️ Missing';
+    if (length > optimal + 20) return '⚠️ Too long';
+    if (length < optimal - 20) return '⚠️ Too short';
+    return '✅ Good';
+  },
+  
+  getLengthColor(length, optimal) {
+    if (length === 0) return '#f44336';
+    if (length > optimal + 20 || length < optimal - 20) return '#FF9800';
+    return '#4CAF50';
+  },
+  
+  calculateScore(data) {
+    let score = 0;
+    let maxScore = 0;
+    const issues = [];
+    
+    // Title (20 points)
+    maxScore += 20;
+    if (data.title && data.title.length > 0) {
+      if (data.title.length <= 60 && data.title.length >= 30) {
+        score += 20;
+      } else if (data.title.length > 0) {
+        score += 10;
+        issues.push('Title length not optimal (30-60 chars)');
+      }
+    } else {
+      issues.push('Missing page title');
+    }
+    
+    // Description (20 points)
+    maxScore += 20;
+    if (data.description && data.description.length > 0) {
+      if (data.description.length >= 140 && data.description.length <= 160) {
+        score += 20;
+      } else if (data.description.length > 0) {
+        score += 10;
+        issues.push('Description length not optimal (140-160 chars)');
+      }
+    } else {
+      issues.push('Missing meta description');
+    }
+    
+    // Keywords (10 points)
+    maxScore += 10;
+    if (data.keywords) {
+      score += 10;
+    } else {
+      issues.push('Missing keywords');
+    }
+    
+    // Canonical (10 points)
+    maxScore += 10;
+    if (data.canonical && data.canonical !== '-') {
+      score += 10;
+    } else {
+      issues.push('Missing canonical URL');
+    }
+    
+    // Open Graph (20 points)
+    maxScore += 20;
+    let ogScore = 0;
+    if (data.ogTitle) ogScore += 5;
+    if (data.ogDescription) ogScore += 5;
+    if (data.ogImage) ogScore += 5;
+    if (data.ogUrl) ogScore += 5;
+    score += ogScore;
+    if (ogScore < 20) issues.push(`Open Graph incomplete (${ogScore}/20)`);
+    
+    // Twitter Card (10 points)
+    maxScore += 10;
+    let twitterScore = 0;
+    if (data.twitterCard) twitterScore += 3;
+    if (data.twitterTitle) twitterScore += 2;
+    if (data.twitterDescription) twitterScore += 3;
+    if (data.twitterImage) twitterScore += 2;
+    score += twitterScore;
+    if (twitterScore < 10) issues.push(`Twitter Card incomplete (${twitterScore}/10)`);
+    
+    // Structured Data (10 points)
+    maxScore += 10;
+    if (data.structuredData && data.structuredData.length > 0) {
+      score += 10;
+    } else {
+      issues.push('Missing structured data (JSON-LD)');
+    }
+    
+    const percentage = Math.round((score / maxScore) * 100);
+    const scoreEl = document.getElementById('seo-score');
+    const issuesEl = document.getElementById('seo-issues');
+    
+    scoreEl.textContent = `${percentage}% (${score}/${maxScore})`;
+    
+    if (percentage >= 90) {
+      scoreEl.style.color = '#4CAF50';
+    } else if (percentage >= 70) {
+      scoreEl.style.color = '#FF9800';
+    } else {
+      scoreEl.style.color = '#f44336';
+    }
+    
+    if (issues.length > 0) {
+      issuesEl.innerHTML = '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">' +
+        '<strong>Issues:</strong><br>' +
+        issues.map(issue => `<div style="padding: 2px 0;">• ${issue}</div>`).join('') +
+        '</div>';
+    } else {
+      issuesEl.innerHTML = '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); color: #4CAF50;">✅ No issues found!</div>';
+    }
+  }
+};
+
+// Analyze SEO when switching to SEO tab
+const originalSwitchDebugTab = switchDebugTab;
+switchDebugTab = function(event, tabName) {
+  originalSwitchDebugTab(event, tabName);
+  if (tabName === 'seo') {
+    window.debugSEO.analyze();
+  }
+};
 </script>

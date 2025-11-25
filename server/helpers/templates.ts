@@ -298,6 +298,8 @@ interface DefaultPageContext {
   url?: string;
   image?: string;
   type?: string;
+  structuredData?: string;
+  skipSiteName?: boolean;
 }
 
 // Default data that's always passed to templates
@@ -940,9 +942,11 @@ export async function render(
       config: {
         title: env.SITE_TITLE,
         subtitle: env.SITE_SUBTITLE,
+        siteUrl: env.SITE_URL,
         copyright: `© ${new Date().getFullYear()}`,
         showVersion: env.NODE_ENV === 'development',
         imageServerUrl: env.IMAGE_SERVER_URL,
+        twitterHandle: env.TWITTER_HANDLE,
       },
       version: env.npm_package_version || '0.1.0',
       buildDate: env.BUILD_DATE || new Date().toISOString().split('T')[0],

@@ -8,6 +8,18 @@ Self-hosted, EVE Online killboard built with Bun, Nitro, PostgreSQL, Redis, and 
 - Framework: Nitro
 - Data: PostgreSQL (`postgres.js`), Redis (BullMQ), Typesense
 
+## Features
+
+- 🚀 **Real-time killmail ingestion** from EVE-KILL WebSocket and RedisQ
+- 📊 **Comprehensive statistics** for characters, corporations, alliances, systems, and ships
+- 🎯 **Advanced filtering** by ship class, security status, tech level, and more
+- 🔍 **Full-text search** powered by Typesense
+- 📱 **Responsive design** with server-side rendering
+- 🌐 **SEO optimized** with Open Graph, Twitter Cards, and JSON-LD structured data
+- 🎨 **Themeable** with Handlebars templates
+- ⚡ **High performance** with Redis caching and database partitioning
+- 🔐 **EVE SSO authentication** with customizable scopes
+
 ## Prerequisites
 
 - Bun installed (`bun --version`)

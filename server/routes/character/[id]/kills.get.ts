@@ -9,7 +9,7 @@ import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getCharacterWithCorporationAndAlliance } from '../../../models/characters';
 import {
   getEntityKillmails,
-  countEntityKillmails,
+  estimateEntityKillmails, estimateEntityKillmails,
 } from '../../../models/killlist';
 import { parseKilllistFilters } from '../../../helpers/killlist-filters';
 import { track } from '../../../utils/performance-decorators';
@@ -86,7 +86,7 @@ export default defineEventHandler(async (event: H3Event) => {
             perPage,
             userFilters
           ),
-          countEntityKillmails(characterId, 'character', 'kills', userFilters),
+          estimateEntityKillmails(characterId, 'character', 'kills', userFilters),
         ]);
       }
     );

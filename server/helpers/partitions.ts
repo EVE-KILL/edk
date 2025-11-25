@@ -134,6 +134,7 @@ async function createRangePartition(
     CREATE TABLE IF NOT EXISTS "${partitionName}"
     PARTITION OF "${tableName}"
     FOR VALUES FROM ('${start}') TO ('${end}')
+    WITH (fillfactor = 100)
   `);
 
   logger.debug(`Created partition: ${partitionName}`);
@@ -197,6 +198,7 @@ async function ensurePreWindowPartition(
       CREATE TABLE "${targetName}"
       PARTITION OF "${tableName}"
       FOR VALUES FROM ('${year}-01-01') TO ('${dateLiteral(monthlyStart)}')
+      WITH (fillfactor = 100)
     `);
 
     for (const pre of existingPrePartitions) {

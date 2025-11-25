@@ -3,7 +3,7 @@ import { logger } from '../server/helpers/logger';
 
 export const name = 'analyze-tables';
 export const description = 'Runs ANALYZE on high-churn tables';
-export const schedule = '0 */5 * * * *'; // Run every 5 minutes (at second 0)
+export const schedule = '0 0 * * * *'; // Run every hour (at minute 0, second 0)
 
 export async function action() {
   const sql = database.sql;

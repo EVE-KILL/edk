@@ -13,6 +13,12 @@ import {
   getSiblingKillmails,
 } from '../../models/killmails';
 import { track } from '../../utils/performance-decorators';
+import {
+  generateKillmailStructuredData,
+  generateKillmailOGImage,
+  generateKillmailDescription,
+  generateKillmailKeywords,
+} from '../../helpers/seo';
 
 // Item slot mapping - which flag number corresponds to which slot
 const SLOT_MAPPING: Record<number, string> = {
@@ -558,6 +564,46 @@ export default defineEventHandler(async (event: H3Event) => {
     const victimName = killmail.victimCharacterName || 'Unknown';
     const shipName = killmail.victimShipName || 'Unknown';
     const valueBillion = (totalKillValue / 1_000_000_000).toFixed(2);
+    const solarSystemName = killmail.solarSystemName || 'Unknown System';
+    const regionName = killmail.regionName || 'Unknown Region';
+
+    // Generate SEO metadata
+    const ogImage = generateKillmailOGImage({
+      victimShipTypeId: killmail.victimShipTypeId,
+    });
+
+    const description = generateKillmailDescription({
+      victimName,
+      shipName,
+      totalValue: totalKillValue,
+      solarSystemName,
+      regionName,
+      attackerCount: attackers.length,
+      killmailTime: killmailTimeIso,
+    });
+
+    const keywords = generateKillmailKeywords({
+      victimName,
+      shipName,
+      solarSystemName,
+      regionName,
+      shipGroup: killmail.victimShipGroup,
+      attackerNames: attackers
+        .slice(0, 3)
+        .map((a) => a.characterName)
+        .filter(Boolean) as string[],
+    });
+
+    const structuredData = generateKillmailStructuredData({
+      killmailId: id,
+      victimName,
+      shipName,
+      totalValue: totalKillValue,
+      killmailTime: killmailTimeIso,
+      solarSystemName,
+      regionName,
+      attackerCount: attackers.length,
+    });
 
     const templateData = await track(
       'killmail:build_template_data',
@@ -756,9 +802,13 @@ export default defineEventHandler(async (event: H3Event) => {
     return render(
       'pages/killmail',
       {
-        title: `Killmail #${id} - ${victimName} (${shipName})`,
-        description: `${victimName} lost a ${shipName} worth ${valueBillion}B ISK`,
-        keywords: 'eve online, killmail, pvp, kill',
+        title: `${victimName} (${shipName}) - ${valueBillion}B ISK`,
+        description,
+        keywords,
+        url: `/killmail/${id}`,
+        image: ogImage,
+        type: 'article',
+        structuredData,
       },
       templateData,
       event

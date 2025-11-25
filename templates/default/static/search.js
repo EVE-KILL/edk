@@ -177,11 +177,32 @@
             ? `<span class="search-item-description">${result.description}</span>`
             : '';
 
-          html += `<a href="${url}" class="search-item">`;
+          // Get entity image
+          let imageHtml = '';
+          const imageServerUrl = 'https://images.evetech.net';
+          
+          if (type === 'character') {
+            imageHtml = `<img src="${imageServerUrl}/characters/${entityId}/portrait?size=64" alt="${escapeHtml(result.name)}" class="search-item-image" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--color-border-dark); object-fit: cover;" loading="lazy" onerror="this.style.display='none'" />`;
+          } else if (type === 'corporation') {
+            imageHtml = `<img src="${imageServerUrl}/corporations/${entityId}/logo?size=64" alt="${escapeHtml(result.name)}" class="search-item-image" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark); object-fit: cover;" loading="lazy" onerror="this.style.display='none'" />`;
+          } else if (type === 'alliance') {
+            imageHtml = `<img src="${imageServerUrl}/alliances/${entityId}/logo?size=64" alt="${escapeHtml(result.name)}" class="search-item-image" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark); object-fit: cover;" loading="lazy" onerror="this.style.display='none'" />`;
+          } else if (type === 'item') {
+            imageHtml = `<img src="${imageServerUrl}/types/${entityId}/icon?size=64" alt="${escapeHtml(result.name)}" class="search-item-image" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark); object-fit: cover;" loading="lazy" onerror="this.style.display='none'" />`;
+          } else if (type === 'system' || type === 'region') {
+            imageHtml = `<div class="search-item-image" style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #FF9800, #F57C00); display: flex; align-items: center; justify-content: center; border: 1px solid var(--color-border-dark); font-size: 16px;">⭐</div>`;
+          }
+
+          html += `<a href="${url}" class="search-item" style="display: flex; align-items: center; gap: 12px;">`;
+          if (imageHtml) {
+            html += imageHtml;
+          }
+          html += `<div style="flex: 1; min-width: 0;">`;
           html += `<span class="search-item-name">${escapeHtml(result.name)}${ticker}</span>`;
           if (description) {
             html += description;
           }
+          html += `</div>`;
           html += `</a>`;
         });
 

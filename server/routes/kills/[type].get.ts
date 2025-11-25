@@ -7,7 +7,7 @@ import { render, normalizeKillRow } from '../../helpers/templates';
 import {
   getFilteredKillsWithNames,
   getMostValuableKillsFiltered,
-  countFilteredKills,
+  estimateFilteredKills,
   type KilllistFilters,
 } from '../../models/killlist';
 import {
@@ -377,7 +377,7 @@ export default defineEventHandler(async (event: H3Event) => {
       async () => {
         return await Promise.all([
           getFilteredKillsWithNames(filters, page, perPage),
-          countFilteredKills(filters),
+          estimateFilteredKills(filters),
         ]);
       }
     );

@@ -6,7 +6,7 @@ import { render, normalizeKillRow } from '../../../helpers/templates';
 import { getRegion } from '../../../models/regions';
 import {
   getFilteredKillsWithNames,
-  countFilteredKills,
+  estimateFilteredKills, estimateFilteredKills,
 } from '../../../models/killlist';
 import {
   parseKilllistFilters,
@@ -66,7 +66,7 @@ export default defineEventHandler(async (event: H3Event) => {
       topSystems,
     ] = await Promise.all([
       getFilteredKillsWithNames({ regionId, ...userFilters }, page, perPage),
-      countFilteredKills({ regionId, ...userFilters }),
+      estimateFilteredKills({ regionId, ...userFilters }),
       getMostValuableKillsByPeriod('week', 6),
       getTopCharactersFiltered({ regionId }, 10),
       getTopCorporationsFiltered({ regionId }, 10),

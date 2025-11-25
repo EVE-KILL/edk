@@ -133,17 +133,17 @@ export async function getCharacterInfo(
       kills_stats AS (
         SELECT
           count(*) as kills,
-          sum(k."victimDamageTaken" * COALESCE(p."averagePrice", 0)) +
+          sum(COALESCE(p."averagePrice", 0)) +
           sum(i.totalValue) as "iskDestroyed"
         FROM attackers a
-        LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+        LEFT JOIN killmails k ON a."killmailId" = k."killmailId" AND a."killmailTime" = k."killmailTime"
         LEFT JOIN prices p ON k."victimShipTypeId" = p."typeId" AND k."killmailTime"::date = p."priceDate"
         LEFT JOIN (
           SELECT
             items."killmailId" as "killmailId",
             sum(("quantityDestroyed" + "quantityDropped") * COALESCE(prices."averagePrice", 0)) as totalValue
           FROM items
-          LEFT JOIN killmails km ON items."killmailId" = km."killmailId"
+          LEFT JOIN killmails km ON items."killmailId" = km."killmailId" AND items."killmailTime" = km."killmailTime"
           LEFT JOIN prices ON items."itemTypeId" = prices."typeId" AND km."killmailTime"::date = prices."priceDate"
           GROUP BY items."killmailId"
         ) i ON k."killmailId" = i."killmailId"
@@ -152,7 +152,7 @@ export async function getCharacterInfo(
       losses_stats AS (
         SELECT
           count(*) as losses,
-          sum(k."victimDamageTaken" * COALESCE(p."averagePrice", 0)) +
+          sum(COALESCE(p."averagePrice", 0)) +
           sum(i.totalValue) as "iskLost"
         FROM killmails k
         LEFT JOIN prices p ON k."victimShipTypeId" = p."typeId" AND k."killmailTime"::date = p."priceDate"
@@ -161,7 +161,7 @@ export async function getCharacterInfo(
             items."killmailId" as "killmailId",
             sum(("quantityDestroyed" + "quantityDropped") * COALESCE(prices."averagePrice", 0)) as totalValue
           FROM items
-          LEFT JOIN killmails km ON items."killmailId" = km."killmailId"
+          LEFT JOIN killmails km ON items."killmailId" = km."killmailId" AND items."killmailTime" = km."killmailTime"
           LEFT JOIN prices ON items."itemTypeId" = prices."typeId" AND km."killmailTime"::date = prices."priceDate"
           GROUP BY items."killmailId"
         ) i ON k."killmailId" = i."killmailId"
@@ -228,7 +228,7 @@ export async function getShipGroupStatsByCharacter(
           g.name as "groupName",
           count(*) as killed
         FROM attackers a
-        LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+        LEFT JOIN killmails k ON a."killmailId" = k."killmailId" AND a."killmailTime" = k."killmailTime"
         LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
         LEFT JOIN groups g ON t."groupId" = g."groupId"
         WHERE a."characterId" = :characterId
@@ -292,7 +292,7 @@ export async function getTop10StatsByCharacter(
       t.name as name,
       count(*) as kills
     FROM attackers a
-    LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+    LEFT JOIN killmails k ON a."killmailId" = k."killmailId" AND a."killmailTime" = k."killmailTime"
     LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
     WHERE a."characterId" = :characterId
       AND k."killmailTime" >= NOW() - INTERVAL '7 days'
@@ -309,7 +309,7 @@ export async function getTop10StatsByCharacter(
       sys.name as name,
       count(*) as kills
     FROM attackers a
-    LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+    LEFT JOIN killmails k ON a."killmailId" = k."killmailId" AND a."killmailTime" = k."killmailTime"
     LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
     WHERE a."characterId" = :characterId
       AND k."killmailTime" >= NOW() - INTERVAL '7 days'
@@ -326,7 +326,7 @@ export async function getTop10StatsByCharacter(
       reg.name as name,
       count(*) as kills
     FROM attackers a
-    LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+    LEFT JOIN killmails k ON a."killmailId" = k."killmailId" AND a."killmailTime" = k."killmailTime"
     LEFT JOIN solarSystems sys ON k."solarSystemId" = sys."solarSystemId"
     LEFT JOIN regions reg ON sys."regionId" = reg."regionId"
     WHERE a."characterId" = :characterId
@@ -344,7 +344,7 @@ export async function getTop10StatsByCharacter(
       corp.name as name,
       count(*) as kills
     FROM attackers a
-    LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+    LEFT JOIN killmails k ON a."killmailId" = k."killmailId" AND a."killmailTime" = k."killmailTime"
     LEFT JOIN npcCorporations corp ON k."victimCorporationId" = corp."corporationId"
     WHERE a."characterId" = :characterId
       AND k."killmailTime" >= NOW() - INTERVAL '7 days'
@@ -361,7 +361,7 @@ export async function getTop10StatsByCharacter(
       alliance.name as name,
       count(*) as kills
     FROM attackers a
-    LEFT JOIN killmails k ON a."killmailId" = k."killmailId"
+    LEFT JOIN killmails k ON a."killmailId" = k."killmailId" AND a."killmailTime" = k."killmailTime"
     LEFT JOIN npcCorporations alliance ON k."victimAllianceId" = alliance."corporationId"
     WHERE a."characterId" = :characterId
       AND k."killmailTime" >= NOW() - INTERVAL '7 days'
@@ -455,7 +455,7 @@ export async function getCharacterKillmails(
       sys."securityStatus" as solar_system_security,
       sys."regionId" as region_id,
       reg.name as region_name,
-      (k."victimDamageTaken" * COALESCE(p."averagePrice", 0)) as ship_value,
+      COALESCE(p."averagePrice", 0) as ship_value,
       k."totalValue" as total_value,
       k."attackerCount" as attacker_count
     FROM killmails k

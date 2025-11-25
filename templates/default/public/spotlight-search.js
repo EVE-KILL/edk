@@ -231,8 +231,27 @@
         grouped[type].forEach(result => {
           const resultIndex = results.indexOf(result);
           const url = getResultUrl(result);
+          const entityId = result.id || result.rawId;
+          
+          // Get entity image
+          let imageHtml = '';
+          const imageServerUrl = 'https://images.evetech.net';
+          
+          if (type === 'character') {
+            imageHtml = `<img src="${imageServerUrl}/characters/${entityId}/portrait?size=64" alt="${escapeHtml(result.name)}" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--color-border-dark); object-fit: cover; margin-right: 12px;" loading="lazy" onerror="this.style.display='none'" />`;
+          } else if (type === 'corporation') {
+            imageHtml = `<img src="${imageServerUrl}/corporations/${entityId}/logo?size=64" alt="${escapeHtml(result.name)}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark); object-fit: cover; margin-right: 12px;" loading="lazy" onerror="this.style.display='none'" />`;
+          } else if (type === 'alliance') {
+            imageHtml = `<img src="${imageServerUrl}/alliances/${entityId}/logo?size=64" alt="${escapeHtml(result.name)}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark); object-fit: cover; margin-right: 12px;" loading="lazy" onerror="this.style.display='none'" />`;
+          } else if (type === 'item') {
+            imageHtml = `<img src="${imageServerUrl}/types/${entityId}/icon?size=64" alt="${escapeHtml(result.name)}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark); object-fit: cover; margin-right: 12px;" loading="lazy" onerror="this.style.display='none'" />`;
+          } else if (type === 'system' || type === 'constellation' || type === 'region') {
+            imageHtml = `<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #FF9800, #F57C00); display: flex; align-items: center; justify-content: center; border: 1px solid var(--color-border-dark); font-size: 16px; margin-right: 12px;">⭐</div>`;
+          }
+          
           html += `
             <div class="spotlight-result-item" data-index="${resultIndex}" onclick="window.location.href='${url}'">
+              ${imageHtml}
               <div class="spotlight-result-content">
                 <div class="spotlight-result-name">${escapeHtml(result.name)}</div>
                 <div class="spotlight-result-type">${result.type}</div>

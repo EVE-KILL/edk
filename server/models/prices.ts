@@ -223,7 +223,7 @@ export async function getLatestPricesForTypes(
     FROM prices
     WHERE "regionId" = :regionId
       AND "typeId" = ANY(:typeIds)
-      AND "volume" > 100
+      AND "volume" > 0
       ${dateClause}
     ORDER BY "typeId", "priceDate" DESC`,
     params

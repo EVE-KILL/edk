@@ -36,7 +36,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const category = group ? await getCategory(group.categoryId) : null;
 
     // Get total kills for this item (just for stats display)
-    const totalKillmails = await countFilteredKills({ typeId });
+    const totalKillmails = await estimateFilteredKills({ typeId });
 
     // Simple stats from killmail count - only show kills
     const stats = {

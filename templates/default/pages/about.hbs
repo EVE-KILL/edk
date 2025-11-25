@@ -185,6 +185,527 @@
   </div>
 </section>
 
+{{#if data.easterEggEnabled}}
+  <div id="bob-easter-egg" class="bob-overlay">
+    <div class="bob-overlay__content">
+      <div class="bob-overlay__header">
+        <div>
+          <div class="bob-overlay__eyebrow">It was all planned by Bob</div>
+          <div class="bob-overlay__title">Sneak peek: Raven vs. 🪨</div>
+        </div>
+        <button id="bob-overlay-close" class="bob-overlay__button">Dock</button>
+      </div>
+      <div class="bob-overlay__subtitle">
+        Arrow keys to steer/thrust, space to shoot. Raven is a 🚀, asteroids are 🪨. Good luck, capsuleer.
+      </div>
+      <div class="bob-overlay__hud">
+        <span>Score: <span id="bob-score">0</span></span>
+        <span>Hull: <span id="bob-health">100</span>%</span>
+        <span>Weapon: <span id="bob-weapon">Standard</span></span>
+      </div>
+      <canvas id="bob-asteroids-canvas" width="960" height="560"></canvas>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const overlay = document.getElementById('bob-easter-egg');
+      const canvas = document.getElementById('bob-asteroids-canvas');
+      const closeBtn = document.getElementById('bob-overlay-close');
+      const scoreEl = document.getElementById('bob-score');
+      const healthEl = document.getElementById('bob-health');
+      const weaponEl = document.getElementById('bob-weapon');
+
+      if (!overlay || !canvas || !scoreEl || !healthEl || !weaponEl) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      let width = canvas.width;
+      let height = canvas.height;
+      let lastTime = performance.now();
+      let running = true;
+      const keys = new Set();
+      const stars = Array.from({ length: 60 }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        r: Math.random() * 1.5 + 0.5,
+      }));
+
+      const ship = {
+        x: width / 2,
+        y: height / 2,
+        vx: 0,
+        vy: 0,
+        angle: -Math.PI / 2,
+        cooldown: 0,
+        invuln: 1.5,
+        health: 100,
+        maxHealth: 100,
+        regenPerSecond: 5,
+        lastDamage: 0,
+      };
+
+      const state = {
+        score: 0,
+        asteroids: [],
+        bullets: [],
+        wave: 1,
+        powerups: [],
+        currentWeapon: { type: 'standard', expires: 0 },
+      };
+
+      const emojiFont = '28px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+      let audioCtx = null;
+      let elapsed = 0;
+
+      function playPew() {
+        try {
+          if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          const duration = 0.1;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + duration);
+          gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+          osc.connect(gain).connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        } catch (err) {
+          // ignore audio errors (e.g., autoplay restrictions)
+        }
+      }
+
+      const weaponConfigs = {
+        standard: {
+          name: 'Standard',
+          cooldown: 0.25,
+          fire: (angle) => [{ angle, speed: 280, emoji: '✨', damage: 4 }],
+        },
+        spread: {
+          name: 'Triple Spread',
+          cooldown: 0.28,
+          fire: (angle) => {
+            const spread = 0.22;
+            return [
+              { angle: angle - spread, speed: 260, emoji: '⚡', damage: 4 },
+              { angle, speed: 260, emoji: '⚡', damage: 4 },
+              { angle: angle + spread, speed: 260, emoji: '⚡', damage: 4 },
+            ];
+          },
+        },
+        rapid: {
+          name: 'Rapid Fire',
+          cooldown: 0.12,
+          fire: (angle) => [{ angle, speed: 300, emoji: '💫', damage: 3 }],
+        },
+        orb: {
+          name: 'Slow Orbs',
+          cooldown: 0.35,
+          fire: (angle) => [{ angle, speed: 180, emoji: '🌀', damage: 6 }],
+        },
+      };
+
+      function resizeCanvas() {
+        const maxWidth = overlay.clientWidth - 48;
+        const maxHeight = overlay.clientHeight - 180;
+        width = Math.max(640, Math.min(1000, maxWidth));
+        height = Math.max(360, Math.min(700, maxHeight));
+        canvas.width = width;
+        canvas.height = height;
+      }
+
+      function wrap(entity) {
+        if (entity.x < 0) entity.x += width;
+        if (entity.x > width) entity.x -= width;
+        if (entity.y < 0) entity.y += height;
+        if (entity.y > height) entity.y -= height;
+      }
+
+      function spawnAsteroid(size = 3) {
+        let x = Math.random() * width;
+        let y = Math.random() * height;
+        if (Math.hypot(x - ship.x, y - ship.y) < 120) {
+          x = (x + width / 2) % width;
+          y = (y + height / 2) % height;
+        }
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 30 + Math.random() * 50;
+        state.asteroids.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size,
+          radius: size * 12 + 12,
+          hp: size * 3,
+        });
+      }
+
+      function startWave() {
+        for (let i = 0; i < 3 + state.wave; i += 1) {
+          spawnAsteroid(3);
+        }
+      }
+
+      function fire() {
+        if (ship.cooldown > 0) return;
+        const weapon = weaponConfigs[state.currentWeapon.type] || weaponConfigs.standard;
+        const shots = weapon.fire(ship.angle);
+        shots.forEach((shot) => {
+          state.bullets.push({
+            x: ship.x + Math.cos(shot.angle) * 18,
+            y: ship.y + Math.sin(shot.angle) * 18,
+            vx: Math.cos(shot.angle) * shot.speed + ship.vx * 0.3,
+            vy: Math.sin(shot.angle) * shot.speed + ship.vy * 0.3,
+            life: 0,
+            emoji: shot.emoji,
+            damage: shot.damage,
+          });
+        });
+        ship.cooldown = weapon.cooldown;
+        playPew();
+      }
+
+      function splitAsteroid(index) {
+        const asteroid = state.asteroids[index];
+        if (!asteroid) return;
+        state.asteroids.splice(index, 1);
+        if (Math.random() < 0.22 && state.powerups.length < 3) {
+          spawnPowerup(asteroid.x, asteroid.y);
+        }
+        if (asteroid.size > 1) {
+          for (let i = 0; i < 2; i += 1) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 60 + Math.random() * 60;
+            state.asteroids.push({
+              x: asteroid.x,
+              y: asteroid.y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              size: asteroid.size - 1,
+              radius: (asteroid.size - 1) * 12 + 12,
+              hp: (asteroid.size - 1) * 3,
+            });
+          }
+        }
+      }
+
+      function resetShip() {
+        ship.x = width / 2;
+        ship.y = height / 2;
+        ship.vx = 0;
+        ship.vy = 0;
+        ship.angle = -Math.PI / 2;
+        ship.invuln = 1.5;
+      }
+
+      function updateScore(delta) {
+        state.score += delta;
+        scoreEl.textContent = String(state.score);
+      }
+
+      function spawnPowerup(x, y) {
+        const types = ['spread', 'rapid', 'orb'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const angle = Math.random() * Math.PI * 2;
+        state.powerups.push({
+          x,
+          y,
+          vx: Math.cos(angle) * 40,
+          vy: Math.sin(angle) * 40,
+          life: 0,
+          type,
+          emoji: type === 'rapid' ? '🔫' : type === 'spread' ? '🌟' : '🛸',
+        });
+      }
+
+      function pickupPowerup(powerup) {
+        state.currentWeapon = {
+          type: powerup.type,
+          expires: elapsed + 10 + Math.random() * 5,
+        };
+        weaponEl.textContent = weaponConfigs[powerup.type]?.name || 'Standard';
+      }
+
+      function update(dt) {
+        ship.cooldown = Math.max(0, ship.cooldown - dt);
+        ship.invuln = Math.max(0, ship.invuln - dt);
+        elapsed += dt;
+
+        if (keys.has('ArrowLeft')) ship.angle -= 3 * dt;
+        if (keys.has('ArrowRight')) ship.angle += 3 * dt;
+        if (keys.has('ArrowUp')) {
+          const thrust = 180;
+          ship.vx += Math.cos(ship.angle) * thrust * dt;
+          ship.vy += Math.sin(ship.angle) * thrust * dt;
+        }
+        ship.vx *= 0.995;
+        ship.vy *= 0.995;
+        ship.x += ship.vx * dt;
+        ship.y += ship.vy * dt;
+        wrap(ship);
+
+        if (keys.has(' ') || keys.has('Spacebar')) {
+          fire();
+        }
+
+        state.bullets.forEach((bullet) => {
+          bullet.x += bullet.vx * dt;
+          bullet.y += bullet.vy * dt;
+          bullet.life += dt;
+          wrap(bullet);
+        });
+        state.bullets = state.bullets.filter((bullet) => bullet.life < 2.5);
+
+        state.asteroids.forEach((asteroid) => {
+          asteroid.x += asteroid.vx * dt;
+          asteroid.y += asteroid.vy * dt;
+          wrap(asteroid);
+        });
+
+        state.powerups.forEach((p) => {
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.life += dt;
+          wrap(p);
+        });
+        state.powerups = state.powerups.filter((p) => p.life < 14);
+
+        if (state.currentWeapon.expires && elapsed > state.currentWeapon.expires) {
+          state.currentWeapon = { type: 'standard', expires: 0 };
+          weaponEl.textContent = weaponConfigs.standard.name;
+        }
+
+        // Bullet collisions
+        for (let i = state.asteroids.length - 1; i >= 0; i -= 1) {
+          const asteroid = state.asteroids[i];
+          for (let j = state.bullets.length - 1; j >= 0; j -= 1) {
+            const bullet = state.bullets[j];
+            const dx = asteroid.x - bullet.x;
+            const dy = asteroid.y - bullet.y;
+            if (dx * dx + dy * dy < asteroid.radius * asteroid.radius * 1.1) {
+              state.bullets.splice(j, 1);
+              asteroid.hp -= bullet.damage || 3;
+              if (asteroid.hp <= 0) {
+                updateScore(10 * asteroid.size);
+                splitAsteroid(i);
+              }
+              break;
+            }
+          }
+        }
+
+        // Ship collisions
+        if (ship.invuln <= 0) {
+          for (let i = 0; i < state.asteroids.length; i += 1) {
+            const asteroid = state.asteroids[i];
+            const dx = asteroid.x - ship.x;
+            const dy = asteroid.y - ship.y;
+            const distSq = dx * dx + dy * dy;
+            if (distSq < (asteroid.radius + 14) ** 2) {
+          const dist = Math.sqrt(distSq) || 1;
+              const nx = dx / dist;
+              const ny = dy / dist;
+              ship.vx -= nx * 180;
+              ship.vy -= ny * 180;
+              ship.x -= nx * (asteroid.radius * 0.2);
+              ship.y -= ny * (asteroid.radius * 0.2);
+              ship.health = Math.max(0, ship.health - asteroid.size * 12);
+              ship.lastDamage = elapsed;
+              healthEl.textContent = String(Math.round(ship.health));
+              ship.invuln = 1.1;
+              break;
+            }
+          }
+        }
+
+        // Pick up powerups
+        for (let i = state.powerups.length - 1; i >= 0; i -= 1) {
+          const p = state.powerups[i];
+          const dx = p.x - ship.x;
+          const dy = p.y - ship.y;
+          if (dx * dx + dy * dy < 22 * 22) {
+            pickupPowerup(p);
+            state.powerups.splice(i, 1);
+          }
+        }
+
+        // Regen hull slowly after a short delay
+        if (ship.health < ship.maxHealth && elapsed - ship.lastDamage > 1.2) {
+          ship.health = Math.min(
+            ship.maxHealth,
+            ship.health + ship.regenPerSecond * dt
+          );
+          healthEl.textContent = String(Math.round(ship.health));
+        }
+
+        if (state.asteroids.length === 0) {
+          state.wave += 1;
+          startWave();
+        }
+
+        if (ship.health <= 0) {
+          running = false;
+          overlay.classList.add('bob-overlay--done');
+          document.body.style.overflow = previousOverflow;
+        }
+      }
+
+      function drawBackground() {
+        ctx.fillStyle = 'rgba(5, 10, 20, 0.92)';
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        stars.forEach((star) => {
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      function drawShip() {
+        ctx.save();
+        ctx.translate(ship.x, ship.y);
+        ctx.rotate(ship.angle);
+
+        ctx.globalAlpha = ship.invuln > 0 ? 0.5 : 1;
+        ctx.fillStyle = '#7dd3fc';
+        ctx.strokeStyle = '#0ea5e9';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(18, 0); // nose
+        ctx.lineTo(-12, -12);
+        ctx.lineTo(-6, 0);
+        ctx.lineTo(-12, 12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // little fins for a raven-ish vibe
+        ctx.beginPath();
+        ctx.moveTo(-8, -10);
+        ctx.lineTo(-18, -14);
+        ctx.lineTo(-8, -4);
+        ctx.moveTo(-8, 10);
+        ctx.lineTo(-18, 14);
+        ctx.lineTo(-8, 4);
+        ctx.stroke();
+
+        if (keys.has('ArrowUp')) {
+          ctx.font = emojiFont;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🔥', -14, 0);
+        }
+        ctx.restore();
+      }
+
+      function drawBullets() {
+        ctx.font = emojiFont;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        state.bullets.forEach((bullet) => {
+          ctx.fillText(bullet.emoji || '✨', bullet.x, bullet.y);
+        });
+      }
+
+      function drawAsteroids() {
+        ctx.font = emojiFont;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        state.asteroids.forEach((asteroid) => {
+          ctx.save();
+          ctx.translate(asteroid.x, asteroid.y);
+          ctx.rotate((asteroid.x + asteroid.y) * 0.001);
+          ctx.fillText('🪨', 0, 0);
+          ctx.restore();
+        });
+      }
+
+      function drawPowerups() {
+        ctx.font = emojiFont;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        state.powerups.forEach((p) => {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.x + p.y) * 0.002);
+          ctx.fillText(p.emoji, 0, 0);
+          ctx.restore();
+        });
+      }
+
+      function loop(now) {
+        if (!running) return;
+        const delta = Math.min((now - lastTime) / 1000, 0.05);
+        lastTime = now;
+        update(delta);
+        drawBackground();
+        drawAsteroids();
+        drawBullets();
+        drawPowerups();
+        drawShip();
+        requestAnimationFrame(loop);
+      }
+
+      function handleKeyDown(event) {
+        if (['ArrowUp', 'ArrowLeft', 'ArrowRight', ' ', 'Spacebar'].includes(event.key)) {
+          event.preventDefault();
+        }
+        keys.add(event.key);
+        if (event.key === 'Escape') {
+          closeOverlay();
+        }
+      }
+
+      function handleKeyUp(event) {
+        keys.delete(event.key);
+      }
+
+      function closeOverlay() {
+        running = false;
+        document.body.style.overflow = previousOverflow;
+        overlay.remove();
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keyup', handleKeyUp);
+        window.removeEventListener('resize', resizeCanvas);
+      }
+
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keyup', handleKeyUp);
+      window.addEventListener('resize', resizeCanvas);
+      closeBtn?.addEventListener('click', closeOverlay);
+
+      resizeCanvas();
+      resetShip();
+      startWave();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+
+  <section class="section mb-lg">
+    <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 16px; line-height: 1.6;">
+      <div style="color: var(--color-text-white); font-weight: 700; font-size: 16px; margin-bottom: 8px;">The BoB BBQ Manifesto</div>
+      <p style="color: var(--color-text-primary); margin: 0 0 8px 0;">
+        Listen, capsuleer. Every patch, balance tweak, and market crash after 2005? It was plated up at the infamous Band of Brothers barbecue. They didn’t just plan ops—they planned the timeline between bites of dubious brisket.
+      </p>
+      <p style="color: var(--color-text-primary); margin: 0 0 8px 0;">
+        The stock market dip? A sauce spill. The nano nerf? Overcooked ribs. Your corp mate who “accidentally” warped to zero? Whispered over a charred skewer. Nothing has been the same since, and the marinade only got spicier.
+      </p>
+      <p style="color: var(--color-text-primary); margin: 0;">
+        BoB: worst of the worst, architects of chaos, master grillers of fate. They flipped the stakes, and now we’re all just trying to dodge the marinade. Fly safe, bring napkins.
+      </p>
+    </div>
+  </section>
+{{/if}}
+
 <style>
   details[open] > summary > span {
     transform: rotate(90deg);
@@ -195,5 +716,97 @@
   }
   details > summary > span {
     transition: transform 0.2s ease;
+  }
+
+  .bob-overlay {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at top, rgba(28, 42, 68, 0.92), rgba(6, 10, 20, 0.96));
+    backdrop-filter: blur(2px);
+    z-index: 2200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .bob-overlay__content {
+    width: min(1100px, 100%);
+    background: linear-gradient(135deg, rgba(24, 32, 48, 0.95), rgba(12, 18, 32, 0.95));
+    border: 1px solid var(--color-border-dark);
+    border-radius: var(--radius-md);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+    padding: 18px 18px 12px 18px;
+    position: relative;
+  }
+
+  .bob-overlay__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .bob-overlay__eyebrow {
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+
+  .bob-overlay__title {
+    color: var(--color-text-white);
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .bob-overlay__subtitle {
+    color: var(--color-text-primary);
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .bob-overlay__hud {
+    display: flex;
+    gap: 16px;
+    color: var(--color-text-white);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .bob-overlay__button {
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border-dark);
+    color: var(--color-text-white);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.1s ease;
+  }
+
+  .bob-overlay__button:hover {
+    background: var(--color-bg-secondary);
+    transform: translateY(-1px);
+  }
+
+  .bob-overlay__content canvas {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--color-border-dark);
+    background: rgba(2, 6, 12, 0.6);
+    border-radius: var(--radius-sm);
+    display: block;
+  }
+
+  .bob-overlay--done .bob-overlay__content::after {
+    content: 'Bob wins this round. Refresh to try again.';
+    position: absolute;
+    top: 18px;
+    right: 24px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
   }
 </style>

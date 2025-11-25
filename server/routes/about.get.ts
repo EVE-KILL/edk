@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3';
+import { getQuery } from 'h3';
 import { database } from '../helpers/database';
 import { logger } from '../helpers/logger';
 import { render } from '../helpers/templates';
@@ -7,6 +8,9 @@ import { track } from '../utils/performance-decorators';
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
+    const query = getQuery(event);
+    const easterEggEnabled = Boolean(query.itwasallplannedbybob);
+
     const pageContext = {
       title: 'About - EVE Killboard',
       activeNav: 'about',
@@ -24,6 +28,7 @@ export default defineEventHandler(async (event: H3Event) => {
       return {
         counts,
         updatedAt: new Date().toISOString(),
+        easterEggEnabled,
       };
     });
 

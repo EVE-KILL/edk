@@ -5,7 +5,7 @@ import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getCharacterWithCorporationAndAlliance } from '../../../models/characters';
 import {
   getEntityKillmails,
-  countEntityKillmails,
+  estimateEntityKillmails, estimateEntityKillmails,
 } from '../../../models/killlist';
 import { parseKilllistFilters } from '../../../helpers/killlist-filters';
 
@@ -63,7 +63,7 @@ export default defineEventHandler(async (event: H3Event) => {
         perPage,
         userFilters
       ),
-      countEntityKillmails(characterId, 'character', 'losses', userFilters),
+      estimateEntityKillmails(characterId, 'character', 'losses', userFilters),
     ]);
 
     // Calculate pagination

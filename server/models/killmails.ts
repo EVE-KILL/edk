@@ -235,14 +235,14 @@ export async function getKillmail(
 
   // Get attackers
   const attackers = await database.find<any>(
-    'SELECT * FROM attackers WHERE "killmailId" = :killmailId',
-    { killmailId }
+    'SELECT * FROM attackers WHERE "killmailId" = :killmailId AND "killmailTime" = :killmailTime',
+    { killmailId, killmailTime: killmail.killmailTime }
   );
 
   // Get items
   const items = await database.find<any>(
-    'SELECT * FROM items WHERE "killmailId" = :killmailId',
-    { killmailId }
+    'SELECT * FROM items WHERE "killmailId" = :killmailId AND "killmailTime" = :killmailTime',
+    { killmailId, killmailTime: killmail.killmailTime }
   );
 
   // Convert Unix timestamp back to ISO string
@@ -844,7 +844,7 @@ export async function getKillmailItems(
     FROM items i
     LEFT JOIN types t ON i."itemTypeId" = t."typeId"
     LEFT JOIN groups g ON t."groupId" = g."groupId"
-    JOIN killmails k ON i."killmailId" = k."killmailId"
+    JOIN killmails k ON i."killmailId" = k."killmailId" AND i."killmailTime" = k."killmailTime"
     WHERE i."killmailId" = :killmailId
       AND i."itemTypeId" IS NOT NULL`,
     { killmailId }
@@ -923,7 +923,7 @@ export async function getKillmailAttackers(
       a."weaponTypeId",
       coalesce(w.name, 'Unknown') as "weaponName"
     FROM attackers a
-
+    JOIN killmails k ON a."killmailId" = k."killmailId" AND a."killmailTime" = k."killmailTime"
     LEFT JOIN characters c ON a."characterId" = c."characterId"
     LEFT JOIN npcCharacters nc ON a."characterId" = nc."characterId"
     LEFT JOIN corporations corp ON a."corporationId" = corp."corporationId"
@@ -931,7 +931,7 @@ export async function getKillmailAttackers(
     LEFT JOIN alliances a_alliance ON a."allianceId" = a_alliance."allianceId"
     LEFT JOIN types t ON a."shipTypeId" = t."typeId"
     LEFT JOIN types w ON a."weaponTypeId" = w."typeId"
-    WHERE a."killmailId" = :killmailId
+    WHERE k."killmailId" = :killmailId
     ORDER BY a."damageDone" DESC`,
     { killmailId }
   );

@@ -7,7 +7,7 @@ import { getConstellation } from '../../../models/constellations';
 import { getRegion } from '../../../models/regions';
 import {
   getFilteredKillsWithNames,
-  countFilteredKills,
+  estimateFilteredKills, estimateFilteredKills,
 } from '../../../models/killlist';
 import {
   parseKilllistFilters,
@@ -74,7 +74,7 @@ export default defineEventHandler(async (event: H3Event) => {
         page,
         perPage
       ),
-      countFilteredKills({ constellationId, ...userFilters }),
+      estimateFilteredKills({ constellationId, ...userFilters }),
       getMostValuableKillsByPeriod('week', 6),
       getTopCharactersFiltered({ constellationId }, 10),
       getTopCorporationsFiltered({ constellationId }, 10),

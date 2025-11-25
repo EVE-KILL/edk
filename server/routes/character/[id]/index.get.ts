@@ -7,7 +7,7 @@ import { render, normalizeKillRow } from '../../../helpers/templates';
 import { getCharacterWithCorporationAndAlliance } from '../../../models/characters';
 import {
   getEntityKillmails,
-  countEntityKillmails,
+  estimateEntityKillmails, estimateEntityKillmails,
 } from '../../../models/killlist';
 import { getEntityStatsFromCache, isStatsCachePopulated } from '../../../models/entityStatsCache';
 import { getEntityStatsFromView } from '../../../models/entityStatsView';
@@ -76,7 +76,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const [killmails, totalKillmails] = await track('character:fetch_killmails', 'application', async () => {
       return await Promise.all([
         getEntityKillmails(characterId, 'character', 'all', page, perPage),
-        countEntityKillmails(characterId, 'character', 'all'),
+        estimateEntityKillmails(characterId, 'character', 'all'),
       ]);
     });
 

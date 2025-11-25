@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3';
 import {
   getFilteredKillsWithNames,
-  countFilteredKills,
+  estimateFilteredKills,
 } from '../models/killlist';
 import {
   parseKilllistFilters,
@@ -13,15 +13,30 @@ import { normalizeKillRow } from '../helpers/templates';
 import { handleError } from '../utils/error';
 import { track } from '../utils/performance-decorators';
 import { timeAgo } from '../helpers/time';
+import {
+  generateWebsiteStructuredData,
+  generateOrganizationStructuredData,
+} from '../helpers/seo';
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
+    // Generate structured data for homepage
+    const websiteStructuredData = generateWebsiteStructuredData();
+    const organizationStructuredData = generateOrganizationStructuredData();
+
+    // Combine both structured data schemas
+    const combinedStructuredData = `[${websiteStructuredData},${organizationStructuredData}]`;
+
     // Page context
     const pageContext = {
       title: 'Home',
       description:
-        'Welcome to EVE-KILL - Real-time killmail tracking and analytics',
-      keywords: 'eve online, killmail, pvp, tracking',
+        'Real-time EVE Online killmail tracking and analytics. View the latest killmails, ship losses, and combat statistics from New Eden.',
+      keywords:
+        'eve online, killmail, killboard, pvp, zkillboard, ship losses, combat tracker, eve kill, zkill alternative',
+      url: '/',
+      type: 'website',
+      structuredData: combinedStructuredData,
     };
 
     // Get pagination parameters
@@ -51,7 +66,7 @@ export default defineEventHandler(async (event: H3Event) => {
     ] = await track('frontpage:parallel_queries', 'application', async () => {
       return await Promise.all([
         getFilteredKillsWithNames(userFilters, page, perPage),
-        countFilteredKills(userFilters),
+        estimateFilteredKills(userFilters),
         getTopByKills('week', 'character', 10),
         getTopByKills('week', 'corporation', 10),
         getTopByKills('week', 'alliance', 10),
