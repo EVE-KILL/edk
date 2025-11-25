@@ -902,13 +902,12 @@ textarea.killmail {
   position: absolute;
   width: 42px;
   height: 42px;
-  background-color: rgba(20, 20, 20, 0.2);
-  border-radius: var(--radius-sm);
+  background: radial-gradient(circle at center, rgba(20, 20, 20, 0.3) 0%, rgba(0, 0, 0, 0.2) 70%, transparent 100%);
+  border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 6;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
   pointer-events: auto;
   cursor: pointer;
   opacity: 0;
@@ -920,8 +919,7 @@ textarea.killmail {
 }
 
 .slot:hover {
-  background-color: rgba(20, 20, 20, 0.4);
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+  background: radial-gradient(circle at center, rgba(30, 30, 30, 0.4) 0%, rgba(10, 10, 10, 0.3) 70%, transparent 100%);
 }
 
 .module-container {
