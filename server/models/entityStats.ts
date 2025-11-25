@@ -144,7 +144,7 @@ export async function getEntityStats(
         max("killmailTime") as "lastKillTime"
       FROM killmails
       WHERE ${killsIdentifier} = :entityId
-      AND "killmailTime" >= :start::timestamp AND "killmailTime" <= :end::timestamp
+      AND "killmailTime" >= :start::timestamptz AND "killmailTime" <= :end::timestamptz
     ),
     losses_data AS (
       SELECT
@@ -155,7 +155,7 @@ export async function getEntityStats(
         max("killmailTime") as "lastLossTime"
       FROM killmails
       WHERE ${lossesIdentifier} = :entityId
-      AND "killmailTime" >= :start::timestamp AND "killmailTime" <= :end::timestamp
+      AND "killmailTime" >= :start::timestamptz AND "killmailTime" <= :end::timestamptz
     )
     SELECT
       :entityId as "entityId",
@@ -252,7 +252,7 @@ export async function getTopEntitiesByKills(
       0 as "iskLost"
     FROM killmails
     WHERE ${groupIdentifier} IS NOT NULL AND ${groupIdentifier} > 0
-    AND "killmailTime" >= :start::timestamp AND "killmailTime" <= :end::timestamp
+    AND "killmailTime" >= :start::timestamptz AND "killmailTime" <= :end::timestamptz
     GROUP BY ${groupIdentifier}
     ORDER BY kills DESC
     LIMIT :limit`,

@@ -966,10 +966,10 @@ export async function getSiblingKillmails(
     LEFT JOIN npcCharacters vnpc ON k."victimCharacterId" = vnpc."characterId"
     LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
     WHERE k."victimCharacterId" = :victimCharacterId
-      AND k."killmailTime" >= :startTime::timestamp
-      AND k."killmailTime" <= :endTime::timestamp
+      AND k."killmailTime" >= :startTime::timestamptz
+      AND k."killmailTime" <= :endTime::timestamptz
       AND k."killmailId" != :excludeKillmailId
-    ORDER BY k."killmailTime" DESC
+    ORDER BY k."killmailTime" ASC
     LIMIT :limit`,
     { victimCharacterId, startTime, endTime, excludeKillmailId, limit }
   );

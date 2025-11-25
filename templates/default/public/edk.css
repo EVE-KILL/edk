@@ -2312,7 +2312,7 @@ textarea.killmail {
   overflow-x: auto;
   overflow-y: hidden;
   max-width: 100%;
-  padding: 2px 0; /* Account for scrollbar */
+  padding: 2px 0;
 }
 
 .killmail-nav__siblings-list::-webkit-scrollbar {
@@ -2335,8 +2335,8 @@ textarea.killmail {
 .killmail-nav__sibling-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 8px;
+  padding: 6px 10px;
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-darker);
   color: var(--color-text-primary);
@@ -2351,6 +2351,36 @@ textarea.killmail {
   background: rgba(74, 158, 255, 0.15);
   border-color: var(--color-accent-blue-light);
   color: var(--color-accent-blue-bright);
+}
+
+.killmail-nav__sibling-btn--current {
+  background: rgba(74, 158, 255, 0.2);
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 8px rgba(74, 158, 255, 0.3);
+}
+
+.killmail-nav__sibling-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.killmail-nav__sibling-ship-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.killmail-nav__sibling-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .killmail-nav__sibling-ship {

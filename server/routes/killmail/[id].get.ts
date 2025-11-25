@@ -530,19 +530,22 @@ export default defineEventHandler(async (event: H3Event) => {
           const hours = String(date.getUTCHours()).padStart(2, '0');
           const minutes = String(date.getUTCMinutes()).padStart(2, '0');
           const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}+00`;
         };
 
-        return await Promise.all([
+        // Fetch siblings - we'll add current kill to the list after
+        const [attackersResult, siblingsResult] = await Promise.all([
           getKillmailAttackers(id),
           getSiblingKillmails(
             killmail.victimCharacterId || 0,
             formatDateTime(startDate),
             formatDateTime(endDate),
-            id,
+            0, // Don't exclude any killmail
             20
           ),
         ]);
+
+        return [attackersResult, siblingsResult];
       }
     );
 

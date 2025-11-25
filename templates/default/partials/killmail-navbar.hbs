@@ -187,14 +187,19 @@
     </div>
 
     <!-- Sibling Killmails Section -->
-    {{#if siblings.length}}
+    {{#if (gt siblings.length 1)}}
     <div class="killmail-nav__siblings">
-        <div class="killmail-nav__siblings-label">Related Losses:</div>
+        <div class="killmail-nav__siblings-label">Related Losses (±1 hour):</div>
         <div class="killmail-nav__siblings-list">
             {{#each siblings}}
-            <a href="/killmail/{{killmailId}}" class="killmail-nav__sibling-btn" title="{{shipName}} - {{abbreviateISK totalValue}}">
-                <span class="killmail-nav__sibling-ship">{{shipName}}</span>
-                <span class="killmail-nav__sibling-isk">{{abbreviateISK totalValue}}</span>
+            <a href="/killmail/{{killmailId}}" class="killmail-nav__sibling-btn {{#if (eq killmailId ../killmail.killmailId)}}killmail-nav__sibling-btn--current{{/if}}" title="{{shipName}} - {{abbreviateISK totalValue}}">
+                <div class="killmail-nav__sibling-icon">
+                    {{> components/eve-image type="ship" id=shipTypeId variant="icon" size=32 alt=shipName class="killmail-nav__sibling-ship-icon" loading="lazy" width=32 height=32}}
+                </div>
+                <div class="killmail-nav__sibling-info">
+                    <span class="killmail-nav__sibling-ship">{{shipName}}</span>
+                    <span class="killmail-nav__sibling-isk">{{abbreviateISK totalValue}}</span>
+                </div>
             </a>
             {{/each}}
         </div>
