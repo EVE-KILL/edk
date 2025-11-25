@@ -29,11 +29,11 @@
                     {{#if data.victim.character.id}}
                     {{#if data.victim.character.name}}
                     <span data-character-id="{{data.victim.character.id}}">
-                    <a href="/character/{{data.victim.character.id}}" style="color: #4a9eff; text-decoration: none;">{{data.victim.character.name}}</a>
+                   <a href="/character/{{data.victim.character.id}}" style="color: var(--color-accent-blue-bright); text-decoration: none;">{{data.victim.character.name}}</a>
                     </span>
                     {{else}}
                     <span data-character-id="{{data.victim.character.id}}">
-                    <a href="/character/{{data.victim.character.id}}" style="color: #4a9eff; text-decoration: none;">Pilot #{{data.victim.character.id}}</a>
+                    <a href="/character/{{data.victim.character.id}}" style="color: var(--color-accent-blue-bright); text-decoration: none;">Pilot #{{data.victim.character.id}}</a>
                     </span>
                     {{/if}}
                     {{else}}
@@ -70,7 +70,7 @@
             <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Ship</div>
             <div style="font-size: 10px;">
                 {{#if data.victim.ship.typeId}}
-                <a href="/item/{{data.victim.ship.typeId}}" style="color: #4a9eff; text-decoration: none;">{{data.victim.ship.name}}</a>
+                <a href="/item/{{data.victim.ship.typeId}}" style="color: var(--color-accent-blue-bright); text-decoration: none;">{{data.victim.ship.name}}</a>
                 {{else}}
                 {{data.victim.ship.name}}
                 {{/if}}
@@ -82,7 +82,7 @@
         <div>
             <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Damage</div>
             <div style="font-size: 10px;">
-                <span style="color: #ef4444; font-weight: bold;">{{formatNumber data.victim.damageTaken}}</span>
+                <span style="color: var(--color-damage-red); font-weight: bold;">{{formatNumber data.victim.damageTaken}}</span>
             </div>
         </div>
     </div>
@@ -100,11 +100,11 @@
             <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">System</div>
             <div style="text-align: right; font-size: 10px;">
                 {{#if data.killmail.systemId}}
-                <a href="/system/{{data.killmail.systemId}}" style="color: #4a9eff; text-decoration: none; font-weight: 600;"><b>{{data.killmail.systemName}}</b></a>
+                <a href="/system/{{data.killmail.systemId}}" style="color: var(--color-accent-blue-bright); text-decoration: none; font-weight: 600;"><b>{{data.killmail.systemName}}</b></a>
                 {{else}}
                 <b>{{data.killmail.systemName}}</b>
                 {{/if}}
-                <span style="padding: 1px 4px; font-size: 9px; border-radius: var(--radius-sm); margin-left: 4px; {{#if (gte data.killmail.securityStatus 0.5)}}background: #2F75FE; color: white;{{else}}{{#if (gte data.killmail.securityStatus 0.1)}}background: #F9A825; color: black;{{else}}background: #D32F2F; color: white;{{/if}}{{/if}}">
+                <span style="padding: 1px 4px; font-size: 9px; border-radius: var(--radius-sm); margin-left: 4px; {{#if (gte data.killmail.securityStatus 0.5)}}background: var(--color-sec-high); color: white;{{else}}{{#if (gte data.killmail.securityStatus 0.1)}}background: var(--color-sec-low); color: black;{{else}}background: var(--color-sec-null); color: white;{{/if}}{{/if}}">
                     {{formatSecurity data.killmail.securityStatus}}
                 </span>
                 {{#if data.killmail.regionName}}
@@ -132,23 +132,23 @@
     <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600;">Destroyed:</div>
-            <div style="color: #4ade80; font-weight: bold;">{{formatISK data.stats.destroyedValue}}</div>
+            <div style="color: var(--color-isk-green); font-weight: bold;">{{formatISK data.stats.destroyedValue}}</div>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600;">Dropped:</div>
-            <div style="color: #4ade80; font-weight: bold;">{{formatISK data.stats.droppedValue}}</div>
+            <div style="color: var(--color-isk-green); font-weight: bold;">{{formatISK data.stats.droppedValue}}</div>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600;">Ship:</div>
-            <div style="color: #4ade80; font-weight: bold;">{{formatISK data.stats.shipValue}}</div>
+            <div style="color: var(--color-isk-green); font-weight: bold;">{{formatISK data.stats.shipValue}}</div>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600;">Fitting:</div>
-            <div style="color: #4ade80; font-weight: bold;">{{formatISK data.stats.fitValue}}</div>
+            <div style="color: var(--color-isk-green); font-weight: bold;">{{formatISK data.stats.fitValue}}</div>
         </div>
         <div style="border-top: 1px solid var(--color-border-dark); padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
             <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Total:</div>
-            <div style="color: #4ade80; font-weight: bold; font-size: 11px;">{{formatISK data.stats.totalValue}}</div>
+            <div style="color: var(--color-isk-green); font-weight: bold; font-size: 11px;">{{formatISK data.stats.totalValue}}</div>
         </div>
     </div>
 </div>

@@ -10,7 +10,7 @@
 
         <!-- Fitting Wheel -->
         <div class="mb-lg">
-            {{#if (or data.fittingWheel.destroyed.highSlots data.fittingWheel.destroyed.medSlots data.fittingWheel.destroyed.lowSlots data.fittingWheel.destroyed.rigSlots data.fittingWheel.destroyed.subSlots data.fittingWheel.dropped.highSlots data.fittingWheel.dropped.medSlots data.fittingWheel.dropped.lowSlots data.fittingWheel.dropped.rigSlots data.fittingWheel.dropped.subSlots)}}
+            {{#if (or data.fittingWheel.highSlots data.fittingWheel.medSlots data.fittingWheel.lowSlots data.fittingWheel.rigSlots data.fittingWheel.subSlots)}}
             {{> partials/fitting-wheel victim=data.victim fittingWheel=data.fittingWheel}}
             {{/if}}
         </div>
@@ -37,8 +37,22 @@
                         {{#with (prepareItemSections data.items)}}
                         {{#if this.length}}
                             {{#each this}}
-                            <tr class="kb-table-row-even">
-                                <td class="kb-table-cell" colspan="5" style="padding: 4px 8px;"><b>{{this.title}}</b></td>
+                            <tr class="kb-table-header section-sort-header" data-section="{{@index}}" style="background: transparent;">
+                                <td class="kb-table-header sortable" data-sort="name" style="text-align: left; padding: 4px 8px; cursor: pointer; user-select: none;">
+                                    <b>{{this.title}}</b> <span class="sort-indicator"></span>
+                                </td>
+                                <td class="kb-table-header sortable" data-sort="quantity" style="text-align: center; width: 50px; padding: 4px 8px; cursor: pointer; user-select: none;">
+                                    Qty <span class="sort-indicator"></span>
+                                </td>
+                                <td class="kb-table-header sortable" data-sort="price" style="text-align: right; width: 100px; padding: 4px 8px; cursor: pointer; user-select: none;">
+                                    Price <span class="sort-indicator"></span>
+                                </td>
+                                <td class="kb-table-header sortable" data-sort="totalValue" style="text-align: right; width: 120px; padding: 4px 8px; cursor: pointer; user-select: none;">
+                                    Total ISK <span class="sort-indicator"></span>
+                                </td>
+                                <td class="kb-table-header sortable" data-sort="status" style="text-align: center; width: 80px; padding: 4px 8px; cursor: pointer; user-select: none;">
+                                    Status <span class="sort-indicator"></span>
+                                </td>
                             </tr>
                             {{#each this.items}}
                             {{> partials/item-row}}

@@ -1,9 +1,14 @@
 {{!-- Item Row Partial - Displays a single item with quantity, price, total value, and destroyed/dropped status --}}
-<tr class="kb-table-row-odd" style="cursor: pointer;">
+<tr class="kb-table-row-odd" 
+    style="cursor: pointer;" 
+    data-quantity="{{this.quantity}}" 
+    data-price="{{this.price}}" 
+    data-total-value="{{this.totalValue}}"
+    data-status="{{#if this.isDestroyed}}destroyed{{else}}dropped{{/if}}">
     <td class="kb-table-cell" style="padding: 4px 8px;">
         <div style="display: flex; align-items: center; gap: 8px;">
             {{> partials/eve-image type="item" id=this.typeId size=32 alt=this.name}}
-            <span>{{this.name}}</span>
+            <span class="item-name">{{this.name}}</span>
         </div>
     </td>
     <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">{{this.quantity}}</td>
@@ -11,14 +16,14 @@
         {{#if this.price}}
             <span>{{formatISK this.price}}</span>
         {{else}}
-            <span style="color: #999;">N/A</span>
+            <span style="color: var(--color-text-secondary);">N/A</span>
         {{/if}}
     </td>
     <td class="kb-table-cell" style="text-align: right; padding: 4px 8px;">
         {{#if this.totalValue}}
             <span class="isk-value">{{formatISK this.totalValue}}</span>
         {{else}}
-            <span style="color: #999;">N/A</span>
+            <span style="color: var(--color-text-secondary);">N/A</span>
         {{/if}}
     </td>
     <td class="kb-table-cell" style="text-align: center; padding: 4px 8px;">

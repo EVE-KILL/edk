@@ -386,6 +386,7 @@
       t3: [963, 1305]
     };
 
+    const CAPSULE_GROUP_IDS = [29, 4053]; // Capsule and Irregular Capsule (Golden Pod)
     const WORMHOLE_REGION_MIN = 11000001;
     const WORMHOLE_REGION_MAX = 11000033;
     const ABYSSAL_REGION_MIN = 12000000;
@@ -398,6 +399,9 @@
     const filterTopic = killmailList.dataset.wsFilterTopic; // For kill type pages
     const subscriptionKey = `killlist:${filterType || 'all'}:${filterId || 'all'}:${filterMode || 'all'}:${filterTopic || 'latest'}`;
     const topics = buildTopics();
+
+    // Parse URL filters for client-side filtering
+    const urlFilters = parseUrlFilters();
     let unsubscribeTopics = null;
     let removeKillmailHandler = null;
     let cleanupTimer = null;
@@ -463,6 +467,116 @@
     window.addEventListener('beforeunload', cleanup);
     window.addEventListener('pageshow', cancelCleanup);
 
+    // Parse URL parameters into filters
+    function parseUrlFilters() {
+      const params = new URLSearchParams(window.location.search);
+      const filters = {};
+
+      // Value filters
+      const minValue = params.get('minTotalValue') || params.get('minValue');
+      if (minValue) filters.minTotalValue = Number(minValue);
+
+      // Security status
+      const securityStatus = params.get('securityStatus');
+      if (securityStatus) filters.securityStatus = securityStatus;
+
+      // Ship class filter
+      const shipClass = params.get('shipClass');
+      if (shipClass) filters.shipClass = shipClass;
+
+      // Tech level filter
+      const techLevel = params.get('techLevel');
+      if (techLevel) filters.techLevel = techLevel;
+
+      // Kill type filters
+      if (params.get('solo') === '1') filters.isSolo = true;
+      if (params.get('npc') === '1') filters.isNpc = true;
+      if (params.get('awox') === '1') filters.isAwox = true;
+
+      // Capsule filter
+      if (params.get('noCapsules') === '1') filters.noCapsules = true;
+
+      return filters;
+    }
+
+    // Check if killmail matches URL filters
+    function matchesUrlFilters(killmail, filters) {
+      // Value filter
+      if (filters.minTotalValue && killmail.totalValue < filters.minTotalValue) {
+        return false;
+      }
+
+      // Security status filter
+      if (filters.securityStatus) {
+        const security = killmail.system?.security ?? 0;
+        const regionId = killmail.system?.regionId ?? 0;
+
+        switch (filters.securityStatus) {
+          case 'highsec':
+            if (security < 0.45) return false;
+            break;
+          case 'lowsec':
+            if (security < 0.0 || security >= 0.45) return false;
+            break;
+          case 'nullsec':
+            if (security >= 0.0 || (regionId >= WORMHOLE_REGION_MIN && regionId <= WORMHOLE_REGION_MAX)) return false;
+            break;
+          case 'wormhole':
+            if (regionId < WORMHOLE_REGION_MIN || regionId > WORMHOLE_REGION_MAX) return false;
+            break;
+          case 'abyssal':
+            if (regionId < ABYSSAL_REGION_MIN || regionId > ABYSSAL_REGION_MAX) return false;
+            break;
+          case 'pochven':
+            if (regionId !== POCHVEN_REGION_ID) return false;
+            break;
+        }
+      }
+
+      // Ship class filter
+      if (filters.shipClass) {
+        const shipGroupId = killmail.victim?.ship?.groupId;
+        const classGroups = SHIP_GROUPS[filters.shipClass];
+        if (classGroups && !classGroups.includes(shipGroupId)) {
+          return false;
+        }
+      }
+
+      // Tech level filter
+      if (filters.techLevel) {
+        const shipGroupId = killmail.victim?.ship?.groupId;
+        const techGroups = SHIP_GROUPS[filters.techLevel];
+        if (techGroups && !techGroups.includes(shipGroupId)) {
+          return false;
+        }
+      }
+
+      // Solo filter
+      if (filters.isSolo && killmail.attackerCount > 1) {
+        return false;
+      }
+
+      // NPC filter
+      if (filters.isNpc && !killmail.npc) {
+        return false;
+      }
+
+      // Awox filter
+      if (filters.isAwox && !killmail.awox) {
+        return false;
+      }
+
+      // Capsule filter
+      if (filters.noCapsules) {
+        const shipGroupId = killmail.victim?.ship?.groupId;
+        if (CAPSULE_GROUP_IDS.includes(shipGroupId)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
     function buildTopics() {
       if (filterType === 'killType' && filterTopic) {
         return [filterTopic];
@@ -502,6 +616,12 @@
     }
 
     function handleNewKillmail(killmail) {
+      // First check URL filters (applies to all pages)
+      if (!matchesUrlFilters(killmail, urlFilters)) {
+        console.log('🚫 Filtered out by URL filters:', killmail.killmailId);
+        return;
+      }
+
       // Additional client-side filtering for entity pages
       if (filterType && filterId) {
         const id = parseInt(filterId);
@@ -543,7 +663,7 @@
         }
 
         if (!shouldShow) {
-          console.log('🚫 Filtered out killmail', killmail.killmailId);
+          console.log('🚫 Filtered out by entity filter:', killmail.killmailId);
           return;
         }
       } else if (filterType === 'killType' && filterTopic) {

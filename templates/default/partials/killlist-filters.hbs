@@ -71,6 +71,14 @@
     <input type="hidden" name="solo" value="{{#if filterDefaults.isSolo}}1{{/if}}" id="filter-solo" />
     <input type="hidden" name="awox" value="{{#if filterDefaults.isAwox}}1{{/if}}" id="filter-awox" />
     <input type="hidden" name="npc" value="{{#if filterDefaults.isNpc}}1{{/if}}" id="filter-npc" />
+
+    <label class="kl-filters__toggle">
+      <input type="checkbox" id="filter-capsules-checkbox" {{#unless filterDefaults.noCapsules}}checked{{/unless}} onchange="toggleCapsules(this)">
+      <span class="kl-filters__toggle-text">Capsules</span>
+    </label>
+    {{#if filterDefaults.noCapsules}}
+    <input type="hidden" name="noCapsules" value="1" id="filter-capsules-hidden">
+    {{/if}}
   </div>
 
   <!-- Footer with Pagination -->
@@ -289,6 +297,36 @@
   color: var(--color-text-secondary) !important;
 }
 
+.kl-filters__toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-dark);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.kl-filters__toggle:hover {
+  border-color: var(--color-accent-blue);
+  background-color: rgba(74, 158, 255, 0.05);
+}
+
+.kl-filters__toggle input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.kl-filters__toggle-text {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
 .kl-filters__pagination {
   display: flex;
   align-items: center;
@@ -343,7 +381,7 @@
 
 .kl-filters__page.active {
   background: var(--color-accent-blue);
-  color: #fff;
+  color: var(--color-text-white);
   font-weight: bold;
 }
 
@@ -380,6 +418,27 @@ function updateKillTypeInputs(select) {
   if (select.value) {
     document.getElementById('filter-' + select.value).value = '1';
   }
+}
+
+function toggleCapsules(checkbox) {
+  const form = checkbox.form;
+  // Remove old hidden input if exists
+  const oldInput = document.getElementById('filter-capsules-hidden');
+  if (oldInput) oldInput.remove();
+  
+  // Create new hidden input with appropriate name/value
+  if (!checkbox.checked) {
+    // Unchecked = filter out capsules = add noCapsules=1
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'noCapsules';
+    input.value = '1';
+    input.id = 'filter-capsules-hidden';
+    form.appendChild(input);
+  }
+  // Checked = include capsules = don't add any parameter (default behavior)
+  
+  submitFilters(form);
 }
 
 function submitFilters(form) {

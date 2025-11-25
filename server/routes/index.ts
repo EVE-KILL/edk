@@ -209,10 +209,7 @@ export default defineEventHandler(async (event: H3Event) => {
             securityStatus,
             shipClass,
             techLevel,
-            skipCapsules:
-              userFilters.excludeTypeIds?.some((id) =>
-                CAPSULE_TYPE_IDS.includes(id)
-              ) || false,
+            noCapsules: userFilters.noCapsules || false,
           },
         };
       }

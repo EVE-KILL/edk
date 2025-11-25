@@ -715,6 +715,7 @@ export interface KillmailItem {
   quantityDestroyed: number;
   flag: number;
   price: number;
+  categoryId: number;
 }
 
 export interface KillmailAttacker {
@@ -829,6 +830,7 @@ export async function getKillmailItems(
     flag: number;
     singleton: number;
     killmailTime: string;
+    categoryId: number;
   }>(
     `SELECT
       i."itemTypeId",
@@ -837,9 +839,11 @@ export async function getKillmailItems(
       i."quantityDestroyed",
       i.flag,
       i.singleton,
-      k."killmailTime"
+      k."killmailTime",
+      COALESCE(g."categoryId", 0) as "categoryId"
     FROM items i
     LEFT JOIN types t ON i."itemTypeId" = t."typeId"
+    LEFT JOIN groups g ON t."groupId" = g."groupId"
     JOIN killmails k ON i."killmailId" = k."killmailId"
     WHERE i."killmailId" = :killmailId
       AND i."itemTypeId" IS NOT NULL`,
@@ -890,6 +894,7 @@ export async function getKillmailItems(
       quantityDestroyed: item.quantityDestroyed,
       flag: item.flag,
       price,
+      categoryId: item.categoryId,
     };
   });
 }

@@ -3,8 +3,14 @@
         <!-- Outer ring -->
         <div class="outer-ring">
             <svg viewBox="24 24 464 464" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="outer-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:rgba(0,0,0,0.7);stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:rgba(0,0,0,0.3);stop-opacity:1" />
+                    </linearGradient>
+                </defs>
                 <g>
-                    <circle cx="256" cy="256" r="224" style="fill: none; stroke: rgb(0, 0, 0); stroke-width: 16;"></circle>
+                    <circle cx="256" cy="256" r="224" style="fill: none; stroke: url(#outer-gradient); stroke-width: 16;"></circle>
                 </g>
             </svg>
         </div>
@@ -12,8 +18,22 @@
         <!-- Inner ring -->
         <div class="inner-ring">
             <svg viewBox="24 24 464 464" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="inner-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:rgba(0,0,0,0.4);stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:rgba(0,0,0,0.2);stop-opacity:1" />
+                    </linearGradient>
+                    <mask id="slot-corners">
+                        <rect width="512" height="512" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>
+                        <rect width="17" height="17" x="133" y="126" style="fill: rgb(0, 0, 0);"></rect>
+                        <rect width="17" height="17" x="366" y="129" style="fill: rgb(0, 0, 0);"></rect>
+                        <rect width="17" height="17" x="366" y="366" style="fill: rgb(0, 0, 0);"></rect>
+                        <rect width="17" height="17" x="132" y="369" style="fill: rgb(0, 0, 0);"></rect>
+                        <rect width="12" height="12" x="230" y="44" transform="rotate(56)" style="fill: rgb(0, 0, 0);"></rect>
+                    </mask>
+                </defs>
                 <g>
-                    <circle cx="256" cy="256" r="195" style="fill: none; stroke: rgb(0, 0, 0); stroke-width: 46; stroke-opacity: 0.6;"></circle>
+                    <circle cx="256" cy="256" r="195" mask="url(#slot-corners)" style="fill: none; stroke: url(#inner-gradient); stroke-width: 46; filter: blur(2px);"></circle>
                 </g>
             </svg>
         </div>
@@ -35,104 +55,106 @@
         <!-- Slots container -->
         <div class="slots-container">
             <!-- Slot type indicators -->
-            <div class="slot-indicator high-indicator"></div>
-            <div class="slot-indicator mid-indicator"></div>
-            <div class="slot-indicator low-indicator"></div>
+            <div class="slot-indicator high-indicator">
+                <svg viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <mask id="radial-menu-high">
+                            <rect width="12" height="12" x="0" y="0" style="fill: rgb(255, 255, 255); fill-opacity: 0.5;"></rect>
+                            <rect width="12" height="3" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>
+                            <circle cx="6" cy="6" r="5" style="fill: rgb(0, 0, 0);"></circle>
+                            <rect width="3" height="3" x="0" y="0" style="fill: rgb(0, 0, 0);"></rect>
+                            <rect width="4" height="3" x="9" y="0" style="fill: rgb(0, 0, 0);"></rect>
+                            <rect width="3" height="4" x="0" y="9" style="fill: rgb(0, 0, 0);"></rect>
+                            <rect width="4" height="4" x="9" y="9" style="fill: rgb(0, 0, 0);"></rect>
+                        </mask>
+                    </defs>
+                    <g>
+                        <rect width="12" height="12" x="0" y="0" mask="url(#radial-menu-high)" style="fill: rgb(180, 60, 60);"></rect>
+                    </g>
+                </svg>
+            </div>
+            <div class="slot-indicator mid-indicator">
+                <svg viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <mask id="radial-menu-mid">
+                            <rect width="12" height="12" x="0" y="0" style="fill: rgb(255, 255, 255); fill-opacity: 0.5;"></rect>
+                            <rect width="12" height="3" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>
+                            <circle cx="6" cy="6" r="5" style="fill: rgb(0, 0, 0);"></circle>
+                            <rect width="3" height="3" x="0" y="0" style="fill: rgb(0, 0, 0);"></rect>
+                            <rect width="4" height="3" x="9" y="0" style="fill: rgb(0, 0, 0);"></rect>
+                            <rect width="3" height="4" x="0" y="9" style="fill: rgb(0, 0, 0);"></rect>
+                            <rect width="4" height="4" x="9" y="9" style="fill: rgb(0, 0, 0);"></rect>
+                        </mask>
+                    </defs>
+                    <g>
+                        <rect width="12" height="12" x="0" y="0" mask="url(#radial-menu-mid)" style="fill: rgb(60, 120, 180);"></rect>
+                    </g>
+                </svg>
+            </div>
+            <div class="slot-indicator low-indicator">
+                <svg viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <mask id="radial-menu-low">
+                            <rect width="12" height="12" x="0" y="0" style="fill: rgb(255, 255, 255); fill-opacity: 0.5;"></rect>
+                            <rect width="12" height="3" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>
+                            <circle cx="6" cy="6" r="5" style="fill: rgb(0, 0, 0);"></circle>
+                            <rect width="3" height="3" x="0" y="0" style="fill: rgb(0, 0, 0);"></rect>
+                            <rect width="4" height="3" x="9" y="0" style="fill: rgb(0, 0, 0);"></rect>
+                            <rect width="3" height="4" x="0" y="9" style="fill: rgb(0, 0, 0);"></rect>
+                            <rect width="4" height="4" x="9" y="9" style="fill: rgb(0, 0, 0);"></rect>
+                        </mask>
+                    </defs>
+                    <g>
+                        <rect width="12" height="12" x="0" y="0" mask="url(#radial-menu-low)" style="fill: rgb(180, 140, 60);"></rect>
+                    </g>
+                </svg>
+            </div>
 
             <!-- High slots -->
-            {{#each fittingWheel.destroyed.highSlots}}
-            <div class="slot high-slot" data-slot-type="high" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="destroyed">
+            {{#each fittingWheel.highSlots}}
+            <div class="slot high-slot" data-slot-type="high" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-status="{{#if isDestroyed}}destroyed{{else}}dropped{{/if}}">
                 <div class="module-container">
                     {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                    {{#if ammo}}
+                    <div class="ammo-overlay" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-status="{{#if ammo.isDestroyed}}destroyed{{else}}dropped{{/if}}">
+                        {{> partials/eve-image type="item" id=ammo.typeId size=48 alt=ammo.name class="ammo-icon"}}
+                    </div>
+                    {{/if}}
                 </div>
-                <!-- Ammo overlay - positioned via CSS -->
-                {{#if ammo}}
-                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="destroyed">
-                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
-                </div>
-                {{/if}}
-            </div>
-            {{/each}}
-
-            {{#each fittingWheel.dropped.highSlots}}
-            <div class="slot high-slot" data-slot-type="high" data-slot-index="{{add (length ../fittingWheel.destroyed.highSlots) @index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="dropped">
-                <div class="module-container">
-                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
-                </div>
-                {{#if ammo}}
-                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="dropped">
-                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
-                </div>
-                {{/if}}
             </div>
             {{/each}}
 
             <!-- Med slots -->
-            {{#each fittingWheel.destroyed.medSlots}}
-            <div class="slot mid-slot" data-slot-type="mid" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="destroyed">
+            {{#each fittingWheel.medSlots}}
+            <div class="slot mid-slot" data-slot-type="mid" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-status="{{#if isDestroyed}}destroyed{{else}}dropped{{/if}}">
                 <div class="module-container">
                     {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                    {{#if ammo}}
+                    <div class="ammo-overlay" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-status="{{#if ammo.isDestroyed}}destroyed{{else}}dropped{{/if}}">
+                        {{> partials/eve-image type="item" id=ammo.typeId size=48 alt=ammo.name class="ammo-icon"}}
+                    </div>
+                    {{/if}}
                 </div>
-                <!-- Ammo overlay - positioned via CSS -->
-                {{#if ammo}}
-                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="destroyed">
-                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
-                </div>
-                {{/if}}
-            </div>
-            {{/each}}
-
-            {{#each fittingWheel.dropped.medSlots}}
-            <div class="slot mid-slot" data-slot-type="mid" data-slot-index="{{add (length ../fittingWheel.destroyed.medSlots) @index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="dropped">
-                <div class="module-container">
-                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
-                </div>
-                {{#if ammo}}
-                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="dropped">
-                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
-                </div>
-                {{/if}}
             </div>
             {{/each}}
 
             <!-- Low slots -->
-            {{#each fittingWheel.destroyed.lowSlots}}
-            <div class="slot low-slot" data-slot-type="low" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="destroyed">
+            {{#each fittingWheel.lowSlots}}
+            <div class="slot low-slot" data-slot-type="low" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-status="{{#if isDestroyed}}destroyed{{else}}dropped{{/if}}">
                 <div class="module-container">
                     {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
+                    {{#if ammo}}
+                    <div class="ammo-overlay" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-status="{{#if ammo.isDestroyed}}destroyed{{else}}dropped{{/if}}">
+                        {{> partials/eve-image type="item" id=ammo.typeId size=48 alt=ammo.name class="ammo-icon"}}
+                    </div>
+                    {{/if}}
                 </div>
-                <!-- Ammo overlay - positioned via CSS -->
-                {{#if ammo}}
-                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="destroyed">
-                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
-                </div>
-                {{/if}}
-            </div>
-            {{/each}}
-
-            {{#each fittingWheel.dropped.lowSlots}}
-            <div class="slot low-slot" data-slot-type="low" data-slot-index="{{add (length ../fittingWheel.destroyed.lowSlots) @index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="dropped">
-                <div class="module-container">
-                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
-                </div>
-                {{#if ammo}}
-                <div class="ammo-container" data-type-id="{{ammo.typeId}}" data-name="{{ammo.name}}" data-price="{{ammo.totalValue}}" data-quantity="{{ammo.quantity}}" data-status="dropped">
-                    {{> partials/eve-image type="item" id=ammo.typeId size=32 alt=ammo.name class="ammo-icon"}}
-                </div>
-                {{/if}}
             </div>
             {{/each}}
 
             <!-- Rig slots -->
-            {{#each fittingWheel.destroyed.rigSlots}}
-            <div class="slot rig-slot" data-slot-type="rig" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="destroyed">
-                <div class="module-container">
-                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
-                </div>
-            </div>
-            {{/each}}
-            {{#each fittingWheel.dropped.rigSlots}}
-            <div class="slot rig-slot" data-slot-type="rig" data-slot-index="{{add (length ../fittingWheel.destroyed.rigSlots) @index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="dropped">
+            {{#each fittingWheel.rigSlots}}
+            <div class="slot rig-slot" data-slot-type="rig" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-status="{{#if isDestroyed}}destroyed{{else}}dropped{{/if}}">
                 <div class="module-container">
                     {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
                 </div>
@@ -140,15 +162,8 @@
             {{/each}}
 
             <!-- Subsystem slots -->
-            {{#each fittingWheel.destroyed.subSlots}}
-            <div class="slot subsystem-slot" data-slot-type="subsystem" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="destroyed">
-                <div class="module-container">
-                    {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
-                </div>
-            </div>
-            {{/each}}
-            {{#each fittingWheel.dropped.subSlots}}
-            <div class="slot subsystem-slot" data-slot-type="subsystem" data-slot-index="{{add (length ../fittingWheel.destroyed.subSlots) @index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-quantity="{{quantity}}" data-status="dropped">
+            {{#each fittingWheel.subSlots}}
+            <div class="slot subsystem-slot" data-slot-type="subsystem" data-slot-index="{{@index}}" data-type-id="{{typeId}}" data-name="{{name}}" data-price="{{totalValue}}" data-status="{{#if isDestroyed}}destroyed{{else}}dropped{{/if}}">
                 <div class="module-container">
                     {{> partials/eve-image type="item" id=typeId size=64 alt=name class="module-icon"}}
                 </div>

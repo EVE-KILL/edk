@@ -191,9 +191,11 @@ export function parseKilllistFilters(query: Record<string, any>): {
   filters.victimCorporationId = toNumber(query.victimCorporationId);
   filters.victimAllianceId = toNumber(query.victimAllianceId);
 
-  const skipCapsules = toBoolean(query.skipCapsules);
-  if (skipCapsules) {
-    addExclude(CAPSULE_TYPE_IDS);
+  // Handle capsule filtering
+  const noCapsules =
+    toBoolean(query.noCapsules) || toBoolean(query.skipCapsules);
+  if (noCapsules) {
+    filters.noCapsules = true;
   }
 
   // Drop undefined entries so we don't clobber defaults when merging
@@ -251,7 +253,7 @@ export function parseKilllistFilters(query: Record<string, any>): {
   } else {
     addParam('shipGroupId', filters.shipGroupIds);
   }
-  if (skipCapsules) addParam('skipCapsules', '1');
+  if (filters.noCapsules) addParam('noCapsules', '1');
 
   return {
     filters,

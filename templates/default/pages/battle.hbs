@@ -40,7 +40,7 @@
             <div style="border-top: 1px solid var(--color-border-dark); padding-top: 12px; display: flex; justify-content: space-between; align-items: flex-start;">
                 <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">Security</div>
                 <div style="font-size: 10px;">
-                    <span style="padding: 1px 4px; font-size: 9px; border-radius: var(--radius-sm); {{#if (gte system.security 0.5)}}background: #2F75FE; color: white;{{else}}{{#if (gte system.security 0.1)}}background: #F9A825; color: black;{{else}}background: #D32F2F; color: white;{{/if}}{{/if}}">
+                    <span style="padding: 1px 4px; font-size: 9px; border-radius: var(--radius-sm); {{#if (gte system.security 0.5)}}background: var(--color-sec-high); color: white;{{else}}{{#if (gte system.security 0.1)}}background: var(--color-sec-low); color: black;{{else}}background: var(--color-sec-null); color: white;{{/if}}{{/if}}">
                         {{formatNumber system.security}}
                     </span>
                 </div>

@@ -37,7 +37,7 @@
     right: 12px;
     z-index: 10000;
     background: rgba(30, 30, 30, 0.85);
-    color: #fff;
+    color: var(--color-text-white);
     border: 1px solid #444;
     border-radius: 50%;
     width: 42px;
@@ -87,7 +87,7 @@
   .debug-bar-toggle {
     background: #333;
     border: none;
-    color: #fff;
+    color: var(--color-text-white);
     padding: 6px 12px;
     border-radius: var(--radius-sm);
     cursor: pointer;
@@ -121,7 +121,7 @@
 
   .debug-stat-label {
     font-size: 11px;
-    color: #999;
+    color: var(--color-text-secondary);
     text-transform: uppercase;
     margin-top: 4px;
     display: block;
@@ -140,7 +140,7 @@
     cursor: pointer;
     background: transparent;
     border: none;
-    color: #999;
+    color: var(--color-text-secondary);
     font-size: 13px;
     font-weight: 500;
     transition: all 0.2s;
@@ -149,7 +149,7 @@
 
   .debug-tab:hover {
     background: rgba(255, 255, 255, 0.05);
-    color: #ccc;
+    color: var(--color-text-light);
   }
 
   .debug-tab.active {
@@ -189,7 +189,7 @@
 
   .debug-span-name {
     font-weight: 600;
-    color: #fff;
+    color: var(--color-text-white);
     font-size: 12px;
     font-family: 'Courier New', monospace;
   }
@@ -349,7 +349,7 @@
 
   .debug-query-time {
     font-size: 11px;
-    color: #999;
+    color: var(--color-text-secondary);
   }
 
   .debug-bar::-webkit-scrollbar,
@@ -410,12 +410,12 @@
       <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>Performance Summary</h4>
 
       <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #4CAF50;'>
-        <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Total Request Time</strong></div>
+        <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>Total Request Time</strong></div>
         <div style='font-size: 20px; color: #4CAF50; font-weight: bold;'>{{performance.totalTime}}ms</div>
       </div>
 
       <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #2196F3;'>
-        <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Database Performance</strong></div>
+        <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>Database Performance</strong></div>
         <div style='font-size: 13px; color: #90CAF9;'>
           {{performance.queryCount}} queries<br>
           {{performance.dbTimeTotal}}ms total<br>
@@ -425,7 +425,7 @@
       </div>
 
       <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: var(--radius-sm); border-left: 3px solid #FF9800;'>
-        <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>Application Time</strong></div>
+        <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>Application Time</strong></div>
         <div style='font-size: 13px; color: #FFB74D;'>{{performance.appTime}}ms</div>
       </div>
     </div>
@@ -437,7 +437,7 @@
       {{#if performance.categoryBreakdown}}
         {{#if (gt performance.categoryBreakdown.database.count 0)}}
         <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #2196F3;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🗄️ Database</strong></div>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 6px;'><strong>🗄️ Database</strong></div>
           <div style='font-size: 13px; color: #90CAF9;'>
             {{performance.categoryBreakdown.database.count}} operations<br>
             {{performance.categoryBreakdown.database.total}}ms total<br>
@@ -448,7 +448,7 @@
 
         {{#if (gt performance.categoryBreakdown.cache.count 0)}}
         <div style='background: rgba(156, 39, 176, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #9C27B0;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>💾 Cache (Redis)</strong></div>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 6px;'><strong>💾 Cache (Redis)</strong></div>
           <div style='font-size: 13px; color: #CE93D8;'>
             {{performance.categoryBreakdown.cache.count}} operations<br>
             {{performance.categoryBreakdown.cache.total}}ms total<br>
@@ -459,7 +459,7 @@
 
         {{#if (gt performance.categoryBreakdown.search.count 0)}}
         <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #FF9800;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🔍 Search (Typesense)</strong></div>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 6px;'><strong>🔍 Search (Typesense)</strong></div>
           <div style='font-size: 13px; color: #FFB74D;'>
             {{performance.categoryBreakdown.search.count}} operations<br>
             {{performance.categoryBreakdown.search.total}}ms total<br>
@@ -470,7 +470,7 @@
 
         {{#if (gt performance.categoryBreakdown.http.count 0)}}
         <div style='background: rgba(244, 67, 54, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #f44336;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🌐 HTTP Requests</strong></div>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 6px;'><strong>🌐 HTTP Requests</strong></div>
           <div style='font-size: 13px; color: #EF9A9A;'>
             {{performance.categoryBreakdown.http.count}} requests<br>
             {{performance.categoryBreakdown.http.total}}ms total<br>
@@ -481,7 +481,7 @@
 
         {{#if (gt performance.categoryBreakdown.template.count 0)}}
         <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #4CAF50;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>🎨 Template Rendering</strong></div>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 6px;'><strong>🎨 Template Rendering</strong></div>
           <div style='font-size: 13px; color: #A5D6A7;'>
             {{performance.categoryBreakdown.template.count}} operations<br>
             {{performance.categoryBreakdown.template.total}}ms total<br>
@@ -492,7 +492,7 @@
 
         {{#if (gt performance.categoryBreakdown.application.count 0)}}
         <div style='background: rgba(103, 58, 183, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border-left: 3px solid #673AB7;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 6px;'><strong>⚙️ Application Code</strong></div>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 6px;'><strong>⚙️ Application Code</strong></div>
           <div style='font-size: 13px; color: #B39DDB;'>
             {{performance.categoryBreakdown.application.count}} operations<br>
             {{performance.categoryBreakdown.application.total}}ms total<br>
@@ -501,7 +501,7 @@
         </div>
         {{/if}}
       {{else}}
-        <div style='text-align: center; padding: 40px 20px; color: #666;'>
+        <div style='text-align: center; padding: 40px 20px; color: var(--color-text-tertiary);'>
           <div style='font-size: 40px; margin-bottom: 10px;'>📊</div>
           <div>No category data available</div>
         </div>
@@ -513,7 +513,7 @@
       <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>Operation Timeline</h4>
 
       {{#if performance.spans}}
-        <div style='margin-bottom: 15px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-sm); font-size: 11px; color: #999;'>
+        <div style='margin-bottom: 15px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-sm); font-size: 11px; color: var(--color-text-secondary);'>
           <div style='display: flex; justify-content: space-between; margin-bottom: 4px;'>
             <span>Total operations:</span>
             <strong style='color: #4CAF50;'>{{performance.spans.length}}</strong>
@@ -536,7 +536,7 @@
             </span>
           </div>
           {{#if this.metadata}}
-          <div style='font-size: 10px; color: #666; margin-top: 4px;'>
+          <div style='font-size: 10px; color: var(--color-text-tertiary); margin-top: 4px;'>
             {{#with this.metadata}}
               {{#if url}}<div>URL: {{url}}</div>{{/if}}
               {{#if path}}<div>Path: {{path}}</div>{{/if}}
@@ -547,7 +547,7 @@
         </div>
         {{/each}}
       {{else}}
-        <div style='text-align: center; padding: 40px 20px; color: #666;'>
+        <div style='text-align: center; padding: 40px 20px; color: var(--color-text-tertiary);'>
           <div style='font-size: 40px; margin-bottom: 10px;'>⏱️</div>
           <div>No operations recorded</div>
         </div>
@@ -558,7 +558,7 @@
     <div class='debug-tab-panel' id='debug-panel-websocket'>
       <h4 style='color: #4CAF50; font-size: 14px; margin-bottom: 15px;'>WebSocket Connection</h4>
 
-      <div id='ws-not-connected' style='text-align: center; padding: 40px 20px; color: #666;'>
+      <div id='ws-not-connected' style='text-align: center; padding: 40px 20px; color: var(--color-text-tertiary);'>
         <div style='font-size: 40px; margin-bottom: 10px;'>🔌</div>
         <div>No WebSocket connection detected</div>
       </div>
@@ -566,7 +566,7 @@
       <div id='ws-stats-container' style='display: none;'>
         <!-- Connection & Worker Status Combined -->
         <div style='background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #4CAF50;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>🔌 Connection</strong></div>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>🔌 Connection</strong></div>
           <div style='font-size: 13px; color: #A5D6A7; line-height: 1.6;'>
             Status: <span id='ws-status' style='font-weight: bold;'>●</span><br>
             Connected: <span id='ws-connected-time'>-</span><br>
@@ -577,7 +577,7 @@
 
         <!-- Subscriptions -->
         <div style='background: rgba(33, 150, 243, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #2196F3;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>📡 Subscriptions</strong></div>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>📡 Subscriptions</strong></div>
           <div style='font-size: 13px; color: #90CAF9;'>
             Active topics: <span id='ws-topics-count'>0</span>
             <div id='ws-topics-list' style='margin-top: 8px; font-size: 11px; color: #64B5F6;'></div>
@@ -586,7 +586,7 @@
 
         <!-- Message Statistics -->
         <div style='background: rgba(156, 39, 176, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #9C27B0;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>📊 Message Stats</strong></div>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>📊 Message Stats</strong></div>
           <div style='font-size: 13px; color: #CE93D8; line-height: 1.6;'>
             Total: <span id='ws-msg-total'>0</span><br>
             Killmails: <span id='ws-msg-killmails'>0</span><br>
@@ -597,15 +597,15 @@
 
         <!-- Recent Messages -->
         <div style='background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 15px; border-left: 3px solid #FF9800;'>
-          <div style='font-size: 12px; color: #ccc; margin-bottom: 8px;'><strong>📨 Recent Messages (last 10)</strong></div>
+          <div style='font-size: 12px; color: var(--color-text-light); margin-bottom: 8px;'><strong>📨 Recent Messages (last 10)</strong></div>
           <div id='ws-recent-messages' style='font-size: 11px; color: #FFB74D; max-height: 200px; overflow-y: auto;'>
-            <div style='color: #999; font-style: italic;'>No messages yet</div>
+            <div style='color: var(--color-text-secondary); font-style: italic;'>No messages yet</div>
           </div>
         </div>
 
         <!-- Worker Debug Info (Collapsible) -->
         <details style='background: rgba(255, 255, 255, 0.04); padding: 12px; border-radius: var(--radius-sm); border-left: 3px solid #607D8B; cursor: pointer;'>
-          <summary style='font-size: 12px; color: #ccc; font-weight: bold; cursor: pointer; user-select: none;'>
+          <summary style='font-size: 12px; color: var(--color-text-light); font-weight: bold; cursor: pointer; user-select: none;'>
             🔧 Worker Debug Info
           </summary>
           <div id='ws-worker-info' style='font-size: 11px; color: #cfd8dc; line-height: 1.6; margin-top: 8px; font-family: monospace;'>
@@ -853,7 +853,7 @@ window.debugWS = {
           `<div style="padding: 2px 0; color: #64B5F6;">• ${t}</div>`
         ).join('');
       } else {
-        topicsListEl.innerHTML = '<div style="color: #999; font-style: italic;">No active subscriptions</div>';
+        topicsListEl.innerHTML = '<div style="color: var(--color-text-secondary); font-style: italic;">No active subscriptions</div>';
       }
     }
 
@@ -892,12 +892,12 @@ window.debugWS = {
           const timeStr = timeAgo < 60 ? timeAgo + 's' : Math.floor(timeAgo / 60) + 'm';
           return `<div style="padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
             <span style="margin-right: 4px;">${msg.icon || '📩'}</span>
-            <span style="color: #999; font-size: 10px;">[${timeStr}]</span>
+            <span style="color: var(--color-text-secondary); font-size: 10px;">[${timeStr}]</span>
             <span style="margin-left: 4px;">${msg.text}</span>
           </div>`;
         }).join('');
       } else {
-        recentEl.innerHTML = '<div style="color: #999; font-style: italic;">No messages yet</div>';
+        recentEl.innerHTML = '<div style="color: var(--color-text-secondary); font-style: italic;">No messages yet</div>';
       }
     }
 

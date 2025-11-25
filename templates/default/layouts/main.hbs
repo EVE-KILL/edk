@@ -592,7 +592,7 @@
                 {{#if config.copyright}}{{config.copyright}}{{else}}&copy; 2025{{/if}}
             </p>
             {{#if config.showVersion}}
-            <p style="color: #666; margin: 5px 0 0 0; font-size: 9px;">
+            <p style="color: var(--color-text-tertiary); margin: 5px 0 0 0; font-size: 9px;">
                 Version {{version}} | Build {{buildDate}}
             </p>
             {{/if}}
@@ -662,6 +662,9 @@
 
     <!-- Fitting Wheel Script -->
     <script type="text/javascript" src="/fitting-wheel.js"></script>
+
+    <!-- Items Sorting Script -->
+    <script type="text/javascript" src="/items-sorting.js"></script>
 
     <!-- Search Script -->
     <script type="text/javascript" src="/search.js"></script>

@@ -33,10 +33,19 @@
   --color-accent-gold: #ffd700;
 
   /* Semantic Colors */
-  --color-kill-green: #5f5;
-  --color-loss-red: #f55;
+  --color-green: #4ade80;
+  --color-red: #ef4444;
+  --color-kill-green: #4ade80;
+  --color-loss-red: #ef4444;
+  --color-isk-green: #4ade80;
+  --color-damage-red: #ef4444;
   --color-kill-bg: #1a3a1a;
   --color-loss-bg: #3a1a1a;
+
+  /* Security Status Colors */
+  --color-sec-high: #2F75FE;
+  --color-sec-low: #F9A825;
+  --color-sec-null: #D32F2F;
 
   /* Spacing Scale */
   --spacing-xs: 4px;
@@ -414,6 +423,28 @@ footer p {
   vertical-align: middle;
 }
 
+/* Items sorting */
+.sortable {
+  transition: background-color 0.2s ease;
+}
+
+.sortable:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.sort-indicator {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.sort-indicator.active {
+  opacity: 1;
+  color: var(--color-accent-gold);
+}
+
 /* ========================================
    Section Headers
    ======================================== */
@@ -519,7 +550,7 @@ footer p {
 }
 
 .isk-value {
-  color: var(--color-kill-green);
+  color: var(--color-isk-green);
   font-weight: bold;
 }
 
@@ -796,7 +827,7 @@ textarea.killmail {
   right: 1px;
   bottom: 1px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(40, 40, 40, 0.8);
+  border: none;
   z-index: 2;
   pointer-events: none;
 }
@@ -841,7 +872,7 @@ textarea.killmail {
   justify-content: center;
   align-items: center;
   z-index: 1;
-  border-radius: var(--radius-sm);
+  border-radius: 50%;
   overflow: hidden;
   background-color: transparent;
 }
@@ -850,8 +881,6 @@ textarea.killmail {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: var(--radius-sm);
-  clip-path: none;
 }
 
 .ship-container.darkened .ship-image {
@@ -882,7 +911,6 @@ textarea.killmail {
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
   pointer-events: auto;
   cursor: pointer;
-  border: 1px solid rgba(100, 100, 100, 0.3);
   opacity: 0;
   transition: opacity 0.2s ease-in-out;
 }
@@ -904,13 +932,14 @@ textarea.killmail {
   align-items: center;
   z-index: 7;
   position: relative;
+  /* Position context for ammo overlay */
 }
 
 .module-icon {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: var(--radius-sm);
+  border-radius: 50%;
   transition: transform 0.1s ease-in-out;
   position: relative;
   z-index: 8;
@@ -921,28 +950,36 @@ textarea.killmail {
 }
 
 /* Slot type colors */
-.high-slot {
-  border-color: rgba(180, 60, 60, 0.4);
-}
-
-.mid-slot {
-  border-color: rgba(60, 120, 180, 0.4);
-}
-
-.low-slot {
-  border-color: rgba(180, 140, 60, 0.4);
-}
-
 .rig-slot {
-  border-color: rgba(150, 150, 150, 0.4);
   background-color: rgba(40, 40, 40, 0.2);
   box-shadow: 0 0 6px rgba(100, 100, 100, 0.3);
 }
 
 .subsystem-slot {
-  border-color: rgba(140, 60, 140, 0.4);
   background-color: rgba(40, 20, 40, 0.2);
   box-shadow: 0 0 6px rgba(120, 40, 120, 0.3);
+}
+
+/* Slot type indicators */
+.slot-indicator {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  z-index: 6;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.high-indicator svg {
+  transform: rotate(-125deg);
+}
+
+.mid-indicator svg {
+  transform: rotate(-35deg);
+}
+
+.low-indicator svg {
+  transform: rotate(55deg);
 }
 
 /* Tooltip overlay */
@@ -1007,59 +1044,63 @@ textarea.killmail {
   text-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
 }
 
-/* Ammo container - positioned on slot edge like EVE-KILL */
-.ammo-container {
+.status-dropped {
+  color: #81c784;
+  font-weight: 500;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+
+.status-destroyed {
+  color: #e57373;
+  font-weight: 500;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Ammo overlay - positioned over the module icon */
+.ammo-overlay {
   position: absolute;
-  width: 24px;
-  height: 24px;
-  background-color: rgba(20, 20, 20, 0.3);
-  border-radius: var(--radius-sm);
+  width: 75%;
+  height: 75%;
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9;
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  border: 1px solid rgba(80, 80, 80, 0.3);
-  transition: transform 0.1s ease-in-out;
+  z-index: 11;
   pointer-events: auto;
+  cursor: pointer;
 }
 
 .ammo-icon {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: var(--radius-sm);
-  position: relative;
-  z-index: 10;
-  opacity: 0.85;
-  filter: brightness(0.9);
+  opacity: 0.95;
   transition: all 0.1s ease-in-out;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
 }
 
-.ammo-container:hover .ammo-icon {
+.ammo-overlay:hover .ammo-icon {
   opacity: 1;
-  filter: brightness(1.1);
   transform: scale(1.1);
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
 }
 
-/* Position ammo relative to different slot types - EVE-KILL style */
-.high-slot .ammo-container {
-  bottom: -12px;
-  left: 50%;
-  transform: translateX(-80%);
+/* Position ammo relative to different slot types */
+/* High slots: bottom-right with offset */
+.high-slot .ammo-overlay {
+  bottom: -15px;
+  right: -15px;
 }
 
-.mid-slot .ammo-container {
-  left: -12px;
-  top: 50%;
-  transform: translateY(-80%);
+/* Med slots: bottom-left with offset */
+.mid-slot .ammo-overlay {
+  bottom: -15px;
+  left: -15px;
 }
 
-.low-slot .ammo-container {
-  top: -12px;
-  left: 50%;
-  transform: translateX(-80%);
+/* Low slots: top-right with offset */
+.low-slot .ammo-overlay {
+  top: -15px;
+  right: -15px;
 }
 
 /* Animations */
@@ -2441,8 +2482,8 @@ textarea.killmail {
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-sm);
-  margin-bottom: 12px;
-  padding: 12px;
+  margin-bottom: 10px;
+  padding: 8px;
 }
 
 .section-title-attackers {
@@ -2451,16 +2492,16 @@ textarea.killmail {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--color-border-dark);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .attacker-card {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
-  padding: 8px 4px;
+  padding: 6px 4px;
 }
 
 .attacker-portraits {
@@ -2585,13 +2626,13 @@ textarea.killmail {
 }
 
 .attacker-meta {
-  padding: 8px 12px;
+  padding: 6px 8px;
   border-top: 1px solid var(--color-border-dark);
-  margin-top: 8px;
+  margin-top: 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .ship-weapon-info {
@@ -2664,7 +2705,7 @@ textarea.killmail {
 
 .attacker-separator {
   border-top: 1px solid var(--color-border-dark);
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 /* Responsive Design */

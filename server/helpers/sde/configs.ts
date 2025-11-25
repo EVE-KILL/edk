@@ -17,7 +17,7 @@ export const mapStargatesConfig: TableConfig = {
     { source: 'position.x', target: 'positionX', type: 'number' },
     { source: 'position.y', target: 'positionY', type: 'number' },
     { source: 'position.z', target: 'positionZ', type: 'number' },
-    { source: 'solarSystemId', target: 'solarSystemId', type: 'number' },
+    { source: 'solarSystemID', target: 'solarSystemId', type: 'number' },
     {
       source: 'destination.stargateId',
       target: 'destinationGateId',
@@ -28,7 +28,7 @@ export const mapStargatesConfig: TableConfig = {
       target: 'destinationSolarSystemId',
       type: 'number',
     },
-    { source: 'typeId', target: 'typeId', type: 'number' },
+    { source: 'typeID', target: 'typeId', type: 'number' },
   ],
 };
 
@@ -42,10 +42,10 @@ export const mapStarsConfig: TableConfig = {
     { source: 'luminosity', target: 'luminosity', type: 'number' },
     { source: 'name', target: 'name', type: 'string' },
     { source: 'radius', target: 'radius', type: 'number' },
-    { source: 'solarSystemId', target: 'solarSystemId', type: 'number' },
+    { source: 'solarSystemID', target: 'solarSystemId', type: 'number' },
     { source: 'spectralClass', target: 'spectralClass', type: 'string' },
     { source: 'temperature', target: 'temperature', type: 'number' },
-    { source: 'typeId', target: 'typeId', type: 'number' },
+    { source: 'typeID', target: 'typeId', type: 'number' },
   ],
 };
 
@@ -60,8 +60,8 @@ export const mapPlanetsConfig: TableConfig = {
     { source: 'position.x', target: 'positionX', type: 'number' },
     { source: 'position.y', target: 'positionY', type: 'number' },
     { source: 'position.z', target: 'positionZ', type: 'number' },
-    { source: 'solarSystemId', target: 'solarSystemId', type: 'number' },
-    { source: 'typeId', target: 'typeId', type: 'number' },
+    { source: 'solarSystemID', target: 'solarSystemId', type: 'number' },
+    { source: 'typeID', target: 'typeId', type: 'number' },
   ],
 };
 
@@ -73,12 +73,12 @@ export const mapMoonsConfig: TableConfig = {
     { source: '_key', target: 'moonId', type: 'number', required: true },
     { source: 'celestialIndex', target: 'celestialIndex', type: 'number' },
     { source: 'name', target: 'name', type: 'string' },
-    { source: 'planetId', target: 'planetId', type: 'number' },
+    { source: 'planetID', target: 'planetId', type: 'number' },
     { source: 'position.x', target: 'positionX', type: 'number' },
     { source: 'position.y', target: 'positionY', type: 'number' },
     { source: 'position.z', target: 'positionZ', type: 'number' },
-    { source: 'solarSystemId', target: 'solarSystemId', type: 'number' },
-    { source: 'typeId', target: 'typeId', type: 'number' },
+    { source: 'solarSystemID', target: 'solarSystemId', type: 'number' },
+    { source: 'typeID', target: 'typeId', type: 'number' },
   ],
 };
 
@@ -98,7 +98,7 @@ export const mapSolarSystemsConfig: TableConfig = {
     { source: 'regionID', target: 'regionId', type: 'number' },
     { source: 'border', target: 'border', type: 'boolean' },
     { source: 'corridor', target: 'corridor', type: 'boolean' },
-    { source: 'factionId', target: 'factionId', type: 'number' },
+    { source: 'factionID', target: 'factionId', type: 'number' },
     { source: 'fringe', target: 'fringe', type: 'boolean' },
     { source: 'hub', target: 'hub', type: 'boolean' },
     { source: 'international', target: 'international', type: 'boolean' },
@@ -112,9 +112,9 @@ export const mapSolarSystemsConfig: TableConfig = {
     { source: 'securityClass', target: 'securityClass', type: 'string' },
     { source: 'securityStatus', target: 'securityStatus', type: 'number' },
     { source: 'stargateIds', target: 'stargateIds', type: 'array' },
-    { source: 'starId', target: 'starId', type: 'number' },
+    { source: 'starID', target: 'starId', type: 'number' },
     { source: 'visualEffect', target: 'visualEffect', type: 'string' },
-    { source: 'wormholeClassId', target: 'wormholeClassId', type: 'number' },
+    { source: 'wormholeClassID', target: 'wormholeClassId', type: 'number' },
   ],
 };
 
@@ -134,8 +134,8 @@ export const mapAsteroidBeltsConfig: TableConfig = {
     { source: 'position.x', target: 'positionX', type: 'number' },
     { source: 'position.y', target: 'positionY', type: 'number' },
     { source: 'position.z', target: 'positionZ', type: 'number' },
-    { source: 'solarSystemId', target: 'solarSystemId', type: 'number' },
-    { source: 'typeId', target: 'typeId', type: 'number' },
+    { source: 'solarSystemID', target: 'solarSystemId', type: 'number' },
+    { source: 'typeID', target: 'typeId', type: 'number' },
   ],
 };
 
@@ -186,12 +186,11 @@ export const groupsConfig: TableConfig = {
       transform: (v) => extractLanguageField(v, 'en'),
     },
     {
-      source: 'categoryId',
+      source: 'categoryID',
       target: 'categoryId',
       type: 'number',
-      required: true,
     },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
     { source: 'published', target: 'published', type: 'boolean' },
   ],
 };
@@ -207,7 +206,7 @@ export const categoriesConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
     { source: 'published', target: 'published', type: 'boolean' },
   ],
 };
@@ -230,10 +229,10 @@ export const npcCorporationsConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'ceoId', target: 'ceoId', type: 'number' },
-    { source: 'factionId', target: 'factionId', type: 'number' },
-    { source: 'solarSystemId', target: 'solarSystemId', type: 'number' },
-    { source: 'stationId', target: 'stationId', type: 'number' },
+    { source: 'ceoID', target: 'ceoId', type: 'number' },
+    { source: 'factionID', target: 'factionId', type: 'number' },
+    { source: 'solarSystemID', target: 'solarSystemId', type: 'number' },
+    { source: 'stationID', target: 'stationId', type: 'number' },
     { source: 'taxRate', target: 'taxRate', type: 'number' },
     { source: 'tickerName', target: 'tickerName', type: 'string' },
     { source: 'deleted', target: 'deleted', type: 'boolean' },
@@ -251,12 +250,12 @@ export const npcStationsConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'solarSystemId', target: 'solarSystemId', type: 'number' },
-    { source: 'typeId', target: 'typeId', type: 'number' },
+    { source: 'solarSystemID', target: 'solarSystemId', type: 'number' },
+    { source: 'typeID', target: 'typeId', type: 'number' },
     { source: 'ownerIds', target: 'ownerIds', type: 'array' },
     { source: 'celestialIndex', target: 'celestialIndex', type: 'number' },
-    { source: 'operationId', target: 'operationId', type: 'number' },
-    { source: 'orbitId', target: 'orbitId', type: 'number' },
+    { source: 'operationID', target: 'operationId', type: 'number' },
+    { source: 'orbitID', target: 'orbitId', type: 'number' },
     { source: 'orbitIndex', target: 'orbitIndex', type: 'number' },
     { source: 'position.x', target: 'positionX', type: 'number' },
     { source: 'position.y', target: 'positionY', type: 'number' },
@@ -292,7 +291,7 @@ export const stationOperationsConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'activityId', target: 'activityId', type: 'number' },
+    { source: 'activityID', target: 'activityId', type: 'number' },
     { source: 'border', target: 'border', type: 'number' },
     { source: 'corridor', target: 'corridor', type: 'number' },
     { source: 'fringe', target: 'fringe', type: 'number' },
@@ -319,12 +318,12 @@ export const npcCharactersConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'corporationId', target: 'corporationId', type: 'number' },
-    { source: 'allianceId', target: 'allianceId', type: 'number' },
-    { source: 'bloodlineId', target: 'bloodlineId', type: 'number' },
-    { source: 'ancestryId', target: 'ancestryId', type: 'number' },
+    { source: 'corporationID', target: 'corporationId', type: 'number' },
+    { source: 'allianceID', target: 'allianceId', type: 'number' },
+    { source: 'bloodlineID', target: 'bloodlineId', type: 'number' },
+    { source: 'ancestryID', target: 'ancestryId', type: 'number' },
     { source: 'gender', target: 'gender', type: 'number' },
-    { source: 'raceId', target: 'raceId', type: 'number' },
+    { source: 'raceID', target: 'raceId', type: 'number' },
   ],
 };
 
@@ -352,13 +351,13 @@ export const factionsConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'corporationId', target: 'corporationId', type: 'number' },
+    { source: 'corporationID', target: 'corporationId', type: 'number' },
     {
-      source: 'militiaCorporationId',
+      source: 'militiaCorporationID',
       target: 'militiaCorporationId',
       type: 'number',
     },
-    { source: 'solarSystemId', target: 'solarSystemId', type: 'number' },
+    { source: 'solarSystemID', target: 'solarSystemId', type: 'number' },
   ],
 };
 
@@ -379,7 +378,7 @@ export const racesConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
   ],
 };
 
@@ -400,9 +399,9 @@ export const bloodlinesConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'raceId', target: 'raceId', type: 'number', required: true },
-    { source: 'shipTypeId', target: 'shipTypeId', type: 'number' },
-    { source: 'corporationId', target: 'corporationId', type: 'number' },
+    { source: 'raceID', target: 'raceId', type: 'number', required: true },
+    { source: 'shipTypeID', target: 'shipTypeId', type: 'number' },
+    { source: 'corporationID', target: 'corporationId', type: 'number' },
     { source: 'attributes.charisma', target: 'charisma', type: 'number' },
     {
       source: 'attributes.constitution',
@@ -432,7 +431,7 @@ export const ancestriesConfig: TableConfig = {
       transform: (v) => extractLanguageField(v, 'en'),
     },
     {
-      source: 'bloodlineId',
+      source: 'bloodlineID',
       target: 'bloodlineId',
       type: 'number',
       required: true,
@@ -443,7 +442,7 @@ export const ancestriesConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
     { source: 'shortDescription', target: 'shortDescription', type: 'string' },
   ],
 };
@@ -466,9 +465,9 @@ export const marketGroupsConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
     { source: 'hasTypes', target: 'hasTypes', type: 'boolean' },
-    { source: 'parentGroupId', target: 'parentGroupId', type: 'number' },
+    { source: 'parentGroupID', target: 'parentGroupId', type: 'number' },
   ],
 };
 
@@ -489,7 +488,7 @@ export const metaGroupsConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
   ],
 };
 
@@ -500,7 +499,7 @@ export const skinsConfig: TableConfig = {
     { source: '_key', target: 'skinId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string' },
     { source: 'description', target: 'description', type: 'string' },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
     { source: 'internalName', target: 'internalName', type: 'string' },
   ],
 };
@@ -512,7 +511,7 @@ export const dogmaAttributesConfig: TableConfig = {
   mappings: [
     { source: '_key', target: 'attributeId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string' },
-    { source: 'categoryId', target: 'categoryId', type: 'number' },
+    { source: 'categoryID', target: 'categoryId', type: 'number' },
     { source: 'defaultValue', target: 'defaultValue', type: 'number' },
     { source: 'description', target: 'description', type: 'string' },
     {
@@ -521,7 +520,7 @@ export const dogmaAttributesConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
     { source: 'highIsGood', target: 'highIsGood', type: 'boolean' },
     { source: 'published', target: 'published', type: 'boolean' },
     { source: 'stackable', target: 'stackable', type: 'boolean' },
@@ -537,7 +536,7 @@ export const dogmaAttributesConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'unitId', target: 'unitId', type: 'number' },
+    { source: 'unitID', target: 'unitId', type: 'number' },
   ],
 };
 
@@ -547,7 +546,7 @@ export const dogmaEffectsConfig: TableConfig = {
   mappings: [
     { source: '_key', target: 'effectId', type: 'number', required: true },
     { source: 'name', target: 'name', type: 'string' },
-    { source: 'categoryId', target: 'categoryId', type: 'number' },
+    { source: 'categoryID', target: 'categoryId', type: 'number' },
     {
       source: 'description',
       target: 'description',
@@ -560,7 +559,7 @@ export const dogmaEffectsConfig: TableConfig = {
       type: 'boolean',
     },
     {
-      source: 'dischargeAttributeId',
+      source: 'dischargeAttributeID',
       target: 'dischargeAttributeId',
       type: 'number',
     },
@@ -571,50 +570,50 @@ export const dogmaEffectsConfig: TableConfig = {
       transform: (v) => extractLanguageField(v, 'en'),
     },
     {
-      source: 'durationAttributeId',
+      source: 'durationAttributeID',
       target: 'durationAttributeId',
       type: 'number',
     },
     { source: 'effectCategory', target: 'effectCategory', type: 'string' },
     {
-      source: 'falloffAttributeId',
+      source: 'falloffAttributeID',
       target: 'falloffAttributeId',
       type: 'number',
     },
     {
-      source: 'fittingUsageChanceAttributeId',
+      source: 'fittingUsageChanceAttributeID',
       target: 'fittingUsageChanceAttributeId',
       type: 'number',
     },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
     { source: 'isAssistance', target: 'isAssistance', type: 'boolean' },
     { source: 'isOffensive', target: 'isOffensive', type: 'boolean' },
     { source: 'isWarpSafe', target: 'isWarpSafe', type: 'boolean' },
-    { source: 'neurotoxinId', target: 'neurotoxinId', type: 'number' },
+    { source: 'neurotoxinID', target: 'neurotoxinId', type: 'number' },
     {
-      source: 'npcActivationChanceAttributeId',
+      source: 'npcActivationChanceAttributeID',
       target: 'npcActivationChanceAttributeId',
       type: 'number',
     },
     {
-      source: 'npcUsageChanceAttributeId',
+      source: 'npcUsageChanceAttributeID',
       target: 'npcUsageChanceAttributeId',
       type: 'number',
     },
     { source: 'published', target: 'published', type: 'boolean' },
-    { source: 'rangeAttributeId', target: 'rangeAttributeId', type: 'number' },
+    { source: 'rangeAttributeID', target: 'rangeAttributeId', type: 'number' },
     {
-      source: 'resistanceAttributeId',
+      source: 'resistanceAttributeID',
       target: 'resistanceAttributeId',
       type: 'number',
     },
     {
-      source: 'softPenetrationAttributeId',
+      source: 'softPenetrationAttributeID',
       target: 'softPenetrationAttributeId',
       type: 'number',
     },
     {
-      source: 'trackingSpeedAttributeId',
+      source: 'trackingSpeedAttributeID',
       target: 'trackingSpeedAttributeId',
       type: 'number',
     },
@@ -667,7 +666,7 @@ export const landmarksConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
     { source: 'position.x', target: 'positionX', type: 'number' },
     { source: 'position.y', target: 'positionY', type: 'number' },
     { source: 'position.z', target: 'positionZ', type: 'number' },
@@ -707,7 +706,12 @@ export const mapConstellationsConfig: TableConfig = {
   sourceName: 'mapConstellations',
   primaryKey: 'constellationId',
   mappings: [
-    { source: '_key', target: 'constellationId', type: 'number', required: true },
+    {
+      source: '_key',
+      target: 'constellationId',
+      type: 'number',
+      required: true,
+    },
     {
       source: 'name',
       target: 'name',
@@ -741,10 +745,10 @@ export const certificatesConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'categoryId', target: 'categoryId', type: 'number' },
-    { source: 'classId', target: 'classId', type: 'number' },
-    { source: 'groupId', target: 'groupId', type: 'number' },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'categoryID', target: 'categoryId', type: 'number' },
+    { source: 'classID', target: 'classId', type: 'number' },
+    { source: 'groupID', target: 'groupId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
   ],
 };
 
@@ -764,11 +768,9 @@ export const skinMaterialsConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'materialSetId', target: 'materialSetId', type: 'number' },
+    { source: 'materialSetID', target: 'materialSetId', type: 'number' },
   ],
 };
-
-
 
 export const planetSchematicsConfig: TableConfig = {
   name: 'planetSchematics',
@@ -834,7 +836,7 @@ export const characterAttributesConfig: TableConfig = {
     { source: 'shortDescription', target: 'shortDescription', type: 'string' },
     { source: 'description', target: 'description', type: 'string' },
     { source: 'notes', target: 'notes', type: 'string' },
-    { source: 'iconId', target: 'iconId', type: 'number' },
+    { source: 'iconID', target: 'iconId', type: 'number' },
   ],
 };
 

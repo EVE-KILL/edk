@@ -43,19 +43,85 @@ const SLOT_MAPPING: Record<number, string> = {
   16: 'lowSlots',
   17: 'lowSlots',
   18: 'lowSlots',
-  // Rig slots (92-94)
+  // Rig slots (92-99)
   92: 'rigSlots',
   93: 'rigSlots',
   94: 'rigSlots',
-  // Subsystem slots (125-128)
+  95: 'rigSlots',
+  96: 'rigSlots',
+  97: 'rigSlots',
+  98: 'rigSlots',
+  99: 'rigSlots',
+  // Subsystem slots (125-132)
   125: 'subSlots',
   126: 'subSlots',
   127: 'subSlots',
   128: 'subSlots',
+  129: 'subSlots',
+  130: 'subSlots',
+  131: 'subSlots',
+  132: 'subSlots',
   // Drone bay
   87: 'droneBay',
-  // Cargo/Container (5)
+  // Cargo/Container
   5: 'cargo',
+  // Fuel bay
+  133: 'fuelBay',
+  // Ore hold
+  134: 'oreHold',
+  // Gas hold
+  135: 'gasHold',
+  // Mineral hold
+  136: 'mineralHold',
+  // Salvage hold
+  137: 'salvageHold',
+  // Ship hold
+  138: 'shipHold',
+  // Small ship hold
+  139: 'smallShipHold',
+  // Medium ship hold
+  140: 'mediumShipHold',
+  // Large ship hold
+  141: 'largeShipHold',
+  // Industrial ship hold
+  142: 'industrialShipHold',
+  // Ammo hold
+  143: 'ammoHold',
+  // Quafe bay
+  154: 'quafeBay',
+  // Fleet hangar
+  155: 'fleetHangar',
+  // Fighter bay
+  158: 'fighterBay',
+  // Fighter launch tubes
+  159: 'fighterTube1',
+  160: 'fighterTube2',
+  161: 'fighterTube3',
+  162: 'fighterTube4',
+  163: 'fighterTube5',
+  // Structure services
+  164: 'structureService1',
+  165: 'structureService2',
+  166: 'structureService3',
+  167: 'structureService4',
+  168: 'structureService5',
+  169: 'structureService6',
+  170: 'structureService7',
+  171: 'structureService8',
+  // Structure fuel
+  172: 'structureFuel',
+  // Core room
+  180: 'coreRoom',
+  // Infrastructure hangar
+  185: 'infrastructureHangar',
+  // Moon material bay
+  186: 'moonMaterialBay',
+  // Ship hangar
+  90: 'shipHangar',
+  // Implants
+  89: 'implants',
+  // Unflagged
+  0: 'other',
 };
 
 const SLOT_NAMES: Record<number, string> = {
@@ -105,6 +171,7 @@ interface ItemSlot {
   slotName: string;
   flag: number;
   isDestroyed: boolean;
+  ammo?: ItemSlot;
 }
 
 interface ItemsBySlot {
@@ -115,6 +182,39 @@ interface ItemsBySlot {
   subSlots: ItemSlot[];
   droneBay: ItemSlot[];
   cargo: ItemSlot[];
+  fuelBay: ItemSlot[];
+  oreHold: ItemSlot[];
+  gasHold: ItemSlot[];
+  mineralHold: ItemSlot[];
+  salvageHold: ItemSlot[];
+  shipHold: ItemSlot[];
+  smallShipHold: ItemSlot[];
+  mediumShipHold: ItemSlot[];
+  largeShipHold: ItemSlot[];
+  industrialShipHold: ItemSlot[];
+  ammoHold: ItemSlot[];
+  quafeBay: ItemSlot[];
+  fleetHangar: ItemSlot[];
+  fighterBay: ItemSlot[];
+  fighterTube1: ItemSlot[];
+  fighterTube2: ItemSlot[];
+  fighterTube3: ItemSlot[];
+  fighterTube4: ItemSlot[];
+  fighterTube5: ItemSlot[];
+  structureService1: ItemSlot[];
+  structureService2: ItemSlot[];
+  structureService3: ItemSlot[];
+  structureService4: ItemSlot[];
+  structureService5: ItemSlot[];
+  structureService6: ItemSlot[];
+  structureService7: ItemSlot[];
+  structureService8: ItemSlot[];
+  structureFuel: ItemSlot[];
+  coreRoom: ItemSlot[];
+  infrastructureHangar: ItemSlot[];
+  moonMaterialBay: ItemSlot[];
+  shipHangar: ItemSlot[];
+  implants: ItemSlot[];
   other: ItemSlot[];
 }
 
@@ -134,12 +234,16 @@ export default defineEventHandler(async (event: H3Event) => {
     const id = parseInt(killmailId, 10);
 
     // Fetch killmail data
-    const [killmail, itemsWithDetails] = await track('killmail:fetch_data', 'application', async () => {
-      return await Promise.all([
-        getKillmailDetails(id),
-        getKillmailItems(id),
-      ]);
-    });
+    const [killmail, itemsWithDetails] = await track(
+      'killmail:fetch_data',
+      'application',
+      async () => {
+        return await Promise.all([
+          getKillmailDetails(id),
+          getKillmailItems(id),
+        ]);
+      }
+    );
 
     if (!killmail) {
       throw createError({
@@ -149,90 +253,258 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Organize items by slot
-    const { itemsBySlot, fittingWheelDestroyed, fittingWheelDropped, totalDestroyed, totalDropped, fitValue } = await track('killmail:organize_items', 'application', async () => {
-    const itemsBySlot: ItemsBySlot = {
-      highSlots: [],
-      medSlots: [],
-      lowSlots: [],
-      rigSlots: [],
-      subSlots: [],
-      droneBay: [],
-      cargo: [],
-      other: [],
-    };
-
-    // Separate destroyed and dropped for fitting wheel
-    const fittingWheelDestroyed: ItemsBySlot = {
-      highSlots: [],
-      medSlots: [],
-      lowSlots: [],
-      rigSlots: [],
-      subSlots: [],
-      droneBay: [],
-      cargo: [],
-      other: [],
-    };
-
-    const fittingWheelDropped: ItemsBySlot = {
-      highSlots: [],
-      medSlots: [],
-      lowSlots: [],
-      rigSlots: [],
-      subSlots: [],
-      droneBay: [],
-      cargo: [],
-      other: [],
-    };
-
-    let totalDestroyed = 0;
-    let totalDropped = 0;
-    let totalValue = 0;
-    let fitValue = 0;
-
-    // Define fitting slots (used to calculate fitValue)
-    const fittingSlots = [
-      27, 28, 29, 30, 31, 32, 33, 34, 19, 20, 21, 22, 23, 24, 25, 26, 11, 12,
-      13, 14, 15, 16, 17, 18, 92, 93, 94, 125, 126, 127, 128,
-    ];
-
-    for (const item of itemsWithDetails) {
-      const slotKey = (SLOT_MAPPING[item.flag] as keyof ItemsBySlot) || 'other';
-      const totalQuantity = item.quantityDropped + item.quantityDestroyed;
-      const itemValue = (item.price || 0) * totalQuantity;
-
-      const slotItem: ItemSlot = {
-        typeId: item.itemTypeId,
-        name: item.name || 'Unknown',
-        quantity: totalQuantity,
-        quantityDropped: item.quantityDropped,
-        quantityDestroyed: item.quantityDestroyed,
-        price: item.price || 0,
-        totalValue: itemValue,
-        slotName: SLOT_NAMES[item.flag] || `Slot ${item.flag}`,
-        flag: item.flag,
-        isDestroyed: item.quantityDestroyed > 0,
+    const {
+      itemsBySlot,
+      fittingWheelData,
+      totalDestroyed,
+      totalDropped,
+      fitValue,
+    } = await track('killmail:organize_items', 'application', async () => {
+      const itemsBySlot: ItemsBySlot = {
+        highSlots: [],
+        medSlots: [],
+        lowSlots: [],
+        rigSlots: [],
+        subSlots: [],
+        droneBay: [],
+        cargo: [],
+        fuelBay: [],
+        oreHold: [],
+        gasHold: [],
+        mineralHold: [],
+        salvageHold: [],
+        shipHold: [],
+        smallShipHold: [],
+        mediumShipHold: [],
+        largeShipHold: [],
+        industrialShipHold: [],
+        ammoHold: [],
+        quafeBay: [],
+        fleetHangar: [],
+        fighterBay: [],
+        fighterTube1: [],
+        fighterTube2: [],
+        fighterTube3: [],
+        fighterTube4: [],
+        fighterTube5: [],
+        structureService1: [],
+        structureService2: [],
+        structureService3: [],
+        structureService4: [],
+        structureService5: [],
+        structureService6: [],
+        structureService7: [],
+        structureService8: [],
+        structureFuel: [],
+        coreRoom: [],
+        infrastructureHangar: [],
+        moonMaterialBay: [],
+        shipHangar: [],
+        implants: [],
+        other: [],
       };
 
-      // Add to combined items list
-      itemsBySlot[slotKey].push(slotItem);
+      let totalDestroyed = 0;
+      let totalDropped = 0;
+      let fitValue = 0;
 
-      // Add to fitting wheel if in fitting slots
-      if (fittingSlots.includes(item.flag)) {
-        if (item.quantityDestroyed > 0) {
-          fittingWheelDestroyed[slotKey].push(slotItem);
-          fitValue += (item.price || 0) * item.quantityDestroyed;
-        }
-        if (item.quantityDropped > 0) {
-          fittingWheelDropped[slotKey].push(slotItem);
+      // Define fitting slots
+      const HIGH_SLOT_FLAGS = [27, 28, 29, 30, 31, 32, 33, 34];
+      const MID_SLOT_FLAGS = [19, 20, 21, 22, 23, 24, 25, 26];
+      const LOW_SLOT_FLAGS = [11, 12, 13, 14, 15, 16, 17, 18];
+      const RIG_SLOT_FLAGS = [92, 93, 94];
+      const SUBSYSTEM_FLAGS = [125, 126, 127, 128];
+
+      const fittingSlots = [
+        ...HIGH_SLOT_FLAGS,
+        ...MID_SLOT_FLAGS,
+        ...LOW_SLOT_FLAGS,
+        ...RIG_SLOT_FLAGS,
+        ...SUBSYSTEM_FLAGS,
+      ];
+
+      const AMMO_CATEGORY_ID = 8;
+
+      // Step 1: Group items for Items Destroyed & Dropped table
+      // Group by typeId + dropped/destroyed status
+      const groupedItemsMap = new Map<string, (typeof itemsWithDetails)[0]>();
+
+      for (const item of itemsWithDetails) {
+        const hasDropped = item.quantityDropped > 0 ? '1' : '0';
+        const hasDestroyed = item.quantityDestroyed > 0 ? '1' : '0';
+        const key = `${item.itemTypeId}_${hasDropped}_${hasDestroyed}`;
+
+        const existing = groupedItemsMap.get(key);
+
+        if (existing) {
+          existing.quantityDropped += item.quantityDropped;
+          existing.quantityDestroyed += item.quantityDestroyed;
+        } else {
+          groupedItemsMap.set(key, { ...item });
         }
       }
 
-      totalDestroyed += item.quantityDestroyed * (item.price || 0);
-      totalDropped += item.quantityDropped * (item.price || 0);
-      totalValue += itemValue;
-    }
+      const groupedItems = Array.from(groupedItemsMap.values());
 
-    return { itemsBySlot, fittingWheelDestroyed, fittingWheelDropped, totalDestroyed, totalDropped, totalValue, fitValue };
+      // Process grouped items for the items table
+      for (const item of groupedItems) {
+        const slotKey =
+          (SLOT_MAPPING[item.flag] as keyof ItemsBySlot) || 'other';
+        const totalQuantity = item.quantityDropped + item.quantityDestroyed;
+        const itemValue = (item.price || 0) * totalQuantity;
+
+        const slotItem: ItemSlot = {
+          typeId: item.itemTypeId,
+          name: item.name || 'Unknown',
+          quantity: totalQuantity,
+          quantityDropped: item.quantityDropped,
+          quantityDestroyed: item.quantityDestroyed,
+          price: item.price || 0,
+          totalValue: itemValue,
+          slotName: SLOT_NAMES[item.flag] || `Slot ${item.flag}`,
+          flag: item.flag,
+          isDestroyed: item.quantityDestroyed > 0,
+        };
+
+        itemsBySlot[slotKey].push(slotItem);
+
+        totalDestroyed += item.quantityDestroyed * (item.price || 0);
+        totalDropped += item.quantityDropped * (item.price || 0);
+      }
+
+      // Step 2: Build fitting wheel data structure
+      // Organize modules by flag (one per slot)
+      const modulesByFlag = new Map<number, (typeof itemsWithDetails)[0]>();
+      const ammoByFlag = new Map<number, (typeof itemsWithDetails)[0]>();
+
+      for (const item of itemsWithDetails) {
+        if (item.categoryId === AMMO_CATEGORY_ID) {
+          // Store ammo separately
+          if (!ammoByFlag.has(item.flag)) {
+            ammoByFlag.set(item.flag, item);
+          }
+        } else if (
+          fittingSlots.includes(item.flag) &&
+          item.categoryId !== AMMO_CATEGORY_ID
+        ) {
+          // Only add non-ammo items to fitting slots
+          if (!modulesByFlag.has(item.flag)) {
+            modulesByFlag.set(item.flag, item);
+          }
+        }
+      }
+
+      // Build fitting wheel arrays by slot type
+      const fittingWheelData = {
+        highSlots: [] as ItemSlot[],
+        medSlots: [] as ItemSlot[],
+        lowSlots: [] as ItemSlot[],
+        rigSlots: [] as ItemSlot[],
+        subSlots: [] as ItemSlot[],
+      };
+
+      // Helper to create slot item with ammo
+      const createSlotItem = (
+        item: (typeof itemsWithDetails)[0],
+        flag: number
+      ): ItemSlot => {
+        const totalQuantity = item.quantityDropped + item.quantityDestroyed;
+        const itemValue = (item.price || 0) * totalQuantity;
+
+        let ammoSlot: ItemSlot | undefined;
+        const ammoItem = ammoByFlag.get(flag);
+
+        if (ammoItem) {
+          const ammoQuantity =
+            ammoItem.quantityDropped + ammoItem.quantityDestroyed;
+          const ammoValue = (ammoItem.price || 0) * ammoQuantity;
+          ammoSlot = {
+            typeId: ammoItem.itemTypeId,
+            name: ammoItem.name || 'Unknown',
+            quantity: ammoQuantity,
+            quantityDropped: ammoItem.quantityDropped,
+            quantityDestroyed: ammoItem.quantityDestroyed,
+            price: ammoItem.price || 0,
+            totalValue: ammoValue,
+            slotName: SLOT_NAMES[flag] || `Slot ${flag}`,
+            flag: flag,
+            isDestroyed: ammoItem.quantityDestroyed > 0,
+          };
+        }
+
+        return {
+          typeId: item.itemTypeId,
+          name: item.name || 'Unknown',
+          quantity: totalQuantity,
+          quantityDropped: item.quantityDropped,
+          quantityDestroyed: item.quantityDestroyed,
+          price: item.price || 0,
+          totalValue: itemValue,
+          slotName: SLOT_NAMES[flag] || `Slot ${flag}`,
+          flag: flag,
+          isDestroyed: item.quantityDestroyed > 0,
+          ammo: ammoSlot,
+        };
+      };
+
+      // Populate fitting wheel slots
+      HIGH_SLOT_FLAGS.forEach((flag) => {
+        const item = modulesByFlag.get(flag);
+        if (item) {
+          fittingWheelData.highSlots.push(createSlotItem(item, flag));
+          if (item.quantityDestroyed > 0) {
+            fitValue += (item.price || 0) * item.quantityDestroyed;
+          }
+        }
+      });
+
+      MID_SLOT_FLAGS.forEach((flag) => {
+        const item = modulesByFlag.get(flag);
+        if (item) {
+          fittingWheelData.medSlots.push(createSlotItem(item, flag));
+          if (item.quantityDestroyed > 0) {
+            fitValue += (item.price || 0) * item.quantityDestroyed;
+          }
+        }
+      });
+
+      LOW_SLOT_FLAGS.forEach((flag) => {
+        const item = modulesByFlag.get(flag);
+        if (item) {
+          fittingWheelData.lowSlots.push(createSlotItem(item, flag));
+          if (item.quantityDestroyed > 0) {
+            fitValue += (item.price || 0) * item.quantityDestroyed;
+          }
+        }
+      });
+
+      RIG_SLOT_FLAGS.forEach((flag) => {
+        const item = modulesByFlag.get(flag);
+        if (item) {
+          fittingWheelData.rigSlots.push(createSlotItem(item, flag));
+          if (item.quantityDestroyed > 0) {
+            fitValue += (item.price || 0) * item.quantityDestroyed;
+          }
+        }
+      });
+
+      SUBSYSTEM_FLAGS.forEach((flag) => {
+        const item = modulesByFlag.get(flag);
+        if (item) {
+          fittingWheelData.subSlots.push(createSlotItem(item, flag));
+          if (item.quantityDestroyed > 0) {
+            fitValue += (item.price || 0) * item.quantityDestroyed;
+          }
+        }
+      });
+
+      return {
+        itemsBySlot,
+        fittingWheelData,
+        totalDestroyed,
+        totalDropped,
+        fitValue,
+      };
     });
 
     // Use the stored totalValue from the database (calculated when killmail was stored)
@@ -243,32 +515,36 @@ export default defineEventHandler(async (event: H3Event) => {
     const killmailTimeIso = ensureUtcString(killmail.killmailTime);
 
     // Fetch attackers and siblings in parallel
-    const [attackers, siblings] = await track('killmail:fetch_attackers_siblings', 'application', async () => {
-      const killmailDate = new Date(killmailTimeIso);
-      const startDate = new Date(killmailDate.getTime() - 60 * 60 * 1000);
-      const endDate = new Date(killmailDate.getTime() + 60 * 60 * 1000);
+    const [attackers, siblings] = await track(
+      'killmail:fetch_attackers_siblings',
+      'application',
+      async () => {
+        const killmailDate = new Date(killmailTimeIso);
+        const startDate = new Date(killmailDate.getTime() - 60 * 60 * 1000);
+        const endDate = new Date(killmailDate.getTime() + 60 * 60 * 1000);
 
-      const formatDateTime = (date: Date): string => {
-        const year = date.getUTCFullYear();
-        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(date.getUTCDate()).padStart(2, '0');
-        const hours = String(date.getUTCHours()).padStart(2, '0');
-        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-        const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-      };
+        const formatDateTime = (date: Date): string => {
+          const year = date.getUTCFullYear();
+          const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+          const day = String(date.getUTCDate()).padStart(2, '0');
+          const hours = String(date.getUTCHours()).padStart(2, '0');
+          const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+          const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        };
 
-      return await Promise.all([
-        getKillmailAttackers(id),
-        getSiblingKillmails(
-          killmail.victimCharacterId || 0,
-          formatDateTime(startDate),
-          formatDateTime(endDate),
-          id,
-          20
-        ),
-      ]);
-    });
+        return await Promise.all([
+          getKillmailAttackers(id),
+          getSiblingKillmails(
+            killmail.victimCharacterId || 0,
+            formatDateTime(startDate),
+            formatDateTime(endDate),
+            id,
+            20
+          ),
+        ]);
+      }
+    );
 
     // Calculate stats after attackers are fetched
     const finalBlowAttacker = attackers.find((a) => a.finalBlow === 1);
@@ -280,198 +556,199 @@ export default defineEventHandler(async (event: H3Event) => {
     const shipName = killmail.victimShipName || 'Unknown';
     const valueBillion = (totalKillValue / 1_000_000_000).toFixed(2);
 
-    const templateData = await track('killmail:build_template_data', 'application', async () => ({
-      killmail: {
-        id: killmail.killmailId,
-        killmailId: killmail.killmailId,
-        hash: killmail.hash,
-        time: killmailTimeIso,
-        timeAgo: timeAgo(killmail.killmailTime),
-        systemName: killmail.solarSystemName,
-        systemId: killmail.solarSystemId,
-        regionName: killmail.regionName,
-        securityStatus: killmail.solarSystemSecurity,
-      },
-      victim: {
-        character: killmail.victimCharacterId
-          ? {
-              id: killmail.victimCharacterId,
-              name: killmail.victimCharacterName,
-            }
-          : null,
-        corporation: killmail.victimCorporationId
-          ? {
-              id: killmail.victimCorporationId,
-              name: killmail.victimCorporationName,
-              ticker: killmail.victimCorporationTicker,
-            }
-          : null,
-        alliance: killmail.victimAllianceId
-          ? {
-              id: killmail.victimAllianceId,
-              name: killmail.victimAllianceName,
-              ticker: killmail.victimAllianceTicker,
-            }
-          : null,
-        ship: {
-          typeId: killmail.victimShipTypeId,
-          name: killmail.victimShipName,
-          groupName: killmail.victimShipGroup,
+    const templateData = await track(
+      'killmail:build_template_data',
+      'application',
+      async () => ({
+        killmail: {
+          id: killmail.killmailId,
+          killmailId: killmail.killmailId,
+          hash: killmail.hash,
+          time: killmailTimeIso,
+          timeAgo: timeAgo(killmail.killmailTime),
+          systemName: killmail.solarSystemName,
+          systemId: killmail.solarSystemId,
+          regionName: killmail.regionName,
+          securityStatus: killmail.solarSystemSecurity,
         },
-        damageTaken: killmail.victimDamageTaken || 0,
-      },
-      solarSystem: {
-        id: killmail.solarSystemId,
-        name: killmail.solarSystemName,
-        region: killmail.regionName,
-        security: killmail.solarSystemSecurity,
-      },
-      attackers: attackers.map((a) => ({
-        character: a.characterId
+        victim: {
+          character: killmail.victimCharacterId
+            ? {
+                id: killmail.victimCharacterId,
+                name: killmail.victimCharacterName,
+              }
+            : null,
+          corporation: killmail.victimCorporationId
+            ? {
+                id: killmail.victimCorporationId,
+                name: killmail.victimCorporationName,
+                ticker: killmail.victimCorporationTicker,
+              }
+            : null,
+          alliance: killmail.victimAllianceId
+            ? {
+                id: killmail.victimAllianceId,
+                name: killmail.victimAllianceName,
+                ticker: killmail.victimAllianceTicker,
+              }
+            : null,
+          ship: {
+            typeId: killmail.victimShipTypeId,
+            name: killmail.victimShipName,
+            groupName: killmail.victimShipGroup,
+          },
+          damageTaken: killmail.victimDamageTaken || 0,
+        },
+        solarSystem: {
+          id: killmail.solarSystemId,
+          name: killmail.solarSystemName,
+          region: killmail.regionName,
+          security: killmail.solarSystemSecurity,
+        },
+        attackers: attackers.map((a) => ({
+          character: a.characterId
+            ? {
+                id: a.characterId,
+                name: a.characterName,
+              }
+            : null,
+          corporation: a.corporationId
+            ? {
+                id: a.corporationId,
+                name: a.corporationName,
+                ticker: a.corporationTicker,
+              }
+            : null,
+          alliance: a.allianceId
+            ? {
+                id: a.allianceId,
+                name: a.allianceName,
+                ticker: a.allianceTicker,
+              }
+            : null,
+          ship: a.shipTypeId
+            ? {
+                typeId: a.shipTypeId,
+                name: a.shipName,
+              }
+            : null,
+          weapon: a.weaponTypeId
+            ? {
+                typeId: a.weaponTypeId,
+                name: a.weaponName,
+              }
+            : null,
+          damageDone: a.damageDone,
+          finalBlow: a.finalBlow === 1,
+          securityStatus: a.securityStatus,
+        })),
+        items: itemsBySlot,
+        fittingWheel: fittingWheelData,
+        stats: {
+          attackerCount: attackers.length,
+          totalValue: totalKillValue,
+          shipValue,
+          itemsValue,
+          destroyedValue: totalDestroyed,
+          droppedValue: totalDropped,
+          fitValue,
+          isSolo: attackers.length === 1,
+        },
+        siblings: siblings.map((s) => ({
+          killmailId: s.killmailId,
+          killmailTime: ensureUtcString(s.killmailTime),
+          victimName: s.victimCharacterName,
+          victimCharacterId: s.victimCharacterId,
+          shipName: s.victimShipName,
+          shipTypeId: s.victimShipTypeId,
+          totalValue: s.totalValue,
+        })),
+        finalBlow: finalBlowAttacker
           ? {
-              id: a.characterId,
-              name: a.characterName,
+              character: finalBlowAttacker.characterId
+                ? {
+                    id: finalBlowAttacker.characterId,
+                    name: finalBlowAttacker.characterName,
+                  }
+                : null,
+              corporation: finalBlowAttacker.corporationId
+                ? {
+                    id: finalBlowAttacker.corporationId,
+                    name: finalBlowAttacker.corporationName,
+                    ticker: finalBlowAttacker.corporationTicker,
+                  }
+                : null,
+              alliance: finalBlowAttacker.allianceId
+                ? {
+                    id: finalBlowAttacker.allianceId,
+                    name: finalBlowAttacker.allianceName,
+                    ticker: finalBlowAttacker.allianceTicker,
+                  }
+                : null,
+              ship: finalBlowAttacker.shipTypeId
+                ? {
+                    typeId: finalBlowAttacker.shipTypeId,
+                    name: finalBlowAttacker.shipName,
+                  }
+                : null,
+              weapon: finalBlowAttacker.weaponTypeId
+                ? {
+                    typeId: finalBlowAttacker.weaponTypeId,
+                    name: finalBlowAttacker.weaponName,
+                  }
+                : null,
+              damageDone: finalBlowAttacker.damageDone,
+              damagePercent:
+                totalDamage > 0
+                  ? (finalBlowAttacker.damageDone / totalDamage) * 100
+                  : 0,
+              isFinalBlow: true,
             }
           : null,
-        corporation: a.corporationId
+        topDamage: topDamageAttacker
           ? {
-              id: a.corporationId,
-              name: a.corporationName,
-              ticker: a.corporationTicker,
+              character: topDamageAttacker.characterId
+                ? {
+                    id: topDamageAttacker.characterId,
+                    name: topDamageAttacker.characterName,
+                  }
+                : null,
+              corporation: topDamageAttacker.corporationId
+                ? {
+                    id: topDamageAttacker.corporationId,
+                    name: topDamageAttacker.corporationName,
+                    ticker: topDamageAttacker.corporationTicker,
+                  }
+                : null,
+              alliance: topDamageAttacker.allianceId
+                ? {
+                    id: topDamageAttacker.allianceId,
+                    name: topDamageAttacker.allianceName,
+                    ticker: topDamageAttacker.allianceTicker,
+                  }
+                : null,
+              ship: topDamageAttacker.shipTypeId
+                ? {
+                    typeId: topDamageAttacker.shipTypeId,
+                    name: topDamageAttacker.shipName,
+                  }
+                : null,
+              weapon: topDamageAttacker.weaponTypeId
+                ? {
+                    typeId: topDamageAttacker.weaponTypeId,
+                    name: topDamageAttacker.weaponName,
+                  }
+                : null,
+              damageDone: topDamageAttacker.damageDone,
+              damagePercent:
+                totalDamage > 0
+                  ? (topDamageAttacker.damageDone / totalDamage) * 100
+                  : 0,
             }
           : null,
-        alliance: a.allianceId
-          ? {
-              id: a.allianceId,
-              name: a.allianceName,
-              ticker: a.allianceTicker,
-            }
-          : null,
-        ship: a.shipTypeId
-          ? {
-              typeId: a.shipTypeId,
-              name: a.shipName,
-            }
-          : null,
-        weapon: a.weaponTypeId
-          ? {
-              typeId: a.weaponTypeId,
-              name: a.weaponName,
-            }
-          : null,
-        damageDone: a.damageDone,
-        finalBlow: a.finalBlow === 1,
-        securityStatus: a.securityStatus,
-      })),
-      items: itemsBySlot,
-      fittingWheel: {
-        destroyed: fittingWheelDestroyed,
-        dropped: fittingWheelDropped,
-      },
-      stats: {
-        attackerCount: attackers.length,
-        totalValue: totalKillValue,
-        shipValue,
-        itemsValue,
-        destroyedValue: totalDestroyed,
-        droppedValue: totalDropped,
-        fitValue,
-        isSolo: attackers.length === 1,
-      },
-      siblings: siblings.map((s) => ({
-        killmailId: s.killmailId,
-        killmailTime: ensureUtcString(s.killmailTime),
-        victimName: s.victimCharacterName,
-        victimCharacterId: s.victimCharacterId,
-        shipName: s.victimShipName,
-        shipTypeId: s.victimShipTypeId,
-        totalValue: s.totalValue,
-      })),
-      finalBlow: finalBlowAttacker
-        ? {
-            character: finalBlowAttacker.characterId
-              ? {
-                  id: finalBlowAttacker.characterId,
-                  name: finalBlowAttacker.characterName,
-                }
-              : null,
-            corporation: finalBlowAttacker.corporationId
-              ? {
-                  id: finalBlowAttacker.corporationId,
-                  name: finalBlowAttacker.corporationName,
-                  ticker: finalBlowAttacker.corporationTicker,
-                }
-              : null,
-            alliance: finalBlowAttacker.allianceId
-              ? {
-                  id: finalBlowAttacker.allianceId,
-                  name: finalBlowAttacker.allianceName,
-                  ticker: finalBlowAttacker.allianceTicker,
-                }
-              : null,
-            ship: finalBlowAttacker.shipTypeId
-              ? {
-                  typeId: finalBlowAttacker.shipTypeId,
-                  name: finalBlowAttacker.shipName,
-                }
-              : null,
-            weapon: finalBlowAttacker.weaponTypeId
-              ? {
-                  typeId: finalBlowAttacker.weaponTypeId,
-                  name: finalBlowAttacker.weaponName,
-                }
-              : null,
-            damageDone: finalBlowAttacker.damageDone,
-            damagePercent:
-              totalDamage > 0
-                ? (finalBlowAttacker.damageDone / totalDamage) * 100
-                : 0,
-            isFinalBlow: true,
-          }
-        : null,
-      topDamage: topDamageAttacker
-        ? {
-            character: topDamageAttacker.characterId
-              ? {
-                  id: topDamageAttacker.characterId,
-                  name: topDamageAttacker.characterName,
-                }
-              : null,
-            corporation: topDamageAttacker.corporationId
-              ? {
-                  id: topDamageAttacker.corporationId,
-                  name: topDamageAttacker.corporationName,
-                  ticker: topDamageAttacker.corporationTicker,
-                }
-              : null,
-            alliance: topDamageAttacker.allianceId
-              ? {
-                  id: topDamageAttacker.allianceId,
-                  name: topDamageAttacker.allianceName,
-                  ticker: topDamageAttacker.allianceTicker,
-                }
-              : null,
-            ship: topDamageAttacker.shipTypeId
-              ? {
-                  typeId: topDamageAttacker.shipTypeId,
-                  name: topDamageAttacker.shipName,
-                }
-              : null,
-            weapon: topDamageAttacker.weaponTypeId
-              ? {
-                  typeId: topDamageAttacker.weaponTypeId,
-                  name: topDamageAttacker.weaponName,
-                }
-              : null,
-            damageDone: topDamageAttacker.damageDone,
-            damagePercent:
-              totalDamage > 0
-                ? (topDamageAttacker.damageDone / totalDamage) * 100
-                : 0,
-          }
-        : null,
-      totalDamage,
-    }));
+        totalDamage,
+      })
+    );
 
     return render(
       'pages/killmail',

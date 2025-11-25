@@ -517,6 +517,7 @@ function registerHelpers() {
 
     const sections: Array<{ title: string; items: any[] }> = [];
 
+    // Section map matching Thessia's order and naming
     const sectionMap = [
       { key: 'highSlots', title: 'High Slots' },
       { key: 'medSlots', title: 'Medium Slots' },
@@ -525,14 +526,70 @@ function registerHelpers() {
       { key: 'subSlots', title: 'Subsystems' },
       { key: 'droneBay', title: 'Drone Bay' },
       { key: 'cargo', title: 'Cargo Hold' },
+      { key: 'fuelBay', title: 'Fuel Bay' },
+      { key: 'fleetHangar', title: 'Fleet Hangar' },
+      { key: 'fighterBay', title: 'Fighter Bay' },
+      // Fighter tubes (combined)
+      { key: 'fighterTube1', title: 'Fighter Launch Tubes' },
+      { key: 'fighterTube2', title: 'Fighter Launch Tubes' },
+      { key: 'fighterTube3', title: 'Fighter Launch Tubes' },
+      { key: 'fighterTube4', title: 'Fighter Launch Tubes' },
+      { key: 'fighterTube5', title: 'Fighter Launch Tubes' },
+      { key: 'shipHangar', title: 'Ship Hangar' },
+      { key: 'oreHold', title: 'Ore Hold' },
+      { key: 'gasHold', title: 'Gas Hold' },
+      { key: 'mineralHold', title: 'Mineral Hold' },
+      { key: 'salvageHold', title: 'Salvage Hold' },
+      { key: 'shipHold', title: 'Ship Hold' },
+      { key: 'smallShipHold', title: 'Small Ship Hold' },
+      { key: 'mediumShipHold', title: 'Medium Ship Hold' },
+      { key: 'largeShipHold', title: 'Large Ship Hold' },
+      { key: 'industrialShipHold', title: 'Industrial Ship Hold' },
+      { key: 'ammoHold', title: 'Ammo Hold' },
+      { key: 'quafeBay', title: 'Quafe Bay' },
+      // Structure services (combined)
+      { key: 'structureService1', title: 'Structure Services' },
+      { key: 'structureService2', title: 'Structure Services' },
+      { key: 'structureService3', title: 'Structure Services' },
+      { key: 'structureService4', title: 'Structure Services' },
+      { key: 'structureService5', title: 'Structure Services' },
+      { key: 'structureService6', title: 'Structure Services' },
+      { key: 'structureService7', title: 'Structure Services' },
+      { key: 'structureService8', title: 'Structure Services' },
+      { key: 'structureFuel', title: 'Structure Fuel' },
+      { key: 'implants', title: 'Implants' },
+      { key: 'infrastructureHangar', title: 'Infrastructure Hangar' },
+      { key: 'coreRoom', title: 'Core Room' },
+      { key: 'moonMaterialBay', title: 'Moon Material Bay' },
       { key: 'other', title: 'Other' },
     ];
 
+    // Track which combined sections we've already added
+    const addedCombinedSections = new Set<string>();
+
     for (const { key, title } of sectionMap) {
       const itemsInSection = items[key];
-      if (Array.isArray(itemsInSection) && itemsInSection.length > 0) {
-        sections.push({ title, items: itemsInSection });
+
+      // Skip if no items in this section
+      if (!Array.isArray(itemsInSection) || itemsInSection.length === 0)
+        continue;
+
+      // For combined sections (Fighter Launch Tubes, Structure Services), only add once
+      if (title === 'Fighter Launch Tubes' || title === 'Structure Services') {
+        if (addedCombinedSections.has(title)) {
+          // Append to existing section
+          const existingSection = sections.find((s) => s.title === title);
+          if (existingSection) {
+            existingSection.items.push(...itemsInSection);
+          }
+          continue;
+        } else {
+          // Mark as added and add section
+          addedCombinedSections.add(title);
+        }
       }
+
+      sections.push({ title, items: itemsInSection });
     }
 
     return sections;

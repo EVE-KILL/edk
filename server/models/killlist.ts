@@ -46,6 +46,7 @@ export interface KilllistRow {
 }
 
 export const BIG_SHIP_GROUP_IDS = [547, 485, 513, 902, 941, 30, 659];
+export const CAPSULE_GROUP_IDS = [29, 4053]; // Capsule and Irregular Capsule (Golden Pod)
 export const WORMHOLE_REGION_MIN = 11000001;
 export const WORMHOLE_REGION_MAX = 11000033;
 export const ABYSSAL_REGION_MIN = 12000000;
@@ -252,6 +253,10 @@ export function buildKilllistConditions(
     conditions.push(
       database.sql`${k}."victimShipTypeId" != ALL(${filters.excludeTypeIds})`
     );
+  }
+
+  if (filters.noCapsules) {
+    conditions.push(database.sql`${groupColumn} != ALL(${CAPSULE_GROUP_IDS})`);
   }
 
   if (filters.metaGroupIds && filters.metaGroupIds.length > 0) {
@@ -620,6 +625,7 @@ export interface KilllistFilters {
   victimCorporationId?: number;
   victimAllianceId?: number;
   excludeTypeIds?: number[];
+  noCapsules?: boolean; // Filter out capsules
 }
 
 /**
