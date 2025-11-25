@@ -5,7 +5,6 @@ import type { H3Event } from 'h3';
 import { render } from '../../../helpers/templates';
 import { getGroup } from '../../../models/groups';
 import { getCategory } from '../../../models/categories';
-import { countFilteredKills } from '../../../models/killlist';
 
 import { handleError } from '../../../utils/error';
 

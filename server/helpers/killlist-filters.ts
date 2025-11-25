@@ -53,12 +53,6 @@ export function parseKilllistFilters(query: Record<string, any>): {
   let techLevelValue: string | undefined;
   let shipClassValue: string | undefined;
 
-  const addExclude = (ids?: number[]) => {
-    if (ids && ids.length) {
-      filters.excludeTypeIds = [...(filters.excludeTypeIds ?? []), ...ids];
-    }
-  };
-
   filters.victimShipTypeId = toNumber(query.victimShipTypeId);
   filters.victimShipGroupId = toNumber(query.victimShipGroupId);
   filters.solarSystemId = toNumber(query.solarSystemId);

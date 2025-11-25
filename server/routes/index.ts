@@ -3,10 +3,7 @@ import {
   getFilteredKillsWithNames,
   estimateFilteredKills,
 } from '../models/killlist';
-import {
-  parseKilllistFilters,
-  CAPSULE_TYPE_IDS,
-} from '../helpers/killlist-filters';
+import { parseKilllistFilters } from '../helpers/killlist-filters';
 import { getTopByKills } from '../models/topBoxes';
 import { getMostValuableKillsByPeriod } from '../models/mostValuableKills';
 import { normalizeKillRow } from '../helpers/templates';

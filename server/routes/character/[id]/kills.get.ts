@@ -9,7 +9,8 @@ import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getCharacterWithCorporationAndAlliance } from '../../../models/characters';
 import {
   getEntityKillmails,
-  estimateEntityKillmails, estimateEntityKillmails,
+  estimateEntityKillmails,
+  estimateEntityKillmails,
 } from '../../../models/killlist';
 import { parseKilllistFilters } from '../../../helpers/killlist-filters';
 import { track } from '../../../utils/performance-decorators';
@@ -66,7 +67,6 @@ export default defineEventHandler(async (event: H3Event) => {
     // Parse filters from query parameters
     const {
       filters: userFilters,
-      filterQueryString,
       securityStatus,
       techLevel,
       shipClass,
@@ -86,7 +86,12 @@ export default defineEventHandler(async (event: H3Event) => {
             perPage,
             userFilters
           ),
-          estimateEntityKillmails(characterId, 'character', 'kills', userFilters),
+          estimateEntityKillmails(
+            characterId,
+            'character',
+            'kills',
+            userFilters
+          ),
         ]);
       }
     );

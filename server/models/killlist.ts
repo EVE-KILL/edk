@@ -683,7 +683,7 @@ export async function getFilteredKills(
 
 /**
  * Count filtered kills (DEPRECATED - use estimateFilteredKills for pagination)
- * 
+ *
  * This performs an exact COUNT(*) which is expensive on large tables.
  * Only use this when you need a precise count (e.g., analytics, reports).
  * For pagination and UI display, use estimateFilteredKills() instead.
@@ -715,14 +715,14 @@ export async function countFilteredKills(
 
 /**
  * Estimate filtered kills count using query planner
- * 
+ *
  * This is 100-1000x faster than countFilteredKills() because it uses
  * PostgreSQL's EXPLAIN to get the planner's row estimate instead of
  * scanning all matching rows.
- * 
+ *
  * Accuracy: Usually within 10-50% of exact count, which is sufficient
  * for pagination display ("Page 5 of ~2,340").
- * 
+ *
  * Performance: 5-50ms vs 5-30 seconds for exact count on large tables.
  */
 export async function estimateFilteredKills(
@@ -1057,12 +1057,6 @@ export async function getEntityKillmails(
  */
 type EntityColumnMap = Record<'character' | 'corporation' | 'alliance', string>;
 
-const attackerColumnMap: EntityColumnMap = {
-  character: 'characterId',
-  corporation: 'corporationId',
-  alliance: 'allianceId',
-};
-
 const victimColumnMap: EntityColumnMap = {
   character: 'victimCharacterId',
   corporation: 'victimCorporationId',
@@ -1075,9 +1069,6 @@ export async function countEntityKillmails(
   mode: 'kills' | 'losses' | 'all',
   filters?: KilllistFilters
 ): Promise<number> {
-  const attackerCol = attackerColumnMap[entityType];
-  const victimCol = victimColumnMap[entityType];
-
   // Build additional filter conditions
   const additionalFilters = filters
     ? buildKilllistConditions(filters, 'k', {
@@ -1124,9 +1115,6 @@ export async function estimateEntityKillmails(
   mode: 'kills' | 'losses' | 'all',
   filters?: KilllistFilters
 ): Promise<number> {
-  const attackerCol = attackerColumnMap[entityType];
-  const victimCol = victimColumnMap[entityType];
-
   // Build additional filter conditions
   const additionalFilters = filters
     ? buildKilllistConditions(filters, 'k', {
@@ -1136,7 +1124,7 @@ export async function estimateEntityKillmails(
 
   if (mode === 'kills') {
     const topAttackerCol = `topAttacker${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`;
-    
+
     return estimateCount(database.sql`
       SELECT 1
       FROM killmails k

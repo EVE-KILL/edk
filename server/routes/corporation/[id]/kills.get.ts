@@ -9,7 +9,8 @@ import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getCorporationWithAlliance } from '../../../models/corporations';
 import {
   getEntityKillmails,
-  estimateEntityKillmails, estimateEntityKillmails,
+  estimateEntityKillmails,
+  estimateEntityKillmails,
 } from '../../../models/killlist';
 import { track } from '../../../utils/performance-decorators';
 
@@ -67,7 +68,6 @@ export default defineEventHandler(async (event: H3Event) => {
     // Parse filters from query parameters
     const {
       filters: userFilters,
-      filterQueryString,
       securityStatus,
       techLevel,
       shipClass,
