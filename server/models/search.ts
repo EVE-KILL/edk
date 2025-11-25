@@ -138,7 +138,7 @@ export async function searchEntities(
     entityId: row.id,
     name: row.name,
     type: row.type,
-    rawId: `${row.type}-${row.id}`,
+    rawId: row.id,
     similarity: row.rank,
   }));
 }
