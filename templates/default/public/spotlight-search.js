@@ -1,0 +1,332 @@
+// Spotlight Search - CMD/CTRL + K modal search
+// Global keyboard-triggered search interface
+
+(function () {
+  'use strict';
+
+  let searchTimeout = null;
+  let currentResults = [];
+  let selectedIndex = -1;
+  let recentSearches = [];
+  const MAX_RECENT = 5;
+
+  // State
+  let isOpen = false;
+  let searchInput = null;
+  let resultsContainer = null;
+  let overlay = null;
+
+  // Initialize on DOM ready
+  document.addEventListener('DOMContentLoaded', () => {
+    createSpotlightDOM();
+    loadRecentSearches();
+    setupKeyboardShortcuts();
+    console.log('[spotlight] Ready (Cmd/Ctrl + K to open)');
+  });
+
+  function createSpotlightDOM() {
+    const html = `
+      <div id="spotlightOverlay" class="spotlight-overlay">
+        <div class="spotlight-modal" onclick="event.stopPropagation()">
+          <div class="spotlight-header">
+            <svg class="spotlight-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input type="text" id="spotlightInput" placeholder="Search for anything..." autocomplete="off" />
+            <kbd class="spotlight-kbd">ESC</kbd>
+          </div>
+          
+          <div id="spotlightResults" class="spotlight-results"></div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    
+    overlay = document.getElementById('spotlightOverlay');
+    searchInput = document.getElementById('spotlightInput');
+    resultsContainer = document.getElementById('spotlightResults');
+
+    // Event listeners
+    overlay.addEventListener('click', closeSpotlight);
+    searchInput.addEventListener('input', handleInput);
+    searchInput.addEventListener('keydown', handleKeydown);
+  }
+
+  function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      // Cmd/Ctrl + K to open
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        
+        // Don't open if typing in input/textarea (except spotlight itself)
+        const target = e.target;
+        const isTyping = (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') 
+                         && target.id !== 'spotlightInput';
+        
+        if (!isTyping) {
+          toggleSpotlight();
+        }
+      }
+
+      // Escape to close
+      if (e.key === 'Escape' && isOpen) {
+        closeSpotlight();
+      }
+    });
+  }
+
+  function toggleSpotlight() {
+    if (isOpen) {
+      closeSpotlight();
+    } else {
+      openSpotlight();
+    }
+  }
+
+  function openSpotlight() {
+    isOpen = true;
+    overlay.classList.add('active');
+    searchInput.value = '';
+    searchInput.focus();
+    selectedIndex = -1;
+    renderEmptyState();
+  }
+
+  function closeSpotlight() {
+    isOpen = false;
+    overlay.classList.remove('active');
+    currentResults = [];
+    selectedIndex = -1;
+  }
+
+  function handleInput(e) {
+    const query = e.target.value.trim();
+    
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    if (query.length < 2) {
+      renderEmptyState();
+      return;
+    }
+
+    // Show loading
+    resultsContainer.innerHTML = '<div class="spotlight-loading">Searching...</div>';
+
+    searchTimeout = setTimeout(() => {
+      performSearch(query);
+    }, 200);
+  }
+
+  function handleKeydown(e) {
+    const hasResults = currentResults.length > 0;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        if (hasResults) {
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, currentResults.length - 1);
+          updateSelection();
+        }
+        break;
+      case 'ArrowUp':
+        if (hasResults) {
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, -1);
+          updateSelection();
+        }
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && currentResults[selectedIndex]) {
+          navigateToResult(currentResults[selectedIndex]);
+        }
+        break;
+    }
+  }
+
+  async function performSearch(query) {
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=10`);
+      const data = await response.json();
+      
+      currentResults = data.results || [];
+      selectedIndex = -1;
+      
+      if (currentResults.length > 0) {
+        addRecentSearch(query);
+        renderResults(currentResults);
+      } else {
+        renderNoResults(query);
+      }
+    } catch (error) {
+      console.error('[spotlight] Search error:', error);
+      resultsContainer.innerHTML = '<div class="spotlight-error">Search failed</div>';
+    }
+  }
+
+  function renderEmptyState() {
+    let html = '<div class="spotlight-empty">';
+    
+    // Quick actions
+    html += '<div class="spotlight-section">';
+    html += '<div class="spotlight-section-title">Quick Actions</div>';
+    html += '<div class="spotlight-quick-grid">';
+    html += '<a href="/" class="spotlight-quick-item" onclick="event.stopPropagation()">⚡ Latest Kills</a>';
+    html += '<a href="/kills/big" class="spotlight-quick-item" onclick="event.stopPropagation()">💰 Big Kills</a>';
+    html += '<a href="/statistics" class="spotlight-quick-item" onclick="event.stopPropagation()">📊 Statistics</a>';
+    html += '<a href="/entities" class="spotlight-quick-item" onclick="event.stopPropagation()">👥 Entities</a>';
+    html += '</div>';
+    html += '</div>';
+    
+    // Recent searches
+    if (recentSearches.length > 0) {
+      html += '<div class="spotlight-section">';
+      html += '<div class="spotlight-section-title">Recent Searches</div>';
+      html += '<div class="spotlight-recent-list">';
+      recentSearches.forEach((search, index) => {
+        html += `
+          <button class="spotlight-recent-item" onclick="window.spotlightSelectRecent('${escapeHtml(search)}')">
+            <span>🕒 ${escapeHtml(search)}</span>
+          </button>
+        `;
+      });
+      html += '</div>';
+      html += '</div>';
+    }
+
+    html += '</div>';
+    resultsContainer.innerHTML = html;
+  }
+
+  function renderResults(results) {
+    // Group by type
+    const grouped = {};
+    results.forEach(result => {
+      if (!grouped[result.type]) grouped[result.type] = [];
+      grouped[result.type].push(result);
+    });
+
+    let html = '';
+    
+    const typeConfig = {
+      character: { label: 'Characters', icon: '👤' },
+      corporation: { label: 'Corporations', icon: '🏢' },
+      alliance: { label: 'Alliances', icon: '🛡️' },
+      system: { label: 'Systems', icon: '🌟' },
+      constellation: { label: 'Constellations', icon: '🌌' },
+      region: { label: 'Regions', icon: '🗺️' },
+      item: { label: 'Items', icon: '📦' }
+    };
+
+    Object.keys(typeConfig).forEach(type => {
+      if (grouped[type] && grouped[type].length > 0) {
+        const config = typeConfig[type];
+        html += `<div class="spotlight-section">`;
+        html += `<div class="spotlight-section-title">${config.icon} ${config.label}</div>`;
+        
+        grouped[type].forEach(result => {
+          const resultIndex = results.indexOf(result);
+          const url = getResultUrl(result);
+          html += `
+            <div class="spotlight-result-item" data-index="${resultIndex}" onclick="window.location.href='${url}'">
+              <div class="spotlight-result-content">
+                <div class="spotlight-result-name">${escapeHtml(result.name)}</div>
+                <div class="spotlight-result-type">${result.type}</div>
+              </div>
+              <div class="spotlight-result-arrow">→</div>
+            </div>
+          `;
+        });
+        
+        html += `</div>`;
+      }
+    });
+
+    resultsContainer.innerHTML = html;
+  }
+
+  function renderNoResults(query) {
+    resultsContainer.innerHTML = `
+      <div class="spotlight-no-results">
+        <div class="spotlight-no-results-icon">🔍</div>
+        <div class="spotlight-no-results-text">No results found for "${escapeHtml(query)}"</div>
+      </div>
+    `;
+  }
+
+  function updateSelection() {
+    const items = resultsContainer.querySelectorAll('.spotlight-result-item');
+    items.forEach((item, index) => {
+      if (index === selectedIndex) {
+        item.classList.add('selected');
+        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } else {
+        item.classList.remove('selected');
+      }
+    });
+  }
+
+  function navigateToResult(result) {
+    addRecentSearch(result.name);
+    window.location.href = getResultUrl(result);
+  }
+
+  function getResultUrl(result) {
+    const routes = {
+      character: `/character/${result.id}`,
+      corporation: `/corporation/${result.id}`,
+      alliance: `/alliance/${result.id}`,
+      system: `/system/${result.id}`,
+      constellation: `/constellation/${result.id}`,
+      region: `/region/${result.id}`,
+      item: `/item/${result.id}`
+    };
+    return routes[result.type] || '#';
+  }
+
+  // Recent searches management
+  function loadRecentSearches() {
+    try {
+      const stored = localStorage.getItem('spotlightRecentSearches');
+      if (stored) {
+        recentSearches = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn('[spotlight] Failed to load recent searches');
+    }
+  }
+
+  function saveRecentSearches() {
+    try {
+      localStorage.setItem('spotlightRecentSearches', JSON.stringify(recentSearches));
+    } catch (e) {
+      console.warn('[spotlight] Failed to save recent searches');
+    }
+  }
+
+  function addRecentSearch(query) {
+    // Remove if exists
+    recentSearches = recentSearches.filter(s => s !== query);
+    // Add to front
+    recentSearches.unshift(query);
+    // Limit size
+    recentSearches = recentSearches.slice(0, MAX_RECENT);
+    saveRecentSearches();
+  }
+
+  // Global function for recent search selection
+  window.spotlightSelectRecent = function(query) {
+    searchInput.value = query;
+    searchInput.dispatchEvent(new Event('input'));
+  };
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+})();

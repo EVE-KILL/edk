@@ -351,7 +351,7 @@
             left: 0;
             right: 0;
             min-width: 300px;
-            background: rgba(26, 26, 26, 0.95);
+            background: rgba(26, 26, 26, 0.98);
             backdrop-filter: blur(10px);
             border: 1px solid var(--color-border-dark);
             border-radius: var(--radius-sm);
@@ -359,6 +359,10 @@
             overflow-y: auto;
             z-index: 1000;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .search-results.active {
+            display: block;
         }
 
         .search-group {
@@ -378,6 +382,49 @@
             letter-spacing: 0.5px;
             background: transparent;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .search-group-label {
+            color: var(--color-text-tertiary);
+            padding: 8px 15px;
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .search-result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .search-result-item:hover,
+        .search-result-item.selected {
+            background-color: rgba(74, 158, 255, 0.1);
+        }
+
+        .search-result-name {
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--color-text-secondary);
+        }
+
+        .search-result-item:hover .search-result-name,
+        .search-result-item.selected .search-result-name {
+            color: var(--color-accent-blue);
+        }
+
+        .search-result-type {
+            font-size: 9px;
+            color: var(--color-text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .search-item {
@@ -419,6 +466,270 @@
 
         .search-error {
             color: #ef4444;
+        }
+
+        /* Spotlight Search Modal */
+        .spotlight-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            animation: spotlightFadeIn 0.15s ease;
+        }
+
+        .spotlight-overlay.active {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 15vh;
+        }
+
+        @keyframes spotlightFadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .spotlight-modal {
+            width: 90%;
+            max-width: 640px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border-dark);
+            border-radius: var(--radius-md);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: spotlightSlideIn 0.2s ease;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes spotlightSlideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .spotlight-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border-dark);
+        }
+
+        .spotlight-icon {
+            color: var(--color-text-tertiary);
+            flex-shrink: 0;
+        }
+
+        #spotlightInput {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--color-text-secondary);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        #spotlightInput::placeholder {
+            color: var(--color-text-tertiary);
+        }
+
+        .spotlight-kbd {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 24px;
+            padding: 0 8px;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border-dark);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-tertiary);
+            font-size: 11px;
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        .spotlight-results {
+            overflow-y: auto;
+            max-height: calc(70vh - 72px);
+        }
+
+        .spotlight-section {
+            border-bottom: 1px solid var(--color-border-dark);
+        }
+
+        .spotlight-section:last-child {
+            border-bottom: none;
+        }
+
+        .spotlight-section-title {
+            padding: 12px 20px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--color-text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .spotlight-result-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.1s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .spotlight-result-item:hover,
+        .spotlight-result-item.selected {
+            background: rgba(74, 158, 255, 0.1);
+        }
+
+        .spotlight-result-content {
+            flex: 1;
+        }
+
+        .spotlight-result-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .spotlight-result-item:hover .spotlight-result-name,
+        .spotlight-result-item.selected .spotlight-result-name {
+            color: var(--color-accent-blue);
+        }
+
+        .spotlight-result-type {
+            font-size: 10px;
+            color: var(--color-text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .spotlight-result-arrow {
+            color: var(--color-text-tertiary);
+            font-size: 18px;
+            opacity: 0;
+            transition: opacity 0.1s ease;
+        }
+
+        .spotlight-result-item:hover .spotlight-result-arrow,
+        .spotlight-result-item.selected .spotlight-result-arrow {
+            opacity: 1;
+        }
+
+        .spotlight-quick-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            padding: 0 20px 16px;
+        }
+
+        .spotlight-quick-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border-dark);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+
+        .spotlight-quick-item:hover {
+            background: rgba(74, 158, 255, 0.1);
+            border-color: var(--color-accent-blue);
+            color: var(--color-accent-blue);
+        }
+
+        .spotlight-recent-list {
+            padding: 0 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .spotlight-recent-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: transparent;
+            border: 1px solid var(--color-border-dark);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-tertiary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            width: 100%;
+            text-align: left;
+        }
+
+        .spotlight-recent-item:hover {
+            background: rgba(74, 158, 255, 0.05);
+            border-color: var(--color-accent-blue);
+            color: var(--color-text-secondary);
+        }
+
+        .spotlight-empty {
+            padding: 20px 0;
+        }
+
+        .spotlight-loading,
+        .spotlight-no-results,
+        .spotlight-error {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--color-text-tertiary);
+            font-size: 13px;
+        }
+
+        .spotlight-no-results-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .spotlight-no-results-text {
+            color: var(--color-text-tertiary);
+        }
+
+        @media (max-width: 768px) {
+            .spotlight-overlay.active {
+                padding-top: 10vh;
+            }
+
+            .spotlight-modal {
+                width: 95%;
+                max-height: 80vh;
+            }
+
+            .spotlight-quick-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 
@@ -518,7 +829,7 @@
                             <input
                                 type="text"
                                 id="globalSearch"
-                                placeholder="Search..."
+                                placeholder="Search... (Cmd/Ctrl+K)"
                                 autocomplete="off"
                             />
                             <div id="searchResults" class="search-results"></div>
@@ -668,6 +979,7 @@
 
     <!-- Search Script -->
     <script type="text/javascript" src="/search.js"></script>
+    <script type="text/javascript" src="/spotlight-search.js"></script>
 
     <!-- Dropdown Positioning Script -->
     <script type="text/javascript">
