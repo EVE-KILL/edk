@@ -1,15 +1,9 @@
 import { logger } from '../server/helpers/logger';
-
 import { database } from '../server/helpers/database';
-
-const logger = {
-  info: (message: string) => logger.info(`[INFO] ${message}`),
-  error: (message: string) => logger.error(`[ERROR] ${message}`),
-};
 
 export const name = 'refresh-top-stats';
 export const description = 'Refreshes the top statistics materialized views';
-export const schedule = '2,17,32,47 * * * *'; // Every 15 minutes, offset from kill_list to avoid lock contention
+export const schedule = '0 2,17,32,47 * * * *'; // Every 15 minutes, offset from kill_list to avoid lock contention
 
 const TOP_VIEWS = [
   'top_characters_weekly',

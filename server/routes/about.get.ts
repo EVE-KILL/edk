@@ -16,13 +16,14 @@ export default defineEventHandler(async (event: H3Event) => {
     const counts = await track('about:get_db_counts', 'database', async () => {
       return await getDatabaseCounts();
     });
-    
+
     logger.info('About page counts', { counts });
 
     // Build data object
     const data = await track('about:build_data', 'application', async () => {
       return {
         counts,
+        updatedAt: new Date().toISOString(),
       };
     });
 

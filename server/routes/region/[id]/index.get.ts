@@ -8,6 +8,10 @@ import {
   getFilteredKillsWithNames,
   countFilteredKills,
 } from '../../../models/killlist';
+import {
+  parseKilllistFilters,
+  CAPSULE_TYPE_IDS,
+} from '../../../helpers/killlist-filters';
 import { getMostValuableKillsByPeriod } from '../../../models/mostValuableKills';
 import {
   getTopCharactersFiltered,
@@ -42,6 +46,13 @@ export default defineEventHandler(async (event: H3Event) => {
     // Get pagination parameters
     const query = getQuery(event);
     const page = Math.max(1, Number.parseInt(query.page as string) || 1);
+    const {
+      filters: userFilters,
+      filterQueryString,
+      securityStatus,
+      techLevel,
+      shipClass,
+    } = parseKilllistFilters(query);
     const perPage = 30;
 
     // Fetch stats and killmails in parallel
@@ -54,8 +65,8 @@ export default defineEventHandler(async (event: H3Event) => {
       topAlliances,
       topSystems,
     ] = await Promise.all([
-      getFilteredKillsWithNames({ regionId }, page, perPage),
-      countFilteredKills({ regionId }),
+      getFilteredKillsWithNames({ regionId, ...userFilters }, page, perPage),
+      countFilteredKills({ regionId, ...userFilters }),
       getMostValuableKillsByPeriod('week', 6),
       getTopCharactersFiltered({ regionId }, 10),
       getTopCorporationsFiltered({ regionId }, 10),
@@ -92,21 +103,21 @@ export default defineEventHandler(async (event: H3Event) => {
       imageId: c.id,
       link: `/character/${c.id}`,
     }));
-    
+
     const topCorporationsFormatted = topCorporations.map((c) => ({
       ...c,
       imageType: 'corporation',
       imageId: c.id,
       link: `/corporation/${c.id}`,
     }));
-    
+
     const topAlliancesFormatted = topAlliances.map((a) => ({
       ...a,
       imageType: 'alliance',
       imageId: a.id,
       link: `/alliance/${a.id}`,
     }));
-    
+
     const topSystemsFormatted = topSystems.map((s) => ({
       ...s,
       link: `/system/${s.id}`,
@@ -135,6 +146,17 @@ export default defineEventHandler(async (event: H3Event) => {
         hasNext: page < totalPages,
       },
       baseUrl: `/region/${regionId}`,
+      filterQueryString,
+      filterDefaults: {
+        ...userFilters,
+        securityStatus,
+        shipClass,
+        techLevel,
+        skipCapsules:
+          userFilters.excludeTypeIds?.some((id) =>
+            CAPSULE_TYPE_IDS.includes(id)
+          ) || false,
+      },
       currentTab: 'dashboard',
       wsFilter: {
         type: 'region',

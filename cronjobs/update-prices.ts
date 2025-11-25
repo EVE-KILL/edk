@@ -39,7 +39,7 @@ async function updateRecentPrices(): Promise<void> {
 }
 
 export const name = 'update-prices';
-export const schedule = '0 0 * * *'; // Runs every day at midnight UTC
+export const schedule = '0 0 0 * * *'; // Runs every day at midnight UTC
 export const description =
   'Updates the last 14 days of price data from EVERef.';
 export const action = async () => {

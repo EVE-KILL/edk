@@ -6,9 +6,14 @@ import { timeAgo } from '../../helpers/time';
 import { render, normalizeKillRow } from '../../helpers/templates';
 import {
   getFilteredKillsWithNames,
+  getMostValuableKillsFiltered,
   countFilteredKills,
   type KilllistFilters,
 } from '../../models/killlist';
+import {
+  parseKilllistFilters,
+  CAPSULE_TYPE_IDS,
+} from '../../helpers/killlist-filters';
 import {
   getTopSystemsFiltered,
   getTopRegionsFiltered,
@@ -196,15 +201,15 @@ function buildFiltersForType(type: KillType): KilllistFilters {
       break;
 
     case 't1':
-      filters.shipGroupIds = SHIP_GROUPS.t1;
+      filters.metaGroupIds = [1]; // Tech I
       break;
 
     case 't2':
-      filters.shipGroupIds = SHIP_GROUPS.t2;
+      filters.metaGroupIds = [2]; // Tech II
       break;
 
     case 't3':
-      filters.shipGroupIds = SHIP_GROUPS.t3;
+      filters.shipGroupIds = [963, 1305]; // T3 Strategic Cruisers and Tactical Destroyers
       break;
   }
 
@@ -267,10 +272,103 @@ export default defineEventHandler(async (event: H3Event) => {
     // Get pagination parameters
     const query = getQuery(event);
     const page = Math.max(1, Number.parseInt(query.page as string) || 1);
-    const perPage = 30;
+    const perPage = Math.min(
+      100,
+      Math.max(5, Number.parseInt(query.limit as string) || 25)
+    );
 
     // Build filters based on the type
     const filters = buildFiltersForType(killType);
+
+    // Merge user-provided filters (column-aligned query params)
+    const {
+      filters: userFilters,
+      filterQueryString,
+      securityStatus,
+      techLevel,
+      shipClass,
+    } = parseKilllistFilters(query);
+    for (const [key, value] of Object.entries(userFilters)) {
+      // Only override when a value is actually provided
+      if (value !== undefined) {
+        // @ts-expect-error dynamic assignment is fine here
+        filters[key] = value;
+      }
+    }
+
+    // Determine securityStatus string from route or query
+    let effectiveSecurityStatus = securityStatus;
+    if (!effectiveSecurityStatus) {
+      // Map route-based filters to securityStatus string
+      if (killType === 'highsec') {
+        effectiveSecurityStatus = 'highsec';
+      } else if (killType === 'lowsec') {
+        effectiveSecurityStatus = 'lowsec';
+      } else if (killType === 'nullsec') {
+        effectiveSecurityStatus = 'nullsec';
+      } else if (killType === 'w-space') {
+        effectiveSecurityStatus = 'wormhole';
+      } else if (killType === 'abyssal') {
+        effectiveSecurityStatus = 'abyssal';
+      } else if (killType === 'pochven') {
+        effectiveSecurityStatus = 'pochven';
+      }
+    }
+
+    // Determine techLevel string from route or query
+    let effectiveTechLevel = techLevel;
+    if (!effectiveTechLevel) {
+      if (killType === 't1') {
+        effectiveTechLevel = 't1';
+      } else if (killType === 't2') {
+        effectiveTechLevel = 't2';
+      } else if (killType === 't3') {
+        effectiveTechLevel = 't3';
+      }
+    }
+
+    // Determine minTotalValue display string from route or query
+    let effectiveMinValue = filters.minTotalValue;
+    if (!effectiveMinValue && (killType === '5b' || killType === '10b')) {
+      effectiveMinValue = filters.minValue;
+    }
+
+    // Determine shipClass string from route or query
+    let effectiveShipClass = shipClass;
+    if (!effectiveShipClass) {
+      if (killType === 'frigates') {
+        effectiveShipClass = 'frigate';
+      } else if (killType === 'destroyers') {
+        effectiveShipClass = 'destroyer';
+      } else if (killType === 'cruisers') {
+        effectiveShipClass = 'cruiser';
+      } else if (killType === 'battlecruisers') {
+        effectiveShipClass = 'battlecruiser';
+      } else if (killType === 'battleships') {
+        effectiveShipClass = 'battleship';
+      } else if (killType === 'capitals') {
+        effectiveShipClass = 'carrier'; // Capitals includes carriers and dreads
+      } else if (killType === 'supercarriers') {
+        effectiveShipClass = 'supercarrier';
+      } else if (killType === 'titans') {
+        effectiveShipClass = 'titan';
+      } else if (killType === 'freighters') {
+        effectiveShipClass = 'freighter';
+      } else if (killType === 'citadels' || killType === 'structures') {
+        effectiveShipClass = 'structure';
+      }
+    }
+
+    const filterDefaults = {
+      ...filters,
+      securityStatus: effectiveSecurityStatus,
+      techLevel: effectiveTechLevel,
+      shipClass: effectiveShipClass,
+      minTotalValue: effectiveMinValue,
+      skipCapsules:
+        filters.excludeTypeIds?.some((id) => CAPSULE_TYPE_IDS.includes(id)) ||
+        false,
+    };
 
     // Fetch killmails and count in parallel using model functions
     const [killmailsData, totalKillmails] = await track(
@@ -321,27 +419,26 @@ export default defineEventHandler(async (event: H3Event) => {
     });
 
     // Get Most Valuable Kills for this filter
-    // Note: Using the filtered killmails function with ordering by value
+    // Fetches ALL kills from the lookback period (no limit), then we sort by value
     const mostValuableKillsData = await track(
       `kills_${killType}:most_valuable`,
       'application',
       async () => {
-        return await getFilteredKillsWithNames(
-          { ...filters, minValue: undefined },
-          1,
-          6,
+        return await getMostValuableKillsFiltered(
+          filters, // Keep all filters intact
           MOST_VALUABLE_LOOKBACK_DAYS
         );
       }
     );
-    // Sort by value descending (in case the query doesn't)
+    // Sort by value descending and take top 6
     mostValuableKillsData.sort((a, b) => b.totalValue - a.totalValue);
+    const topValuableKills = mostValuableKillsData.slice(0, 6);
 
     const mostValuableKills = await track(
       `kills_${killType}:normalize_valuable`,
       'application',
       async () => {
-        return mostValuableKillsData.map((k) => {
+        return topValuableKills.map((k) => {
           const normalized = normalizeKillRow(k);
           const killmailTimeRaw: unknown =
             k.killmailTime ?? normalized.killmailTime;
@@ -413,6 +510,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const pagination = {
       currentPage: page,
       totalPages,
+      limit: perPage,
       pages: generatePageNumbers(page, totalPages),
       hasPrev: page > 1,
       hasNext: page < totalPages,
@@ -443,6 +541,8 @@ export default defineEventHandler(async (event: H3Event) => {
         topSystemsFormatted,
         topRegionsFormatted,
         mostValuableKills,
+        filterQueryString,
+        filterDefaults,
         wsFilter: {
           type: 'killType',
           topic: killType,

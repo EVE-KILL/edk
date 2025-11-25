@@ -12,17 +12,14 @@
 </div>
 {{/if}}
 
-<!-- Pagination (Top) -->
-{{#if data.pagination}}
-    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+<!-- Killlist Filters -->
+{{#if data.filterDefaults}}
+<div style="margin-bottom: 20px;">
+    {{> partials/killlist-filters filterDefaults=data.filterDefaults baseUrl=data.baseUrl pagination=data.pagination}}
+</div>
 {{/if}}
 
 <!-- Kills List -->
 <div style="margin-bottom: 20px;">
     {{> partials/killmail-list killmails=data.killmails wsFilter=data.wsFilter}}
 </div>
-
-<!-- Pagination (Bottom) -->
-{{#if data.pagination}}
-    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
-{{/if}}

@@ -16,7 +16,7 @@ services:
       - DATABASE_URL=postgres://edk_user:edk_password@postgres:5432/edk
       - REDIS_URL=redis://redis:6379/0
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       - postgres
       - redis
@@ -32,7 +32,7 @@ services:
       - POSTGRES_USER=edk_user
       - POSTGRES_PASSWORD=edk_password
     ports:
-      - "5432:5432"
+      - '5432:5432'
 
   redis:
     image: redis:7-alpine
@@ -41,9 +41,8 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "6379:6379"
+      - '6379:6379'
 
 volumes:
   postgres_data:
   redis_data:
-  typesense_data:

@@ -64,6 +64,7 @@ export default defineNitroConfig({
     },
   },
   routeRules: {
+    '/api/status': { cache: false },
     '/api/killmail/*/esi': {
       cache: { maxAge: 3600, staleMaxAge: 3600, base: 'redis' },
     },

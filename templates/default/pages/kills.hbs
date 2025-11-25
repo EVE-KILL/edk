@@ -22,20 +22,14 @@
 
   <!-- Main Content Area (Right 80%) -->
   <div class="killlist-main">
-    <!-- Pagination (Top) -->
-    {{#if data.pagination}}
-        {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+    {{#if data.filterDefaults}}
+      {{> partials/killlist-filters baseUrl=data.baseUrl filterDefaults=data.filterDefaults pagination=data.pagination filterQueryString=data.filterQueryString}}
     {{/if}}
 
     <!-- Killmails List -->
     <section class="killlist-content">
-    {{> partials/killmail-list killmails=data.recentKillmails wsFilter=data.wsFilter}}
+    {{> partials/killmail-list killmails=data.recentKillmails wsFilter=data.wsFilter limit=data.pagination.limit}}
     </section>
-
-    <!-- Pagination (Bottom) -->
-    {{#if data.pagination}}
-        {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
-    {{/if}}
   </div>
 </div>
 

@@ -1,9 +1,9 @@
 {{#if pagination}}
 <div class="pagination">
-    <div class="pagination__inner">
+    <div class="pagination__inner pagination__inner--right">
         <!-- Previous Button -->
         {{#if pagination.hasPrev}}
-        <a href="{{baseUrl}}?page={{pagination.prevPage}}" class="pagination__btn">
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.prevPage}}{{else}}?page={{pagination.prevPage}}{{/if}}" class="pagination__btn">
             ← Previous
         </a>
         {{else}}
@@ -14,7 +14,7 @@
 
         <!-- First Page + Ellipsis -->
         {{#if pagination.showFirst}}
-        <a href="{{baseUrl}}" class="pagination__page">
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}{{/if}}" class="pagination__page">
             1
         </a>
         <span class="pagination__ellipsis">...</span>
@@ -27,7 +27,7 @@
             {{this}}
         </span>
         {{else}}
-        <a href="{{baseUrl}}?page={{this}}" class="pagination__page">
+        <a href="{{baseUrl}}{{#if ../filterQueryString}}?{{../filterQueryString}}&page={{this}}{{else}}?page={{this}}{{/if}}" class="pagination__page">
             {{this}}
         </a>
         {{/if}}
@@ -36,14 +36,14 @@
         <!-- Ellipsis + Last Page -->
         {{#if pagination.showLast}}
         <span class="pagination__ellipsis">...</span>
-        <a href="{{baseUrl}}?page={{pagination.totalPages}}" class="pagination__page">
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.totalPages}}{{else}}?page={{pagination.totalPages}}{{/if}}" class="pagination__page">
             {{pagination.totalPages}}
         </a>
         {{/if}}
 
         <!-- Next Button -->
         {{#if pagination.hasNext}}
-        <a href="{{baseUrl}}?page={{pagination.nextPage}}" class="pagination__btn">
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.nextPage}}{{else}}?page={{pagination.nextPage}}{{/if}}" class="pagination__btn">
             Next →
         </a>
         {{else}}
@@ -68,6 +68,10 @@
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-sm);
+}
+
+.pagination__inner--right {
+  float: right;
 }
 
 .pagination__btn,

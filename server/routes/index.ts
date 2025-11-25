@@ -3,6 +3,10 @@ import {
   getFilteredKillsWithNames,
   countFilteredKills,
 } from '../models/killlist';
+import {
+  parseKilllistFilters,
+  CAPSULE_TYPE_IDS,
+} from '../helpers/killlist-filters';
 import { getTopByKills } from '../models/topBoxes';
 import { getMostValuableKillsByPeriod } from '../models/mostValuableKills';
 import { normalizeKillRow } from '../helpers/templates';
@@ -23,7 +27,17 @@ export default defineEventHandler(async (event: H3Event) => {
     // Get pagination parameters
     const query = getQuery(event);
     const page = Math.max(1, Number.parseInt(query.page as string) || 1);
-    const perPage = 30;
+    const {
+      filters: userFilters,
+      filterQueryString,
+      securityStatus,
+      techLevel,
+      shipClass,
+    } = parseKilllistFilters(query);
+    const perPage = Math.min(
+      100,
+      Math.max(5, Number.parseInt(query.limit as string) || 25)
+    );
 
     // Fetch recent killmails with names, count, and top 10 stats in parallel
     const [
@@ -36,8 +50,8 @@ export default defineEventHandler(async (event: H3Event) => {
       topRegions,
     ] = await track('frontpage:parallel_queries', 'application', async () => {
       return await Promise.all([
-        getFilteredKillsWithNames({}, page, perPage),
-        countFilteredKills({}),
+        getFilteredKillsWithNames(userFilters, page, perPage),
+        countFilteredKills(userFilters),
         getTopByKills('week', 'character', 10),
         getTopByKills('week', 'corporation', 10),
         getTopByKills('week', 'alliance', 10),
@@ -179,7 +193,7 @@ export default defineEventHandler(async (event: H3Event) => {
             currentPage: page,
             totalPages: totalPages,
             totalKillmails: totalKillmails,
-            perPage: perPage,
+            limit: perPage,
             pages: generatePageNumbers(page, totalPages),
             hasPrev: page > 1,
             hasNext: page < totalPages,
@@ -189,6 +203,17 @@ export default defineEventHandler(async (event: H3Event) => {
             showLast: page < totalPages - 2 && totalPages > 5,
           },
           baseUrl: '/',
+          filterQueryString,
+          filterDefaults: {
+            ...userFilters,
+            securityStatus,
+            shipClass,
+            techLevel,
+            skipCapsules:
+              userFilters.excludeTypeIds?.some((id) =>
+                CAPSULE_TYPE_IDS.includes(id)
+              ) || false,
+          },
         };
       }
     );

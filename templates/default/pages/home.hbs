@@ -16,13 +16,11 @@
 
   <!-- Main Content: Killmail List -->
   <section style="min-width: 0;">
-    <!-- Pagination Top -->
-    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+    {{#if data.filterDefaults}}
+      {{> partials/killlist-filters baseUrl=data.baseUrl filterDefaults=data.filterDefaults}}
+    {{/if}}
 
     <!-- Killmail List -->
-    {{> partials/killmail-list killmails=data.killmails}}
-
-    <!-- Pagination Bottom -->
-    {{> partials/pagination pagination=data.pagination baseUrl=data.baseUrl}}
+    {{> partials/killmail-list killmails=data.killmails limit=data.pagination.limit}}
   </section>
 </div>

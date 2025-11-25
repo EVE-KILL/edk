@@ -1,0 +1,560 @@
+<div class="status-page">
+  <div class="docs-page__header">
+    <div class="docs-title-row">
+      <div>
+        <div class="docs-eyebrow">Operations</div>
+        <h1 class="docs-title">System Status</h1>
+      </div>
+      <div class="docs-meta status-meta-inline">
+        <span class="docs-pill" data-status-indicator>Live</span>
+        <span class="docs-updated">Last updated <span data-field="last-updated">{{formatDateShort data.snapshot.timestamp}}</span></span>
+        <button class="status-button" type="button" data-action="refresh">Refresh</button>
+      </div>
+    </div>
+    <div class="docs-breadcrumbs">
+      <a href="/">Home</a>
+      <span class="docs-breadcrumbs__separator">/</span>
+      <a href="/status">Status</a>
+    </div>
+  </div>
+
+  <div class="status-grid status-summary">
+    <div class="status-card">
+      <div class="status-card-label">Database Size</div>
+      <div class="status-card-value" data-field="database-size">{{data.snapshot.database.databaseSize}}</div>
+      <div class="status-card-subtext">Killmail tables <span data-field="killmail-tables-size">{{data.snapshot.database.killmailsRelatedSize}}</span></div>
+    </div>
+    <div class="status-card">
+      <div class="status-card-label">Killmails (24h)</div>
+      <div class="status-card-value" data-field="killmail-24h">{{formatNumber data.snapshot.database.recentKillmails24h}}</div>
+      <div class="status-card-subtext">Recent killmails ingested</div>
+    </div>
+    <div class="status-card">
+      <div class="status-card-label">DB Connections</div>
+      <div class="status-card-value" data-field="db-connections">{{formatNumber data.snapshot.database.activeConnections}}</div>
+      <div class="status-card-subtext">Active connections right now</div>
+    </div>
+    <div class="status-card">
+      <div class="status-card-label">Queue Backlog</div>
+      <div class="status-card-value" data-field="queue-waiting">Calculating…</div>
+      <div class="status-card-subtext" data-field="queue-throughput">Waiting + prioritized</div>
+    </div>
+  </div>
+
+  <div class="status-panels">
+    <section class="status-panel">
+      <div class="status-panel-header">
+        <div>
+          <div class="status-eyebrow">Database</div>
+          <h3 class="status-panel-title">Tables & Storage</h3>
+        </div>
+        <span class="status-pill">Top tables</span>
+      </div>
+      <div class="status-panel-body">
+        <div class="status-panel-meta">
+          <div class="status-meta-block">
+            <span class="status-meta-label">Killmail tables</span>
+            <span class="status-meta-value" data-field="killmail-tables-size-inline">{{data.snapshot.database.killmailsRelatedSize}}</span>
+          </div>
+          <div class="status-meta-block">
+            <span class="status-meta-label">Recent 24h</span>
+            <span class="status-meta-value" data-field="killmail-24h-inline">{{formatNumber data.snapshot.database.recentKillmails24h}}</span>
+          </div>
+        </div>
+        <div class="status-table-wrapper">
+          <table class="status-table">
+            <thead>
+              <tr>
+                <th>Table</th>
+                <th class="numeric">Count</th>
+                <th class="numeric">Size</th>
+              </tr>
+            </thead>
+            <tbody data-table-rows>
+              {{#each data.snapshot.database.tables}}
+                {{#if (lt @index 8)}}
+                  <tr>
+                    <td>{{this.name}}</td>
+                    <td class="numeric">{{formatNumber this.count}}</td>
+                    <td class="numeric">{{this.size}}</td>
+                  </tr>
+                {{/if}}
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="status-panel">
+      <div class="status-panel-header">
+        <div>
+          <div class="status-eyebrow">Queues</div>
+          <h3 class="status-panel-title">BullMQ Health</h3>
+        </div>
+        <span class="status-pill status-pill-live" data-field="queue-status-label">Watching</span>
+      </div>
+      <div class="status-panel-body">
+        <div class="status-table-wrapper">
+          <table class="status-table status-table-queues">
+            <thead>
+              <tr>
+                <th>Queue</th>
+                <th class="numeric">Act</th>
+                <th class="numeric">Wait</th>
+                <th class="numeric">Prio</th>
+                <th class="numeric">Done</th>
+                <th class="numeric">Fail</th>
+              </tr>
+            </thead>
+            <tbody data-queue-rows>
+              {{#each data.snapshot.queues}}
+                <tr data-queue="{{@key}}">
+                  <td>{{@key}}</td>
+                  <td class="numeric" data-queue-field="active">{{formatNumber this.active}}</td>
+                  <td class="numeric" data-queue-field="waiting">{{formatNumber this.waiting}}</td>
+                  <td class="numeric" data-queue-field="prioritized">{{formatNumber this.prioritized}}</td>
+                  <td class="numeric" data-queue-field="completed">{{formatNumber this.completed}}</td>
+                  <td class="numeric" data-queue-field="failed">{{formatNumber this.failed}}</td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="status-grid status-services">
+    <div class="status-card status-card-tall">
+      <div class="status-card-label">Redis</div>
+      <div class="status-card-value" data-field="redis-status">{{#if data.snapshot.redis.connected}}Connected{{else}}Offline{{/if}}</div>
+      <div class="status-card-subtext">
+        Memory <span data-field="redis-memory">{{data.snapshot.redis.usedMemory}}</span> · Keys <span data-field="redis-keys">{{formatNumber data.snapshot.redis.keys}}</span>
+      </div>
+    </div>
+    <div class="status-card status-card-tall">
+      <div class="status-card-label">WebSocket</div>
+      <div class="status-card-value" data-field="ws-status">{{#if data.snapshot.websocket.available}}Running{{else}}Not running{{/if}}</div>
+      <div class="status-card-subtext"><span data-field="ws-clients">{{formatNumber data.snapshot.websocket.connectedClients}}</span> clients connected</div>
+    </div>
+    <div class="status-card status-card-tall">
+      <div class="status-card-label">Process</div>
+      <div class="status-card-value" data-field="process-memory">{{data.snapshot.system.memory.heapUsedMb}} MB</div>
+      <div class="status-card-subtext">RSS <span data-field="process-rss">{{data.snapshot.system.memory.rssMb}} MB</span> · Uptime <span data-field="process-uptime">{{data.snapshot.system.uptimeSeconds}}s</span></div>
+    </div>
+  </div>
+</div>
+
+<style>
+.status-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.status-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(120deg, rgba(74, 158, 255, 0.12), rgba(26, 26, 26, 0.9));
+  border: 1px solid var(--color-border-dark);
+  padding: 14px;
+  border-radius: var(--radius-sm);
+}
+
+.status-title {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.status-subtitle {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.status-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 9px;
+  color: var(--color-text-tertiary);
+  margin-bottom: 6px;
+}
+
+.status-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-indicator {
+  padding: 6px 10px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #22c55e;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.status-meta-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+}
+
+.status-meta-wide {
+  min-width: 120px;
+}
+
+.status-meta-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.status-meta-label {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
+.status-meta-value {
+  font-weight: 700;
+  color: var(--color-text-white);
+  font-size: 11px;
+}
+
+.status-button {
+  background: rgba(74, 158, 255, 0.16);
+  color: #bcd8ff;
+  border: 1px solid rgba(74, 158, 255, 0.35);
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 10px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.status-button:hover {
+  background: rgba(74, 158, 255, 0.28);
+  border-color: rgba(74, 158, 255, 0.55);
+}
+
+.status-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.status-summary {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.status-services {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.status-card {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 90px;
+  box-shadow: var(--shadow-sm);
+}
+
+.status-card-tall {
+  min-height: 120px;
+}
+
+.status-card-label {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.status-card-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #e7ecf5;
+}
+
+.status-card-subtext {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.status-panels {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.status-panel {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.status-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+.status-panel-title {
+  font-size: 13px;
+}
+
+.status-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-dark);
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.status-pill-live {
+  border-color: rgba(74, 158, 255, 0.5);
+  color: #8ab4f8;
+}
+
+.status-panel-body {
+  padding: 12px;
+}
+
+.status-panel-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.status-meta-block {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.status-table-wrapper {
+  overflow: auto;
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+}
+
+.status-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.status-table th,
+.status-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border-dark);
+  text-align: left;
+}
+
+.status-table th {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.status-table tr:hover td {
+  background: rgba(74, 158, 255, 0.06);
+}
+
+.status-table tr:last-child td {
+  border-bottom: none;
+}
+
+.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-table-queues th,
+.status-table-queues td {
+  padding: 6px 6px;
+  font-size: 9px;
+}
+
+.status-table-queues th:first-child,
+.status-table-queues td:first-child {
+  width: 22%;
+}
+
+.status-table-queues th:not(:first-child),
+.status-table-queues td:not(:first-child) {
+  width: 15%;
+}
+
+@media (max-width: 720px) {
+  .status-hero {
+    flex-direction: column;
+  }
+
+  .status-hero-meta {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+</style>
+
+<script>
+(() => {
+  const pollIntervalMs = ({{data.pollIntervalSeconds}} || 5) * 1000;
+  const queueOrder = ['killmail', 'character', 'corporation', 'alliance', 'price', 'auth'];
+  const state = {
+    snapshot: {{{json data.snapshot}}},
+    timer: null,
+  };
+
+  const formatNumber = (value) => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return '0';
+    return Number(value).toLocaleString();
+  };
+
+  const formatUptime = (seconds) => {
+    const s = Number(seconds || 0);
+    const days = Math.floor(s / 86400);
+    const hours = Math.floor((s % 86400) / 3600);
+    const minutes = Math.floor((s % 3600) / 60);
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const setText = (selector, value) => {
+    const el = document.querySelector(selector);
+    if (el) el.textContent = value;
+  };
+
+  const renderSummary = (snapshot) => {
+    setText('[data-field="database-size"]', snapshot.database?.databaseSize || 'N/A');
+    setText('[data-field="killmail-tables-size"]', snapshot.database?.killmailsRelatedSize || 'N/A');
+    setText('[data-field="killmail-tables-size-inline"]', snapshot.database?.killmailsRelatedSize || 'N/A');
+    setText('[data-field="killmail-24h"]', formatNumber(snapshot.database?.recentKillmails24h));
+    setText('[data-field="killmail-24h-inline"]', formatNumber(snapshot.database?.recentKillmails24h));
+    setText('[data-field="db-connections"]', formatNumber(snapshot.database?.activeConnections));
+    setText('[data-field="last-updated"]', new Date(snapshot.timestamp).toLocaleTimeString());
+    setText('[data-field="process-memory"]', `${formatNumber(snapshot.system?.memory?.heapUsedMb)} MB`);
+    setText('[data-field="process-rss"]', `${formatNumber(snapshot.system?.memory?.rssMb)} MB`);
+    setText('[data-field="process-uptime"]', formatUptime(snapshot.system?.uptimeSeconds));
+
+    const queueTotals = Object.values(snapshot.queues || {}).reduce(
+      (acc, q) => {
+        acc.waiting += (q?.waiting || 0) + (q?.prioritized || 0);
+        acc.active += q?.active || 0;
+        return acc;
+      },
+      { waiting: 0, active: 0 }
+    );
+    setText('[data-field="queue-waiting"]', formatNumber(queueTotals.waiting));
+    setText('[data-field="queue-throughput"]', `Waiting + prioritized · Active ${formatNumber(queueTotals.active)}`);
+  };
+
+  const renderDatabaseTable = (snapshot) => {
+    const tbody = document.querySelector('[data-table-rows]');
+    if (!tbody) return;
+    const rows = (snapshot.database?.tables || []).slice(0, 8)
+      .map(
+        (table) =>
+          `<tr><td>${table.name}</td><td class="numeric">${formatNumber(table.count)}</td><td class="numeric">${table.size}</td></tr>`
+      )
+      .join('');
+    tbody.innerHTML = rows || '<tr><td colspan="3">No data</td></tr>';
+  };
+
+  const renderQueues = (snapshot) => {
+    const tbody = document.querySelector('[data-queue-rows]');
+    if (!tbody) return;
+    const queues = snapshot.queues || {};
+    const rows = queueOrder
+      .filter((name) => queues[name])
+      .concat(Object.keys(queues).filter((name) => !queueOrder.includes(name)))
+      .map((name) => {
+        const q = queues[name] || {};
+        return `<tr data-queue="${name}">
+            <td>${name}</td>
+            <td class="numeric">${formatNumber(q.active)}</td>
+            <td class="numeric">${formatNumber(q.waiting)}</td>
+            <td class="numeric">${formatNumber(q.prioritized)}</td>
+            <td class="numeric">${formatNumber(q.completed)}</td>
+            <td class="numeric">${formatNumber(q.failed)}</td>
+          </tr>`;
+      })
+      .join('');
+    tbody.innerHTML = rows || '<tr><td colspan="6">No queue data</td></tr>';
+  };
+
+  const renderServices = (snapshot) => {
+    const redisConnected = snapshot.redis?.connected;
+    const wsAvailable = snapshot.websocket?.available;
+    const indicator = document.querySelector('[data-status-indicator]');
+    if (indicator) {
+      indicator.textContent = redisConnected === false ? 'Degraded' : 'Live';
+      indicator.style.background = redisConnected === false ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+      indicator.style.borderColor = redisConnected === false ? 'rgba(244, 63, 94, 0.35)' : 'rgba(16, 185, 129, 0.35)';
+      indicator.style.color = redisConnected === false ? '#f87171' : '#22c55e';
+    }
+
+    setText('[data-field="redis-status"]', redisConnected ? 'Connected' : 'Offline');
+    setText('[data-field="redis-memory"]', snapshot.redis?.usedMemory || 'N/A');
+    setText('[data-field="redis-keys"]', formatNumber(snapshot.redis?.keys));
+    setText('[data-field="ws-status"]', wsAvailable ? 'Running' : 'Not running');
+    setText('[data-field="ws-clients"]', formatNumber(snapshot.websocket?.connectedClients));
+  };
+
+  const renderAll = () => {
+    if (!state.snapshot) return;
+    renderSummary(state.snapshot);
+    renderDatabaseTable(state.snapshot);
+    renderQueues(state.snapshot);
+    renderServices(state.snapshot);
+  };
+
+  const refreshStatus = async () => {
+    try {
+      const res = await fetch('/api/status', { headers: { 'Cache-Control': 'no-store' } });
+      if (!res.ok) throw new Error(`Request failed with ${res.status}`);
+      const json = await res.json();
+      state.snapshot = json;
+      renderAll();
+    } catch {
+      const indicator = document.querySelector('[data-status-indicator]');
+      if (indicator) {
+        indicator.textContent = 'Refresh failed';
+        indicator.style.background = 'rgba(244, 63, 94, 0.15)';
+        indicator.style.borderColor = 'rgba(244, 63, 94, 0.35)';
+        indicator.style.color = '#f87171';
+      }
+    }
+  };
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target && target.dataset && target.dataset.action === 'refresh') {
+      refreshStatus();
+    }
+  });
+
+  state.timer = setInterval(refreshStatus, pollIntervalMs);
+  renderAll();
+})();
+</script>

@@ -1,7 +1,10 @@
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
-import { getEntityStatsFromCache, isStatsCachePopulated } from '../../../models/entityStatsCache';
+import {
+  getEntityStatsFromCache,
+  isStatsCachePopulated,
+} from '../../../models/entityStatsCache';
 import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getAlliance } from '../../../models/alliances';
 import {
@@ -9,6 +12,8 @@ import {
   countEntityKillmails,
 } from '../../../models/killlist';
 import { track } from '../../../utils/performance-decorators';
+
+import { parseKilllistFilters } from '../../../helpers/killlist-filters';
 
 import { handleError } from '../../../utils/error';
 
@@ -24,9 +29,13 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Fetch alliance basic info using model
-    const allianceData = await track('alliance:losses:fetch_basic_info', 'application', async () => {
-      return await getAlliance(allianceId);
-    });
+    const allianceData = await track(
+      'alliance:losses:fetch_basic_info',
+      'application',
+      async () => {
+        return await getAlliance(allianceId);
+      }
+    );
 
     if (!allianceData) {
       throw createError({
@@ -36,29 +45,62 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Get alliance stats
-    const stats = await track('alliance:losses:fetch_stats', 'application', async () => {
-      const useCache = await isStatsCachePopulated();
-      return useCache ? await getEntityStatsFromCache(allianceId, 'alliance', 'all') : await getEntityStatsFromView(allianceId, 'alliance', 'all');
-    });
+    const stats = await track(
+      'alliance:losses:fetch_stats',
+      'application',
+      async () => {
+        const useCache = await isStatsCachePopulated();
+        return useCache
+          ? await getEntityStatsFromCache(allianceId, 'alliance', 'all')
+          : await getEntityStatsFromView(allianceId, 'alliance', 'all');
+      }
+    );
 
     // Get pagination parameters
     const query = getQuery(event);
     const page = Math.max(1, Number.parseInt(query.page as string) || 1);
-    const perPage = 30;
+    const perPage = Math.min(
+      100,
+      Math.max(5, Number.parseInt(query.limit as string) || 25)
+    );
+
+    // Parse filters from query parameters
+    const {
+      filters: userFilters,
+      filterQueryString,
+      securityStatus,
+      techLevel,
+      shipClass,
+    } = parseKilllistFilters(query);
 
     // Fetch killmails and count in parallel using model functions
-    const [killmailsData, totalKillmails] = await track('alliance:losses:fetch_killmails', 'application', async () => {
-      return await Promise.all([
-        getEntityKillmails(allianceId, 'alliance', 'losses', page, perPage),
-        countEntityKillmails(allianceId, 'alliance', 'losses'),
-      ]);
-    });
+    const [killmailsData, totalKillmails] = await track(
+      'alliance:losses:fetch_killmails',
+      'application',
+      async () => {
+        return await Promise.all([
+          getEntityKillmails(
+            allianceId,
+            'alliance',
+            'losses',
+            page,
+            perPage,
+            userFilters
+          ),
+          countEntityKillmails(allianceId, 'alliance', 'losses', userFilters),
+        ]);
+      }
+    );
 
     // Calculate pagination
-    const totalPages = await track('alliance:losses:calculate_pagination', 'application', async () => {
-      return Math.ceil(totalKillmails / perPage);
-    });
-    
+    const totalPages = await track(
+      'alliance:losses:calculate_pagination',
+      'application',
+      async () => {
+        return Math.ceil(totalKillmails / perPage);
+      }
+    );
+
     const pagination = {
       currentPage: page,
       totalPages,
@@ -69,21 +111,26 @@ export default defineEventHandler(async (event: H3Event) => {
       nextPage: page + 1,
       showFirst: page > 3 && totalPages > 5,
       showLast: page < totalPages - 2 && totalPages > 5,
+      limit: perPage,
     };
 
     // Transform killmail data to match component expectations
-    const killmails = await track('alliance:losses:normalize_killmails', 'application', async () => {
-      return killmailsData.map((km) => {
-        const normalized = normalizeKillRow(km);
-        return {
-          ...normalized,
-          isLoss: km.victimAllianceId === allianceId,
-          killmailTimeRelative: timeAgo(
-            km.killmailTime ?? normalized.killmailTime
-          ),
-        };
-      });
-    });
+    const killmails = await track(
+      'alliance:losses:normalize_killmails',
+      'application',
+      async () => {
+        return killmailsData.map((km) => {
+          const normalized = normalizeKillRow(km);
+          return {
+            ...normalized,
+            isLoss: km.victimAllianceId === allianceId,
+            killmailTimeRelative: timeAgo(
+              km.killmailTime ?? normalized.killmailTime
+            ),
+          };
+        });
+      }
+    );
 
     // Entity header data
     const entityData = {
@@ -111,6 +158,16 @@ export default defineEventHandler(async (event: H3Event) => {
         ...entityData,
         killmails,
         pagination,
+        filterDefaults: {
+          ...userFilters,
+          securityStatus,
+          techLevel,
+          shipClass,
+          skipCapsules:
+            userFilters.excludeTypeIds?.some((id) =>
+              [670, 33328].includes(id)
+            ) || false,
+        },
         wsFilter: {
           type: 'alliance',
           id: allianceId,

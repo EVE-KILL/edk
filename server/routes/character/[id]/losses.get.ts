@@ -7,6 +7,7 @@ import {
   getEntityKillmails,
   countEntityKillmails,
 } from '../../../models/killlist';
+import { parseKilllistFilters } from '../../../helpers/killlist-filters';
 
 import { handleError } from '../../../utils/error';
 
@@ -38,12 +39,31 @@ export default defineEventHandler(async (event: H3Event) => {
     // Get pagination parameters
     const query = getQuery(event);
     const page = Math.max(1, Number.parseInt(query.page as string) || 1);
-    const perPage = 30;
+    const perPage = Math.min(
+      100,
+      Math.max(5, Number.parseInt(query.limit as string) || 25)
+    );
+
+    // Parse filters from query parameters
+    const {
+      filters: userFilters,
+      filterQueryString,
+      securityStatus,
+      techLevel,
+      shipClass,
+    } = parseKilllistFilters(query);
 
     // Fetch killmails where character was victim (losses) using model
     const [killmailsData, totalKillmails] = await Promise.all([
-      getEntityKillmails(characterId, 'character', 'losses', page, perPage),
-      countEntityKillmails(characterId, 'character', 'losses'),
+      getEntityKillmails(
+        characterId,
+        'character',
+        'losses',
+        page,
+        perPage,
+        userFilters
+      ),
+      countEntityKillmails(characterId, 'character', 'losses', userFilters),
     ]);
 
     // Calculate pagination
@@ -58,6 +78,7 @@ export default defineEventHandler(async (event: H3Event) => {
       nextPage: page + 1,
       showFirst: page > 3 && totalPages > 5,
       showLast: page < totalPages - 2 && totalPages > 5,
+      limit: perPage,
     };
 
     // Transform killmail data to match component expectations
@@ -108,6 +129,16 @@ export default defineEventHandler(async (event: H3Event) => {
         ...entityData,
         killmails,
         pagination,
+        filterDefaults: {
+          ...userFilters,
+          securityStatus,
+          techLevel,
+          shipClass,
+          skipCapsules:
+            userFilters.excludeTypeIds?.some((id) =>
+              [670, 33328].includes(id)
+            ) || false,
+        },
         wsFilter: {
           type: 'character',
           id: characterId,

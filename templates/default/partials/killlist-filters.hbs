@@ -1,0 +1,407 @@
+{{#if filterDefaults}}
+<form class="kl-filters" method="get" action="{{baseUrl}}" onchange="submitFilters(this)">
+  <!-- Header with Title and Actions -->
+  <div class="kl-filters__header">
+    <div class="kl-filters__title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+      Quick Filters
+    </div>
+    <div class="kl-filters__actions">
+      <a href="/search" class="kl-filters__search-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+        Advanced Search
+      </a>
+      <a href="{{baseUrl}}" class="kl-filters__reset">Reset</a>
+    </div>
+  </div>
+
+  <!-- Filter Controls -->
+  <div class="kl-filters__content">
+    <select name="minTotalValue" class="kl-filters__select">
+      <option value="">Value: Any</option>
+      <option value="100000000" {{#if (eq filterDefaults.minTotalValue 100000000)}}selected{{/if}}>Value: 100M+</option>
+      <option value="500000000" {{#if (eq filterDefaults.minTotalValue 500000000)}}selected{{/if}}>Value: 500M+</option>
+      <option value="1000000000" {{#if (eq filterDefaults.minTotalValue 1000000000)}}selected{{/if}}>Value: 1B+</option>
+      <option value="2000000000" {{#if (eq filterDefaults.minTotalValue 2000000000)}}selected{{/if}}>Value: 2B+</option>
+      <option value="5000000000" {{#if (eq filterDefaults.minTotalValue 5000000000)}}selected{{/if}}>Value: 5B+</option>
+      <option value="10000000000" {{#if (eq filterDefaults.minTotalValue 10000000000)}}selected{{/if}}>Value: 10B+</option>
+      <option value="50000000000" {{#if (eq filterDefaults.minTotalValue 50000000000)}}selected{{/if}}>Value: 50B+</option>
+      <option value="100000000000" {{#if (eq filterDefaults.minTotalValue 100000000000)}}selected{{/if}}>Value: 100B+</option>
+    </select>
+
+    <select name="securityStatus" class="kl-filters__select">
+      <option value="">Security: Any</option>
+      <option value="highsec" {{#if (eq filterDefaults.securityStatus "highsec")}}selected{{/if}}>Security: High Sec</option>
+      <option value="lowsec" {{#if (eq filterDefaults.securityStatus "lowsec")}}selected{{/if}}>Security: Low Sec</option>
+      <option value="nullsec" {{#if (eq filterDefaults.securityStatus "nullsec")}}selected{{/if}}>Security: Null Sec</option>
+      <option value="wormhole" {{#if (eq filterDefaults.securityStatus "wormhole")}}selected{{/if}}>Security: Wormhole</option>
+      <option value="abyssal" {{#if (eq filterDefaults.securityStatus "abyssal")}}selected{{/if}}>Security: Abyssal</option>
+      <option value="pochven" {{#if (eq filterDefaults.securityStatus "pochven")}}selected{{/if}}>Security: Pochven</option>
+    </select>
+
+    <select name="shipClass" class="kl-filters__select">
+      <option value="">Ship Class: Any</option>
+      <option value="frigate" {{#if (eq filterDefaults.shipClass "frigate")}}selected{{/if}}>Frigate</option>
+      <option value="destroyer" {{#if (eq filterDefaults.shipClass "destroyer")}}selected{{/if}}>Destroyer</option>
+      <option value="cruiser" {{#if (eq filterDefaults.shipClass "cruiser")}}selected{{/if}}>Cruiser</option>
+      <option value="battlecruiser" {{#if (eq filterDefaults.shipClass "battlecruiser")}}selected{{/if}}>Battlecruiser</option>
+      <option value="battleship" {{#if (eq filterDefaults.shipClass "battleship")}}selected{{/if}}>Battleship</option>
+      <option value="carrier" {{#if (eq filterDefaults.shipClass "carrier")}}selected{{/if}}>Carrier</option>
+      <option value="dreadnought" {{#if (eq filterDefaults.shipClass "dreadnought")}}selected{{/if}}>Dreadnought</option>
+      <option value="supercarrier" {{#if (eq filterDefaults.shipClass "supercarrier")}}selected{{/if}}>Supercarrier</option>
+      <option value="titan" {{#if (eq filterDefaults.shipClass "titan")}}selected{{/if}}>Titan</option>
+      <option value="freighter" {{#if (eq filterDefaults.shipClass "freighter")}}selected{{/if}}>Freighter</option>
+      <option value="structure" {{#if (eq filterDefaults.shipClass "structure")}}selected{{/if}}>Structure</option>
+    </select>
+
+    <select name="techLevel" class="kl-filters__select">
+      <option value="">Tech: Any</option>
+      <option value="t1" {{#if (eq filterDefaults.techLevel "t1")}}selected{{/if}}>Tech: T1</option>
+      <option value="t2" {{#if (eq filterDefaults.techLevel "t2")}}selected{{/if}}>Tech: T2</option>
+      <option value="t3" {{#if (eq filterDefaults.techLevel "t3")}}selected{{/if}}>Tech: T3</option>
+      <option value="faction" {{#if (eq filterDefaults.techLevel "faction")}}selected{{/if}}>Tech: Faction</option>
+    </select>
+
+    <select name="killTypeSelect" class="kl-filters__select" onchange="updateKillTypeInputs(this)">
+      <option value="">Kill Type: Any</option>
+      <option value="solo" {{#if filterDefaults.isSolo}}selected{{/if}}>Kill Type: Solo</option>
+      <option value="awox" {{#if filterDefaults.isAwox}}selected{{/if}}>Kill Type: Awox</option>
+      <option value="npc" {{#if filterDefaults.isNpc}}selected{{/if}}>Kill Type: NPC</option>
+    </select>
+    <input type="hidden" name="solo" value="{{#if filterDefaults.isSolo}}1{{/if}}" id="filter-solo" />
+    <input type="hidden" name="awox" value="{{#if filterDefaults.isAwox}}1{{/if}}" id="filter-awox" />
+    <input type="hidden" name="npc" value="{{#if filterDefaults.isNpc}}1{{/if}}" id="filter-npc" />
+  </div>
+
+  <!-- Footer with Pagination -->
+  {{#if pagination}}
+  <div class="kl-filters__footer">
+    <!-- Limit Selector -->
+    <div class="kl-filters__limit">
+      <span class="kl-filters__limit-label">Show</span>
+      <select name="limit" class="kl-filters__limit-select">
+        <option value="5" {{#ifEquals pagination.limit 5}}selected{{/ifEquals}}>5</option>
+        <option value="10" {{#ifEquals pagination.limit 10}}selected{{/ifEquals}}>10</option>
+        <option value="25" {{#ifEquals pagination.limit 25}}selected{{/ifEquals}}>25</option>
+        <option value="50" {{#ifEquals pagination.limit 50}}selected{{/ifEquals}}>50</option>
+        <option value="100" {{#ifEquals pagination.limit 100}}selected{{/ifEquals}}>100</option>
+      </select>
+    </div>
+
+    <div class="kl-filters__pagination">
+      {{#if pagination.hasPrev}}
+      <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.prevPage}}&limit={{pagination.limit}}{{else}}?page={{pagination.prevPage}}&limit={{pagination.limit}}{{/if}}" class="kl-filters__page-btn">Previous</a>
+      {{else}}
+      <span class="kl-filters__page-btn disabled">Previous</span>
+      {{/if}}
+
+      <div class="kl-filters__pages">
+        {{#if pagination.showFirst}}
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&limit={{pagination.limit}}{{else}}?limit={{pagination.limit}}{{/if}}" class="kl-filters__page">1</a>
+        <span class="kl-filters__ellipsis">...</span>
+        {{/if}}
+
+        {{#each pagination.pages}}
+        {{#if (eq this ../pagination.currentPage)}}
+        <span class="kl-filters__page active">{{this}}</span>
+        {{else}}
+        <a href="{{baseUrl}}{{#if ../filterQueryString}}?{{../filterQueryString}}&page={{this}}&limit={{../pagination.limit}}{{else}}?page={{this}}&limit={{../pagination.limit}}{{/if}}" class="kl-filters__page">{{this}}</a>
+        {{/if}}
+        {{/each}}
+
+        {{#if pagination.showLast}}
+        <span class="kl-filters__ellipsis">...</span>
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.totalPages}}&limit={{pagination.limit}}{{else}}?page={{pagination.totalPages}}&limit={{pagination.limit}}{{/if}}" class="kl-filters__page">{{pagination.totalPages}}</a>
+        {{/if}}
+      </div>
+
+      {{#if pagination.hasNext}}
+      <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.nextPage}}&limit={{pagination.limit}}{{else}}?page={{pagination.nextPage}}&limit={{pagination.limit}}{{/if}}" class="kl-filters__page-btn">Next</a>
+      {{else}}
+      <span class="kl-filters__page-btn disabled">Next</span>
+      {{/if}}
+    </div>
+  </div>
+  {{/if}}
+</form>
+
+<style>
+.kl-filters {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.kl-filters__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--color-border-dark);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.kl-filters__title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kl-filters__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kl-filters__search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--color-accent-blue);
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-accent-blue);
+  background: rgba(74, 158, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.kl-filters__search-btn:hover {
+  background: rgba(74, 158, 255, 0.15);
+  color: var(--color-accent-blue);
+}
+
+.kl-filters__reset {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  padding: 4px 8px;
+}
+
+.kl-filters__reset:hover {
+  color: var(--color-accent-blue);
+  text-decoration: underline;
+}
+
+.kl-filters__content {
+  padding: 12px;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+@media (max-width: 900px) {
+  .kl-filters__content {
+    flex-wrap: wrap;
+  }
+}
+
+.kl-filters__footer {
+  padding: 10px 15px;
+  border-top: 1px solid var(--color-border-dark);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kl-filters__limit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.kl-filters__limit-select,
+.kl-filters__select {
+  background-color: var(--color-bg-tertiary) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  border: 1px solid var(--color-border-dark);
+  color: var(--color-text-secondary) !important;
+  padding: 6px 8px;
+  padding-right: 24px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.kl-filters__select option,
+.kl-filters__limit-select option {
+  background-color: var(--color-bg-tertiary) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.kl-filters__select {
+  min-width: 110px;
+  max-width: 130px;
+  flex-shrink: 1;
+}
+
+.kl-filters__limit-select {
+  min-width: 70px;
+}
+
+.kl-filters__limit-select:hover,
+.kl-filters__select:hover {
+  border-color: var(--color-accent-blue);
+  background-color: rgba(74, 158, 255, 0.05) !important;
+  color: var(--color-text-white) !important;
+}
+
+.kl-filters__limit-select:focus,
+.kl-filters__select:focus {
+  outline: none;
+  border-color: var(--color-accent-blue);
+  background-color: var(--color-bg-tertiary) !important;
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.1);
+  color: var(--color-text-white) !important;
+}
+
+.kl-filters__select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.kl-filters__select:disabled:hover {
+  border-color: var(--color-border-dark);
+  background-color: var(--color-bg-tertiary) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.kl-filters__pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kl-filters__pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kl-filters__page-btn {
+  padding: 6px 12px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.kl-filters__page-btn:hover:not(.disabled) {
+  border-color: var(--color-accent-blue);
+  color: var(--color-accent-blue);
+  background: rgba(74, 158, 255, 0.05);
+}
+
+.kl-filters__page-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.kl-filters__page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.kl-filters__page:hover {
+  color: var(--color-text-white);
+  background: var(--color-bg-tertiary);
+}
+
+.kl-filters__page.active {
+  background: var(--color-accent-blue);
+  color: #fff;
+  font-weight: bold;
+}
+
+.kl-filters__ellipsis {
+  color: var(--color-text-tertiary);
+  padding: 0 4px;
+}
+
+@media (max-width: 768px) {
+  .kl-filters__content {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .kl-filters__footer {
+    justify-content: center;
+  }
+
+  .kl-filters__pagination {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+</style>
+
+<script>
+function updateKillTypeInputs(select) {
+  // Clear all kill type inputs
+  document.getElementById('filter-solo').value = '';
+  document.getElementById('filter-awox').value = '';
+  document.getElementById('filter-npc').value = '';
+  
+  // Set the selected one
+  if (select.value) {
+    document.getElementById('filter-' + select.value).value = '1';
+  }
+}
+
+function submitFilters(form) {
+  const inputs = form.querySelectorAll('input, select');
+  inputs.forEach(input => {
+    // Disable empty inputs to keep URL clean
+    if (input.value === '' ||
+       (input.name === 'limit' && input.value === '25') ||
+       (input.name === 'page' && input.value === '1') ||
+       (input.name === 'killTypeSelect')) {
+      input.disabled = true;
+    }
+  });
+  form.submit();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const limitSelect = document.querySelector('.kl-filters__limit-select');
+  if (limitSelect) {
+    // Ensure correct limit is selected (fixes default selection issue)
+    limitSelect.value = "{{pagination.limit}}";
+  }
+});
+</script>
+{{/if}}

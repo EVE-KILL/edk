@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 
 export const name = 'refresh-celestials';
 export const description = 'Refreshes the celestials materialized view';
-export const schedule = '0 0 * * *'; // Runs every day at midnight
+export const schedule = '0 0 0 * * *'; // Runs every day at midnight UTC
 
 export async function action() {
   return new Promise<void>((resolve, reject) => {

@@ -209,8 +209,10 @@ export function normalizeKillRow(km: any): NormalizedKillmail {
   const days = Math.floor(hours / 24);
   let killmailTimeRelative = 'Just now';
   if (days > 0) killmailTimeRelative = `${days} day${days > 1 ? 's' : ''} ago`;
-  else if (hours > 0) killmailTimeRelative = `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  else if (minutes > 0) killmailTimeRelative = `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  else if (hours > 0)
+    killmailTimeRelative = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  else if (minutes > 0)
+    killmailTimeRelative = `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
 
   return {
     killmailId,
@@ -754,7 +756,7 @@ async function registerPartials() {
           const partialContent = await readFile(partialPath, 'utf-8');
           Handlebars.registerPartial(partialName, partialContent);
           if (isDev) {
-            logger.debug(`Registered partial: ${partialName}`);
+            // logger.debug(`Registered partial: ${partialName}`);
           }
         }
       }
@@ -775,7 +777,7 @@ async function registerPartials() {
           const componentContent = await readFile(componentPath, 'utf-8');
           Handlebars.registerPartial(componentName, componentContent);
           if (isDev) {
-            logger.debug(`Registered component: ${componentName}`);
+            // logger.debug(`Registered component: ${componentName}`);
           }
         }
       }
@@ -848,12 +850,18 @@ export async function render(
   layoutPath: string = 'layouts/main.hbs'
 ): Promise<string> {
   // Track template rendering
-  const performance = event?.context?.performance || requestContext.getStore()?.performance;
-  const renderSpanId = performance?.startSpan(`template:render`, 'template', { templatePath });
+  const performance =
+    event?.context?.performance || requestContext.getStore()?.performance;
+  const renderSpanId = performance?.startSpan(`template:render`, 'template', {
+    templatePath,
+  });
 
   try {
     // Load main content template
-    const loadSpanId = performance?.startSpan(`template:load:${templatePath}`, 'template');
+    const loadSpanId = performance?.startSpan(
+      `template:load:${templatePath}`,
+      'template'
+    );
     const contentTemplate = await loadTemplate(templatePath);
     if (loadSpanId) performance?.endSpan(loadSpanId);
 
@@ -892,7 +900,10 @@ export async function render(
     }
 
     // Render content
-    const execSpanId = performance?.startSpan(`template:execute:${templatePath}`, 'template');
+    const execSpanId = performance?.startSpan(
+      `template:execute:${templatePath}`,
+      'template'
+    );
     const bodyHtml = contentTemplate(context);
     if (execSpanId) performance?.endSpan(execSpanId);
 
@@ -909,12 +920,18 @@ export async function render(
     }
 
     // Load layout template
-    const layoutLoadSpanId = performance?.startSpan(`template:load:${layoutPath}`, 'template');
+    const layoutLoadSpanId = performance?.startSpan(
+      `template:load:${layoutPath}`,
+      'template'
+    );
     const layoutTemplate = await loadTemplate(layoutPath);
     if (layoutLoadSpanId) performance?.endSpan(layoutLoadSpanId);
 
     // Render layout with body content
-    const layoutExecSpanId = performance?.startSpan(`template:execute:${layoutPath}`, 'template');
+    const layoutExecSpanId = performance?.startSpan(
+      `template:execute:${layoutPath}`,
+      'template'
+    );
     const html = layoutTemplate({
       ...context,
       body: bodyHtml,
@@ -926,7 +943,9 @@ export async function render(
       const isAuthenticated = Boolean(event.context?.authUser);
       setResponseHeaders(event, {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': isAuthenticated ? 'private, no-store, max-age=0' : 'public, max-age=60',
+        'Cache-Control': isAuthenticated
+          ? 'private, no-store, max-age=0'
+          : 'public, max-age=60',
       });
     }
 

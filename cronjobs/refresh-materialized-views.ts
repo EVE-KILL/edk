@@ -3,7 +3,7 @@ import { spawn } from 'child_process';
 export const name = 'refresh-materialized-views';
 export const description =
   'Nightly full refresh of all materialized views via bun cli db:refresh';
-export const schedule = '0 3 * * *'; // 03:00 UTC daily
+export const schedule = '0 0 3 * * *'; // 03:00 UTC daily (seconds, minutes, hours)
 
 export async function action() {
   return new Promise<void>((resolve, reject) => {

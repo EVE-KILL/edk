@@ -135,8 +135,15 @@ export function buildKilllistConditions(
     conditions.push(database.sql`${k}.awox = ${filters.isAwox}`);
   }
 
-  if (filters.minValue !== undefined) {
-    conditions.push(database.sql`${k}."totalValue" >= ${filters.minValue}`);
+  const minValue = filters.minTotalValue ?? filters.minValue;
+  if (minValue !== undefined) {
+    conditions.push(database.sql`${k}."totalValue" >= ${minValue}`);
+  }
+
+  if (filters.maxTotalValue !== undefined) {
+    conditions.push(
+      database.sql`${k}."totalValue" <= ${filters.maxTotalValue}`
+    );
   }
 
   if (filters.shipGroupIds && filters.shipGroupIds.length > 0) {
@@ -189,8 +196,71 @@ export function buildKilllistConditions(
     conditions.push(database.sql`${k}."victimShipTypeId" = ${filters.typeId}`);
   }
 
+  if (filters.victimShipTypeId !== undefined) {
+    conditions.push(
+      database.sql`${k}."victimShipTypeId" = ${filters.victimShipTypeId}`
+    );
+  }
+
   if (filters.groupId !== undefined) {
     conditions.push(database.sql`${groupColumn} = ${filters.groupId}`);
+  }
+
+  if (filters.victimShipGroupId !== undefined) {
+    conditions.push(
+      database.sql`${groupColumn} = ${filters.victimShipGroupId}`
+    );
+  }
+
+  if (filters.attackerCharacterId !== undefined) {
+    conditions.push(
+      database.sql`${k}."topAttackerCharacterId" = ${filters.attackerCharacterId}`
+    );
+  }
+
+  if (filters.attackerCorporationId !== undefined) {
+    conditions.push(
+      database.sql`${k}."topAttackerCorporationId" = ${filters.attackerCorporationId}`
+    );
+  }
+
+  if (filters.attackerAllianceId !== undefined) {
+    conditions.push(
+      database.sql`${k}."topAttackerAllianceId" = ${filters.attackerAllianceId}`
+    );
+  }
+
+  if (filters.victimCharacterId !== undefined) {
+    conditions.push(
+      database.sql`${k}."victimCharacterId" = ${filters.victimCharacterId}`
+    );
+  }
+
+  if (filters.victimCorporationId !== undefined) {
+    conditions.push(
+      database.sql`${k}."victimCorporationId" = ${filters.victimCorporationId}`
+    );
+  }
+
+  if (filters.victimAllianceId !== undefined) {
+    conditions.push(
+      database.sql`${k}."victimAllianceId" = ${filters.victimAllianceId}`
+    );
+  }
+
+  if (filters.excludeTypeIds && filters.excludeTypeIds.length > 0) {
+    conditions.push(
+      database.sql`${k}."victimShipTypeId" != ALL(${filters.excludeTypeIds})`
+    );
+  }
+
+  if (filters.metaGroupIds && filters.metaGroupIds.length > 0) {
+    // Note: metaGroupIds filters victim ship by meta group
+    conditions.push(
+      database.sql`${k}."victimShipTypeId" IN (
+        SELECT "typeId" FROM types WHERE "metaGroupId" = ANY(${filters.metaGroupIds})
+      )`
+    );
   }
 
   const filteredConditions = conditions.filter(Boolean);
@@ -527,7 +597,9 @@ export interface KilllistFilters {
   isBig?: boolean;
   isNpc?: boolean;
   isAwox?: boolean;
-  minValue?: number;
+  minValue?: number; // legacy alias for minTotalValue
+  minTotalValue?: number;
+  maxTotalValue?: number;
   shipGroupIds?: number[];
   minSecurityStatus?: number;
   maxSecurityStatus?: number;
@@ -536,8 +608,18 @@ export interface KilllistFilters {
   regionIdMax?: number;
   constellationId?: number;
   solarSystemId?: number;
-  typeId?: number;
-  groupId?: number;
+  typeId?: number; // legacy alias for victimShipTypeId
+  groupId?: number; // legacy alias for victimShipGroupId
+  victimShipTypeId?: number;
+  victimShipGroupId?: number;
+  metaGroupIds?: number[]; // Filter by meta group (T1, T2, Faction, Officer)
+  attackerCharacterId?: number;
+  attackerCorporationId?: number;
+  attackerAllianceId?: number;
+  victimCharacterId?: number;
+  victimCorporationId?: number;
+  victimAllianceId?: number;
+  excludeTypeIds?: number[];
 }
 
 /**
@@ -675,6 +757,77 @@ export async function getFilteredKillsWithNames(
 }
 
 /**
+ * Get most valuable killmails for a filter (no pagination, no limit)
+ * Only limited by lookbackDays - returns ALL matching kills to be sorted by value
+ */
+export async function getMostValuableKillsFiltered(
+  filters: KilllistFilters,
+  lookbackDays: number
+): Promise<EntityKillmail[]> {
+  const clause = buildKilllistConditions(filters, 'k', {
+    groupColumn: database.sql`k."victimShipGroupId"`,
+  });
+  const timeClause = database.sql`AND k."killmailTime" >= NOW() - (${lookbackDays} || ' days')::interval`;
+
+  return await database.sql<EntityKillmail[]>`
+    SELECT
+      k."killmailId",
+      k."killmailTime",
+
+      -- Victim info
+      k."victimCharacterId",
+      COALESCE(vc.name, vnpc.name, 'Unknown') AS "victimCharacterName",
+      k."victimCorporationId",
+      COALESCE(vcorp.name, vnpc_corp.name, 'Unknown') AS "victimCorporationName",
+      COALESCE(vcorp.ticker, vnpc_corp."tickerName", '???') AS "victimCorporationTicker",
+      k."victimAllianceId",
+      valliance.name AS "victimAllianceName",
+      valliance.ticker AS "victimAllianceTicker",
+      k."victimShipTypeId",
+      COALESCE(vship.name, 'Unknown') AS "victimShipName",
+      COALESCE(vshipgroup.name, 'Unknown') AS "victimShipGroup",
+
+      -- Attacker info (top attacker)
+      k."topAttackerCharacterId" AS "attackerCharacterId",
+      COALESCE(ac.name, anpc.name, 'Unknown') AS "attackerCharacterName",
+      k."topAttackerCorporationId" AS "attackerCorporationId",
+      COALESCE(acorp.name, anpc_corp.name, 'Unknown') AS "attackerCorporationName",
+      COALESCE(acorp.ticker, anpc_corp."tickerName", '???') AS "attackerCorporationTicker",
+      k."topAttackerAllianceId" AS "attackerAllianceId",
+      aalliance.name AS "attackerAllianceName",
+      aalliance.ticker AS "attackerAllianceTicker",
+
+      -- Location
+      k."solarSystemId",
+      ss.name AS "solarSystemName",
+      r.name AS "regionName",
+
+      -- Stats
+      k."totalValue",
+      k."attackerCount"
+
+    FROM killmails k
+    LEFT JOIN solarsystems ss ON k."solarSystemId" = ss."solarSystemId"
+    LEFT JOIN regions r ON k."regionId" = r."regionId"
+    LEFT JOIN characters vc ON k."victimCharacterId" = vc."characterId"
+    LEFT JOIN npccharacters vnpc ON k."victimCharacterId" = vnpc."characterId"
+    LEFT JOIN corporations vcorp ON k."victimCorporationId" = vcorp."corporationId"
+    LEFT JOIN npccorporations vnpc_corp ON k."victimCorporationId" = vnpc_corp."corporationId"
+    LEFT JOIN alliances valliance ON k."victimAllianceId" = valliance."allianceId"
+    LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
+    LEFT JOIN groups vshipgroup ON vship."groupId" = vshipgroup."groupId"
+    LEFT JOIN characters ac ON k."topAttackerCharacterId" = ac."characterId"
+    LEFT JOIN npccharacters anpc ON k."topAttackerCharacterId" = anpc."characterId"
+    LEFT JOIN corporations acorp ON k."topAttackerCorporationId" = acorp."corporationId"
+    LEFT JOIN npccorporations anpc_corp ON k."topAttackerCorporationId" = anpc_corp."corporationId"
+    LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
+
+    WHERE ${clause} ${timeClause}
+    ORDER BY k."killmailTime" DESC
+  `;
+}
+
+/**
  * Extended killmail data with entity names (for entity pages)
  */
 export interface EntityKillmail {
@@ -721,7 +874,8 @@ export async function getEntityKillmails(
   entityType: 'character' | 'corporation' | 'alliance',
   mode: 'kills' | 'losses' | 'all',
   page: number = 1,
-  perPage: number = 30
+  perPage: number = 30,
+  filters?: KilllistFilters
 ): Promise<EntityKillmail[]> {
   const offset = (page - 1) * perPage;
   const victimCol = victimColumnMap[entityType];
@@ -729,8 +883,22 @@ export async function getEntityKillmails(
   // For 'all' mode, combine kills and losses
   // With increased max_locks_per_transaction, we can now use proper queries
   if (mode === 'all') {
-    return getEntityKillmails(entityId, entityType, 'kills', page, perPage);
+    return getEntityKillmails(
+      entityId,
+      entityType,
+      'kills',
+      page,
+      perPage,
+      filters
+    );
   }
+
+  // Build additional filter conditions
+  const additionalFilters = filters
+    ? buildKilllistConditions(filters, 'k', {
+        groupColumn: database.sql`k."victimShipGroupId"`,
+      })
+    : database.sql`1=1`;
 
   // Step 1: Get killmail IDs from killmails table (topAttacker columns, not attackers table)
   let killmailIds: number[] = [];
@@ -739,26 +907,26 @@ export async function getEntityKillmails(
     // Query killmails table using topAttacker columns
     const topAttackerCol = `topAttacker${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`;
 
-    const killKillmails = await database.find<{ killmailId: number }>(
-      `SELECT k."killmailId"
-       FROM killmails k
-       WHERE k."${topAttackerCol}" = :entityId
-       ORDER BY k."killmailTime" DESC, k."killmailId" DESC
-       LIMIT :limit OFFSET :offset`,
-      { entityId, limit: perPage, offset }
-    );
+    const killKillmails = await database.sql<{ killmailId: number }[]>`
+      SELECT k."killmailId"
+      FROM killmails k
+      WHERE k.${database.sql(topAttackerCol)} = ${entityId}
+      AND ${additionalFilters}
+      ORDER BY k."killmailTime" DESC, k."killmailId" DESC
+      LIMIT ${perPage} OFFSET ${offset}
+    `;
 
     killmailIds = killKillmails.map((km) => km.killmailId);
   } else {
     // Losses query
-    const lossKillmails = await database.find<{ killmailId: number }>(
-      `SELECT k."killmailId"
-       FROM killmails k
-       WHERE k.${database.identifier(victimCol)} = :entityId
-       ORDER BY k."killmailTime" DESC, k."killmailId" DESC
-       LIMIT :limit OFFSET :offset`,
-      { entityId, limit: perPage, offset }
-    );
+    const lossKillmails = await database.sql<{ killmailId: number }[]>`
+      SELECT k."killmailId"
+      FROM killmails k
+      WHERE k.${database.sql(victimCol)} = ${entityId}
+      AND ${additionalFilters}
+      ORDER BY k."killmailTime" DESC, k."killmailId" DESC
+      LIMIT ${perPage} OFFSET ${offset}
+    `;
 
     killmailIds = lossKillmails.map((km) => km.killmailId);
   }
@@ -838,36 +1006,40 @@ const victimColumnMap: EntityColumnMap = {
 export async function countEntityKillmails(
   entityId: number,
   entityType: 'character' | 'corporation' | 'alliance',
-  mode: 'kills' | 'losses' | 'all'
+  mode: 'kills' | 'losses' | 'all',
+  filters?: KilllistFilters
 ): Promise<number> {
   const attackerCol = attackerColumnMap[entityType];
   const victimCol = victimColumnMap[entityType];
 
-  // Time range: last 7 days (matching getEntityKillmails)
-  const timeFilter = 'k."killmailTime" >= NOW() - INTERVAL \'7 days\'';
+  // Build additional filter conditions
+  const additionalFilters = filters
+    ? buildKilllistConditions(filters, 'k', {
+        groupColumn: database.sql`k."victimShipGroupId"`,
+      })
+    : database.sql`1=1`;
 
   if (mode === 'kills') {
-    // Count distinct killmails from attackers table directly
-    const query = `
-      SELECT COUNT(DISTINCT a."killmailId") AS count
-      FROM attackers a
-      JOIN killmails k ON a."killmailId" = k."killmailId"
-      WHERE ${timeFilter}
-      AND a.${database.identifier(attackerCol)} = :entityId
+    // Count using topAttacker columns (matching getEntityKillmails)
+    const topAttackerCol = `topAttacker${entityType.charAt(0).toUpperCase() + entityType.slice(1)}Id`;
+
+    const result = await database.sql<{ count: number }[]>`
+      SELECT COUNT(*) AS count
+      FROM killmails k
+      WHERE k.${database.sql(topAttackerCol)} = ${entityId}
+      AND ${additionalFilters}
     `;
-    const row = await database.findOne<{ count: number }>(query, { entityId });
-    return Number(row?.count ?? 0);
+    return Number(result[0]?.count ?? 0);
   }
 
   if (mode === 'losses') {
-    const query = `
+    const result = await database.sql<{ count: number }[]>`
       SELECT COUNT(*) AS count
       FROM killmails k
-      WHERE ${timeFilter}
-      AND k.${database.identifier(victimCol)} = :entityId
+      WHERE k.${database.sql(victimCol)} = ${entityId}
+      AND ${additionalFilters}
     `;
-    const row = await database.findOne<{ count: number }>(query, { entityId });
-    return Number(row?.count ?? 0);
+    return Number(result[0]?.count ?? 0);
   }
 
   // all mode - return estimated count without actual database query

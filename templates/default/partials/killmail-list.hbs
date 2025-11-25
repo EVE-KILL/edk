@@ -421,7 +421,7 @@
         }
       };
       window.addEventListener('edk-ws-ready', readyListener);
-      
+
       // Also poll for __edkWS in case event already fired
       const pollInterval = setInterval(() => {
         if (startKillmailStream()) {
@@ -429,7 +429,7 @@
           window.removeEventListener('edk-ws-ready', readyListener);
         }
       }, 100);
-      
+
       // Stop polling after 5 seconds
       setTimeout(() => clearInterval(pollInterval), 5000);
     }
@@ -671,8 +671,8 @@
         killmailList.insertBefore(killmailRow, killmailList.firstChild);
       }
 
-      // Keep list at max 30 items (+ 1 header)
-      const MAX_KILLMAILS = 30;
+      // Keep list at max items (+ 1 header)
+      const MAX_KILLMAILS = {{fallback limit 25}};
       const rows = killmailList.querySelectorAll('.kb-kl-row:not(.kb-kl-row--header)');
       if (rows.length > MAX_KILLMAILS) {
         rows[rows.length - 1].remove();
