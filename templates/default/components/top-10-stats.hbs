@@ -1,51 +1,26 @@
-{{#if stats}}
 <div class="top-10-container">
-  {{#if stats.characters}}
-    {{#if characterTitle}}
-      {{> partials/top-10-box title=characterTitle items=stats.characters timeRange=timeRange}}
-    {{else}}
-      {{> partials/top-10-box title="Top Characters" items=stats.characters timeRange="Last 7 Days"}}
-    {{/if}}
+  {{#if characterTitle}}
+    {{> partials/top-10-box title=characterTitle items=stats.characters timeRange=timeRange}}
   {{/if}}
 
-  {{#if stats.corporations}}
-    {{#if corporationTitle}}
-      {{> partials/top-10-box title=corporationTitle items=stats.corporations timeRange=timeRange}}
-    {{else}}
-      {{> partials/top-10-box title="Top Corporations" items=stats.corporations timeRange="Last 7 Days"}}
-    {{/if}}
+  {{#if corporationTitle}}
+    {{> partials/top-10-box title=corporationTitle items=stats.corporations timeRange=timeRange}}
   {{/if}}
 
-  {{#if stats.alliances}}
-    {{#if allianceTitle}}
-      {{> partials/top-10-box title=allianceTitle items=stats.alliances timeRange=timeRange}}
-    {{else}}
-      {{> partials/top-10-box title="Top Alliances" items=stats.alliances timeRange="Last 7 Days"}}
-    {{/if}}
+  {{#if allianceTitle}}
+    {{> partials/top-10-box title=allianceTitle items=stats.alliances timeRange=timeRange}}
   {{/if}}
 
-  {{#if stats.ships}}
-    {{#if shipTitle}}
-      {{> partials/top-10-box title=shipTitle items=stats.ships timeRange=timeRange}}
-    {{else}}
-      {{> partials/top-10-box title="Top Ships" items=stats.ships timeRange="Last 7 Days"}}
-    {{/if}}
+  {{#if shipTitle}}
+    {{> partials/top-10-box title=shipTitle items=stats.ships timeRange=timeRange}}
   {{/if}}
 
-  {{#if stats.systems}}
-    {{#if systemTitle}}
-      {{> partials/top-10-box title=systemTitle items=stats.systems timeRange=timeRange}}
-    {{else}}
-      {{> partials/top-10-box title="Top Systems" items=stats.systems timeRange="Last 7 Days"}}
-    {{/if}}
+  {{#if systemTitle}}
+    {{> partials/top-10-box title=systemTitle items=stats.systems timeRange=timeRange}}
   {{/if}}
 
-  {{#if stats.regions}}
-    {{#if regionTitle}}
-      {{> partials/top-10-box title=regionTitle items=stats.regions timeRange=timeRange}}
-    {{else}}
-      {{> partials/top-10-box title="Top Regions" items=stats.regions timeRange="Last 7 Days"}}
-    {{/if}}
+  {{#if regionTitle}}
+    {{> partials/top-10-box title=regionTitle items=stats.regions timeRange=timeRange}}
   {{/if}}
 </div>
 
@@ -165,4 +140,3 @@
   letter-spacing: 0.5px;
 }
 </style>
-{{/if}}

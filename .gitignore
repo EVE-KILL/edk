@@ -10,3 +10,4 @@ data/*
 .vscode/.server-controller-port.log
 .DS_Store
 server.log
+Thessia/

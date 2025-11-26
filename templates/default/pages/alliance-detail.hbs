@@ -27,9 +27,7 @@
 <div style="display: grid; grid-template-columns: minmax(200px, 225px) 1fr; gap: 12px; width: 100%; box-sizing: border-box; margin-bottom: 20px;">
   <!-- Top 10 Sidebar -->
   <aside style="min-width: 0; overflow: hidden;">
-    {{#if data.top10Stats}}
-      {{> components/top-10-stats stats=data.top10Stats characterTitle=data.characterTitle corporationTitle=data.corporationTitle shipTitle=data.shipTitle systemTitle=data.systemTitle regionTitle=data.regionTitle timeRange=data.timeRange}}
-    {{/if}}
+    {{> components/top-10-stats stats=data.top10Stats characterTitle=data.characterTitle corporationTitle=data.corporationTitle allianceTitle=data.allianceTitle shipTitle=data.shipTitle systemTitle=data.systemTitle regionTitle=data.regionTitle timeRange=data.timeRange}}
   </aside>
 
   <!-- Recent Killmails -->
