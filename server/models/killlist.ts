@@ -1069,6 +1069,8 @@ export async function countEntityKillmails(
   mode: 'kills' | 'losses' | 'all',
   filters?: KilllistFilters
 ): Promise<number> {
+  const victimCol = victimColumnMap[entityType];
+
   // Build additional filter conditions
   const additionalFilters = filters
     ? buildKilllistConditions(filters, 'k', {
@@ -1115,6 +1117,8 @@ export async function estimateEntityKillmails(
   mode: 'kills' | 'losses' | 'all',
   filters?: KilllistFilters
 ): Promise<number> {
+  const victimCol = victimColumnMap[entityType];
+
   // Build additional filter conditions
   const additionalFilters = filters
     ? buildKilllistConditions(filters, 'k', {
