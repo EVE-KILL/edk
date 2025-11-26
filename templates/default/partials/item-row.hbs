@@ -1,6 +1,7 @@
 {{!-- Item Row Partial - Displays a single item with quantity, price, total value, and destroyed/dropped status --}}
 <tr class="kb-table-row-odd" 
     style="cursor: pointer;" 
+    onclick="window.location.href='/item/{{this.typeId}}';"
     data-quantity="{{this.quantity}}" 
     data-price="{{this.price}}" 
     data-total-value="{{this.totalValue}}"
@@ -30,3 +31,11 @@
         <span class="{{#if this.isDestroyed}}kl-loss{{else}}kl-kill{{/if}}">{{#if this.isDestroyed}}Destroyed{{else}}Dropped{{/if}}</span>
     </td>
 </tr>
+
+<style>
+.kb-table-row-odd:hover,
+.kb-table-row-even:hover {
+    background: rgba(74, 158, 255, 0.1) !important;
+    transition: background 0.2s ease;
+}
+</style>
