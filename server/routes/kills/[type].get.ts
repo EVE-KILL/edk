@@ -283,7 +283,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Merge user-provided filters (column-aligned query params)
     const {
       filters: userFilters,
-      filterQueryString: _filterQueryString,
+      filterQueryString,
       securityStatus,
       techLevel,
       shipClass,
