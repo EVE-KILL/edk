@@ -37,7 +37,7 @@
   </div>
   <div style="padding: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
     {{#each highlightWars}}
-    <a href="/wars/{{warId}}" style="display: block; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 12px; text-decoration: none; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--color-accent-blue-light)'; this.style.background='rgba(74, 158, 255, 0.1)'" onmouseout="this.style.borderColor='var(--color-border-dark)'; this.style.background='rgba(0, 0, 0, 0.2)'">
+    <a href="/wars/{{warId}}" style="display: block; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 12px; text-decoration: none; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--color-accent-blue)'; this.style.background='rgba(155, 179, 232, 0.1)'" onmouseout="this.style.borderColor='var(--color-border-dark)'; this.style.background='rgba(0, 0, 0, 0.2)'">
       <div style="font-size: 10px; text-transform: uppercase; color: var(--color-text-secondary); letter-spacing: 0.5px; margin-bottom: 6px;">War #{{warId}}</div>
       <div style="font-size: 12px; color: var(--color-text-white); font-weight: 600; line-height: 1.4;">
         {{#if aggressorAllianceName}}{{aggressorAllianceName}}{{else if aggressorCorporationName}}{{aggressorCorporationName}}{{else}}Aggressor{{/if}}
@@ -150,7 +150,7 @@
 .wars-hero__title {
   margin: 0 0 6px 0;
   font-size: 22px;
-  color: var(--color-accent-blue-bright);
+  color: var(--color-accent-blue);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   line-height: 1.2;
 }
@@ -199,7 +199,7 @@
 }
 
 .war-card:hover {
-  border-color: var(--color-accent-blue-light);
+  border-color: var(--color-accent-blue);
   box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
   transform: translateY(-2px);
 }
@@ -223,7 +223,7 @@
 .war-card__title {
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-accent-blue-bright);
+  color: var(--color-accent-blue);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
@@ -250,7 +250,7 @@
 
 .war-card__badge--allies {
   background: rgba(74, 158, 255, 0.2);
-  color: #4a9eff;
+  color: var(--color-accent-blue);
   border: 1px solid rgba(74, 158, 255, 0.3);
 }
 
