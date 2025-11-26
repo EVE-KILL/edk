@@ -617,6 +617,7 @@ export default defineEventHandler(async (event: H3Event) => {
           timeAgo: timeAgo(killmail.killmailTime),
           systemName: killmail.solarSystemName,
           systemId: killmail.solarSystemId,
+          regionId: killmail.regionId,
           regionName: killmail.regionName,
           securityStatus: killmail.solarSystemSecurity,
         },
@@ -644,6 +645,7 @@ export default defineEventHandler(async (event: H3Event) => {
           ship: {
             typeId: killmail.victimShipTypeId,
             name: killmail.victimShipName,
+            groupId: killmail.victimShipGroupId,
             groupName: killmail.victimShipGroup,
           },
           damageTaken: killmail.victimDamageTaken || 0,

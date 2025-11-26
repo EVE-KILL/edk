@@ -699,11 +699,13 @@ export interface KillmailDetails {
   victimAllianceTicker: string;
   victimShipTypeId: number;
   victimShipName: string;
+  victimShipGroupId: number | null;
   victimShipGroup: string;
   victimShipValue: number;
   totalValue: number;
   solarSystemId: number;
   solarSystemName: string;
+  regionId: number | null;
   regionName: string;
   solarSystemSecurity: number;
 }
@@ -770,10 +772,12 @@ export async function getKillmailDetails(
       coalesce(valliance.ticker, '???') as "victimAllianceTicker",
       k."victimShipTypeId" as "victimShipTypeId",
       coalesce(vship.name, 'Unknown') as "victimShipName",
+      k."victimShipGroupId" as "victimShipGroupId",
       coalesce(vship_group.name, 'Unknown') as "victimShipGroup",
       coalesce(k."totalValue", 0.0) as "totalValue",
       k."solarSystemId" as "solarSystemId",
       coalesce(sys.name, 'Unknown') as "solarSystemName",
+      sys."regionId" as "regionId",
       coalesce(reg.name, 'Unknown') as "regionName",
       coalesce(sys."securityStatus", 0.0) as "solarSystemSecurity"
     FROM killmails k
