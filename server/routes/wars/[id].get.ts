@@ -502,6 +502,24 @@ export default defineEventHandler(async (event: H3Event) => {
     };
 
     const data = {
+      pageHeader: {
+        title: `War #${warId}`,
+        breadcrumbs: [
+          { label: 'Home', url: '/' },
+          { label: 'Wars', url: '/wars' },
+          { label: `War #${warId}`, url: `/wars/${warId}` },
+        ],
+        meta: [
+          ...(war.mutual ? [{ type: 'pill', text: 'Mutual' }] : []),
+          ...(war.openForAllies
+            ? [{ type: 'pill', text: 'Open for Allies' }]
+            : []),
+          {
+            type: 'text',
+            text: `Started ${war.declared ? timeAgo(war.declared) : war.started ? timeAgo(war.started) : 'Unknown'}`,
+          },
+        ],
+      },
       war: {
         ...war,
         declared: war.declared ? timeAgo(war.declared) : null,

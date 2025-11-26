@@ -1,22 +1,9 @@
 <div class="status-page">
-  <div class="docs-page__header">
-    <div class="docs-title-row">
-      <div>
-        <div class="docs-eyebrow">Operations</div>
-        <h1 class="docs-title">System Status</h1>
-      </div>
-      <div class="docs-meta status-meta-inline">
-        <span class="docs-pill" data-status-indicator>Live</span>
-        <span class="docs-updated">Last updated <span data-field="last-updated">{{formatDateShort data.snapshot.timestamp}}</span></span>
-        <button class="status-button" type="button" data-action="refresh">Refresh</button>
-      </div>
-    </div>
-    <div class="docs-breadcrumbs">
-      <a href="/">Home</a>
-      <span class="docs-breadcrumbs__separator">/</span>
-      <a href="/status">Status</a>
-    </div>
-  </div>
+  {{> components/page-header
+    title="System Status"
+    breadcrumbs=pageHeader.breadcrumbs
+    meta=pageHeader.meta
+  }}
 
   <div class="status-grid status-summary">
     <div class="status-card">
@@ -452,7 +439,13 @@
     setText('[data-field="killmail-24h"]', formatNumber(snapshot.database?.recentKillmails24h));
     setText('[data-field="killmail-24h-inline"]', formatNumber(snapshot.database?.recentKillmails24h));
     setText('[data-field="db-connections"]', formatNumber(snapshot.database?.activeConnections));
-    setText('[data-field="last-updated"]', new Date(snapshot.timestamp).toLocaleTimeString());
+
+    // Update header timestamp
+    const timestampEl = document.querySelector('.last-updated-text');
+    if (timestampEl) {
+      timestampEl.textContent = `Last updated ${new Date(snapshot.timestamp).toLocaleTimeString()}`;
+    }
+
     setText('[data-field="process-memory"]', `${formatNumber(snapshot.system?.memory?.heapUsedMb)} MB`);
     setText('[data-field="process-rss"]', `${formatNumber(snapshot.system?.memory?.rssMb)} MB`);
     setText('[data-field="process-uptime"]', formatUptime(snapshot.system?.uptimeSeconds));
@@ -506,7 +499,7 @@
   const renderServices = (snapshot) => {
     const redisConnected = snapshot.redis?.connected;
     const wsAvailable = snapshot.websocket?.available;
-    const indicator = document.querySelector('[data-status-indicator]');
+    const indicator = document.querySelector('.status-pill-live');
     if (indicator) {
       indicator.textContent = redisConnected === false ? 'Degraded' : 'Live';
       indicator.style.background = redisConnected === false ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)';
@@ -537,7 +530,7 @@
       state.snapshot = json;
       renderAll();
     } catch {
-      const indicator = document.querySelector('[data-status-indicator]');
+      const indicator = document.querySelector('.status-pill-live');
       if (indicator) {
         indicator.textContent = 'Refresh failed';
         indicator.style.background = 'rgba(244, 63, 94, 0.15)';

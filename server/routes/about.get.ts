@@ -16,6 +16,17 @@ export default defineEventHandler(async (event: H3Event) => {
       activeNav: 'about',
     };
 
+    const pageHeader = {
+      breadcrumbs: [
+        { label: 'Home', url: '/' },
+        { label: 'About', url: '/about' },
+      ],
+      meta: [
+        { type: 'pill', text: 'Overview' },
+        { type: 'text', text: `Updated ${new Date().toLocaleDateString()}` },
+      ],
+    };
+
     // Get simple counts (fast queries using table statistics)
     const counts = await track('about:get_db_counts', 'database', async () => {
       return await getDatabaseCounts();
@@ -29,6 +40,7 @@ export default defineEventHandler(async (event: H3Event) => {
         counts,
         updatedAt: new Date().toISOString(),
         easterEggEnabled,
+        pageHeader,
       };
     });
 

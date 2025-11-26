@@ -27,82 +27,6 @@
 <div class="entity-hero">
   <!-- Single container box for entire entity header -->
   <div class="entity-hero__container">
-    <!-- Top: Name/breadcrumb on left, parent/grandparent logos on right (full width) -->
-    <div class="entity-hero__header">
-      <div class="entity-hero__header-left">
-        <h1 class="entity-hero__title">
-          {{name}}{{#if ticker}} <span class="entity-hero__ticker">[{{ticker}}]</span>{{/if}}
-        </h1>
-        
-        {{#if entityList}}
-        <div class="entity-hero__relations">
-          <span class="color-secondary">Tracking:</span>
-          {{#each entityList}}
-            <a href="/{{this.type}}/{{this.id}}" class="entity-hero__link">{{this.name}}</a>{{#unless @last}},{{/unless}}
-          {{/each}}
-        </div>
-        {{else}}
-        {{#if parent}}
-        <div class="entity-hero__relations">
-          {{#ifEquals type "character"}}
-            <span data-corporation-id="{{parent.id}}">
-            <a href="/corporation/{{parent.id}}" class="entity-hero__link">
-              {{parent.name}}{{#if parent.ticker}} [{{parent.ticker}}]{{/if}}
-            </a>
-            </span>
-            {{#if grandparent}}
-              <span class="entity-hero__relations-sep">•</span>
-              <span data-alliance-id="{{grandparent.id}}">
-              <a href="/alliance/{{grandparent.id}}" class="entity-hero__link">
-                {{grandparent.name}}{{#if grandparent.ticker}} [{{grandparent.ticker}}]{{/if}}
-              </a>
-              </span>
-            {{/if}}
-          {{else ifEquals type "corporation"}}
-            <span data-alliance-id="{{parent.id}}">
-            <a href="/alliance/{{parent.id}}" class="entity-hero__link">
-              {{parent.name}}{{#if parent.ticker}} [{{parent.ticker}}]{{/if}}
-            </a>
-            </span>
-          {{/ifEquals}}
-        </div>
-        {{else if grandparent}}
-        <div class="entity-hero__relations">
-          <span data-alliance-id="{{grandparent.id}}">
-          <a href="/alliance/{{grandparent.id}}" class="entity-hero__link">
-            {{grandparent.name}}{{#if grandparent.ticker}} [{{grandparent.ticker}}]{{/if}}
-          </a>
-          </span>
-        </div>
-        {{/if}}
-        {{/if}}
-      </div>
-      
-      <!-- Parent/Grandparent logos on the right side of header -->
-      <div class="entity-hero__header-right">
-        {{#if parent}}
-          {{#ifEquals type "character"}}
-            <a href="/corporation/{{parent.id}}" class="entity-hero__logo-link" title="{{parent.name}}">
-              {{> partials/eve-image type="corporation" id=parent.id size=64 alt=parent.name class="entity-hero__logo"}}
-            </a>
-            {{#if grandparent}}
-              <a href="/alliance/{{grandparent.id}}" class="entity-hero__logo-link" title="{{grandparent.name}}">
-                {{> partials/eve-image type="alliance" id=grandparent.id size=64 alt=grandparent.name class="entity-hero__logo"}}
-              </a>
-            {{/if}}
-          {{else ifEquals type "corporation"}}
-            <a href="/alliance/{{parent.id}}" class="entity-hero__logo-link" title="{{parent.name}}">
-              {{> partials/eve-image type="alliance" id=parent.id size=64 alt=parent.name class="entity-hero__logo"}}
-            </a>
-          {{/ifEquals}}
-        {{else if grandparent}}
-          <a href="/alliance/{{grandparent.id}}" class="entity-hero__logo-link" title="{{grandparent.name}}">
-            {{> partials/eve-image type="alliance" id=grandparent.id size=64 alt=grandparent.name class="entity-hero__logo"}}
-          </a>
-        {{/if}}
-      </div>
-    </div>
-    
     <!-- Bottom: Big entity image on left, stats taking up rest of width on right -->
     <div class="entity-hero__content">
       <!-- Entity Image -->
@@ -127,7 +51,7 @@
         {{/if}}
         {{/if}}
       </div>
-      
+
       <!-- Stats Table -->
       {{#if stats}}
       <div class="entity-stats">

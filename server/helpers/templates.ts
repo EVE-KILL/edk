@@ -862,10 +862,15 @@ async function loadTemplate(
   // Create cache key that includes theme
   const theme = getTheme();
   const cacheKey = `${theme}:${templatePath}`;
+  const isDev = env.NODE_ENV !== 'production';
 
-  // Check cache first
-  if (templateCache.has(cacheKey)) {
+  // Check cache first (skip in dev mode to allow hot reload)
+  if (!isDev && templateCache.has(cacheKey)) {
     return templateCache.get(cacheKey)!;
+  }
+
+  if (isDev) {
+    logger.debug(`[DEV] Loading template: ${templatePath} (cache disabled)`);
   }
 
   // Resolve template path with fallback
@@ -877,8 +882,10 @@ async function loadTemplate(
   // Compile template
   const template = Handlebars.compile(templateSource);
 
-  // Cache compiled template in all environments
-  templateCache.set(cacheKey, template);
+  // Cache compiled template (only in production)
+  if (!isDev) {
+    templateCache.set(cacheKey, template);
+  }
 
   return template;
 }
@@ -947,6 +954,10 @@ export async function render(
         showVersion: env.NODE_ENV === 'development',
         imageServerUrl: env.IMAGE_SERVER_URL,
         twitterHandle: env.TWITTER_HANDLE,
+      },
+      env: {
+        WS_URL: env.WS_URL,
+        NODE_ENV: env.NODE_ENV,
       },
       version: env.npm_package_version || '0.1.0',
       buildDate: env.BUILD_DATE || new Date().toISOString().split('T')[0],

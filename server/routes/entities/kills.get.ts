@@ -15,8 +15,11 @@ export default defineEventHandler(async (event: H3Event) => {
       keywords: 'eve online, kills, tracking',
     };
 
-    const { characters: charIds, corporations: corpIds, alliances: allyIds } =
-      getFollowedEntities();
+    const {
+      characters: charIds,
+      corporations: corpIds,
+      alliances: allyIds,
+    } = getFollowedEntities();
 
     const hasEntities =
       charIds.length > 0 || corpIds.length > 0 || allyIds.length > 0;
@@ -40,7 +43,25 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const totalPages = Math.ceil(totalKillmails / perPage);
 
+    // Get EVE time
+    const eveTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // Page header light data
+    const pageHeaderLight = {
+      title: 'Entities Kills',
+      breadcrumbs: [
+        { label: 'Home', url: '/' },
+        { label: 'Entities', url: '/entities' },
+        { label: 'Kills', url: '/entities/kills' },
+      ],
+      info: [
+        { icon: '🕐', text: `EVE Time: ${eveTime}` },
+        { text: `Total: ${totalKillmails.toLocaleString()} kills` },
+      ],
+    };
+
     const data = {
+      pageHeaderLight,
       hasEntities,
       killmails,
       pagination: {

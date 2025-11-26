@@ -47,7 +47,7 @@ async function setupRedis(): Promise<void> {
 
   // Create separate writer client (for normal commands like setex)
   redisWriter = createRedisClient();
-  
+
   redisWriter.on('error', (error) => {
     logger.error('Redis writer error:', { error });
   });
@@ -141,11 +141,30 @@ function broadcastDirect(event: any): void {
       ? [event.clientId]
       : [];
 
+  // If no specific clients, broadcast to all (for dev reload events)
   if (targetIds.length === 0) {
-    logger.warn('Direct event missing clientId', { event });
+    let sent = 0;
+    for (const [ws] of clients.entries()) {
+      if (ws.readyState === 1) {
+        try {
+          ws.send(
+            JSON.stringify({ type: 'direct', data: event.data ?? event })
+          );
+          sent++;
+        } catch (error) {
+          logger.error('Error broadcasting direct event', { error });
+        }
+      }
+    }
+    if (sent > 0) {
+      logger.debug(`Broadcasted direct event to all ${sent} client(s)`, {
+        eventType: event.type,
+      });
+    }
     return;
   }
 
+  // Targeted delivery
   let sent = 0;
   for (const id of targetIds) {
     const sockets = clientIndex.get(id);
@@ -153,7 +172,9 @@ function broadcastDirect(event: any): void {
     for (const ws of sockets) {
       if (ws.readyState === 1) {
         try {
-          ws.send(JSON.stringify({ type: 'direct', data: event.data ?? event }));
+          ws.send(
+            JSON.stringify({ type: 'direct', data: event.data ?? event })
+          );
           sent++;
         } catch (error) {
           logger.error('Error sending direct event', { error });
@@ -252,19 +273,19 @@ async function updateWebSocketStats(): Promise<void> {
       logger.warn('Redis writer not initialized, skipping stats update');
       return;
     }
-    
+
     const stats = {
       connectedClients: clients.size,
       timestamp: Date.now(),
     };
-    
+
     // Store in Redis with 10 second TTL (in case WS server crashes)
     await redisWriter.setex('ws:stats', 10, JSON.stringify(stats));
     logger.debug(`Updated WebSocket stats: ${clients.size} clients`);
   } catch (error) {
-    logger.error('Failed to update WebSocket stats', { 
+    logger.error('Failed to update WebSocket stats', {
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
   }
 }
@@ -297,7 +318,7 @@ function sendPingToAllClients(): void {
   if (pingsSent > 0) {
     logger.debug(`Sent ping to ${pingsSent} client(s)`);
   }
-  
+
   // Update stats after ping
   updateWebSocketStats();
 }
@@ -340,7 +361,7 @@ function cleanupUnresponsiveClients(): void {
   if (clientsToRemove.length > 0) {
     logger.info(`Cleaned up ${clientsToRemove.length} unresponsive client(s)`);
   }
-  
+
   // Update stats after cleanup
   updateWebSocketStats();
 }
@@ -362,7 +383,7 @@ function startPingPongMonitoring(): void {
 async function startServer(): Promise<void> {
   await setupRedis();
 
-Bun.serve({
+  Bun.serve({
     port: PORT,
     hostname: HOST,
     fetch(req, server) {
@@ -417,7 +438,7 @@ Bun.serve({
         );
 
         logger.info(`Client connected. Total: ${clients.size}`);
-        
+
         // Update stats
         updateWebSocketStats();
       },
@@ -443,7 +464,7 @@ Bun.serve({
           }
         }
         logger.info(`Client disconnected. Total: ${clients.size}`);
-        
+
         // Update stats
         updateWebSocketStats();
       },
@@ -499,7 +520,8 @@ function extractClientId(req: Request): string {
   // Fallback to query param if present
   try {
     const url = new URL(req.url);
-    if (url.searchParams.has('cid')) return url.searchParams.get('cid') || randomUUID();
+    if (url.searchParams.has('cid'))
+      return url.searchParams.get('cid') || randomUUID();
   } catch {
     // ignore
   }

@@ -1,5 +1,13 @@
 <!-- Constellation Detail - EDK Style -->
 
+{{> components/page-header
+    title=data.constellation.name
+    breadcrumbs=(array
+        (obj label=data.region.name url=(concat "/region/" data.region.regionId))
+        (obj label=data.constellation.name url=(concat "/constellation/" data.constellation.constellationId))
+    )
+}}
+
 <!-- Constellation Stats Header -->
 {{> partials/entity-stats}}
 

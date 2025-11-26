@@ -1,31 +1,15 @@
 <!-- War Detail Page - EDK Style -->
 
-<!-- Page Header -->
-<div class="docs-page__header">
-  <div class="docs-title-row">
-    <div>
-      <div class="docs-eyebrow">Conflict</div>
-      <h1 class="docs-title">War #{{war.warId}}</h1>
-    </div>
-    <div class="docs-meta">
-      {{#if war.mutual}}<span class="docs-pill">Mutual</span>{{/if}}
-      {{#if war.openForAllies}}<span class="docs-pill">Open for Allies</span>{{/if}}
-      <span class="docs-updated">{{#if war.declared}}Started {{war.declared}}{{/if}}</span>
-    </div>
-  </div>
-  <div class="docs-breadcrumbs">
-    <a href="/">Home</a>
-    <span class="docs-breadcrumbs__separator">/</span>
-    <a href="/wars">Wars</a>
-    <span class="docs-breadcrumbs__separator">/</span>
-    <a href="/wars/{{war.warId}}">War #{{war.warId}}</a>
-  </div>
-</div>
+{{> components/page-header
+  title=pageHeader.title
+  breadcrumbs=pageHeader.breadcrumbs
+  meta=pageHeader.meta
+}}
 
 <!-- War Hero (Fight Card Style) -->
 <div class="war-hero" style="margin-top: 20px;">
   <div class="war-hero__container">
-    
+
     <!-- Fight Card -->
     <div class="war-hero__fight">
       <!-- Aggressor Side -->
@@ -55,13 +39,13 @@
           </div>
         </div>
       </div>
-      
+
       <!-- VS Badge -->
       <div class="war-hero__vs">
         <div class="war-hero__vs-text">VS</div>
         <div class="war-hero__vs-score">{{stats.aggressorShipsKilled}} : {{stats.defenderShipsKilled}}</div>
       </div>
-      
+
       <!-- Defender Side -->
       <div class="war-hero__combatant war-hero__combatant--right">
         <div class="war-hero__combatant-label">Defender</div>
@@ -90,7 +74,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- War Stats Footer -->
     <div class="war-hero__footer">
       <div class="war-hero__footer-stat">
@@ -149,7 +133,7 @@
         {{/if}}
       </div>
     </div>
-    
+
     <!-- Aggressor Stats -->
     <div class="war-versus__stats">
       <div class="war-versus__stat-box">
@@ -161,7 +145,7 @@
         <div class="war-versus__stat-label">ISK Destroyed</div>
       </div>
     </div>
-    
+
     <!-- Aggressor Top Participants -->
     <div class="war-versus__section">
       <div class="war-versus__section-title">Top Contributors</div>
@@ -183,7 +167,7 @@
         {{/each}}
       </div>
     </div>
-    
+
     <!-- Aggressor Kills -->
     <div class="war-versus__section">
       <div class="war-versus__section-title">Recent Kills ({{aggressorKills.length}})</div>
@@ -206,12 +190,12 @@
       </div>
     </div>
   </div>
-  
+
   <!-- Center Divider -->
   <div class="war-versus__divider">
     <div class="war-versus__divider-line"></div>
   </div>
-  
+
   <!-- Defender Side -->
   <div class="war-versus__side war-versus__side--defender">
     <div class="war-versus__header">
@@ -228,7 +212,7 @@
         {{/if}}
       </div>
     </div>
-    
+
     <!-- Defender Stats -->
     <div class="war-versus__stats">
       <div class="war-versus__stat-box">
@@ -240,7 +224,7 @@
         <div class="war-versus__stat-label">ISK Destroyed</div>
       </div>
     </div>
-    
+
     <!-- Defender Top Participants -->
     <div class="war-versus__section">
       <div class="war-versus__section-title">Top Contributors</div>
@@ -262,7 +246,7 @@
         {{/each}}
       </div>
     </div>
-    
+
     <!-- Defender Kills -->
     <div class="war-versus__section">
       <div class="war-versus__section-title">Recent Kills ({{defenderKills.length}})</div>
@@ -297,10 +281,10 @@
 <!-- All War Killmails -->
 <div style="margin-top: var(--spacing-lg);">
   {{> components/section-header title="All War Killmails" bordered=false}}
-  
+
   <!-- Killlist Filters -->
   {{> partials/killlist-filters baseUrl=(concat "/wars/" war.warId) filterDefaults=filterDefaults}}
-  
+
   {{#if killmails.length}}
     <div data-killmail-list data-ws-updates="false">
       {{> partials/killmail-list killmails=killmails}}
@@ -772,12 +756,12 @@
     grid-template-columns: 1fr;
     gap: 0;
   }
-  
+
   .war-versus__side--aggressor {
     border-right: none;
     border-bottom: 1px solid var(--color-border-dark);
   }
-  
+
   .war-versus__divider {
     display: none;
   }
@@ -789,25 +773,25 @@
     gap: 20px;
     padding: 20px 12px;
   }
-  
+
   .war-hero__combatant {
     max-width: 100%;
     align-items: center !important;
     text-align: center !important;
   }
-  
+
   .war-hero__combatant-stats {
     justify-content: center;
   }
-  
+
   .war-hero__footer {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .war-hero__footer-stat:nth-child(2n) {
     border-right: none;
   }
-  
+
   .war-versus__side {
     padding: 16px;
   }

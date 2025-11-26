@@ -1,17 +1,16 @@
 <!-- Search Page -->
+{{> components/page-header title="Search"}}
+
 <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-  
+
   <!-- Centered Search Box -->
   <div style="max-width: 700px; margin: 0 auto 30px; text-align: center;">
-    <h1 style="color: var(--color-text-white); font-size: 32px; margin: 0 0 30px 0; font-weight: 600;">
-      Search
-    </h1>
-    
+
     <div style="position: relative;">
-      <input 
-        type="text" 
-        id="pageSearchInput" 
-        value="{{data.query}}" 
+      <input
+        type="text"
+        id="pageSearchInput"
+        value="{{data.query}}"
         placeholder="Search for characters, corporations, alliances, items, systems..."
         style="width: 100%; padding: 16px 50px 16px 20px; font-size: 16px; border: 2px solid var(--color-border-dark); background: var(--color-bg-tertiary); color: var(--color-text-white); border-radius: var(--radius-md); font-family: inherit; transition: border-color 0.2s;"
         onfocus="this.style.borderColor='#4CAF50'"
@@ -22,7 +21,7 @@
         🔍
       </div>
     </div>
-    
+
     <div id="pageSearchResultsCount" style="margin-top: 12px; color: var(--color-text-secondary); font-size: 13px; min-height: 20px;">
       {{#if data.hasSearched}}
         {{#if (gt data.totalResults 0)}}
@@ -33,15 +32,15 @@
       {{/if}}
     </div>
   </div>
-  
+
   <!-- Results Container -->
   <div id="pageSearchResults"></div>
-  
+
   <!-- Initial Results (if any) -->
   {{#if data.hasSearched}}
     {{#if (gt data.totalResults 0)}}
       <div id="initialResults" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
-        
+
         {{#if data.results.character}}
         <!-- Characters -->
         <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-md); overflow: hidden;">
@@ -55,8 +54,8 @@
               <a href="/character/{{this.rawId}}" style="display: flex; align-items: center; gap: 12px; padding: 10px; margin: -10px; margin-bottom: 8px; border-radius: var(--radius-sm); text-decoration: none; transition: background 0.2s;"
                 onmouseover="this.style.background='rgba(76, 175, 80, 0.1)'"
                 onmouseout="this.style.background='transparent'">
-                <img src="{{../config.imageServerUrl}}/characters/{{this.rawId}}/portrait?size=64" 
-                     alt="{{this.name}}" 
+                <img src="{{../config.imageServerUrl}}/characters/{{this.rawId}}/portrait?size=64"
+                     alt="{{this.name}}"
                      style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--color-border-dark);"
                      loading="lazy" />
                 <div style="flex: 1; min-width: 0;">
@@ -69,7 +68,7 @@
           </div>
         </div>
         {{/if}}
-        
+
         {{#if data.results.corporation}}
         <!-- Corporations -->
         <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-md); overflow: hidden;">
@@ -83,8 +82,8 @@
               <a href="/corporation/{{this.rawId}}" style="display: flex; align-items: center; gap: 12px; padding: 10px; margin: -10px; margin-bottom: 8px; border-radius: var(--radius-sm); text-decoration: none; transition: background 0.2s;"
                 onmouseover="this.style.background='rgba(33, 150, 243, 0.1)'"
                 onmouseout="this.style.background='transparent'">
-                <img src="{{../config.imageServerUrl}}/corporations/{{this.rawId}}/logo?size=64" 
-                     alt="{{this.name}}" 
+                <img src="{{../config.imageServerUrl}}/corporations/{{this.rawId}}/logo?size=64"
+                     alt="{{this.name}}"
                      style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark);"
                      loading="lazy" />
                 <div style="flex: 1; min-width: 0;">
@@ -97,7 +96,7 @@
           </div>
         </div>
         {{/if}}
-        
+
         {{#if data.results.alliance}}
         <!-- Alliances -->
         <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-md); overflow: hidden;">
@@ -111,8 +110,8 @@
               <a href="/alliance/{{this.rawId}}" style="display: flex; align-items: center; gap: 12px; padding: 10px; margin: -10px; margin-bottom: 8px; border-radius: var(--radius-sm); text-decoration: none; transition: background 0.2s;"
                 onmouseover="this.style.background='rgba(156, 39, 176, 0.1)'"
                 onmouseout="this.style.background='transparent'">
-                <img src="{{../config.imageServerUrl}}/alliances/{{this.rawId}}/logo?size=64" 
-                     alt="{{this.name}}" 
+                <img src="{{../config.imageServerUrl}}/alliances/{{this.rawId}}/logo?size=64"
+                     alt="{{this.name}}"
                      style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark);"
                      loading="lazy" />
                 <div style="flex: 1; min-width: 0;">
@@ -125,7 +124,7 @@
           </div>
         </div>
         {{/if}}
-        
+
         {{#if data.results.solarSystem}}
         <!-- Solar Systems -->
         <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-md); overflow: hidden;">
@@ -152,7 +151,7 @@
           </div>
         </div>
         {{/if}}
-        
+
         {{#if data.results.item}}
         <!-- Items -->
         <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-md); overflow: hidden;">
@@ -166,8 +165,8 @@
               <a href="/item/{{this.rawId}}" style="display: flex; align-items: center; gap: 12px; padding: 10px; margin: -10px; margin-bottom: 8px; border-radius: var(--radius-sm); text-decoration: none; transition: background 0.2s;"
                 onmouseover="this.style.background='rgba(233, 30, 99, 0.1)'"
                 onmouseout="this.style.background='transparent'">
-                <img src="{{../config.imageServerUrl}}/types/{{this.rawId}}/icon?size=64" 
-                     alt="{{this.name}}" 
+                <img src="{{../config.imageServerUrl}}/types/{{this.rawId}}/icon?size=64"
+                     alt="{{this.name}}"
                      style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark);"
                      loading="lazy" />
                 <div style="flex: 1; min-width: 0;">
@@ -180,11 +179,11 @@
           </div>
         </div>
         {{/if}}
-        
+
       </div>
     {{/if}}
   {{/if}}
-  
+
 </div>
 
 <!-- Search JavaScript -->
@@ -194,12 +193,12 @@
   const resultsContainer = document.getElementById('pageSearchResults');
   const resultsCount = document.getElementById('pageSearchResultsCount');
   const initialResults = document.getElementById('initialResults');
-  
+
   let searchTimeout = null;
   let currentRequest = null;
-  
+
   const imageServerUrl = '{{config.imageServerUrl}}';
-  
+
   // Category icons and colors
   const categoryConfig = {
     character: { icon: '👤', color: '#4CAF50', label: 'Characters', url: '/character/' },
@@ -208,7 +207,7 @@
     solarSystem: { icon: '🌟', color: '#FF9800', label: 'Solar Systems', url: '/system/' },
     item: { icon: '📦', color: '#E91E63', label: 'Items', url: '/item/' }
   };
-  
+
   function getEntityImage(type, id) {
     switch(type) {
       case 'character':
@@ -223,7 +222,7 @@
         return null;
     }
   }
-  
+
   async function performSearch(query) {
     if (query.trim().length < 2) {
       resultsContainer.innerHTML = '';
@@ -231,21 +230,21 @@
       if (initialResults) initialResults.style.display = 'none';
       return;
     }
-    
+
     if (currentRequest) {
       currentRequest.abort();
     }
-    
+
     const controller = new AbortController();
     currentRequest = controller;
-    
+
     try {
       const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=10`, {
         signal: controller.signal
       });
-      
+
       if (!response.ok) throw new Error('Search failed');
-      
+
       const data = await response.json();
       displayResults(data.results || [], query);
     } catch (error) {
@@ -256,10 +255,10 @@
       currentRequest = null;
     }
   }
-  
+
   function displayResults(results, query) {
     if (initialResults) initialResults.style.display = 'none';
-    
+
     if (results.length === 0) {
       resultsCount.innerHTML = 'No results found';
       resultsContainer.innerHTML = `
@@ -272,7 +271,7 @@
       `;
       return;
     }
-    
+
     // Group by type
     const grouped = {};
     results.forEach(result => {
@@ -280,17 +279,17 @@
       if (!grouped[type]) grouped[type] = [];
       grouped[type].push(result);
     });
-    
+
     resultsCount.innerHTML = `Found <strong style="color: #4CAF50;">${results.length}</strong> result${results.length === 1 ? '' : 's'}`;
-    
+
     let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">';
-    
+
     Object.keys(grouped).forEach(type => {
       const config = categoryConfig[type];
       if (!config) return;
-      
+
       const items = grouped[type];
-      
+
       html += `
         <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-md); overflow: hidden;">
           <div style="background: rgba(${hexToRgb(config.color)}, 0.1); padding: 15px; border-bottom: 1px solid var(--color-border-dark);">
@@ -300,24 +299,24 @@
           </div>
           <div style="padding: 15px;">
       `;
-      
+
       items.forEach(item => {
         const imageUrl = getEntityImage(type, item.rawId);
         const url = config.url + item.rawId;
-        
+
         html += `
           <a href="${url}" style="display: flex; align-items: center; gap: 12px; padding: 10px; margin: -10px; margin-bottom: 8px; border-radius: var(--radius-sm); text-decoration: none; transition: background 0.2s;"
             onmouseover="this.style.background='rgba(${hexToRgb(config.color)}, 0.1)'"
             onmouseout="this.style.background='transparent'">
         `;
-        
+
         if (imageUrl && type !== 'solarSystem') {
           const borderRadius = type === 'character' ? '50%' : '4px';
           html += `<img src="${imageUrl}" alt="${escapeHtml(item.name)}" style="width: 32px; height: 32px; border-radius: ${borderRadius}; border: 1px solid var(--color-border-dark);" loading="lazy" />`;
         } else if (type === 'solarSystem') {
           html += `<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, ${config.color}, ${adjustColor(config.color, -30)}); display: flex; align-items: center; justify-content: center; border: 1px solid var(--color-border-dark); font-size: 16px;">⭐</div>`;
         }
-        
+
         html += `
             <div style="flex: 1; min-width: 0;">
               <div style="color: var(--color-text-white); font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -327,25 +326,25 @@
           </a>
         `;
       });
-      
+
       html += `</div></div>`;
     });
-    
+
     html += '</div>';
     resultsContainer.innerHTML = html;
   }
-  
+
   function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   }
-  
+
   function hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0, 0, 0';
   }
-  
+
   function adjustColor(hex, percent) {
     const num = parseInt(hex.replace('#', ''), 16);
     const amt = Math.round(2.55 * percent);
@@ -354,7 +353,7 @@
     const B = (num & 0x0000FF) + amt;
     return '#' + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
   }
-  
+
   // Debounced search
   searchInput.addEventListener('input', function(e) {
     clearTimeout(searchTimeout);
@@ -362,7 +361,7 @@
       performSearch(e.target.value);
     }, 300);
   });
-  
+
   // Trigger initial search if there's a value
   if (searchInput.value.trim().length >= 2) {
     performSearch(searchInput.value);

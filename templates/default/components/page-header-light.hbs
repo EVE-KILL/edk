@@ -1,0 +1,76 @@
+{{!--
+  Lightweight Page Header Component
+
+  Usage:
+    {{> components/page-header
+      title="Page Title"
+      eyebrow="Optional eyebrow"
+      breadcrumbs=breadcrumbs
+      info=info
+      meta=meta
+    }}
+
+  Parameters:
+    - title: Main page title (required)
+    - eyebrow: Optional eyebrow text
+    - breadcrumbs: Array of {label, url} objects
+    - info: Array of {icon, text} objects for lightweight info display
+    - meta: Array of {type, text, class} objects (pill, text, button, custom)
+--}}
+
+<div class="page-header-light">
+  {{#if eyebrow}}
+  <div class="page-header__eyebrow">{{eyebrow}}</div>
+  {{/if}}
+
+  <div class="page-header-light__row">
+    <h1 class="page-header-light__title">{{title}}</h1>
+
+    {{#if info}}
+    <div class="page-header-light__info">
+      {{#each info}}
+        <span class="page-header-light__info-item">
+          {{#if this.icon}}<span class="page-header-light__icon">{{this.icon}}</span>{{/if}}
+          {{#if this.logo}}
+            <img src="{{../config.imageServerUrl}}/{{this.logo.type}}s/{{this.logo.id}}/logo?size=32"
+                 alt="{{this.logo.type}} logo"
+                 style="width: 24px; height: 24px; border-radius: 3px; vertical-align: middle;"
+                 loading="lazy" />
+          {{/if}}
+          {{#if this.text}}{{this.text}}{{/if}}
+        </span>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    {{#if meta}}
+    <div class="page-header__meta">
+      {{#each meta}}
+        {{#ifEquals this.type "pill"}}
+          <span class="page-header__pill {{#if this.class}}{{this.class}}{{/if}}">{{this.text}}</span>
+        {{/ifEquals}}
+        {{#ifEquals this.type "text"}}
+          <span class="page-header__text {{#if this.class}}{{this.class}}{{/if}}">{{this.text}}</span>
+        {{/ifEquals}}
+        {{#ifEquals this.type "button"}}
+          <button class="page-header__button {{#if this.class}}{{this.class}}{{/if}}" {{#if this.action}}data-action="{{this.action}}"{{/if}} type="button">{{this.text}}</button>
+        {{/ifEquals}}
+        {{#ifEquals this.type "custom"}}
+          {{{this.html}}}
+        {{/ifEquals}}
+      {{/each}}
+    </div>
+    {{/if}}
+  </div>
+
+  {{#if breadcrumbs}}
+  <div class="page-header-light__breadcrumbs">
+    {{#each breadcrumbs}}
+      <a href="{{this.url}}">{{this.label}}</a>
+      {{#unless @last}}
+        <span class="page-header-light__breadcrumbs-sep">/</span>
+      {{/unless}}
+    {{/each}}
+  </div>
+  {{/if}}
+</div>

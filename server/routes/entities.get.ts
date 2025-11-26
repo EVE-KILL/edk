@@ -15,8 +15,11 @@ export default defineEventHandler(async (event: H3Event) => {
       keywords: 'eve online, dashboard, tracking',
     };
 
-    const { characters: charIds, corporations: corpIds, alliances: allyIds } =
-      getFollowedEntities();
+    const {
+      characters: charIds,
+      corporations: corpIds,
+      alliances: allyIds,
+    } = getFollowedEntities();
 
     const hasEntities =
       charIds.length > 0 || corpIds.length > 0 || allyIds.length > 0;
@@ -36,7 +39,26 @@ export default defineEventHandler(async (event: H3Event) => {
       recentKillmails = killmailsData.map(normalizeKillRow);
     }
 
+    // Get EVE time
+    const eveTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // Page header light data
+    const pageHeaderLight = {
+      title: 'Entities Dashboard',
+      breadcrumbs: [
+        { label: 'Home', url: '/' },
+        { label: 'Entities', url: '/entities' },
+      ],
+      info: [
+        { icon: '🕐', text: `EVE Time: ${eveTime}` },
+        {
+          text: `Tracking: ${charIds.length + corpIds.length + allyIds.length} entities`,
+        },
+      ],
+    };
+
     const data = {
+      pageHeaderLight,
       hasEntities,
       recentKillmails,
       // ... other stats left empty for now

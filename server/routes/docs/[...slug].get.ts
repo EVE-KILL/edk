@@ -48,6 +48,16 @@ export default defineEventHandler(async (event: H3Event) => {
         ...docPage,
         breadcrumbs,
       },
+      pageHeader: {
+        breadcrumbs,
+        meta: [
+          { type: 'pill', text: docPage.section },
+          {
+            type: 'text',
+            text: `Updated ${new Date(docPage.updatedAt).toLocaleDateString()}`,
+          },
+        ],
+      },
     };
 
     return render('pages/docs.hbs', pageContext, data, event);

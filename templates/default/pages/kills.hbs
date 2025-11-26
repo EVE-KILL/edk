@@ -1,3 +1,7 @@
+{{#if data.pageHeaderLight}}
+{{> components/page-header title=data.pageHeaderLight.title breadcrumbs=data.pageHeaderLight.breadcrumbs info=data.pageHeaderLight.info}}
+{{/if}}
+
 {{#if data.recentKillmails}}
 <!-- Kills for Followed Entities or Global Feed -->
 

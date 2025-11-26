@@ -1,7 +1,11 @@
 <!-- Character Detail - EDK Style -->
 
+{{#if pageHeaderLight}}
+{{> components/page-header title=pageHeaderLight.title breadcrumbs=pageHeaderLight.breadcrumbs info=pageHeaderLight.info}}
+{{/if}}
+
 <!-- Character Stats Header -->
-{{> partials/entity-stats}}
+{{> partials/entity-stats }}
 
 <!-- Character Navigation Tabs -->
 {{> partials/entity-navbar}}

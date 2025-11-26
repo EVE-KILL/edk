@@ -323,6 +323,16 @@ export default defineEventHandler(async (event: H3Event) => {
     };
 
     const data = {
+      pageHeader: {
+        breadcrumbs: [
+          { label: 'Home', url: '/' },
+          { label: 'Wars', url: '/wars' },
+        ],
+        meta: [
+          { type: 'pill', text: `${activeWars.toLocaleString()} Active` },
+          { type: 'text', text: `Page ${page} of ${totalPages}` },
+        ],
+      },
       pagination: {
         page,
         perPage,

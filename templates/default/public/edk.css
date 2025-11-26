@@ -98,6 +98,7 @@ html {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   height: 100%;
+  overflow-y: scroll;
 }
 
 body {
@@ -2795,22 +2796,29 @@ textarea.killmail {
   gap: 16px;
 }
 
-.docs-page__header {
+/* ========================================
+   Page Header Components
+   ======================================== */
+
+/* Full Page Header */
+.page-header {
   background: linear-gradient(90deg, rgba(74, 158, 255, 0.06), rgba(74, 158, 255, 0.01));
   border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-sm);
   padding: 16px 18px;
   box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-lg);
 }
 
-.docs-eyebrow {
+.page-header__eyebrow {
   color: var(--color-text-tertiary);
   font-size: 10px;
   letter-spacing: 1px;
   text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
-.docs-title-row {
+.page-header__row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -2818,22 +2826,23 @@ textarea.killmail {
   flex-wrap: wrap;
 }
 
-.docs-title {
+.page-header__title {
   font-size: 24px;
   color: var(--color-text-white);
   margin: 6px 0 0 0;
+  flex: 1;
+  min-width: 200px;
 }
 
-.docs-meta {
+.page-header__meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-text-secondary);
   font-size: 11px;
   flex-wrap: wrap;
 }
 
-.docs-pill {
+.page-header__pill {
   background: rgba(74, 158, 255, 0.12);
   color: #9cc7ff;
   border: 1px solid rgba(74, 158, 255, 0.25);
@@ -2843,13 +2852,35 @@ textarea.killmail {
   letter-spacing: 0.5px;
   text-transform: uppercase;
   font-size: 10px;
+  white-space: nowrap;
 }
 
-.docs-updated {
+.page-header__text {
   color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
-.docs-breadcrumbs {
+.page-header__button {
+  background: rgba(74, 158, 255, 0.15);
+  color: var(--color-accent-blue);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  white-space: nowrap;
+}
+
+.page-header__button:hover {
+  background: rgba(74, 158, 255, 0.25);
+  border-color: rgba(74, 158, 255, 0.5);
+}
+
+.page-header__breadcrumbs {
   margin-top: 8px;
   color: var(--color-text-secondary);
   font-size: 11px;
@@ -2858,7 +2889,7 @@ textarea.killmail {
   gap: 6px;
 }
 
-.docs-breadcrumbs a {
+.page-header__breadcrumbs a {
   color: var(--color-text-primary);
   text-decoration: none;
   padding: 4px 6px;
@@ -2866,11 +2897,93 @@ textarea.killmail {
   transition: background var(--transition-normal);
 }
 
-.docs-breadcrumbs a:hover {
+.page-header__breadcrumbs a:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.docs-breadcrumbs__separator {
+.page-header__breadcrumbs-sep {
+  color: var(--color-text-tertiary);
+}
+
+/* Status Page Live Pill */
+.status-pill-live {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #22c55e;
+}
+
+.page-header__breadcrumbs-sep {
+  color: var(--color-text-tertiary);
+}
+
+/* Lightweight Page Header */
+.page-header-light {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: var(--spacing-md);
+}
+
+.page-header-light__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-header-light__title {
+  font-size: 18px;
+  color: var(--color-text-white);
+  margin: 0;
+  flex: 1;
+  min-width: 150px;
+}
+
+.page-header-light__info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.page-header-light__info-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.page-header-light__icon {
+  color: var(--color-accent-blue);
+  font-weight: 600;
+}
+
+.page-header-light__breadcrumbs {
+  margin-top: 6px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.page-header-light__breadcrumbs a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-normal);
+}
+
+.page-header-light__breadcrumbs a:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.page-header-light__breadcrumbs-sep {
   color: var(--color-text-tertiary);
 }
 
@@ -3134,9 +3247,5 @@ textarea.killmail {
 
   .docs-nav a {
     padding: 10px;
-  }
-
-  .docs-title {
-    font-size: 20px;
   }
 }

@@ -1,5 +1,13 @@
 <!-- Group Detail - EDK Style -->
 
+{{> components/page-header
+    title=data.group.name
+    breadcrumbs=(array
+        (obj label=data.category.name url="#")
+        (obj label=data.group.name url=(concat "/group/" data.group.groupId))
+    )
+}}
+
 <!-- Group Stats Header -->
 {{> partials/entity-stats}}
 

@@ -1,5 +1,12 @@
 <!-- Region Detail - EDK Style -->
 
+{{> components/page-header
+    title=data.region.name
+    breadcrumbs=(array
+        (obj label=data.region.name url=(concat "/region/" data.region.regionId))
+    )
+}}
+
 <!-- Region Stats Header -->
 {{> partials/entity-stats}}
 

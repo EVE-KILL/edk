@@ -522,6 +522,23 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const baseUrl = `/kills/${killType}`;
 
+    // Get EVE time
+    const eveTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // Page header light data
+    const pageHeaderLight = {
+      title: getTitleForType(killType),
+      breadcrumbs: [
+        { label: 'Home', url: '/' },
+        { label: 'Kills', url: '/kills/latest' },
+        { label: getTitleForType(killType), url: baseUrl },
+      ],
+      info: [
+        { icon: '🕐', text: `EVE Time: ${eveTime}` },
+        { text: `Total: ${totalKillmails.toLocaleString()} kills` },
+      ],
+    };
+
     // Render the template
     return render(
       'pages/kills',
@@ -531,6 +548,7 @@ export default defineEventHandler(async (event: H3Event) => {
         keywords: 'eve online, killmail, pvp, kills',
       },
       {
+        pageHeaderLight,
         title: getTitleForType(killType),
         baseUrl,
         recentKillmails,

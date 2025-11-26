@@ -1,5 +1,13 @@
 <!-- Killmail Detail - EDK Style -->
 
+{{> components/page-header
+    title=(concat "Killmail #" data.killmail.killmailId)
+    breadcrumbs=(array
+        (obj label="Killmails" url="/kills/latest")
+        (obj label=(concat "Killmail #" data.killmail.killmailId) url=(concat "/killmail/" data.killmail.killmailId))
+    )
+}}
+
 <!-- Sibling Killmails Navbar -->
 {{> partials/killmail-navbar killmail=data.killmail solarSystem=data.solarSystem victim=data.victim siblings=data.siblings}}
 

@@ -1,7 +1,8 @@
 <!-- Alliance Detail - EDK Style -->
 
-<!-- Alliance Stats Header -->
-{{> partials/entity-stats}}
+{{#if pageHeaderLight}}
+{{> components/page-header title=pageHeaderLight.title breadcrumbs=pageHeaderLight.breadcrumbs info=pageHeaderLight.info}}
+{{/if}}
 
 <!-- Alliance Navigation Tabs -->
 {{> partials/entity-navbar}}

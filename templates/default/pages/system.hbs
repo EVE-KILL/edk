@@ -1,5 +1,14 @@
 <!-- System Detail - EDK Style -->
 
+{{> components/page-header
+    title=data.system.name
+    breadcrumbs=(array
+        (obj label=data.region.name url=(concat "/region/" data.region.regionId))
+        (obj label=data.constellation.name url=(concat "/constellation/" data.constellation.constellationId))
+        (obj label=data.system.name url=(concat "/system/" data.system.solarSystemId))
+    )
+}}
+
 <!-- System Stats Header -->
 {{> partials/entity-stats}}
 
@@ -11,17 +20,17 @@
         <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Region:</span>
         <span><a href="/region/{{data.region.regionId}}" style="color: var(--color-accent-blue-bright); text-decoration: none;">{{data.region.name}}</a></span>
         {{/if}}
-        
+
         {{#if data.constellation}}
         <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Constellation:</span>
         <span><a href="/constellation/{{data.constellation.constellationId}}" style="color: var(--color-accent-blue-bright); text-decoration: none;">{{data.constellation.name}}</a></span>
         {{/if}}
-        
+
         {{#if data.system.securityStatus}}
         <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Security:</span>
         <span>{{formatNumber data.system.securityStatus}}</span>
         {{/if}}
-        
+
         {{#if data.system.securityClass}}
         <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Class:</span>
         <span>{{data.system.securityClass}}</span>

@@ -1,23 +1,10 @@
 <!-- Wars Page - EDK Style -->
 
-<!-- Page Header -->
-<div class="docs-page__header">
-  <div class="docs-title-row">
-    <div>
-      <div class="docs-eyebrow">Conflicts</div>
-      <h1 class="docs-title">Wars</h1>
-    </div>
-    <div class="docs-meta">
-      <span class="docs-pill">{{pagination.total}} Active</span>
-      <span class="docs-updated">Page {{pagination.page}} of {{pagination.totalPages}}</span>
-    </div>
-  </div>
-  <div class="docs-breadcrumbs">
-    <a href="/">Home</a>
-    <span class="docs-breadcrumbs__separator">/</span>
-    <a href="/wars">Wars</a>
-  </div>
-</div>
+{{> components/page-header
+  title="Wars"
+  breadcrumbs=pageHeader.breadcrumbs
+  meta=pageHeader.meta
+}}
 
 <!-- War Filters -->
 {{> partials/war-filters pagination=pagination filterDefaults=filterDefaults}}
@@ -61,7 +48,7 @@
       <div class="war-card__date">{{declared}}</div>
       {{/if}}
     </div>
-    
+
     <!-- Fight Card Style -->
     <div class="war-card__fight">
       <!-- Aggressor Side -->
@@ -81,12 +68,12 @@
           </div>
         </div>
       </div>
-      
+
       <!-- VS Badge -->
       <div class="war-card__vs">
         <div class="war-card__vs-text">VS</div>
       </div>
-      
+
       <!-- Defender Side -->
       <div class="war-card__fighter war-card__fighter--right">
         <div class="war-card__fighter-name">
@@ -105,7 +92,7 @@
         </div>
       </div>
     </div>
-    
+
     {{#if lastKill}}
     <div class="war-card__footer">
       <div class="war-card__last-kill">Last kill {{lastKill}}</div>
@@ -335,32 +322,32 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .wars-hero__stats {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .war-card__fight {
     flex-direction: column;
     gap: 16px;
     padding: 20px 12px;
   }
-  
+
   .war-card__fighter {
     max-width: 100%;
     align-items: center !important;
     text-align: center !important;
   }
-  
+
   .war-card__vs {
     transform: rotate(90deg);
   }
-  
+
   .war-card__fighter-name {
     font-size: 14px;
   }
-  
+
   .war-card__fighter-stats {
     justify-content: center;
   }

@@ -1,7 +1,8 @@
 <!-- Corporation Detail - EDK Style -->
 
-<!-- Corporation Stats Header -->
-{{> partials/entity-stats}}
+{{#if pageHeaderLight}}
+{{> components/page-header title=pageHeaderLight.title breadcrumbs=pageHeaderLight.breadcrumbs info=pageHeaderLight.info}}
+{{/if}}
 
 <!-- Corporation Navigation Tabs -->
 {{> partials/entity-navbar}}
