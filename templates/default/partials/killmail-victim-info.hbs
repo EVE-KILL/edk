@@ -29,11 +29,11 @@
                     {{#if data.victim.character.id}}
                     {{#if data.victim.character.name}}
                     <span data-character-id="{{data.victim.character.id}}">
-                   <a href="/character/{{data.victim.character.id}}" style="color: var(--color-accent-blue-bright); text-decoration: underline;">{{data.victim.character.name}}</a>
+                   <a href="/character/{{data.victim.character.id}}" class="victim-link" style="color: var(--color-accent-blue-bright); text-decoration: none;">{{data.victim.character.name}}</a>
                     </span>
                     {{else}}
                     <span data-character-id="{{data.victim.character.id}}">
-                    <a href="/character/{{data.victim.character.id}}" style="color: var(--color-accent-blue-bright); text-decoration: underline;">Pilot #{{data.victim.character.id}}</a>
+                    <a href="/character/{{data.victim.character.id}}" class="victim-link" style="color: var(--color-accent-blue-bright); text-decoration: none;">Pilot #{{data.victim.character.id}}</a>
                     </span>
                     {{/if}}
                     {{else}}
@@ -45,7 +45,7 @@
             <div style="color: var(--color-text-secondary);">
                 {{#if data.victim.corporation.id}}
                 <span data-corporation-id="{{data.victim.corporation.id}}">
-                <a href="/corporation/{{data.victim.corporation.id}}" style="color: var(--color-text-secondary); text-decoration: underline;">{{data.victim.corporation.name}}</a>
+                <a href="/corporation/{{data.victim.corporation.id}}" class="victim-link" style="color: var(--color-text-secondary); text-decoration: none;">{{data.victim.corporation.name}}</a>
                 </span>
                 {{else}}
                 {{data.victim.corporation.name}}
@@ -56,7 +56,7 @@
             <div style="color: var(--color-text-secondary);">
                 {{#if data.victim.alliance.id}}
                 <span data-alliance-id="{{data.victim.alliance.id}}">
-                <a href="/alliance/{{data.victim.alliance.id}}" style="color: var(--color-text-secondary); text-decoration: underline;">{{data.victim.alliance.name}}</a>
+                <a href="/alliance/{{data.victim.alliance.id}}" class="victim-link" style="color: var(--color-text-secondary); text-decoration: none;">{{data.victim.alliance.name}}</a>
                 </span>
                 {{else}}
                 {{data.victim.alliance.name}}
@@ -70,12 +70,12 @@
             <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Ship</div>
             <div style="font-size: 10px;">
                 {{#if data.victim.ship.typeId}}
-                <a href="/item/{{data.victim.ship.typeId}}" style="color: var(--color-accent-blue-bright); text-decoration: underline;">{{data.victim.ship.name}}</a>
+                <a href="/item/{{data.victim.ship.typeId}}" class="victim-link" style="color: var(--color-accent-blue-bright); text-decoration: none;">{{data.victim.ship.name}}</a>
                 {{else}}
                 {{data.victim.ship.name}}
                 {{/if}}
                 {{#if data.victim.ship.groupName}}
-                <span style="color: var(--color-text-secondary);"> ({{#if data.victim.ship.groupId}}<a href="/group/{{data.victim.ship.groupId}}" style="color: var(--color-text-secondary); text-decoration: underline;">{{data.victim.ship.groupName}}</a>{{else}}{{data.victim.ship.groupName}}{{/if}})</span>
+                <span style="color: var(--color-text-secondary);"> ({{#if data.victim.ship.groupId}}<a href="/group/{{data.victim.ship.groupId}}" class="victim-link" style="color: var(--color-text-secondary); text-decoration: none;">{{data.victim.ship.groupName}}</a>{{else}}{{data.victim.ship.groupName}}{{/if}})</span>
                 {{/if}}
             </div>
         </div>
@@ -100,7 +100,7 @@
             <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase;">System</div>
             <div style="text-align: right; font-size: 10px;">
                 {{#if data.killmail.systemId}}
-                <a href="/system/{{data.killmail.systemId}}" style="color: var(--color-accent-blue-bright); text-decoration: underline; font-weight: 600;"><b>{{data.killmail.systemName}}</b></a>
+                <a href="/system/{{data.killmail.systemId}}" class="victim-link" style="color: var(--color-accent-blue-bright); text-decoration: none; font-weight: 600;"><b>{{data.killmail.systemName}}</b></a>
                 {{else}}
                 <b>{{data.killmail.systemName}}</b>
                 {{/if}}
@@ -108,7 +108,7 @@
                     {{formatSecurity data.killmail.securityStatus}}
                 </span>
                 {{#if data.killmail.regionName}}
-                <div style="color: var(--color-text-secondary); margin-top: 4px;">{{#if data.killmail.regionId}}<a href="/region/{{data.killmail.regionId}}" style="color: var(--color-text-secondary); text-decoration: underline;">{{data.killmail.regionName}}</a>{{else}}{{data.killmail.regionName}}{{/if}}</div>
+                <div style="color: var(--color-text-secondary); margin-top: 4px;">{{#if data.killmail.regionId}}<a href="/region/{{data.killmail.regionId}}" class="victim-link" style="color: var(--color-text-secondary); text-decoration: none;">{{data.killmail.regionName}}</a>{{else}}{{data.killmail.regionName}}{{/if}}</div>
                 {{/if}}
             </div>
         </div>
@@ -152,3 +152,9 @@
         </div>
     </div>
 </div>
+
+<style>
+.victim-link:hover {
+    text-decoration: underline !important;
+}
+</style>
