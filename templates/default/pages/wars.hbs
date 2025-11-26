@@ -1,26 +1,21 @@
 <!-- Wars Page - EDK Style -->
 
 <!-- Page Header -->
-<div class="wars-hero">
-  <div class="wars-hero__container">
-    <div class="wars-hero__header">
-      <div class="wars-hero__header-left">
-        <h1 class="wars-hero__title">Wars</h1>
-        <div class="wars-hero__subtitle">
-          Live EVE wars with tracked killmails, value destroyed, and faction hotspots.
-        </div>
-      </div>
-      <div class="wars-hero__stats">
-        <div class="wars-hero__stat">
-          <div class="wars-hero__stat-label">Total Wars</div>
-          <div class="wars-hero__stat-value">{{pagination.total}}</div>
-        </div>
-        <div class="wars-hero__stat">
-          <div class="wars-hero__stat-label">Page</div>
-          <div class="wars-hero__stat-value">{{pagination.page}} / {{pagination.totalPages}}</div>
-        </div>
-      </div>
+<div class="docs-page__header">
+  <div class="docs-title-row">
+    <div>
+      <div class="docs-eyebrow">Conflicts</div>
+      <h1 class="docs-title">Wars</h1>
     </div>
+    <div class="docs-meta">
+      <span class="docs-pill">{{pagination.total}} Active</span>
+      <span class="docs-updated">Page {{pagination.page}} of {{pagination.totalPages}}</span>
+    </div>
+  </div>
+  <div class="docs-breadcrumbs">
+    <a href="/">Home</a>
+    <span class="docs-breadcrumbs__separator">/</span>
+    <a href="/wars">Wars</a>
   </div>
 </div>
 
@@ -121,75 +116,6 @@
 </div>
 
 <style>
-.wars-hero {
-  margin-bottom: var(--spacing-lg);
-  width: 100%;
-}
-
-.wars-hero__container {
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border-dark);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.wars-hero__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--color-border-dark);
-}
-
-.wars-hero__header-left {
-  flex: 1;
-  min-width: 0;
-}
-
-.wars-hero__title {
-  margin: 0 0 6px 0;
-  font-size: 22px;
-  color: var(--color-accent-blue);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  line-height: 1.2;
-}
-
-.wars-hero__subtitle {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  line-height: 1.4;
-}
-
-.wars-hero__stats {
-  display: flex;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-.wars-hero__stat {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--color-border-dark);
-  border-radius: var(--radius-sm);
-  padding: 10px 16px;
-  text-align: center;
-  min-width: 120px;
-}
-
-.wars-hero__stat-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--color-text-secondary);
-  margin-bottom: 4px;
-}
-
-.wars-hero__stat-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text-white);
-}
-
 .war-card {
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-dark);

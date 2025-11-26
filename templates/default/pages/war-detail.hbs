@@ -1,19 +1,30 @@
 <!-- War Detail Page - EDK Style -->
 
-<!-- War Hero (Fight Card Style) -->
-<div class="war-hero">
-  <div class="war-hero__container">
-    <!-- Header with war info -->
-    <div class="war-hero__header">
-      <div class="war-hero__title-section">
-        <h1 class="war-hero__title">War #{{war.warId}}</h1>
-        <div class="war-hero__meta">
-          {{#if war.mutual}}<span class="war-hero__badge war-hero__badge--mutual">Mutual</span>{{/if}}
-          {{#if war.openForAllies}}<span class="war-hero__badge war-hero__badge--allies">Open for Allies</span>{{/if}}
-          <span class="war-hero__date">{{#if war.declared}}Started {{war.declared}}{{/if}}</span>
-        </div>
-      </div>
+<!-- Page Header -->
+<div class="docs-page__header">
+  <div class="docs-title-row">
+    <div>
+      <div class="docs-eyebrow">Conflict</div>
+      <h1 class="docs-title">War #{{war.warId}}</h1>
     </div>
+    <div class="docs-meta">
+      {{#if war.mutual}}<span class="docs-pill">Mutual</span>{{/if}}
+      {{#if war.openForAllies}}<span class="docs-pill">Open for Allies</span>{{/if}}
+      <span class="docs-updated">{{#if war.declared}}Started {{war.declared}}{{/if}}</span>
+    </div>
+  </div>
+  <div class="docs-breadcrumbs">
+    <a href="/">Home</a>
+    <span class="docs-breadcrumbs__separator">/</span>
+    <a href="/wars">Wars</a>
+    <span class="docs-breadcrumbs__separator">/</span>
+    <a href="/wars/{{war.warId}}">War #{{war.warId}}</a>
+  </div>
+</div>
+
+<!-- War Hero (Fight Card Style) -->
+<div class="war-hero" style="margin-top: 20px;">
+  <div class="war-hero__container">
     
     <!-- Fight Card -->
     <div class="war-hero__fight">
@@ -312,60 +323,6 @@
   border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-sm);
   overflow: hidden;
-}
-
-.war-hero__header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--color-border-dark);
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.war-hero__title-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.war-hero__title {
-  margin: 0;
-  font-size: 22px;
-  color: var(--color-accent-blue);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.war-hero__meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.war-hero__badge {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  padding: 3px 8px;
-  border-radius: 3px;
-  font-weight: 600;
-}
-
-.war-hero__badge--mutual {
-  background: rgba(251, 191, 36, 0.2);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.3);
-}
-
-.war-hero__badge--allies {
-  background: rgba(74, 158, 255, 0.2);
-  color: var(--color-accent-blue);
-  border: 1px solid rgba(74, 158, 255, 0.3);
-}
-
-.war-hero__date {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  font-style: italic;
 }
 
 /* Fight Card */
