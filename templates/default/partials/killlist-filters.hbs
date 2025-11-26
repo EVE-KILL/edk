@@ -1,5 +1,5 @@
 {{#if filterDefaults}}
-<form class="kl-filters" method="get" action="{{baseUrl}}" onchange="submitFilters(this)">
+<form id="filters" class="kl-filters" method="get" action="{{baseUrl}}" onchange="submitFilters(this)">
   <!-- Header with Title and Actions -->
   <div class="kl-filters__header">
     <div class="kl-filters__title">
@@ -98,14 +98,14 @@
 
     <div class="kl-filters__pagination">
       {{#if pagination.hasPrev}}
-      <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.prevPage}}&limit={{pagination.limit}}{{else}}?page={{pagination.prevPage}}&limit={{pagination.limit}}{{/if}}" class="kl-filters__page-btn">Previous</a>
+      <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.prevPage}}&limit={{pagination.limit}}{{else}}?page={{pagination.prevPage}}&limit={{pagination.limit}}{{/if}}#filters" class="kl-filters__page-btn">Previous</a>
       {{else}}
       <span class="kl-filters__page-btn disabled">Previous</span>
       {{/if}}
 
       <div class="kl-filters__pages">
         {{#if pagination.showFirst}}
-        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&limit={{pagination.limit}}{{else}}?limit={{pagination.limit}}{{/if}}" class="kl-filters__page">1</a>
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&limit={{pagination.limit}}{{else}}?limit={{pagination.limit}}{{/if}}#filters" class="kl-filters__page">1</a>
         <span class="kl-filters__ellipsis">...</span>
         {{/if}}
 
@@ -113,18 +113,18 @@
         {{#if (eq this ../pagination.currentPage)}}
         <span class="kl-filters__page active">{{this}}</span>
         {{else}}
-        <a href="{{baseUrl}}{{#if ../filterQueryString}}?{{../filterQueryString}}&page={{this}}&limit={{../pagination.limit}}{{else}}?page={{this}}&limit={{../pagination.limit}}{{/if}}" class="kl-filters__page">{{this}}</a>
+        <a href="{{baseUrl}}{{#if ../filterQueryString}}?{{../filterQueryString}}&page={{this}}&limit={{../pagination.limit}}{{else}}?page={{this}}&limit={{../pagination.limit}}{{/if}}#filters" class="kl-filters__page">{{this}}</a>
         {{/if}}
         {{/each}}
 
         {{#if pagination.showLast}}
         <span class="kl-filters__ellipsis">...</span>
-        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.totalPages}}&limit={{pagination.limit}}{{else}}?page={{pagination.totalPages}}&limit={{pagination.limit}}{{/if}}" class="kl-filters__page">{{pagination.totalPages}}</a>
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.totalPages}}&limit={{pagination.limit}}{{else}}?page={{pagination.totalPages}}&limit={{pagination.limit}}{{/if}}#filters" class="kl-filters__page">{{pagination.totalPages}}</a>
         {{/if}}
       </div>
 
       {{#if pagination.hasNext}}
-      <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.nextPage}}&limit={{pagination.limit}}{{else}}?page={{pagination.nextPage}}&limit={{pagination.limit}}{{/if}}" class="kl-filters__page-btn">Next</a>
+      <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.nextPage}}&limit={{pagination.limit}}{{else}}?page={{pagination.nextPage}}&limit={{pagination.limit}}{{/if}}#filters" class="kl-filters__page-btn">Next</a>
       {{else}}
       <span class="kl-filters__page-btn disabled">Next</span>
       {{/if}}
@@ -452,7 +452,18 @@ function submitFilters(form) {
       input.disabled = true;
     }
   });
-  form.submit();
+  
+  // Add scroll anchor to URL
+  const url = new URL(form.action, window.location.origin);
+  const formData = new FormData(form);
+  formData.forEach((value, key) => {
+    const input = form.querySelector(`[name="${key}"]`);
+    if (!input?.disabled && value) {
+      url.searchParams.set(key, value);
+    }
+  });
+  url.hash = 'filters';
+  window.location.href = url.toString();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -460,6 +471,16 @@ document.addEventListener('DOMContentLoaded', function() {
   if (limitSelect) {
     // Ensure correct limit is selected (fixes default selection issue)
     limitSelect.value = "{{pagination.limit}}";
+  }
+  
+  // Scroll to filters if hash is present
+  if (window.location.hash === '#filters') {
+    setTimeout(() => {
+      const filters = document.querySelector('.kl-filters');
+      if (filters) {
+        filters.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   }
 });
 </script>

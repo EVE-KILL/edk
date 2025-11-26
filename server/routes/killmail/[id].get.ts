@@ -369,6 +369,7 @@ export default defineEventHandler(async (event: H3Event) => {
           totalValue: itemValue,
           slotName: SLOT_NAMES[item.flag] || `Slot ${item.flag}`,
           flag: item.flag,
+          singleton: item.singleton || 0,
           isDestroyed: item.quantityDestroyed > 0,
         };
 
@@ -448,6 +449,7 @@ export default defineEventHandler(async (event: H3Event) => {
           totalValue: itemValue,
           slotName: SLOT_NAMES[flag] || `Slot ${flag}`,
           flag: flag,
+          singleton: item.singleton || 0,
           isDestroyed: item.quantityDestroyed > 0,
           ammo: ammoSlot,
         };

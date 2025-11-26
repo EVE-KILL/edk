@@ -363,6 +363,14 @@
   const refreshTimes = () => {};
 
   const killmailList = document.querySelector('.kb-kl-list');
+  const killmailListContainer = document.querySelector('[data-killmail-list]');
+  
+  // Check if WebSocket updates are disabled
+  if (killmailListContainer && killmailListContainer.dataset.wsUpdates === 'false') {
+    console.log('[Killlist] WebSocket updates disabled via data-ws-updates="false"');
+    return;
+  }
+  
   if (!killmailList) {
     console.log('[Killlist] No killmail list found, skipping WebSocket setup');
   } else {

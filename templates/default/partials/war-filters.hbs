@@ -1,0 +1,330 @@
+{{#if filterDefaults}}
+<form class="war-filters" method="get" action="/wars" onchange="submitFilters(this)">
+  <!-- Header with Title and Actions -->
+  <div class="war-filters__header">
+    <div class="war-filters__title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+      War Filters
+    </div>
+    <div class="war-filters__actions">
+      <a href="/wars" class="war-filters__reset">Reset</a>
+    </div>
+  </div>
+
+  <!-- Filter Controls -->
+  <div class="war-filters__content">
+    <select name="status" class="war-filters__select">
+      <option value="">Status: Any</option>
+      <option value="active" {{#if (eq filterDefaults.status "active")}}selected{{/if}}>Status: Active</option>
+      <option value="finished" {{#if (eq filterDefaults.status "finished")}}selected{{/if}}>Status: Finished</option>
+    </select>
+
+    <select name="warType" class="war-filters__select">
+      <option value="">Type: Any</option>
+      <option value="mutual" {{#if (eq filterDefaults.warType "mutual")}}selected{{/if}}>Type: Mutual</option>
+      <option value="declared" {{#if (eq filterDefaults.warType "declared")}}selected{{/if}}>Type: Declared</option>
+    </select>
+
+    <select name="hasAllies" class="war-filters__select">
+      <option value="">Allies: Any</option>
+      <option value="yes" {{#if (eq filterDefaults.hasAllies "yes")}}selected{{/if}}>Has Allies</option>
+      <option value="no" {{#if (eq filterDefaults.hasAllies "no")}}selected{{/if}}>No Allies</option>
+    </select>
+
+    <select name="minKills" class="war-filters__select">
+      <option value="">Min Kills: Any</option>
+      <option value="10" {{#if (eq filterDefaults.minKills 10)}}selected{{/if}}>10+ Kills</option>
+      <option value="50" {{#if (eq filterDefaults.minKills 50)}}selected{{/if}}>50+ Kills</option>
+      <option value="100" {{#if (eq filterDefaults.minKills 100)}}selected{{/if}}>100+ Kills</option>
+      <option value="500" {{#if (eq filterDefaults.minKills 500)}}selected{{/if}}>500+ Kills</option>
+      <option value="1000" {{#if (eq filterDefaults.minKills 1000)}}selected{{/if}}>1000+ Kills</option>
+    </select>
+
+    <select name="minValue" class="war-filters__select">
+      <option value="">Value: Any</option>
+      <option value="1000000000" {{#if (eq filterDefaults.minValue 1000000000)}}selected{{/if}}>Value: 1B+</option>
+      <option value="10000000000" {{#if (eq filterDefaults.minValue 10000000000)}}selected{{/if}}>Value: 10B+</option>
+      <option value="50000000000" {{#if (eq filterDefaults.minValue 50000000000)}}selected{{/if}}>Value: 50B+</option>
+      <option value="100000000000" {{#if (eq filterDefaults.minValue 100000000000)}}selected{{/if}}>Value: 100B+</option>
+      <option value="500000000000" {{#if (eq filterDefaults.minValue 500000000000)}}selected{{/if}}>Value: 500B+</option>
+      <option value="1000000000000" {{#if (eq filterDefaults.minValue 1000000000000)}}selected{{/if}}>Value: 1T+</option>
+    </select>
+
+    <label class="war-filters__toggle">
+      <input type="checkbox" name="factionWars" {{#if filterDefaults.factionWars}}checked{{/if}} value="1">
+      <span class="war-filters__toggle-text">Faction Wars Only</span>
+    </label>
+  </div>
+
+  <!-- Footer with Pagination -->
+  <div class="war-filters__footer">
+    <!-- Limit Selector -->
+    <div class="war-filters__limit">
+      <span class="war-filters__limit-label">Show</span>
+      <select name="limit" class="war-filters__limit-select">
+        <option value="10" {{#ifEquals pagination.perPage 10}}selected{{/ifEquals}}>10</option>
+        <option value="25" {{#ifEquals pagination.perPage 25}}selected{{/ifEquals}}>25</option>
+        <option value="50" {{#ifEquals pagination.perPage 50}}selected{{/ifEquals}}>50</option>
+        <option value="100" {{#ifEquals pagination.perPage 100}}selected{{/ifEquals}}>100</option>
+      </select>
+    </div>
+
+    <div class="war-filters__pagination">
+      {{#if pagination.prevPage}}
+      <a href="/wars?page={{pagination.prevPage}}&limit={{pagination.perPage}}" class="war-filters__page-btn">Previous</a>
+      {{else}}
+      <span class="war-filters__page-btn disabled">Previous</span>
+      {{/if}}
+
+      <div class="war-filters__page-info">
+        Page {{pagination.page}} of {{pagination.totalPages}}
+      </div>
+
+      {{#if pagination.nextPage}}
+      <a href="/wars?page={{pagination.nextPage}}&limit={{pagination.perPage}}" class="war-filters__page-btn">Next</a>
+      {{else}}
+      <span class="war-filters__page-btn disabled">Next</span>
+      {{/if}}
+    </div>
+  </div>
+</form>
+
+<style>
+.war-filters {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.war-filters__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border-dark);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.war-filters__title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.war-filters__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.war-filters__reset {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  padding: 4px 8px;
+}
+
+.war-filters__reset:hover {
+  color: var(--color-accent-blue);
+  text-decoration: underline;
+}
+
+.war-filters__content {
+  padding: 8px 10px;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+@media (max-width: 900px) {
+  .war-filters__content {
+    flex-wrap: wrap;
+  }
+}
+
+.war-filters__footer {
+  padding: 8px 12px;
+  border-top: 1px solid var(--color-border-dark);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.war-filters__limit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.war-filters__limit-select,
+.war-filters__select {
+  background-color: var(--color-bg-tertiary) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  border: 1px solid var(--color-border-dark);
+  color: var(--color-text-secondary) !important;
+  padding: 5px 6px;
+  padding-right: 22px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.war-filters__select option,
+.war-filters__limit-select option {
+  background-color: var(--color-bg-tertiary) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.war-filters__select {
+  min-width: 110px;
+  max-width: 130px;
+  flex-shrink: 1;
+}
+
+.war-filters__limit-select {
+  min-width: 70px;
+}
+
+.war-filters__limit-select:hover,
+.war-filters__select:hover {
+  border-color: var(--color-accent-blue);
+  background-color: rgba(74, 158, 255, 0.05) !important;
+  color: var(--color-text-white) !important;
+}
+
+.war-filters__limit-select:focus,
+.war-filters__select:focus {
+  outline: none;
+  border-color: var(--color-accent-blue);
+  background-color: var(--color-bg-tertiary) !important;
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.1);
+  color: var(--color-text-white) !important;
+}
+
+.war-filters__toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+  padding: 5px 8px;
+  border: 1px solid var(--color-border-dark);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.war-filters__toggle:hover {
+  border-color: var(--color-accent-blue);
+  background-color: rgba(74, 158, 255, 0.05);
+}
+
+.war-filters__toggle input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.war-filters__toggle-text {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.war-filters__pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.war-filters__page-info {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  padding: 0 10px;
+}
+
+.war-filters__page-btn {
+  padding: 6px 12px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.war-filters__page-btn:hover:not(.disabled) {
+  border-color: var(--color-accent-blue);
+  color: var(--color-accent-blue);
+  background: rgba(74, 158, 255, 0.05);
+}
+
+.war-filters__page-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .war-filters__content {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .war-filters__footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .war-filters__pagination {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+</style>
+
+<script>
+function submitFilters(form) {
+  const inputs = form.querySelectorAll('input, select');
+  inputs.forEach(input => {
+    // Disable empty inputs to keep URL clean
+    if (input.value === '' ||
+       (input.name === 'limit' && input.value === '25') ||
+       (input.name === 'page' && input.value === '1') ||
+       (input.type === 'checkbox' && !input.checked)) {
+      input.disabled = true;
+    }
+  });
+  form.submit();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const limitSelect = document.querySelector('.war-filters__limit-select');
+  if (limitSelect) {
+    limitSelect.value = "{{pagination.perPage}}";
+  }
+});
+</script>
+{{/if}}

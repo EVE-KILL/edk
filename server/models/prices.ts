@@ -217,7 +217,7 @@ export async function getLatestPricesForTypes(
     typeId: number;
     averagePrice: number | null;
   }>(
-    `SELECT DISTINCT ON ("typeId")
+    `SELECT DISTINCT ON ("typeId", "regionId")
       "typeId",
       "averagePrice"
     FROM prices
@@ -225,7 +225,7 @@ export async function getLatestPricesForTypes(
       AND "typeId" = ANY(:typeIds)
       AND "volume" > 0
       ${dateClause}
-    ORDER BY "typeId", "priceDate" DESC`,
+    ORDER BY "typeId", "regionId", "priceDate" DESC`,
     params
   );
 

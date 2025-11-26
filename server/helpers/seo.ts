@@ -216,3 +216,154 @@ export function generateWebsiteStructuredData(): string {
 
   return JSON.stringify(structuredData);
 }
+
+/**
+ * Generate JSON-LD structured data for a war
+ */
+export function generateWarStructuredData(params: {
+  warId: number;
+  aggressorName: string;
+  defenderName: string;
+  declared: string;
+  totalKills: number;
+  totalValue: number;
+  aggressorKills: number;
+  defenderKills: number;
+}): string {
+  const {
+    warId,
+    aggressorName,
+    defenderName,
+    declared,
+    totalKills,
+    totalValue,
+    aggressorKills,
+    defenderKills,
+  } = params;
+
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: `War #${warId}: ${aggressorName} vs ${defenderName}`,
+    description: `EVE Online war between ${aggressorName} and ${defenderName}. ${totalKills} total kills worth ${(totalValue / 1_000_000_000).toFixed(2)}B ISK. Aggressor: ${aggressorKills} kills, Defender: ${defenderKills} kills.`,
+    datePublished: declared,
+    author: {
+      '@type': 'Organization',
+      name: env.SITE_TITLE,
+      url: env.SITE_URL,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: env.SITE_TITLE,
+      url: env.SITE_URL,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${env.SITE_URL}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `${env.SITE_URL}/wars/${warId}`,
+    },
+    url: `${env.SITE_URL}/wars/${warId}`,
+    keywords: [
+      'EVE Online',
+      'war',
+      'warfare',
+      aggressorName,
+      defenderName,
+      'PvP',
+      'combat',
+      'killboard',
+    ].join(', '),
+  };
+
+  return JSON.stringify(structuredData);
+}
+
+/**
+ * Generate meta description for a war
+ */
+export function generateWarDescription(params: {
+  warId: number;
+  aggressorName: string;
+  defenderName: string;
+  totalKills: number;
+  totalValue: number;
+  aggressorKills: number;
+  defenderKills: number;
+  declared: string;
+}): string {
+  const {
+    warId,
+    aggressorName,
+    defenderName,
+    totalKills,
+    totalValue,
+    aggressorKills,
+    defenderKills,
+    declared,
+  } = params;
+
+  const valueBillion = (totalValue / 1_000_000_000).toFixed(2);
+  const date = new Date(declared);
+  const dateStr = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  return `War #${warId} between ${aggressorName} and ${defenderName}, declared ${dateStr}. ${totalKills} total kills worth ${valueBillion}B ISK destroyed. Aggressor: ${aggressorKills} kills, Defender: ${defenderKills} kills. View detailed war statistics, killmails, and participant information.`;
+}
+
+/**
+ * Generate meta keywords for a war
+ */
+export function generateWarKeywords(params: {
+  aggressorName: string;
+  defenderName: string;
+  aggressorAllyNames?: string[];
+  defenderAllyNames?: string[];
+}): string {
+  const {
+    aggressorName,
+    defenderName,
+    aggressorAllyNames = [],
+    defenderAllyNames = [],
+  } = params;
+
+  const keywords = [
+    'eve online',
+    'war',
+    'warfare',
+    'war declaration',
+    'killboard',
+    aggressorName,
+    defenderName,
+    'pvp',
+    'combat',
+    'corporation war',
+    'alliance war',
+  ];
+
+  aggressorAllyNames.slice(0, 3).forEach((name) => keywords.push(name));
+  defenderAllyNames.slice(0, 3).forEach((name) => keywords.push(name));
+
+  return keywords.join(', ');
+}
+
+/**
+ * Generate wars list page description
+ */
+export function generateWarsListDescription(params: {
+  totalWars: number;
+  activeWars?: number;
+}): string {
+  const { totalWars, activeWars } = params;
+
+  if (activeWars !== undefined) {
+    return `Browse ${totalWars.toLocaleString()} EVE Online wars with ${activeWars.toLocaleString()} currently active. Track ongoing conflicts, view war statistics, killmails, and analyze corporation and alliance warfare. Real-time war updates and detailed combat analytics.`;
+  }
+
+  return `Browse ${totalWars.toLocaleString()} EVE Online wars. Track ongoing conflicts, view war statistics, killmails, and analyze corporation and alliance warfare. Real-time war updates and detailed combat analytics.`;
+}

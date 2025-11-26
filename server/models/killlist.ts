@@ -101,6 +101,10 @@ export function buildKilllistConditions(
   const groupColumn =
     options.groupColumn ?? database.sql`k."victimShipGroupId"`;
 
+  if (filters.warId) {
+    conditions.push(database.sql`${k}."warId" = ${filters.warId}`);
+  }
+
   if (filters.spaceType) {
     const spaceTypeCondition = buildSpaceTypeCondition(
       filters.spaceType,
@@ -626,6 +630,7 @@ export async function countFollowedEntitiesActivity(
  * Filter options for killlist queries
  */
 export interface KilllistFilters {
+  warId?: number;
   spaceType?: string;
   isSolo?: boolean;
   isBig?: boolean;

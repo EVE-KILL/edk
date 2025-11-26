@@ -426,7 +426,7 @@ export class Database {
       }
 
       return rows;
-    } catch {
+    } catch (error) {
       const duration = Date.now() - start;
       dbQueryDurationHistogram.observe({ query: finalSql }, duration / 1000);
 

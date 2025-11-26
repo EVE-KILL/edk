@@ -3,7 +3,7 @@
     <div class="pagination__inner pagination__inner--right">
         <!-- Previous Button -->
         {{#if pagination.hasPrev}}
-        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.prevPage}}{{else}}?page={{pagination.prevPage}}{{/if}}" class="pagination__btn">
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.prevPage}}{{else}}?page={{pagination.prevPage}}{{/if}}{{#if scrollAnchor}}#{{scrollAnchor}}{{/if}}" class="pagination__btn">
             ← Previous
         </a>
         {{else}}
@@ -14,7 +14,7 @@
 
         <!-- First Page + Ellipsis -->
         {{#if pagination.showFirst}}
-        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}{{/if}}" class="pagination__page">
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}{{/if}}{{#if scrollAnchor}}#{{scrollAnchor}}{{/if}}" class="pagination__page">
             1
         </a>
         <span class="pagination__ellipsis">...</span>
@@ -27,7 +27,7 @@
             {{this}}
         </span>
         {{else}}
-        <a href="{{baseUrl}}{{#if ../filterQueryString}}?{{../filterQueryString}}&page={{this}}{{else}}?page={{this}}{{/if}}" class="pagination__page">
+        <a href="{{baseUrl}}{{#if ../filterQueryString}}?{{../filterQueryString}}&page={{this}}{{else}}?page={{this}}{{/if}}{{#if ../scrollAnchor}}#{{../scrollAnchor}}{{/if}}" class="pagination__page">
             {{this}}
         </a>
         {{/if}}
@@ -36,14 +36,14 @@
         <!-- Ellipsis + Last Page -->
         {{#if pagination.showLast}}
         <span class="pagination__ellipsis">...</span>
-        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.totalPages}}{{else}}?page={{pagination.totalPages}}{{/if}}" class="pagination__page">
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.totalPages}}{{else}}?page={{pagination.totalPages}}{{/if}}{{#if scrollAnchor}}#{{scrollAnchor}}{{/if}}" class="pagination__page">
             {{pagination.totalPages}}
         </a>
         {{/if}}
 
         <!-- Next Button -->
         {{#if pagination.hasNext}}
-        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.nextPage}}{{else}}?page={{pagination.nextPage}}{{/if}}" class="pagination__btn">
+        <a href="{{baseUrl}}{{#if filterQueryString}}?{{filterQueryString}}&page={{pagination.nextPage}}{{else}}?page={{pagination.nextPage}}{{/if}}{{#if scrollAnchor}}#{{scrollAnchor}}{{/if}}" class="pagination__btn">
             Next →
         </a>
         {{else}}

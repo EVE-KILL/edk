@@ -19,10 +19,23 @@
     type
   }}
 {{~else if (eq type 'item')~}}
-  {{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize
-    (fallback size 64)
-    type
-  }}
+  {{~!-- Handle Blueprint Originals (singleton=1) and Blueprint Copies (singleton=2) --}}
+  {{~#if (eq singleton 1)~}}
+    {{@root.config.imageServerUrl}}/types/{{id}}/bp?size={{roundImageSize
+      (fallback size 64)
+      type
+    }}
+  {{~else if (eq singleton 2)~}}
+    {{@root.config.imageServerUrl}}/types/{{id}}/bpc?size={{roundImageSize
+      (fallback size 64)
+      type
+    }}
+  {{~else~}}
+    {{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize
+      (fallback size 64)
+      type
+    }}
+  {{~/if~}}
 {{~else if (eq type 'type')~}}
   {{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize
     (fallback size 64)

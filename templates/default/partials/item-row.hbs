@@ -8,7 +8,7 @@
     data-status="{{#if this.isDestroyed}}destroyed{{else}}dropped{{/if}}">
     <td class="kb-table-cell" style="padding: 4px 8px;">
         <div style="display: flex; align-items: center; gap: 8px;">
-            {{> partials/eve-image type="item" id=this.typeId size=32 alt=this.name}}
+            {{> partials/eve-image type="item" id=this.typeId size=32 alt=this.name singleton=this.singleton}}
             <span class="item-name">{{this.name}}</span>
         </div>
     </td>

@@ -18,7 +18,7 @@ export enum QueueType {
  * Type-safe queue job data types
  */
 export interface QueueJobData {
-  [QueueType.KILLMAIL]: { killmailId: number; hash: string };
+  [QueueType.KILLMAIL]: { killmailId: number; hash: string; warId?: number };
   [QueueType.CHARACTER]: { id: number };
   [QueueType.CORPORATION]: { id: number };
   [QueueType.ALLIANCE]: { id: number };

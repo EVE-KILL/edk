@@ -14,6 +14,7 @@ export interface Killmail {
   killmailId: number;
   killmailTime: string;
   solarSystemId: number;
+  warId?: number | null;
   regionId?: number;
   constellationId?: number;
   victimAllianceId?: number;
@@ -43,6 +44,7 @@ export interface ESIKillmail {
   killmail_id: number;
   killmail_time: string;
   solar_system_id: number;
+  war_id?: number;
   victim: {
     alliance_id?: number;
     character_id?: number;
@@ -139,15 +141,6 @@ export async function calculateKillmailValues(
     PRICE_REGION_ID,
     priceDate
   );
-
-  // Exclude blueprints by setting their price to 0.01
-  const blueprintTypes = await database.find<{ typeId: number }>(
-    `SELECT "typeId" FROM types WHERE "typeId" = ANY(:typeIds) AND name LIKE '%Blueprint%'`,
-    { typeIds: Array.from(typeIds) }
-  );
-  for (const bp of blueprintTypes) {
-    priceMap.set(bp.typeId, 0.01);
-  }
 
   const shipValue = priceMap.get(victim.ship_type_id) ?? 0;
   const itemTotals = { dropped: 0, destroyed: 0 };
@@ -255,6 +248,7 @@ export async function getKillmail(
     killmail_id: killmail.killmailId,
     killmail_time: killmailTime,
     solar_system_id: killmail.solarSystemId,
+    war_id: killmail.warId ?? undefined,
     victim: {
       alliance_id: killmail.victimAllianceId,
       character_id: killmail.victimCharacterId,
@@ -305,7 +299,8 @@ function calculateKillmailHash(esiData: ESIKillmail): string {
  */
 export async function storeKillmail(
   esiData: ESIKillmail,
-  hash?: string
+  hash?: string,
+  warIdOverride?: number
 ): Promise<void> {
   try {
     const victim = esiData.victim;
@@ -388,6 +383,9 @@ export async function storeKillmail(
       npc: npc ?? false,
       solo: solo ?? false,
       awox: awox ?? false,
+
+      // War association
+      warId: esiData.war_id ?? warIdOverride ?? null,
     };
 
     // Insert killmail
@@ -428,6 +426,9 @@ export async function storeKillmail(
 
       await database.bulkInsert('items', itemRecords);
     }
+
+    // Update lastActive timestamps for involved entities
+    await updateEntityLastActive([{ esi: esiData, hash }]);
   } catch (error) {
     logger.error(`[Killmail] Error storing killmail:`, { error });
     throw error;
@@ -604,6 +605,7 @@ export async function storeKillmailsBulk(
         npc: npc ?? false,
         solo: solo ?? false,
         awox: awox ?? false,
+        warId: esi.war_id ?? null,
       };
     });
 
@@ -673,6 +675,9 @@ export async function storeKillmailsBulk(
       }
       logger.info(`[Killmail] Stored ${allItemRecords.length} items in bulk`);
     }
+
+    // Update lastActive timestamps for all involved entities
+    await updateEntityLastActive(newKillmails);
 
     return { inserted: killmailRecords.length, skippedExisting };
   } catch (error) {
@@ -897,6 +902,7 @@ export async function getKillmailItems(
       quantityDropped: item.quantityDropped,
       quantityDestroyed: item.quantityDestroyed,
       flag: item.flag,
+      singleton: item.singleton,
       price,
       categoryId: item.categoryId,
     };
@@ -1003,4 +1009,79 @@ export async function getApproximateKillmailCount(): Promise<number> {
      WHERE relname = 'killmails'`
   );
   return Number(result?.count || 0);
+}
+
+/**
+ * Update lastActive timestamps for all entities involved in killmails
+ * This helps track when entities were last seen in combat
+ */
+async function updateEntityLastActive(
+  killmails: Array<{ esi: ESIKillmail; hash?: string }>
+): Promise<void> {
+  if (killmails.length === 0) return;
+
+  // Collect all unique entity IDs
+  const characterIds = new Set<number>();
+  const corporationIds = new Set<number>();
+  const allianceIds = new Set<number>();
+
+  for (const { esi } of killmails) {
+    const killmailTime = new Date(esi.killmail_time);
+
+    // Victim entities
+    if (esi.victim.character_id) characterIds.add(esi.victim.character_id);
+    if (esi.victim.corporation_id)
+      corporationIds.add(esi.victim.corporation_id);
+    if (esi.victim.alliance_id) allianceIds.add(esi.victim.alliance_id);
+
+    // Attacker entities
+    for (const attacker of esi.attackers) {
+      if (attacker.character_id) characterIds.add(attacker.character_id);
+      if (attacker.corporation_id) corporationIds.add(attacker.corporation_id);
+      if (attacker.alliance_id) allianceIds.add(attacker.alliance_id);
+    }
+  }
+
+  // Get the latest killmail time to use as lastActive
+  const latestKillmailTime = new Date(
+    Math.max(
+      ...killmails.map(({ esi }) => new Date(esi.killmail_time).getTime())
+    )
+  );
+
+  // Update characters
+  if (characterIds.size > 0) {
+    await database.sql`
+      UPDATE characters
+      SET "lastActive" = ${latestKillmailTime}
+      WHERE "characterId" = ANY(${Array.from(characterIds)})
+        AND ("lastActive" IS NULL OR "lastActive" < ${latestKillmailTime})
+    `;
+  }
+
+  // Update corporations
+  if (corporationIds.size > 0) {
+    await database.sql`
+      UPDATE corporations
+      SET "lastActive" = ${latestKillmailTime}
+      WHERE "corporationId" = ANY(${Array.from(corporationIds)})
+        AND ("lastActive" IS NULL OR "lastActive" < ${latestKillmailTime})
+    `;
+  }
+
+  // Update alliances
+  if (allianceIds.size > 0) {
+    await database.sql`
+      UPDATE alliances
+      SET "lastActive" = ${latestKillmailTime}
+      WHERE "allianceId" = ANY(${Array.from(allianceIds)})
+        AND ("lastActive" IS NULL OR "lastActive" < ${latestKillmailTime})
+    `;
+  }
+
+  logger.debug('Updated lastActive for entities', {
+    characters: characterIds.size,
+    corporations: corporationIds.size,
+    alliances: allianceIds.size,
+  });
 }

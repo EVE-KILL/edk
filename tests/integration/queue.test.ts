@@ -35,7 +35,9 @@ mock.module('../../server/models/killmails', () => ({
 describe('Queue Processors', () => {
   describe('killmail', () => {
     test('should process a killmail job successfully', async () => {
-      const { processor: killmailProcessor } = await import('../../queue/killmail');
+      const { processor: killmailProcessor } = await import(
+        '../../queue/killmail'
+      );
 
       // Create a mock job
       const job = { data: { killmailId: 123456789, hash: 'test_hash' } } as Job;
@@ -47,26 +49,17 @@ describe('Queue Processors', () => {
       expect(mockFetchESI).toHaveBeenCalledWith(
         '/killmails/123456789/test_hash/'
       );
-      expect(mockFetchAndStoreCharacter).toHaveBeenCalledWith(
-        93260215
-      );
-      expect(mockFetchAndStoreCharacter).toHaveBeenCalledWith(
-        95465495
-      );
-      expect(mockFetchAndStoreCorporation).toHaveBeenCalledWith(
-        1000001
-      );
-      expect(mockFetchAndStoreCorporation).toHaveBeenCalledWith(
-        1000002
-      );
-      expect(mockFetchAndStoreAlliance).toHaveBeenCalledWith(
-        498125261
-      );
+      expect(mockFetchAndStoreCharacter).toHaveBeenCalledWith(93260215);
+      expect(mockFetchAndStoreCharacter).toHaveBeenCalledWith(95465495);
+      expect(mockFetchAndStoreCorporation).toHaveBeenCalledWith(1000001);
+      expect(mockFetchAndStoreCorporation).toHaveBeenCalledWith(1000002);
+      expect(mockFetchAndStoreAlliance).toHaveBeenCalledWith(498125261);
       expect(mockFetchPrices).toHaveBeenCalled();
       expect(mockStorePrices).not.toHaveBeenCalled();
       expect(mockStoreKillmail).toHaveBeenCalledWith(
         esiKillmail,
-        'test_hash'
+        'test_hash',
+        undefined
       );
     });
   });

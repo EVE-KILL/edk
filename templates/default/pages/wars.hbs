@@ -1,0 +1,442 @@
+<!-- Wars Page - EDK Style -->
+
+<!-- Page Header -->
+<div class="wars-hero">
+  <div class="wars-hero__container">
+    <div class="wars-hero__header">
+      <div class="wars-hero__header-left">
+        <h1 class="wars-hero__title">Wars</h1>
+        <div class="wars-hero__subtitle">
+          Live EVE wars with tracked killmails, value destroyed, and faction hotspots.
+        </div>
+      </div>
+      <div class="wars-hero__stats">
+        <div class="wars-hero__stat">
+          <div class="wars-hero__stat-label">Total Wars</div>
+          <div class="wars-hero__stat-value">{{pagination.total}}</div>
+        </div>
+        <div class="wars-hero__stat">
+          <div class="wars-hero__stat-label">Page</div>
+          <div class="wars-hero__stat-value">{{pagination.page}} / {{pagination.totalPages}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- War Filters -->
+{{> partials/war-filters pagination=pagination filterDefaults=filterDefaults}}
+
+<!-- Featured Faction Conflicts -->
+{{#if highlightWars.length}}
+<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 20px; overflow: hidden;">
+  <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+    <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+      Featured Faction Conflicts
+    </div>
+  </div>
+  <div style="padding: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
+    {{#each highlightWars}}
+    <a href="/wars/{{warId}}" style="display: block; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 12px; text-decoration: none; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--color-accent-blue-light)'; this.style.background='rgba(74, 158, 255, 0.1)'" onmouseout="this.style.borderColor='var(--color-border-dark)'; this.style.background='rgba(0, 0, 0, 0.2)'">
+      <div style="font-size: 10px; text-transform: uppercase; color: var(--color-text-secondary); letter-spacing: 0.5px; margin-bottom: 6px;">War #{{warId}}</div>
+      <div style="font-size: 12px; color: var(--color-text-white); font-weight: 600; line-height: 1.4;">
+        {{#if aggressorAllianceName}}{{aggressorAllianceName}}{{else if aggressorCorporationName}}{{aggressorCorporationName}}{{else}}Aggressor{{/if}}
+        <span style="color: var(--color-text-secondary); font-weight: 400;"> vs </span>
+        {{#if defenderAllianceName}}{{defenderAllianceName}}{{else if defenderCorporationName}}{{defenderCorporationName}}{{else}}Defender{{/if}}
+      </div>
+    </a>
+    {{/each}}
+  </div>
+</div>
+{{/if}}
+
+<!-- Wars List -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px;">
+  {{#each wars}}
+  <div class="war-card" onclick="window.location.href='/wars/{{warId}}';" style="cursor: pointer;">
+    <div class="war-card__header">
+      <div class="war-card__header-content">
+        <div class="war-card__title">War #{{warId}}</div>
+        <div class="war-card__badges">
+          {{#if mutual}}<span class="war-card__badge war-card__badge--mutual">Mutual</span>{{/if}}
+          {{#if openForAllies}}<span class="war-card__badge war-card__badge--allies">Allies</span>{{/if}}
+        </div>
+      </div>
+      {{#if declared}}
+      <div class="war-card__date">{{declared}}</div>
+      {{/if}}
+    </div>
+    
+    <!-- Fight Card Style -->
+    <div class="war-card__fight">
+      <!-- Aggressor Side -->
+      <div class="war-card__fighter war-card__fighter--left">
+        <div class="war-card__fighter-name">
+          {{#if aggressorAllianceName}}{{aggressorAllianceName}}{{else if aggressorCorporationName}}{{aggressorCorporationName}}{{else}}Unknown{{/if}}
+        </div>
+        <div class="war-card__fighter-label">Aggressor</div>
+        <div class="war-card__fighter-stats">
+          <div class="war-card__fighter-stat">
+            <div class="war-card__fighter-stat-value">{{aggressorShipsKilled}}</div>
+            <div class="war-card__fighter-stat-label">Ships</div>
+          </div>
+          <div class="war-card__fighter-stat">
+            <div class="war-card__fighter-stat-value color-green">{{abbreviateISK aggressorIskDestroyed}}</div>
+            <div class="war-card__fighter-stat-label">ISK</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- VS Badge -->
+      <div class="war-card__vs">
+        <div class="war-card__vs-text">VS</div>
+      </div>
+      
+      <!-- Defender Side -->
+      <div class="war-card__fighter war-card__fighter--right">
+        <div class="war-card__fighter-name">
+          {{#if defenderAllianceName}}{{defenderAllianceName}}{{else if defenderCorporationName}}{{defenderCorporationName}}{{else}}Unknown{{/if}}
+        </div>
+        <div class="war-card__fighter-label">Defender</div>
+        <div class="war-card__fighter-stats">
+          <div class="war-card__fighter-stat">
+            <div class="war-card__fighter-stat-value">{{defenderShipsKilled}}</div>
+            <div class="war-card__fighter-stat-label">Ships</div>
+          </div>
+          <div class="war-card__fighter-stat">
+            <div class="war-card__fighter-stat-value color-green">{{abbreviateISK defenderIskDestroyed}}</div>
+            <div class="war-card__fighter-stat-label">ISK</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    {{#if lastKill}}
+    <div class="war-card__footer">
+      <div class="war-card__last-kill">Last kill {{lastKill}}</div>
+    </div>
+    {{/if}}
+  </div>
+  {{/each}}
+</div>
+
+<style>
+.wars-hero {
+  margin-bottom: var(--spacing-lg);
+  width: 100%;
+}
+
+.wars-hero__container {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.wars-hero__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+.wars-hero__header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.wars-hero__title {
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  color: var(--color-accent-blue-bright);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+}
+
+.wars-hero__subtitle {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.wars-hero__stats {
+  display: flex;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.wars-hero__stat {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  text-align: center;
+  min-width: 120px;
+}
+
+.wars-hero__stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.wars-hero__stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-white);
+}
+
+.war-card {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.war-card:hover {
+  border-color: var(--color-accent-blue-light);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.war-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border-dark);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.war-card__header-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.war-card__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-accent-blue-bright);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.war-card__badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.war-card__badge {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.war-card__badge--mutual {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.war-card__badge--allies {
+  background: rgba(74, 158, 255, 0.2);
+  color: #4a9eff;
+  border: 1px solid rgba(74, 158, 255, 0.3);
+}
+
+.war-card__date {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  font-style: italic;
+}
+
+/* Fight Card Style */
+.war-card__fight {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 20px 12px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4));
+  position: relative;
+  gap: 8px;
+  min-height: 140px;
+}
+
+.war-card__fighter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 48%;
+  min-height: 120px;
+}
+
+.war-card__fighter--left {
+  align-items: flex-end;
+  text-align: right;
+  justify-content: flex-start;
+}
+
+.war-card__fighter--right {
+  align-items: flex-start;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.war-card__fighter-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-white);
+  line-height: 1.3;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  word-wrap: break-word;
+  word-break: break-word;
+  font-family: 'Orbitron', 'Rajdhani', 'Russo One', 'Impact', sans-serif;
+  letter-spacing: 0.5px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.war-card__fighter-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+.war-card__fighter-stats {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.war-card__fighter-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.war-card__fighter-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-white);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.war-card__fighter-stat-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+/* VS Badge */
+.war-card__vs {
+  position: relative;
+  flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  align-self: center;
+  margin: 0 8px;
+}
+
+.war-card__vs::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.2), rgba(139, 92, 246, 0.2));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(74, 158, 255, 0.2), inset 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.war-card__vs-text {
+  position: relative;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  letter-spacing: 1px;
+  font-family: 'Rajdhani', 'Impact', sans-serif;
+}
+
+.war-card__footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--color-border-dark);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.war-card__last-kill {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.color-green {
+  color: #4ade80;
+}
+
+.color-gold {
+  color: #fbbf24;
+}
+
+@media (max-width: 768px) {
+  .wars-hero__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .wars-hero__stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .war-card__fight {
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 12px;
+  }
+  
+  .war-card__fighter {
+    max-width: 100%;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  
+  .war-card__vs {
+    transform: rotate(90deg);
+  }
+  
+  .war-card__fighter-name {
+    font-size: 14px;
+  }
+  
+  .war-card__fighter-stats {
+    justify-content: center;
+  }
+}
+</style>

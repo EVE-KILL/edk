@@ -15,6 +15,7 @@ export const name = 'killmail';
 interface KillmailJobData {
   killmailId: number;
   hash: string;
+  warId?: number;
 }
 
 /**
@@ -32,7 +33,7 @@ interface KillmailJobData {
  * view to be fully populated with names and values.
  */
 export async function processor(job: Job<KillmailJobData>): Promise<void> {
-  const { killmailId, hash } = job.data;
+  const { killmailId, hash, warId } = job.data;
 
   logger.info(`[killmail] Processing killmail ${killmailId}...`);
 
@@ -49,6 +50,9 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     }
 
     const killmail = response.data;
+    if (warId && !killmail.war_id) {
+      killmail.war_id = warId;
+    }
 
     // Step 2: Extract all entity IDs and type IDs
     const victim = killmail.victim;
@@ -144,13 +148,15 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     // At this point, all entity and price data should be in the database
     // The materialized view will populate with complete data
     logger.info(`[killmail] ${killmailId}: Storing killmail...`);
-    await storeKillmail(killmail, hash);
+    await storeKillmail(killmail, hash, warId);
 
     // Step 6: Publish to Redis for WebSocket broadcast
     logger.info(`[killmail] ${killmailId}: Publishing to WebSocket...`);
     await publishKillmailToWebSocket(killmailId);
 
-    logger.success(`✅ [killmail] Successfully processed killmail ${killmailId}`);
+    logger.success(
+      `✅ [killmail] Successfully processed killmail ${killmailId}`
+    );
   } catch (error) {
     logger.error(`❌ [killmail] Error processing killmail ${killmailId}:`, {
       error,
@@ -224,9 +230,7 @@ async function publishKillmailToWebSocket(killmailId: number): Promise<void> {
     `;
 
     if (!killmail) {
-      logger.warn(
-        `⚠️  [killmail] ${killmailId}: Not found in killmails table`
-      );
+      logger.warn(`⚠️  [killmail] ${killmailId}: Not found in killmails table`);
       return;
     }
 
