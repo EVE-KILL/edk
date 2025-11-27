@@ -61,7 +61,6 @@ export default defineEventHandler(async (event: H3Event) => {
       topShips,
       topSystems,
       topRegions,
-      topShips,
     ] = await track('frontpage:parallel_queries', 'application', async () => {
       return await Promise.all([
         getFilteredKillsWithNames(userFilters, page, perPage),
@@ -72,7 +71,6 @@ export default defineEventHandler(async (event: H3Event) => {
         getTopByKills('week', 'ship', 10),
         getTopByKills('week', 'system', 10),
         getTopByKills('week', 'region', 10),
-        getTopByKills('week', 'ship', 10),
       ]);
     });
 
