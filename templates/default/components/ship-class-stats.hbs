@@ -6,7 +6,6 @@
   <div class="ship-class-stats__list">
     {{#each shipClassStats}}
     <div class="ship-class-stats__item">
-      {{> partials/eve-image type="group" id=groupId size=32 alt=groupName class="ship-class-stats__icon"}}
       <div class="ship-class-stats__name">{{groupName}}</div>
       <div class="ship-class-stats__count">{{count}}</div>
     </div>
@@ -49,10 +48,6 @@
   padding: 8px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   transition: background 0.2s ease;
-}
-
-.ship-class-stats__icon {
-  flex-shrink: 0;
 }
 
 .ship-class-stats__item:hover {

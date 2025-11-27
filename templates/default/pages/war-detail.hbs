@@ -120,13 +120,15 @@
   <div class="war-allies__note">+ Allied Forces fighting alongside defenders</div>
   <div class="war-allies__grid">
     {{#each allies}}
-    <div class="war-allies__item">
+    <a href="{{#if allianceId}}/alliance/{{allianceId}}{{else if corporationId}}/corporation/{{corporationId}}{{/if}}" class="war-allies__item">
       {{#if allianceId}}
-        <a href="/alliance/{{allianceId}}">{{#if allianceName}}{{allianceName}}{{else}}Alliance #{{allianceId}}{{/if}}</a>
+        {{> partials/eve-image type="alliance" id=allianceId size=24 class="war-allies__item-img"}}
+        <span>{{#if allianceName}}{{allianceName}}{{else}}Alliance #{{allianceId}}{{/if}}</span>
       {{else if corporationId}}
-        <a href="/corporation/{{corporationId}}">{{#if corporationName}}{{corporationName}}{{else}}Corporation #{{corporationId}}{{/if}}</a>
+        {{> partials/eve-image type="corporation" id=corporationId size=24 class="war-allies__item-img"}}
+        <span>{{#if corporationName}}{{corporationName}}{{else}}Corporation #{{corporationId}}{{/if}}</span>
       {{/if}}
-    </div>
+    </a>
     {{/each}}
   </div>
 </div>
