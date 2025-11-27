@@ -201,9 +201,9 @@ export default defineEventHandler(async (event: H3Event) => {
         return {
           ships: (topShips as any[]).map((s: any) => ({
             ...s,
-            imageType: 'type',
+            imageType: 'ship',
             imageId: s.id,
-            link: `/type/${s.id}`,
+            link: `/item/${s.id}`,
           })),
           characters: [],
           systems: (topSystems as any[]).map((s: any) => ({

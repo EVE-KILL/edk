@@ -54,13 +54,7 @@ export default defineEventHandler(async (event: H3Event) => {
         'corporation',
         10
       ),
-      getTopVictimsByAttacker(
-        characterId,
-        'character',
-        'week',
-        'alliance',
-        10
-      ),
+      getTopVictimsByAttacker(characterId, 'character', 'week', 'alliance', 10),
       getTopVictimsByAttacker(characterId, 'character', 'week', 'ship', 10),
       getTopVictimsByAttacker(characterId, 'character', 'week', 'system', 10),
       getTopVictimsByAttacker(characterId, 'character', 'week', 'region', 10),
@@ -151,9 +145,9 @@ export default defineEventHandler(async (event: H3Event) => {
     const top10 = {
       ships: (topShips as any[]).map((s: any) => ({
         ...s,
-        imageType: 'type',
+        imageType: 'ship',
         imageId: s.id,
-        link: `/type/${s.id}`,
+        link: `/item/${s.id}`,
       })),
       characters: [],
       systems: (topSystems as any[]).map((s: any) => ({
