@@ -238,6 +238,21 @@ export default defineEventHandler(async (event: H3Event) => {
       }
     );
 
+    // Get EVE time
+    const eveTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // Page header light data
+    const breadcrumbParts = [
+      { label: 'Home', url: '/' },
+      { label: allianceData.name, url: `/alliance/${allianceId}` },
+    ];
+
+    const pageHeaderLight = {
+      title: allianceData.name,
+      breadcrumbs: breadcrumbParts,
+      info: [{ icon: '🕐', text: `EVE Time: ${eveTime}` }],
+    };
+
     // Render the template
     return render(
       'pages/alliance-kills',
@@ -247,6 +262,7 @@ export default defineEventHandler(async (event: H3Event) => {
         keywords: 'eve online, alliance, killmail, kills, pvp',
       },
       {
+        pageHeaderLight,
         ...entityData,
         top10Stats: top10,
         characterTitle: 'Most Hunted Characters',

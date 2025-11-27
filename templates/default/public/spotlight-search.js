@@ -315,9 +315,13 @@
   }
 
   function navigateToResult(result) {
+<<<<<<< HEAD
+    addRecentSearch(searchInput.value);
+=======
     if (window.SearchHistory) {
       window.SearchHistory.add(searchInput.value);
     }
+>>>>>>> origin/main
     window.location.href = getResultUrl(result);
   }
 

@@ -4,8 +4,8 @@ This guide provides a comprehensive overview of how to deploy the EVE-KILL appli
 
 ## Prerequisites
 
--   A server with Docker and Docker Compose installed.
--   A configured `.env` file with your production settings.
+- A server with Docker and Docker Compose installed.
+- A configured `.env` file with your production settings.
 
 ## Docker-Based Deployment (Recommended)
 

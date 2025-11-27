@@ -27,10 +27,10 @@ Cron jobs are used for running scheduled tasks. The application has a cron job r
     }
     ```
 
-    -   **`name`**: A human-readable name for the job.
-    -   **`schedule`**: The cron schedule in standard cron format. You can use a tool like [crontab.guru](https://crontab.guru/) to help you create the schedule string.
-    -   **`description`**: A brief description of what the job does.
-    -   **`action`**: An `async` function that contains the logic to be executed when the job runs.
+    - **`name`**: A human-readable name for the job.
+    - **`schedule`**: The cron schedule in standard cron format. You can use a tool like [crontab.guru](https://crontab.guru/) to help you create the schedule string.
+    - **`description`**: A brief description of what the job does.
+    - **`action`**: An `async` function that contains the logic to be executed when the job runs.
 
 3.  **The cron job is now ready.** The cron job runner (`bun cronjobs`) will automatically discover this new job and schedule it to run according to the defined `schedule`.
 
@@ -51,7 +51,7 @@ The cron schedule is a string with five fields, representing:
 
 ### Common Examples
 
--   **Run every minute:** `* * * * *`
--   **Run every hour at the beginning of the hour:** `0 * * * *`
--   **Run once a day at midnight:** `0 0 * * *`
--   **Run every Tuesday at 3:30 PM:** `30 15 * * 2`
+- **Run every minute:** `* * * * *`
+- **Run every hour at the beginning of the hour:** `0 * * * *`
+- **Run once a day at midnight:** `0 0 * * *`
+- **Run every Tuesday at 3:30 PM:** `30 15 * * 2`

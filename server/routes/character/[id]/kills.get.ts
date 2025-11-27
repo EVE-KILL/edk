@@ -250,6 +250,50 @@ export default defineEventHandler(async (event: H3Event) => {
       }
     );
 
+    // Get EVE time
+    const eveTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // Page header light data
+    const breadcrumbParts = [{ label: 'Home', url: '/' }];
+    if (characterData.allianceName) {
+      breadcrumbParts.push({
+        label: characterData.allianceName,
+        url: `/alliance/${characterData.allianceId}`,
+      });
+    }
+    if (characterData.corporationName) {
+      breadcrumbParts.push({
+        label: characterData.corporationName,
+        url: `/corporation/${characterData.corporationId}`,
+      });
+    }
+    breadcrumbParts.push({
+      label: characterData.name,
+      url: `/character/${characterId}`,
+    });
+
+    const pageHeaderLight = {
+      title: characterData.name,
+      breadcrumbs: breadcrumbParts,
+      info: [
+        { icon: '🕐', text: `EVE Time: ${eveTime}` },
+        ...(characterData.corporationId
+          ? [
+              {
+                logo: { type: 'corporation', id: characterData.corporationId },
+              },
+            ]
+          : []),
+        ...(characterData.allianceId
+          ? [
+              {
+                logo: { type: 'alliance', id: characterData.allianceId },
+              },
+            ]
+          : []),
+      ],
+    };
+
     // Render the template
     return render(
       'pages/character-kills',
@@ -259,6 +303,7 @@ export default defineEventHandler(async (event: H3Event) => {
         keywords: 'eve online, character, killmail, kills, pvp',
       },
       {
+        pageHeaderLight,
         ...entityData,
         top10Stats: top10,
         corporationTitle: 'Most Hunted Corps',

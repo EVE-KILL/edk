@@ -4,40 +4,13 @@
 <!-- Entity Navigation Tabs -->
 {{> partials/entity-navbar}}
 
-<!-- Ship Group Statistics (Kills) -->
-{{#if data.shipGroupStats}}
-<div style="margin-bottom: 20px;">
-    <div class="block-header2">Ship Groups (Last 30 Days - Kills)</div>
-    {{> components/ship-group-stats columns=data.shipGroupColumns}}
-</div>
-{{/if}}
-
-<!-- Most Valuable Kills -->
-{{#if data.mostValuableKills}}
-{{#if data.timeRange}}
-{{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange=data.timeRange}}
-{{else}}
-{{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange="Last 7 Days"}}
-{{/if}}
-{{/if}}
-
-<!-- Recent Activity with Top 10 Sidebar -->
-<div style="display: grid; grid-template-columns: minmax(200px, 225px) 1fr; gap: 12px; width: 100%; box-sizing: border-box; margin-bottom: 20px;">
-  <!-- Top 10 Sidebar -->
-  <aside style="min-width: 0; overflow: hidden;">
-    {{#if data.top10Stats}}
-      {{> components/top-10-stats stats=data.top10Stats corporationTitle=data.corporationTitle allianceTitle=data.allianceTitle shipTitle=data.shipTitle systemTitle=data.systemTitle regionTitle=data.regionTitle timeRange=data.timeRange}}
-    {{/if}}
-  </aside>
-
-  <!-- Kills List -->
-  <section style="min-width: 0; overflow: hidden;">
-      <!-- Killlist Filters -->
-    {{#if data.filterDefaults}}
-    <div style="margin-bottom: 20px;">
-        {{> partials/killlist-filters filterDefaults=data.filterDefaults baseUrl=data.baseUrl pagination=data.pagination}}
-    </div>
-    {{/if}}
-    {{> partials/killmail-list killmails=data.killmails wsFilter=data.wsFilter}}
-  </section>
-</div>
+<!-- Kills List -->
+<section style="margin-bottom: 20px;">
+  <!-- Killlist Filters -->
+  {{#if filterDefaults}}
+  <div style="margin-bottom: 20px;">
+    {{> partials/killlist-filters filterDefaults=filterDefaults baseUrl=baseUrl pagination=pagination}}
+  </div>
+  {{/if}}
+  {{> partials/killmail-list killmails=killmails wsFilter=wsFilter}}
+</section>

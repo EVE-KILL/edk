@@ -172,7 +172,7 @@ export default defineEventHandler(async (event: H3Event) => {
           const normalized = normalizeKillRow(km);
           return {
             ...normalized,
-            isLoss: km.victimAllianceId === allianceId,
+            isLoss: Number(km.victimAllianceId) === allianceId,
             killmailTimeRelative: timeAgo(
               km.killmailTime ?? normalized.killmailTime
             ),
@@ -257,6 +257,21 @@ export default defineEventHandler(async (event: H3Event) => {
       }
     );
 
+    // Get EVE time
+    const eveTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // Page header light data
+    const breadcrumbParts = [
+      { label: 'Home', url: '/' },
+      { label: allianceData.name, url: `/alliance/${allianceId}` },
+    ];
+
+    const pageHeaderLight = {
+      title: allianceData.name,
+      breadcrumbs: breadcrumbParts,
+      info: [{ icon: '🕐', text: `EVE Time: ${eveTime}` }],
+    };
+
     // Render the template
     return render(
       'pages/alliance-losses',
@@ -266,6 +281,7 @@ export default defineEventHandler(async (event: H3Event) => {
         keywords: 'eve online, alliance, killmail, losses, pvp',
       },
       {
+        pageHeaderLight,
         ...entityData,
         top10Stats: top10,
         characterTitle: 'Most Hunted Characters',
