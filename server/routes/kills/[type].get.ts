@@ -20,6 +20,7 @@ import {
   getTopCharactersFiltered,
   getTopCorporationsFiltered,
   getTopAlliancesFiltered,
+  getTopShipsFiltered,
 } from '../../models/topBoxes';
 import { track } from '../../utils/performance-decorators';
 
@@ -408,6 +409,7 @@ export default defineEventHandler(async (event: H3Event) => {
       topCharacters,
       topCorporations,
       topAlliances,
+      topShips,
     ] = await track(`kills_${killType}:top_boxes`, 'application', async () => {
       return await Promise.all([
         getTopSystemsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
@@ -415,6 +417,7 @@ export default defineEventHandler(async (event: H3Event) => {
         getTopCharactersFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
         getTopCorporationsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
         getTopAlliancesFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
+        getTopShipsFiltered(filters, 10, TOP_BOX_LOOKBACK_DAYS),
       ]);
     });
 
@@ -462,6 +465,7 @@ export default defineEventHandler(async (event: H3Event) => {
       topAlliancesFormatted,
       topSystemsFormatted,
       topRegionsFormatted,
+      topShipsFormatted,
     } = await track(
       `kills_${killType}:format_top_boxes`,
       'application',
@@ -501,6 +505,13 @@ export default defineEventHandler(async (event: H3Event) => {
             imageType: 'region',
             imageId: r.id,
             link: `/region/${r.id}`,
+          })),
+          topShipsFormatted: topShips.map((s) => ({
+            name: s.name,
+            kills: s.kills,
+            imageType: 'ship',
+            imageId: s.id,
+            link: `/item/${s.id}`,
           })),
         };
       }
@@ -558,6 +569,7 @@ export default defineEventHandler(async (event: H3Event) => {
         topAlliancesFormatted,
         topSystemsFormatted,
         topRegionsFormatted,
+        topShipsFormatted,
         mostValuableKills,
         filterQueryString,
         filterDefaults,
@@ -568,6 +580,14 @@ export default defineEventHandler(async (event: H3Event) => {
         },
         topTimeRangeLabel: `Last ${TOP_BOX_LOOKBACK_DAYS} Days`,
         mostValuableTimeRange: `Last ${MOST_VALUABLE_LOOKBACK_DAYS} Days`,
+        topBoxesAvailable:
+          topCharacters.length +
+            topCorporations.length +
+            topAlliances.length +
+            topSystems.length +
+            topRegions.length +
+            topShips.length >
+          0,
       },
       event
     );
