@@ -143,5 +143,19 @@ CREATE INDEX IF NOT EXISTS "idx_items_flag" ON items ("flag");
 CREATE INDEX IF NOT EXISTS "idx_items_time" ON items ("killmailTime");
 CREATE INDEX IF NOT EXISTS "idx_items_killmail_type" ON items ("killmailId", "itemTypeId") WHERE "itemTypeId" IS NOT NULL;
 
+-- Add faction IDs for faction warfare tracking
+ALTER TABLE killmails ADD COLUMN IF NOT EXISTS "victimFactionId" INTEGER;
+ALTER TABLE killmails ADD COLUMN IF NOT EXISTS "topAttackerFactionId" INTEGER;
+ALTER TABLE killmails ADD COLUMN IF NOT EXISTS "moonId" INTEGER;
+
+-- Add faction ID to attackers table
+ALTER TABLE attackers ADD COLUMN IF NOT EXISTS "factionId" INTEGER;
+
+-- Create indexes for faction filtering
+CREATE INDEX IF NOT EXISTS idx_killmails_victim_faction_time ON killmails ("victimFactionId", "killmailTime" DESC);
+CREATE INDEX IF NOT EXISTS idx_killmails_top_attacker_faction ON killmails ("topAttackerFactionId");
+CREATE INDEX IF NOT EXISTS idx_killmails_moon ON killmails ("moonId");
+CREATE INDEX IF NOT EXISTS idx_attackers_faction ON attackers ("factionId");
+
 -- Restore normal message level
 SET client_min_messages TO NOTICE;

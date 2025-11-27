@@ -644,6 +644,12 @@ export default defineEventHandler(async (event: H3Event) => {
                 ticker: killmail.victimAllianceTicker,
               }
             : null,
+          faction: killmail.victimFactionId
+            ? {
+                id: killmail.victimFactionId,
+                name: killmail.victimFactionName,
+              }
+            : null,
           ship: {
             typeId: killmail.victimShipTypeId,
             name: killmail.victimShipName,
@@ -677,6 +683,12 @@ export default defineEventHandler(async (event: H3Event) => {
                 id: a.allianceId,
                 name: a.allianceName,
                 ticker: a.allianceTicker,
+              }
+            : null,
+          faction: a.factionId
+            ? {
+                id: a.factionId,
+                name: a.factionName,
               }
             : null,
           ship: a.shipTypeId

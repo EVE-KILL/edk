@@ -105,6 +105,13 @@ export function buildKilllistConditions(
     conditions.push(database.sql`${k}."warId" = ${filters.warId}`);
   }
 
+  if (filters.victimFactionIds && filters.victimFactionIds.length > 0) {
+    conditions.push(
+      database.sql`${k}."victimFactionId" = ANY(${filters.victimFactionIds})`
+    );
+    conditions.push(database.sql`${k}."warId" IS NULL`);
+  }
+
   if (filters.spaceType) {
     const spaceTypeCondition = buildSpaceTypeCondition(
       filters.spaceType,
@@ -631,6 +638,7 @@ export async function countFollowedEntitiesActivity(
  */
 export interface KilllistFilters {
   warId?: number;
+  victimFactionIds?: number[]; // For faction warfare kills (legendary wars)
   spaceType?: string;
   isSolo?: boolean;
   isBig?: boolean;

@@ -49,10 +49,12 @@ export interface ESIKillmail {
   killmail_time: string;
   solar_system_id: number;
   war_id?: number;
+  moon_id?: number;
   victim: {
     alliance_id?: number;
     character_id?: number;
     corporation_id: number;
+    faction_id?: number;
     damage_taken: number;
     ship_type_id: number;
     position?: {
@@ -66,6 +68,7 @@ export interface ESIKillmail {
     alliance_id?: number;
     character_id?: number;
     corporation_id?: number;
+    faction_id?: number;
     damage_done: number;
     final_blow: boolean;
     security_status: number;
@@ -397,6 +400,7 @@ export async function storeKillmail(
       killmailId: esiData.killmail_id ?? 0,
       killmailTime: killmailIso,
       solarSystemId: esiData.solar_system_id ?? 0,
+      moonId: esiData.moon_id ?? null,
       regionId: systemInfo?.regionId ?? null,
       constellationId: systemInfo?.constellationId ?? null,
       securityStatus: systemInfo?.securityStatus ?? null,
@@ -405,6 +409,7 @@ export async function storeKillmail(
       victimAllianceId: victim?.alliance_id ?? null,
       victimCharacterId: victim?.character_id ?? null,
       victimCorporationId: victim?.corporation_id ?? 0,
+      victimFactionId: victim?.faction_id ?? null,
       victimDamageTaken: victim?.damage_taken ?? 0,
       victimShipTypeId: victim?.ship_type_id ?? 0,
       victimShipGroupId: victimShipType?.groupId ?? null,
@@ -421,6 +426,7 @@ export async function storeKillmail(
       topAttackerCharacterId: topAttacker?.character_id ?? null,
       topAttackerCorporationId: topAttacker?.corporation_id ?? null,
       topAttackerAllianceId: topAttacker?.alliance_id ?? null,
+      topAttackerFactionId: topAttacker?.faction_id ?? null,
       topAttackerShipTypeId: topAttacker?.ship_type_id ?? null,
       topAttackerShipGroupId: topAttacker?.ship_type_id
         ? ((
@@ -457,6 +463,7 @@ export async function storeKillmail(
       allianceId: attacker.alliance_id ?? null,
       corporationId: attacker.corporation_id ?? null,
       characterId: attacker.character_id ?? null,
+      factionId: attacker.faction_id ?? null,
       damageDone: attacker.damage_done ?? 0,
       finalBlow: attacker.final_blow ? true : false,
       securityStatus: attacker.security_status ?? null,
@@ -637,12 +644,14 @@ export async function storeKillmailsBulk(
         killmailId: esi.killmail_id ?? 0,
         killmailTime: killmailIso,
         solarSystemId: esi.solar_system_id ?? 0,
+        moonId: esi.moon_id ?? null,
         regionId: systemData?.regionId ?? null,
         constellationId: systemData?.constellationId ?? null,
         securityStatus: systemData?.securityStatus ?? null,
         victimAllianceId: victim?.alliance_id ?? null,
         victimCharacterId: victim?.character_id ?? null,
         victimCorporationId: victim?.corporation_id ?? 0,
+        victimFactionId: victim?.faction_id ?? null,
         victimDamageTaken: victim?.damage_taken ?? 0,
         victimShipTypeId: victim?.ship_type_id ?? 0,
         victimShipGroupId: shipGroupMap.get(victim?.ship_type_id ?? 0) ?? null,
@@ -653,6 +662,7 @@ export async function storeKillmailsBulk(
         topAttackerCharacterId: topAttacker?.character_id ?? null,
         topAttackerCorporationId: topAttacker?.corporation_id ?? null,
         topAttackerAllianceId: topAttacker?.alliance_id ?? null,
+        topAttackerFactionId: topAttacker?.faction_id ?? null,
         topAttackerShipTypeId: topAttacker?.ship_type_id ?? null,
         topAttackerShipGroupId:
           shipGroupMap.get(topAttacker?.ship_type_id ?? 0) ?? null,
@@ -684,6 +694,7 @@ export async function storeKillmailsBulk(
         allianceId: attacker.alliance_id ?? null,
         corporationId: attacker.corporation_id ?? null,
         characterId: attacker.character_id ?? null,
+        factionId: attacker.faction_id ?? null,
         damageDone: attacker.damage_done ?? 0,
         finalBlow: attacker.final_blow ? true : false,
         securityStatus: attacker.security_status ?? null,
@@ -758,6 +769,8 @@ export interface KillmailDetails {
   victimAllianceId: number | null;
   victimAllianceName: string;
   victimAllianceTicker: string;
+  victimFactionId: number | null;
+  victimFactionName: string | null;
   victimShipTypeId: number;
   victimShipName: string;
   victimShipGroupId: number | null;
@@ -790,6 +803,8 @@ export interface KillmailAttacker {
   allianceId: number | null;
   allianceName: string;
   allianceTicker: string;
+  factionId: number | null;
+  factionName: string | null;
   damageDone: number;
   finalBlow: number;
   securityStatus: number | null;
@@ -831,6 +846,8 @@ export async function getKillmailDetails(
       k."victimAllianceId" as "victimAllianceId",
       coalesce(valliance.name, 'Unknown') as "victimAllianceName",
       coalesce(valliance.ticker, '???') as "victimAllianceTicker",
+      k."victimFactionId" as "victimFactionId",
+      vfaction.name as "victimFactionName",
       k."victimShipTypeId" as "victimShipTypeId",
       coalesce(vship.name, 'Unknown') as "victimShipName",
       k."victimShipGroupId" as "victimShipGroupId",
@@ -850,6 +867,7 @@ export async function getKillmailDetails(
     LEFT JOIN npcCorporations vnpc_corp ON k."victimCorporationId" = vnpc_corp."corporationId"
 
     LEFT JOIN alliances valliance ON k."victimAllianceId" = valliance."allianceId"
+    LEFT JOIN factions vfaction ON k."victimFactionId" = vfaction."factionId"
 
     LEFT JOIN types vship ON k."victimShipTypeId" = vship."typeId"
     LEFT JOIN groups vship_group ON vship."groupId" = vship_group."groupId"
@@ -1027,6 +1045,8 @@ export async function getKillmailAttackers(
       a."allianceId",
       coalesce(a_alliance.name, 'Unknown') as "allianceName",
       coalesce(a_alliance.ticker, '???') as "allianceTicker",
+      a."factionId",
+      afaction.name as "factionName",
       a."damageDone",
       a."finalBlow",
       a."securityStatus",
@@ -1041,6 +1061,7 @@ export async function getKillmailAttackers(
     LEFT JOIN corporations corp ON a."corporationId" = corp."corporationId"
     LEFT JOIN npcCorporations npc_corp ON a."corporationId" = npc_corp."corporationId"
     LEFT JOIN alliances a_alliance ON a."allianceId" = a_alliance."allianceId"
+    LEFT JOIN factions afaction ON a."factionId" = afaction."factionId"
     LEFT JOIN types t ON a."shipTypeId" = t."typeId"
     LEFT JOIN types w ON a."weaponTypeId" = w."typeId"
     WHERE k."killmailId" = :killmailId
@@ -1106,8 +1127,8 @@ export async function killmailExists(killmailId: number): Promise<boolean> {
  */
 export async function getApproximateKillmailCount(): Promise<number> {
   const result = await database.findOne<{ count: number }>(
-    `SELECT COALESCE(reltuples::bigint, 0) as count 
-     FROM pg_class 
+    `SELECT COALESCE(reltuples::bigint, 0) as count
+     FROM pg_class
      WHERE relname = 'killmails'`
   );
   return Number(result?.count || 0);

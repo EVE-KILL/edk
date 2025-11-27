@@ -100,8 +100,58 @@ export async function getExistingWarIds(
 }
 
 export async function clearWars(): Promise<void> {
-  await database.execute('TRUNCATE "warAllies", wars RESTART IDENTITY');
-  logger.warn('[war] Cleared wars and warAllies tables');
+  // Delete all wars except the legendary faction wars (999999999999999 and 999999999999998)
+  await database.execute(
+    'DELETE FROM "warAllies" WHERE "warId" NOT IN (999999999999999, 999999999999998)'
+  );
+  await database.execute(
+    'DELETE FROM wars WHERE "warId" NOT IN (999999999999999, 999999999999998)'
+  );
+  logger.warn(
+    '[war] Cleared wars and warAllies tables (preserved legendary faction wars)'
+  );
+
+  // Ensure legendary wars exist (recreate if they were deleted)
+  await ensureLegendaryWars();
+}
+
+/**
+ * Ensure legendary faction wars exist in the database
+ * Creates them if they don't exist
+ */
+export async function ensureLegendaryWars(): Promise<void> {
+  const legendaryWars = [
+    {
+      warId: 999999999999999,
+      aggressor: { corporation_id: 500001 }, // Caldari State
+      defender: { corporation_id: 500004 }, // Gallente Federation
+      declared: '2003-05-06T00:00:00Z',
+      started: '2003-05-06T00:00:00Z',
+      mutual: true,
+      open_for_allies: false,
+    },
+    {
+      warId: 999999999999998,
+      aggressor: { corporation_id: 500003 }, // Amarr Empire
+      defender: { corporation_id: 500002 }, // Minmatar Republic
+      declared: '2003-05-06T00:00:00Z',
+      started: '2003-05-06T00:00:00Z',
+      mutual: true,
+      open_for_allies: false,
+    },
+  ];
+
+  for (const war of legendaryWars) {
+    const exists = await database.findOne<{ warId: number }>(
+      'SELECT "warId" FROM wars WHERE "warId" = :warId',
+      { warId: war.warId }
+    );
+
+    if (!exists) {
+      await upsertWar(war.warId, war);
+      logger.info(`[war] Created legendary faction war ${war.warId}`);
+    }
+  }
 }
 
 export async function getWar(warId: number): Promise<WarRecord | null> {
@@ -109,4 +159,156 @@ export async function getWar(warId: number): Promise<WarRecord | null> {
     'SELECT * FROM wars WHERE "warId" = :warId',
     { warId }
   );
+}
+
+export interface ActiveWar {
+  warId: number;
+  aggressorName: string;
+  aggressorId: number;
+  aggressorType: 'alliance' | 'corporation';
+  defenderName: string;
+  defenderId: number;
+  defenderType: 'alliance' | 'corporation';
+  started: string | null;
+  mutual: boolean;
+}
+
+/**
+ * Get active wars for a character (via corp/alliance)
+ */
+export async function getActiveWarsForCharacter(
+  characterId: number
+): Promise<ActiveWar[]> {
+  return database.find<ActiveWar>(
+    `SELECT DISTINCT
+      w."warId",
+      COALESCE(agg_alliance.name, agg_corp.name) as "aggressorName",
+      COALESCE(w."aggressorAllianceId", w."aggressorCorporationId") as "aggressorId",
+      CASE WHEN w."aggressorAllianceId" IS NOT NULL THEN 'alliance' ELSE 'corporation' END as "aggressorType",
+      COALESCE(def_alliance.name, def_corp.name) as "defenderName",
+      COALESCE(w."defenderAllianceId", w."defenderCorporationId") as "defenderId",
+      CASE WHEN w."defenderAllianceId" IS NOT NULL THEN 'alliance' ELSE 'corporation' END as "defenderType",
+      w.started,
+      COALESCE(w.mutual, false) as mutual
+    FROM wars w
+    INNER JOIN characters c ON c."characterId" = :characterId
+    LEFT JOIN alliances agg_alliance ON w."aggressorAllianceId" = agg_alliance."allianceId"
+    LEFT JOIN corporations agg_corp ON w."aggressorCorporationId" = agg_corp."corporationId"
+    LEFT JOIN alliances def_alliance ON w."defenderAllianceId" = def_alliance."allianceId"
+    LEFT JOIN corporations def_corp ON w."defenderCorporationId" = def_corp."corporationId"
+    WHERE w.finished IS NULL
+      AND w.started IS NOT NULL
+      AND (
+        w."aggressorCorporationId" = c."corporationId"
+        OR w."defenderCorporationId" = c."corporationId"
+        OR w."aggressorAllianceId" = c."allianceId"
+        OR w."defenderAllianceId" = c."allianceId"
+      )
+    ORDER BY w.started DESC
+    LIMIT 10`,
+    { characterId }
+  );
+}
+
+/**
+ * Get active wars for a corporation
+ */
+export async function getActiveWarsForCorporation(
+  corporationId: number
+): Promise<ActiveWar[]> {
+  return database.find<ActiveWar>(
+    `SELECT
+      w."warId",
+      COALESCE(agg_alliance.name, agg_corp.name) as "aggressorName",
+      COALESCE(w."aggressorAllianceId", w."aggressorCorporationId") as "aggressorId",
+      CASE WHEN w."aggressorAllianceId" IS NOT NULL THEN 'alliance' ELSE 'corporation' END as "aggressorType",
+      COALESCE(def_alliance.name, def_corp.name) as "defenderName",
+      COALESCE(w."defenderAllianceId", w."defenderCorporationId") as "defenderId",
+      CASE WHEN w."defenderAllianceId" IS NOT NULL THEN 'alliance' ELSE 'corporation' END as "defenderType",
+      w.started,
+      COALESCE(w.mutual, false) as mutual
+    FROM wars w
+    LEFT JOIN alliances agg_alliance ON w."aggressorAllianceId" = agg_alliance."allianceId"
+    LEFT JOIN corporations agg_corp ON w."aggressorCorporationId" = agg_corp."corporationId"
+    LEFT JOIN alliances def_alliance ON w."defenderAllianceId" = def_alliance."allianceId"
+    LEFT JOIN corporations def_corp ON w."defenderCorporationId" = def_corp."corporationId"
+    WHERE w.finished IS NULL
+      AND w.started IS NOT NULL
+      AND (
+        w."aggressorCorporationId" = :corporationId
+        OR w."defenderCorporationId" = :corporationId
+      )
+    ORDER BY w.started DESC
+    LIMIT 10`,
+    { corporationId }
+  );
+}
+
+/**
+ * Get active wars for an alliance
+ */
+export async function getActiveWarsForAlliance(
+  allianceId: number
+): Promise<ActiveWar[]> {
+  return database.find<ActiveWar>(
+    `SELECT
+      w."warId",
+      COALESCE(agg_alliance.name, agg_corp.name) as "aggressorName",
+      COALESCE(w."aggressorAllianceId", w."aggressorCorporationId") as "aggressorId",
+      CASE WHEN w."aggressorAllianceId" IS NOT NULL THEN 'alliance' ELSE 'corporation' END as "aggressorType",
+      COALESCE(def_alliance.name, def_corp.name) as "defenderName",
+      COALESCE(w."defenderAllianceId", w."defenderCorporationId") as "defenderId",
+      CASE WHEN w."defenderAllianceId" IS NOT NULL THEN 'alliance' ELSE 'corporation' END as "defenderType",
+      w.started,
+      COALESCE(w.mutual, false) as mutual
+    FROM wars w
+    LEFT JOIN alliances agg_alliance ON w."aggressorAllianceId" = agg_alliance."allianceId"
+    LEFT JOIN corporations agg_corp ON w."aggressorCorporationId" = agg_corp."corporationId"
+    LEFT JOIN alliances def_alliance ON w."defenderAllianceId" = def_alliance."allianceId"
+    LEFT JOIN corporations def_corp ON w."defenderCorporationId" = def_corp."corporationId"
+    WHERE w.finished IS NULL
+      AND w.started IS NOT NULL
+      AND (
+        w."aggressorAllianceId" = :allianceId
+        OR w."defenderAllianceId" = :allianceId
+      )
+    ORDER BY w.started DESC
+    LIMIT 10`,
+    { allianceId }
+  );
+}
+
+/**
+ * Get the legendary faction war for a faction
+ */
+export async function getLegendaryWarForFaction(
+  factionId: number
+): Promise<{
+  warId: number;
+  opponentFactionId: number;
+  opponentFactionName: string;
+} | null> {
+  // Hardcoded legendary wars: Caldari vs Gallente, Amarr vs Minmatar
+  const legendaryWars: Record<number, { warId: number; opponent: number }> = {
+    500001: { warId: 999999999999999, opponent: 500004 }, // Caldari vs Gallente
+    500004: { warId: 999999999999999, opponent: 500001 }, // Gallente vs Caldari
+    500003: { warId: 999999999999998, opponent: 500002 }, // Amarr vs Minmatar
+    500002: { warId: 999999999999998, opponent: 500003 }, // Minmatar vs Amarr
+  };
+
+  const war = legendaryWars[factionId];
+  if (!war) return null;
+
+  const opponentFaction = await database.findOne<{ name: string }>(
+    'SELECT name FROM factions WHERE "factionId" = :factionId',
+    { factionId: war.opponent }
+  );
+
+  if (!opponentFaction) return null;
+
+  return {
+    warId: war.warId,
+    opponentFactionId: war.opponent,
+    opponentFactionName: opponentFaction.name,
+  };
 }

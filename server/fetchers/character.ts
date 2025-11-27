@@ -11,14 +11,16 @@ import { logger } from '../helpers/logger';
  */
 export interface ESICharacter {
   alliance_id: number | null;
-  birthday: string | null;
+  birthday: string;
   bloodline_id: number;
   corporation_id: number;
   description: string;
+  faction_id: number | null;
   gender: string;
   name: string;
   race_id: number;
   security_status: number;
+  title: string | null;
 }
 
 /**
@@ -118,15 +120,17 @@ async function unmarkCharacterAsDeleted(characterId: number): Promise<void> {
  */
 function extractESIFields(data: any): ESICharacter {
   return {
-    alliance_id: data.alliance_id || null,
+    alliance_id: data.alliance_id ?? null,
     birthday: data.birthday,
     bloodline_id: data.bloodline_id,
     corporation_id: data.corporation_id,
-    description: data.description || '',
+    description: data.description ?? '',
+    faction_id: data.faction_id ?? null,
     gender: data.gender,
     name: data.name,
     race_id: data.race_id,
-    security_status: data.security_status || 0,
+    security_status: data.security_status ?? 0,
+    title: data.title ?? null,
   };
 }
 
@@ -143,10 +147,12 @@ async function storeCharacter(
     bloodlineId: character.bloodline_id,
     corporationId: character.corporation_id,
     description: character.description,
+    factionId: character.faction_id,
     gender: character.gender,
     name: character.name,
     raceId: character.race_id,
     securityStatus: character.security_status,
+    title: character.title,
   });
 }
 
@@ -169,10 +175,12 @@ export async function getCachedCharacter(
       bloodline_id: result.bloodlineId,
       corporation_id: result.corporationId,
       description: result.description,
+      faction_id: result.factionId,
       gender: result.gender,
       name: result.name,
       race_id: result.raceId,
       security_status: result.securityStatus,
+      title: result.title,
     };
   } catch {
     return null;

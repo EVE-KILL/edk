@@ -63,6 +63,17 @@
                 {{/if}}
             </div>
             {{/if}}
+            {{#if data.victim.faction.name}}
+            <div style="color: var(--color-text-secondary);">
+                {{#if data.victim.faction.id}}
+                <span data-faction-id="{{data.victim.faction.id}}">
+                <a href="/faction/{{data.victim.faction.id}}" class="victim-link" style="color: var(--color-text-secondary); text-decoration: none;">{{data.victim.faction.name}}</a>
+                </span>
+                {{else}}
+                {{data.victim.faction.name}}
+                {{/if}}
+            </div>
+            {{/if}}
         </div>
     </div>
     <div style="padding: 0 16px 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">

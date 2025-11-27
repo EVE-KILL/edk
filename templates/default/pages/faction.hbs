@@ -1,0 +1,103 @@
+<!-- Faction Page -->
+
+{{> components/page-header
+  title=pageHeader.title
+  breadcrumbs=pageHeader.breadcrumbs
+}}
+
+<div style="max-width: 1200px; margin: 0 auto;">
+  <!-- Faction Header Card -->
+  <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 20px; overflow: hidden;">
+    <div style="padding: 20px; display: flex; gap: 20px; align-items: flex-start;">
+      <!-- Faction Logo -->
+      <div style="flex-shrink: 0;">
+        {{> partials/eve-image type="corporation" id=faction.factionId size=128}}
+      </div>
+
+      <!-- Faction Info -->
+      <div style="flex: 1;">
+        <h1 style="margin: 0 0 16px 0; font-size: 28px; font-weight: 700; color: var(--color-text-white);">
+          {{faction.name}}
+        </h1>
+
+        {{#if faction.description}}
+        <div style="color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 16px;">
+          {{faction.description}}
+        </div>
+        {{/if}}
+
+        <!-- Faction Stats Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px;">
+          {{#if faction.homeSystem}}
+          <div>
+            <div style="color: var(--color-text-secondary); font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Home System</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--color-accent-blue);">
+              <a href="/system/{{faction.solarSystemId}}" style="color: var(--color-accent-blue); text-decoration: none;">
+                {{faction.homeSystem.name}}
+              </a>
+            </div>
+            {{#if faction.homeSystem.regionName}}
+            <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 2px;">
+              {{faction.homeSystem.regionName}}
+            </div>
+            {{/if}}
+          </div>
+          {{/if}}
+
+          {{#if faction.corporation}}
+          <div>
+            <div style="color: var(--color-text-secondary); font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Corporation</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--color-accent-blue);">
+              <a href="/corporation/{{faction.corporationId}}" style="color: var(--color-accent-blue); text-decoration: none;">
+                {{faction.corporation.name}}
+              </a>
+            </div>
+          </div>
+          {{/if}}
+
+          {{#if faction.militiaCorporation}}
+          <div>
+            <div style="color: var(--color-text-secondary); font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Militia Corporation</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--color-accent-blue);">
+              {{faction.militiaCorporation.name}}
+            </div>
+          </div>
+          {{/if}}
+
+          {{#if faction.stationCount}}
+          <div>
+            <div style="color: var(--color-text-secondary); font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Stations</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--color-text-white);">
+              {{formatNumber faction.stationCount}}
+            </div>
+            {{#if faction.stationSystemCount}}
+            <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 2px;">
+              in {{formatNumber faction.stationSystemCount}} systems
+            </div>
+            {{/if}}
+          </div>
+          {{/if}}
+
+          {{#if faction.sizeFactor}}
+          <div>
+            <div style="color: var(--color-text-secondary); font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Size Factor</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--color-text-white);">
+              {{faction.sizeFactor}}
+            </div>
+          </div>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Faction Warfare Info -->
+  <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 20px;">
+    <h2 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: var(--color-text-white);">
+      Faction Warfare
+    </h2>
+    <div style="color: var(--color-text-secondary); line-height: 1.6;">
+      Faction warfare killmails for {{faction.name}} can be viewed on the <a href="/wars" style="color: var(--color-accent-blue);">Wars page</a> under "Legendary Faction Conflicts".
+    </div>
+  </div>
+</div>

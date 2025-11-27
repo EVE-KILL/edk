@@ -6,6 +6,105 @@
   meta=pageHeader.meta
 }}
 
+<!-- Legendary Faction Wars -->
+{{#if legendaryWars.length}}
+<div style="margin-bottom: 20px;">
+  <div style="padding: 8px 0 12px 0;">
+    <div style="color: #fbbf24; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 8px rgba(251, 191, 36, 0.4);">
+      ⚔️ Legendary Faction Conflicts
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px;">
+    {{#each legendaryWars}}
+    <div class="war-card legendary-war-card" onclick="window.location.href='/wars/{{warId}}';" style="cursor: pointer;">
+      <div class="war-card__header">
+        <div class="war-card__header-content">
+          <div class="war-card__badges">
+            <span class="war-card__badge" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3);">Legendary</span>
+            <span class="war-card__badge war-card__badge--active">Active</span>
+            <span class="war-card__badge war-card__badge--mutual">Mutual</span>
+          </div>
+        </div>
+        <div class="war-card__date">{{yearsOfConflict}}+ Years</div>
+      </div>
+
+      <!-- Fight Card Style -->
+      <div class="war-card__fight">
+        <!-- Aggressor Side -->
+        <div class="war-card__fighter war-card__fighter--left">
+          <div class="war-card__fighter-header">
+            <div class="war-card__fighter-image">
+              {{#if aggressorAllianceId}}
+                {{> partials/eve-image type="corporation" id=aggressorAllianceId size=48 class="war-card__avatar"}}
+              {{else if aggressorCorporationId}}
+                {{> partials/eve-image type="corporation" id=aggressorCorporationId size=48 class="war-card__avatar"}}
+              {{/if}}
+            </div>
+            <div class="war-card__fighter-info">
+              <div class="war-card__fighter-name">
+                {{#if aggressorAllianceName}}{{aggressorAllianceName}}{{else if aggressorCorporationName}}{{aggressorCorporationName}}{{else}}Unknown{{/if}}
+              </div>
+              <div class="war-card__fighter-label">Aggressor</div>
+            </div>
+          </div>
+          <div class="war-card__fighter-stats">
+            <div class="war-card__fighter-stat">
+              <div class="war-card__fighter-stat-value">{{aggressorShipsKilled}}</div>
+              <div class="war-card__fighter-stat-label">Ships</div>
+            </div>
+            <div class="war-card__fighter-stat">
+              <div class="war-card__fighter-stat-value color-green">{{abbreviateISK aggressorIskDestroyed}}</div>
+              <div class="war-card__fighter-stat-label">ISK</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VS Badge -->
+        <div class="war-card__vs">
+          <div class="war-card__vs-text">VS</div>
+        </div>
+
+        <!-- Defender Side -->
+        <div class="war-card__fighter war-card__fighter--right">
+          <div class="war-card__fighter-header">
+            <div class="war-card__fighter-image">
+              {{#if defenderAllianceId}}
+                {{> partials/eve-image type="corporation" id=defenderAllianceId size=48 class="war-card__avatar"}}
+              {{else if defenderCorporationId}}
+                {{> partials/eve-image type="corporation" id=defenderCorporationId size=48 class="war-card__avatar"}}
+              {{/if}}
+            </div>
+            <div class="war-card__fighter-info">
+              <div class="war-card__fighter-name">
+                {{#if defenderAllianceName}}{{defenderAllianceName}}{{else if defenderCorporationName}}{{defenderCorporationName}}{{else}}Unknown{{/if}}
+              </div>
+              <div class="war-card__fighter-label">Defender</div>
+            </div>
+          </div>
+          <div class="war-card__fighter-stats">
+            <div class="war-card__fighter-stat">
+              <div class="war-card__fighter-stat-value">{{defenderShipsKilled}}</div>
+              <div class="war-card__fighter-stat-label">Ships</div>
+            </div>
+            <div class="war-card__fighter-stat">
+              <div class="war-card__fighter-stat-value color-green">{{abbreviateISK defenderIskDestroyed}}</div>
+              <div class="war-card__fighter-stat-label">ISK</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {{#if lastKill}}
+      <div class="war-card__footer">
+        <div class="war-card__last-kill">Last kill {{lastKill}}</div>
+      </div>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+</div>
+{{/if}}
+
 <!-- War Filters -->
 {{> partials/war-filters pagination=pagination filterDefaults=filterDefaults}}
 
@@ -381,6 +480,32 @@
 
 .color-gold {
   color: #fbbf24;
+}
+
+/* Legendary War Card Enhancement */
+.legendary-war-card {
+  position: relative;
+}
+
+.legendary-war-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.2));
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.legendary-war-card:hover::before {
+  opacity: 1;
+}
+
+.legendary-war-card:hover {
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
 }
 
 @media (max-width: 768px) {

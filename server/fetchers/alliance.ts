@@ -14,6 +14,7 @@ export interface ESIAlliance {
   creator_id: number;
   date_founded: string | null;
   executor_corporation_id: number;
+  faction_id: number | null;
   name: string;
   ticker: string;
 }
@@ -79,6 +80,7 @@ function extractESIFields(data: any): ESIAlliance {
     creator_id: data.creator_id,
     date_founded: data.date_founded,
     executor_corporation_id: data.executor_corporation_id,
+    faction_id: data.faction_id ?? null,
     name: data.name,
     ticker: data.ticker,
   };
@@ -96,6 +98,7 @@ async function storeAlliance(
     creatorId: alliance.creator_id,
     dateFounded: alliance.date_founded,
     executorCorporationId: alliance.executor_corporation_id,
+    factionId: alliance.faction_id,
     name: alliance.name,
     ticker: alliance.ticker,
   });
@@ -119,6 +122,7 @@ export async function getCachedAlliance(
       creator_id: result.creatorId,
       date_founded: result.dateFounded,
       executor_corporation_id: result.executorCorporationId,
+      faction_id: result.factionId,
       name: result.name,
       ticker: result.ticker,
     };

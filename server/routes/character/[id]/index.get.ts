@@ -18,6 +18,7 @@ import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getMostValuableKillsByCharacter } from '../../../models/mostValuableKills';
 import { getTopVictimsByAttacker } from '../../../models/topBoxes';
 import { track } from '../../../utils/performance-decorators';
+import { getActiveWarsForCharacter } from '../../../models/wars';
 
 import { handleError } from '../../../utils/error';
 
@@ -57,6 +58,7 @@ export default defineEventHandler(async (event: H3Event) => {
       topSystems,
       topRegions,
       mostValuable,
+      activeWars,
     ] = await track('character:fetch_stats', 'application', async () => {
       // Use cache if available, fallback to view
       const useCache = await isStatsCachePopulated();
@@ -84,6 +86,7 @@ export default defineEventHandler(async (event: H3Event) => {
         getTopVictimsByAttacker(characterId, 'character', 'week', 'system', 10),
         getTopVictimsByAttacker(characterId, 'character', 'week', 'region', 10),
         getMostValuableKillsByCharacter(characterId, 'week', 6),
+        getActiveWarsForCharacter(characterId),
       ]);
     });
 
@@ -297,6 +300,7 @@ export default defineEventHandler(async (event: H3Event) => {
         mostValuableKills: transformedMostValuable,
         recentKillmails,
         pagination,
+        activeWars,
         wsFilter: {
           type: 'character',
           id: characterId,

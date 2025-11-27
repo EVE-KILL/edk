@@ -13,6 +13,7 @@ export interface Corporation {
   creatorId: number;
   dateFounded: string | null;
   description: string;
+  factionId: number | null;
   homeStationId: number | null;
   memberCount: number;
   name: string;
@@ -20,6 +21,7 @@ export interface Corporation {
   taxRate: number;
   ticker: string;
   url: string;
+  warEligible: boolean | null;
 }
 
 /**
@@ -160,6 +162,7 @@ export async function storeCorporation(
     creatorId: number;
     dateFounded: string | null;
     description: string;
+    factionId: number | null;
     homeStationId: number | null;
     memberCount: number;
     name: string;
@@ -167,6 +170,7 @@ export async function storeCorporation(
     taxRate: number;
     ticker: string;
     url: string;
+    warEligible: boolean | null;
   }
 ): Promise<void> {
   await database.bulkUpsert(
@@ -179,6 +183,7 @@ export async function storeCorporation(
         creatorId: data.creatorId,
         dateFounded: data.dateFounded,
         description: data.description,
+        factionId: data.factionId,
         homeStationId: data.homeStationId,
         memberCount: data.memberCount,
         name: data.name,
@@ -186,6 +191,7 @@ export async function storeCorporation(
         taxRate: data.taxRate,
         ticker: data.ticker,
         url: data.url,
+        warEligible: data.warEligible,
       },
     ],
     ['corporationId']
@@ -284,8 +290,8 @@ export async function getCorporationWithAlliance(
  */
 export async function getApproximateCorporationCount(): Promise<number> {
   const result = await database.findOne<{ count: number }>(
-    `SELECT COALESCE(reltuples::bigint, 0) as count 
-     FROM pg_class 
+    `SELECT COALESCE(reltuples::bigint, 0) as count
+     FROM pg_class
      WHERE relname = 'corporations'`
   );
   return Number(result?.count || 0);

@@ -12,6 +12,7 @@ import {
 
 const PAGE_SIZE = 25;
 const factionAllianceIds = [500001, 500002, 500003, 500004]; // Caldari, Minmatar, Amarr, Gallente
+const LEGENDARY_WAR_IDS = [999999999999999, 999999999999998]; // Caldari vs Gallente, Amarr vs Minmatar
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
@@ -101,23 +102,23 @@ export default defineEventHandler(async (event: H3Event) => {
                       COALESCE(SUM(k."totalValue"), 0)::float AS "totalValue",
                       MAX(k."killmailTime") AS "lastKill",
                       -- Count ships killed by aggressor (victim is defender side)
-                      COUNT(*) FILTER (WHERE 
-                        k."victimCorporationId" = w."defenderCorporationId" OR 
+                      COUNT(*) FILTER (WHERE
+                        k."victimCorporationId" = w."defenderCorporationId" OR
                         k."victimAllianceId" = w."defenderAllianceId"
                       )::int AS "aggressorShipsKilled",
                       -- Count ships killed by defender (victim is aggressor side)
-                      COUNT(*) FILTER (WHERE 
-                        k."victimCorporationId" = w."aggressorCorporationId" OR 
+                      COUNT(*) FILTER (WHERE
+                        k."victimCorporationId" = w."aggressorCorporationId" OR
                         k."victimAllianceId" = w."aggressorAllianceId"
                       )::int AS "defenderShipsKilled",
                       -- Sum ISK destroyed by aggressor
-                      COALESCE(SUM(k."totalValue") FILTER (WHERE 
-                        k."victimCorporationId" = w."defenderCorporationId" OR 
+                      COALESCE(SUM(k."totalValue") FILTER (WHERE
+                        k."victimCorporationId" = w."defenderCorporationId" OR
                         k."victimAllianceId" = w."defenderAllianceId"
                       ), 0)::float AS "aggressorIskDestroyed",
                       -- Sum ISK destroyed by defender
-                      COALESCE(SUM(k."totalValue") FILTER (WHERE 
-                        k."victimCorporationId" = w."aggressorCorporationId" OR 
+                      COALESCE(SUM(k."totalValue") FILTER (WHERE
+                        k."victimCorporationId" = w."aggressorCorporationId" OR
                         k."victimAllianceId" = w."aggressorAllianceId"
                       ), 0)::float AS "defenderIskDestroyed"
                FROM killmails k
@@ -238,20 +239,20 @@ export default defineEventHandler(async (event: H3Event) => {
           : await track('wars:side_stats', 'database', async () => {
               const rows = await database.query<any>(
                 `SELECT k."warId",
-                        COUNT(*) FILTER (WHERE 
-                          k."victimCorporationId" = w."defenderCorporationId" OR 
+                        COUNT(*) FILTER (WHERE
+                          k."victimCorporationId" = w."defenderCorporationId" OR
                           k."victimAllianceId" = w."defenderAllianceId"
                         )::int AS "aggressorShipsKilled",
-                        COUNT(*) FILTER (WHERE 
-                          k."victimCorporationId" = w."aggressorCorporationId" OR 
+                        COUNT(*) FILTER (WHERE
+                          k."victimCorporationId" = w."aggressorCorporationId" OR
                           k."victimAllianceId" = w."aggressorAllianceId"
                         )::int AS "defenderShipsKilled",
-                        COALESCE(SUM(k."totalValue") FILTER (WHERE 
-                          k."victimCorporationId" = w."defenderCorporationId" OR 
+                        COALESCE(SUM(k."totalValue") FILTER (WHERE
+                          k."victimCorporationId" = w."defenderCorporationId" OR
                           k."victimAllianceId" = w."defenderAllianceId"
                         ), 0)::float AS "aggressorIskDestroyed",
-                        COALESCE(SUM(k."totalValue") FILTER (WHERE 
-                          k."victimCorporationId" = w."aggressorCorporationId" OR 
+                        COALESCE(SUM(k."totalValue") FILTER (WHERE
+                          k."victimCorporationId" = w."aggressorCorporationId" OR
                           k."victimAllianceId" = w."aggressorAllianceId"
                         ), 0)::float AS "defenderIskDestroyed"
                  FROM killmails k
@@ -286,7 +287,87 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
 
-    const highlightWars = paginatedWars.filter((w: any) => {
+    // Fetch legendary faction wars separately for hero display
+    // These are conceptual wars - we count faction warfare kills by matching faction IDs
+    const legendaryWars = await track(
+      'wars:legendary',
+      'database',
+      async () => {
+        const wars = await database.query<any>(
+          `SELECT w.*,
+                  af.name AS "aggressorAllianceName",
+                  df.name AS "defenderAllianceName"
+           FROM wars w
+           LEFT JOIN factions af ON af."factionId" = w."aggressorAllianceId"
+           LEFT JOIN factions df ON df."factionId" = w."defenderAllianceId"
+           WHERE w."warId" = ANY(:warIds)
+           ORDER BY w."warId" DESC`,
+          { warIds: LEGENDARY_WAR_IDS }
+        );
+
+        // Calculate stats for each legendary war by matching faction IDs in killmails
+        const warsWithStats = await Promise.all(
+          wars.map(async (w: any) => {
+            const aggressorFactionId = Number(w.aggressorAllianceId);
+            const defenderFactionId = Number(w.defenderAllianceId);
+
+            // Count kills where either side killed the other side
+            // Aggressor kills defender when victimFactionId = defenderFactionId
+            // Defender kills aggressor when victimFactionId = aggressorFactionId
+            const stats = await database.findOne<{
+              killCount: number;
+              totalValue: number;
+              lastKill: string | null;
+              aggressorShipsKilled: number;
+              defenderShipsKilled: number;
+              aggressorIskDestroyed: number;
+              defenderIskDestroyed: number;
+            }>(
+              `SELECT
+                 COUNT(*)::int AS "killCount",
+                 COALESCE(SUM("totalValue"), 0)::float AS "totalValue",
+                 MAX("killmailTime") AS "lastKill",
+                 COUNT(*) FILTER (WHERE "victimFactionId" = :defenderFactionId)::int AS "aggressorShipsKilled",
+                 COUNT(*) FILTER (WHERE "victimFactionId" = :aggressorFactionId)::int AS "defenderShipsKilled",
+                 COALESCE(SUM("totalValue") FILTER (WHERE "victimFactionId" = :defenderFactionId), 0)::float AS "aggressorIskDestroyed",
+                 COALESCE(SUM("totalValue") FILTER (WHERE "victimFactionId" = :aggressorFactionId), 0)::float AS "defenderIskDestroyed"
+               FROM killmails
+               WHERE "victimFactionId" IN (:aggressorFactionId, :defenderFactionId)
+                 AND "warId" IS NULL`,
+              { aggressorFactionId, defenderFactionId }
+            );
+
+            return {
+              ...w,
+              killCount: stats?.killCount ?? 0,
+              totalValue: stats?.totalValue ?? 0,
+              lastKill: stats?.lastKill ? timeAgo(stats.lastKill) : null,
+              declared: w.declared ? timeAgo(w.declared) : null,
+              aggressorShipsKilled: stats?.aggressorShipsKilled ?? 0,
+              defenderShipsKilled: stats?.defenderShipsKilled ?? 0,
+              aggressorIskDestroyed: stats?.aggressorIskDestroyed ?? 0,
+              defenderIskDestroyed: stats?.defenderIskDestroyed ?? 0,
+              // Calculate years of conflict
+              yearsOfConflict: w.started
+                ? Math.floor(
+                    (Date.now() - new Date(w.started).getTime()) /
+                      (1000 * 60 * 60 * 24 * 365)
+                  )
+                : 0,
+            };
+          })
+        );
+
+        return warsWithStats;
+      }
+    );
+
+    // Filter out legendary wars from the main list and find other faction wars to highlight
+    const filteredWars = paginatedWars.filter((w: any) => {
+      return !LEGENDARY_WAR_IDS.includes(Number(w.warId));
+    });
+
+    const highlightWars = filteredWars.filter((w: any) => {
       const a = Number(w.aggressorAllianceId);
       const d = Number(w.defenderAllianceId);
       return factionAllianceIds.includes(a) || factionAllianceIds.includes(d);
@@ -294,8 +375,8 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // SEO metadata
     const activeWars = await database.sql<{ count: number }[]>`
-      SELECT COUNT(*)::int as count 
-      FROM wars 
+      SELECT COUNT(*)::int as count
+      FROM wars
       WHERE finished IS NULL OR finished > NOW()
     `.then((rows) => rows[0]?.count ?? 0);
 
@@ -341,8 +422,9 @@ export default defineEventHandler(async (event: H3Event) => {
         prevPage: page > 1 ? page - 1 : null,
         nextPage: page < totalPages ? page + 1 : null,
       },
+      legendaryWars,
       highlightWars,
-      wars: paginatedWars,
+      wars: filteredWars,
       filterDefaults: {
         status,
         warType,

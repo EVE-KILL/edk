@@ -33,14 +33,14 @@
             <input type="text" id="spotlightInput" placeholder="Search for anything..." autocomplete="off" />
             <kbd class="spotlight-kbd">ESC</kbd>
           </div>
-          
+
           <div id="spotlightResults" class="spotlight-results"></div>
         </div>
       </div>
     `;
 
     document.body.insertAdjacentHTML('beforeend', html);
-    
+
     overlay = document.getElementById('spotlightOverlay');
     searchInput = document.getElementById('spotlightInput');
     resultsContainer = document.getElementById('spotlightResults');
@@ -56,12 +56,12 @@
       // Cmd/Ctrl + K to open
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        
+
         // Don't open if typing in input/textarea (except spotlight itself)
         const target = e.target;
-        const isTyping = (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') 
+        const isTyping = (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
                          && target.id !== 'spotlightInput';
-        
+
         if (!isTyping) {
           toggleSpotlight();
         }
@@ -100,7 +100,7 @@
 
   function handleInput(e) {
     const query = e.target.value.trim();
-    
+
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
@@ -149,10 +149,10 @@
     try {
       const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=10`);
       const data = await response.json();
-      
+
       currentResults = data.results || [];
       selectedIndex = -1;
-      
+
       if (currentResults.length > 0) {
         renderResults(currentResults);
       } else {
@@ -166,7 +166,7 @@
 
   function renderEmptyState() {
     let html = '<div class="spotlight-empty">';
-    
+
     // Quick actions
     html += '<div class="spotlight-section">';
     html += '<div class="spotlight-section-title">Quick Actions</div>';
@@ -177,7 +177,7 @@
     html += '<a href="/entities" class="spotlight-quick-item" onclick="event.stopPropagation()">👥 Entities</a>';
     html += '</div>';
     html += '</div>';
-    
+
     // Recent searches
     const recentSearches = window.SearchHistory ? window.SearchHistory.get() : [];
     if (recentSearches.length > 0) {
@@ -315,13 +315,9 @@
   }
 
   function navigateToResult(result) {
-<<<<<<< HEAD
-    addRecentSearch(searchInput.value);
-=======
     if (window.SearchHistory) {
       window.SearchHistory.add(searchInput.value);
     }
->>>>>>> origin/main
     window.location.href = getResultUrl(result);
   }
 

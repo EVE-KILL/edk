@@ -10,14 +10,14 @@ interface TableSize {
 
 async function getTableSizes(sql: any): Promise<TableSize[]> {
   return await sql<TableSize[]>`
-    SELECT 
+    SELECT
       schemaname,
       tablename,
-      pg_total_relation_size(schemaname||'.'||tablename) AS size_bytes,
-      pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size_pretty
+      pg_total_relation_size(quote_ident(schemaname)||'.'||quote_ident(tablename)) AS size_bytes,
+      pg_size_pretty(pg_total_relation_size(quote_ident(schemaname)||'.'||quote_ident(tablename))) AS size_pretty
     FROM pg_tables
     WHERE schemaname = 'public'
-    ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+    ORDER BY pg_total_relation_size(quote_ident(schemaname)||'.'||quote_ident(tablename)) DESC;
   `;
 }
 
@@ -194,10 +194,11 @@ export default {
     const sizesBefore = new Map<string, number>();
     for (const table of tablesToVacuum) {
       try {
-        // Use identifier() for proper quoting
-        const result = await sql`
-          SELECT pg_total_relation_size(${'public.' + table}) AS bytes
-        `;
+        // Use sql.unsafe with proper quoting for mixed-case table names
+        const quotedTable = `"${table}"`;
+        const result = await sql.unsafe(
+          `SELECT pg_total_relation_size('public.${quotedTable}') AS bytes`
+        );
         sizesBefore.set(table, Number(result[0].bytes));
       } catch {
         logger.warn(`Could not get size for ${table}`);
@@ -260,9 +261,10 @@ export default {
         // Get size after
         let sizeAfter = 0;
         try {
-          const afterResult = await sql`
-            SELECT pg_total_relation_size(${'public.' + table}) AS bytes
-          `;
+          const quotedTable = `"${table}"`;
+          const afterResult = await sql.unsafe(
+            `SELECT pg_total_relation_size('public.${quotedTable}') AS bytes`
+          );
           sizeAfter = Number(afterResult[0].bytes);
         } catch {
           // Ignore

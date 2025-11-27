@@ -16,6 +16,7 @@ export interface ESICorporation {
   creator_id: number;
   date_founded: string | null;
   description: string;
+  faction_id: number | null;
   home_station_id: number | null;
   member_count: number;
   name: string;
@@ -23,6 +24,7 @@ export interface ESICorporation {
   tax_rate: number;
   ticker: string;
   url: string;
+  war_eligible: boolean | null;
 }
 
 /**
@@ -46,6 +48,7 @@ export async function fetchAndStoreCorporation(
           creator_id: 1, // Default for NPC corps
           date_founded: '2003-05-06T00:00:00Z', // EVE launch date
           description: npcCorp.description ?? '',
+          faction_id: npcCorp.factionId ?? null,
           home_station_id: npcCorp.stationId ?? null,
           member_count: 0, // NPC corps don't track members
           name: npcCorp.name,
@@ -53,6 +56,7 @@ export async function fetchAndStoreCorporation(
           tax_rate: npcCorp.taxRate ?? 0,
           ticker: npcCorp.tickerName ?? '',
           url: '',
+          war_eligible: false, // NPC corps are not war eligible
         };
 
         // Store in corporations table for consistency
@@ -116,6 +120,7 @@ function extractESIFields(data: any): ESICorporation {
     creator_id: data.creator_id ?? 1, // Default to 1 for NPC corps
     date_founded: data.date_founded ?? '2003-05-06T00:00:00Z', // EVE launch date
     description: data.description ?? '',
+    faction_id: data.faction_id ?? null,
     home_station_id: data.home_station_id ?? null,
     member_count: data.member_count ?? 0,
     name: data.name,
@@ -123,6 +128,7 @@ function extractESIFields(data: any): ESICorporation {
     tax_rate: data.tax_rate ?? 0,
     ticker: data.ticker,
     url: data.url ?? '',
+    war_eligible: data.war_eligible ?? null,
   };
 }
 
@@ -139,6 +145,7 @@ async function storeCorporation(
     creatorId: corporation.creator_id,
     dateFounded: corporation.date_founded,
     description: corporation.description,
+    factionId: corporation.faction_id,
     homeStationId: corporation.home_station_id,
     memberCount: corporation.member_count,
     name: corporation.name,
@@ -146,6 +153,7 @@ async function storeCorporation(
     taxRate: corporation.tax_rate,
     ticker: corporation.ticker,
     url: corporation.url,
+    warEligible: corporation.war_eligible,
   });
 }
 
@@ -168,6 +176,7 @@ export async function getCachedCorporation(
       creator_id: result.creatorId,
       date_founded: result.dateFounded,
       description: result.description,
+      faction_id: result.factionId,
       home_station_id: result.homeStationId,
       member_count: result.memberCount,
       name: result.name,
@@ -175,6 +184,7 @@ export async function getCachedCorporation(
       tax_rate: result.taxRate,
       ticker: result.ticker,
       url: result.url,
+      war_eligible: result.warEligible,
     };
   } catch {
     return null;

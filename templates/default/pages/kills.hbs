@@ -5,6 +5,54 @@
 {{#if data.recentKillmails}}
 <!-- Kills for Followed Entities or Global Feed -->
 
+{{!-- Faction Information Box --}}
+{{#if data.factionInfo}}
+{{#if data.factionInfo.description}}
+<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 20px; padding: 16px;">
+  <div style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 12px;">
+    {{#if data.factionInfo.factionId}}
+    <div style="flex-shrink: 0;">
+      {{> partials/eve-image type="corporation" id=data.factionInfo.factionId size=64 alt=data.pageHeaderLight.title lazy=false}}
+    </div>
+    {{/if}}
+    <div style="flex: 1; color: var(--color-text-secondary); line-height: 1.6;">
+      {{data.factionInfo.description}}
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 11px;">
+    {{#if data.factionInfo.solarSystemName}}
+    <div>
+      <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Home System</div>
+      <div>
+        <a href="/system/{{data.factionInfo.solarSystemId}}" style="color: var(--color-accent-blue); text-decoration: none; font-weight: 600;">{{data.factionInfo.solarSystemName}}</a>
+        {{#if data.factionInfo.regionName}}
+        <div style="color: var(--color-text-secondary); font-size: 10px; margin-top: 2px;">{{data.factionInfo.regionName}}</div>
+        {{/if}}
+      </div>
+    </div>
+    {{/if}}
+    {{#if data.factionInfo.corporationName}}
+    <div>
+      <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Corporation</div>
+      <div>
+        <a href="/corporation/{{data.factionInfo.corporationId}}" style="color: var(--color-accent-blue); text-decoration: none; font-weight: 600;">{{data.factionInfo.corporationName}}</a>
+      </div>
+    </div>
+    {{/if}}
+    {{#if data.factionInfo.militiaCorporationName}}
+    <div>
+      <div style="color: var(--color-text-secondary); font-size: 9px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Militia Corporation</div>
+      <div style="color: var(--color-text-white); font-weight: 600;">{{data.factionInfo.militiaCorporationName}}</div>
+    </div>
+    {{/if}}
+  </div>
+</div>
+{{/if}}
+{{/if}}
+
+{{!-- Active Wars --}}
+{{> partials/active-wars activeWars=data.activeWars}}
+
 <!-- Most Valuable Kills Section - Full Width -->
 <section style="margin-bottom: 20px;">
     {{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange=data.mostValuableTimeRange}}

@@ -18,6 +18,7 @@ import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getMostValuableKillsByCorporation } from '../../../models/mostValuableKills';
 import { getTopVictimsByAttacker } from '../../../models/topBoxes';
 import { track } from '../../../utils/performance-decorators';
+import { getActiveWarsForCorporation } from '../../../models/wars';
 
 import { handleError } from '../../../utils/error';
 
@@ -58,6 +59,7 @@ export default defineEventHandler(async (event: H3Event) => {
       topSystems,
       topRegions,
       mostValuable,
+      activeWars,
     ] = await track('corporation:fetch_stats', 'application', async () => {
       // Use cache if available, fallback to view
       const useCache = await isStatsCachePopulated();
@@ -110,6 +112,7 @@ export default defineEventHandler(async (event: H3Event) => {
           10
         ),
         getMostValuableKillsByCorporation(corporationId, 'week', 6),
+        getActiveWarsForCorporation(corporationId),
       ]);
     });
 
@@ -326,6 +329,7 @@ export default defineEventHandler(async (event: H3Event) => {
         mostValuableKills: transformedMostValuable,
         recentKillmails,
         pagination,
+        activeWars,
         wsFilter: {
           type: 'corporation',
           id: corporationId,

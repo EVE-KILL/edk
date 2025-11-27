@@ -26,9 +26,15 @@
             <div class="war-hero__combatant-label">Aggressor</div>
             <div class="war-hero__combatant-name">
               {{#if war.aggressorAllianceId}}
-                <a href="/alliance/{{war.aggressorAllianceId}}" class="war-hero__link">
-                  {{#if war.aggressorAllianceName}}{{war.aggressorAllianceName}}{{else}}Alliance #{{war.aggressorAllianceId}}{{/if}}
-                </a>
+                {{#if war.isLegendaryWar}}
+                  <a href="/faction/{{war.aggressorAllianceId}}" class="war-hero__link">
+                    {{#if war.aggressorAllianceName}}{{war.aggressorAllianceName}}{{else}}Faction #{{war.aggressorAllianceId}}{{/if}}
+                  </a>
+                {{else}}
+                  <a href="/alliance/{{war.aggressorAllianceId}}" class="war-hero__link">
+                    {{#if war.aggressorAllianceName}}{{war.aggressorAllianceName}}{{else}}Alliance #{{war.aggressorAllianceId}}{{/if}}
+                  </a>
+                {{/if}}
               {{else if war.aggressorCorporationId}}
                 <a href="/corporation/{{war.aggressorCorporationId}}" class="war-hero__link">
                   {{#if war.aggressorCorporationName}}{{war.aggressorCorporationName}}{{else}}Corporation #{{war.aggressorCorporationId}}{{/if}}
@@ -84,9 +90,15 @@
             <div class="war-hero__combatant-label">Defender</div>
             <div class="war-hero__combatant-name">
               {{#if war.defenderAllianceId}}
-                <a href="/alliance/{{war.defenderAllianceId}}" class="war-hero__link">
-                  {{#if war.defenderAllianceName}}{{war.defenderAllianceName}}{{else}}Alliance #{{war.defenderAllianceId}}{{/if}}
-                </a>
+                {{#if war.isLegendaryWar}}
+                  <a href="/faction/{{war.defenderAllianceId}}" class="war-hero__link">
+                    {{#if war.defenderAllianceName}}{{war.defenderAllianceName}}{{else}}Faction #{{war.defenderAllianceId}}{{/if}}
+                  </a>
+                {{else}}
+                  <a href="/alliance/{{war.defenderAllianceId}}" class="war-hero__link">
+                    {{#if war.defenderAllianceName}}{{war.defenderAllianceName}}{{else}}Alliance #{{war.defenderAllianceId}}{{/if}}
+                  </a>
+                {{/if}}
               {{else if war.defenderCorporationId}}
                 <a href="/corporation/{{war.defenderCorporationId}}" class="war-hero__link">
                   {{#if war.defenderCorporationName}}{{war.defenderCorporationName}}{{else}}Corporation #{{war.defenderCorporationId}}{{/if}}
@@ -160,9 +172,15 @@
       <h3 class="war-versus__title">Aggressor Forces</h3>
       <div class="war-versus__lead">
         {{#if war.aggressorAllianceId}}
-          <a href="/alliance/{{war.aggressorAllianceId}}" class="war-versus__link">
-            {{#if war.aggressorAllianceName}}{{war.aggressorAllianceName}}{{else}}Alliance #{{war.aggressorAllianceId}}{{/if}}
-          </a>
+          {{#if war.isLegendaryWar}}
+            <a href="/faction/{{war.aggressorAllianceId}}" class="war-versus__link">
+              {{#if war.aggressorAllianceName}}{{war.aggressorAllianceName}}{{else}}Faction #{{war.aggressorAllianceId}}{{/if}}
+            </a>
+          {{else}}
+            <a href="/alliance/{{war.aggressorAllianceId}}" class="war-versus__link">
+              {{#if war.aggressorAllianceName}}{{war.aggressorAllianceName}}{{else}}Alliance #{{war.aggressorAllianceId}}{{/if}}
+            </a>
+          {{/if}}
         {{else if war.aggressorCorporationId}}
           <a href="/corporation/{{war.aggressorCorporationId}}" class="war-versus__link">
             {{#if war.aggressorCorporationName}}{{war.aggressorCorporationName}}{{else}}Corporation #{{war.aggressorCorporationId}}{{/if}}
@@ -263,9 +281,15 @@
       <h3 class="war-versus__title">Defender Forces</h3>
       <div class="war-versus__lead">
         {{#if war.defenderAllianceId}}
-          <a href="/alliance/{{war.defenderAllianceId}}" class="war-versus__link">
-            {{#if war.defenderAllianceName}}{{war.defenderAllianceName}}{{else}}Alliance #{{war.defenderAllianceId}}{{/if}}
-          </a>
+          {{#if war.isLegendaryWar}}
+            <a href="/faction/{{war.defenderAllianceId}}" class="war-versus__link">
+              {{#if war.defenderAllianceName}}{{war.defenderAllianceName}}{{else}}Faction #{{war.defenderAllianceId}}{{/if}}
+            </a>
+          {{else}}
+            <a href="/alliance/{{war.defenderAllianceId}}" class="war-versus__link">
+              {{#if war.defenderAllianceName}}{{war.defenderAllianceName}}{{else}}Alliance #{{war.defenderAllianceId}}{{/if}}
+            </a>
+          {{/if}}
         {{else if war.defenderCorporationId}}
           <a href="/corporation/{{war.defenderCorporationId}}" class="war-versus__link">
             {{#if war.defenderCorporationName}}{{war.defenderCorporationName}}{{else}}Corporation #{{war.defenderCorporationId}}{{/if}}

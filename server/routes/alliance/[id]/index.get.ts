@@ -18,6 +18,7 @@ import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getMostValuableKillsByAlliance } from '../../../models/mostValuableKills';
 import { getTopVictimsByAttacker } from '../../../models/topBoxes';
 import { track } from '../../../utils/performance-decorators';
+import { getActiveWarsForAlliance } from '../../../models/wars';
 
 import { handleError } from '../../../utils/error';
 
@@ -58,6 +59,7 @@ export default defineEventHandler(async (event: H3Event) => {
       topSystems,
       topRegions,
       mostValuable,
+      activeWars,
     ] = await track('alliance:fetch_stats', 'application', async () => {
       // Use cache if available, fallback to view
       const useCache = await isStatsCachePopulated();
@@ -86,6 +88,7 @@ export default defineEventHandler(async (event: H3Event) => {
         getTopVictimsByAttacker(allianceId, 'alliance', 'week', 'system', 10),
         getTopVictimsByAttacker(allianceId, 'alliance', 'week', 'region', 10),
         getMostValuableKillsByAlliance(allianceId, 'week', 6),
+        getActiveWarsForAlliance(allianceId),
       ]);
     });
 
@@ -270,6 +273,7 @@ export default defineEventHandler(async (event: H3Event) => {
         mostValuableKills: transformedMostValuable,
         recentKillmails,
         pagination,
+        activeWars,
         wsFilter: {
           type: 'alliance',
           id: allianceId,

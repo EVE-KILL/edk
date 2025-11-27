@@ -547,14 +547,16 @@ export async function getCharacterKillmailCount(
 export interface Character {
   characterId: number;
   allianceId: number | null;
-  birthday: string | null;
+  birthday: string;
   bloodlineId: number;
   corporationId: number;
   description: string;
+  factionId: number | null;
   gender: string;
   name: string;
   raceId: number;
   securityStatus: number;
+  title: string | null;
 }
 
 /**
@@ -660,10 +662,12 @@ export async function storeCharacter(
     bloodlineId: number;
     corporationId: number;
     description: string;
+    factionId: number | null;
     gender: string;
     name: string;
     raceId: number;
     securityStatus: number;
+    title: string | null;
   }
 ): Promise<void> {
   await database.bulkUpsert(
@@ -676,10 +680,12 @@ export async function storeCharacter(
         bloodlineId: data.bloodlineId,
         corporationId: data.corporationId,
         description: data.description,
+        factionId: data.factionId,
         gender: data.gender,
         name: data.name,
         raceId: data.raceId,
         securityStatus: data.securityStatus,
+        title: data.title,
       },
     ],
     ['characterId']
@@ -737,8 +743,8 @@ export async function characterExists(characterId: number): Promise<boolean> {
  */
 export async function getApproximateCharacterCount(): Promise<number> {
   const result = await database.findOne<{ count: number }>(
-    `SELECT COALESCE(reltuples::bigint, 0) as count 
-     FROM pg_class 
+    `SELECT COALESCE(reltuples::bigint, 0) as count
+     FROM pg_class
      WHERE relname = 'characters'`
   );
   return Number(result?.count || 0);

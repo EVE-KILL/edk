@@ -10,6 +10,9 @@
 <!-- Character Navigation Tabs -->
 {{> partials/entity-navbar}}
 
+<!-- Active Wars -->
+{{> partials/active-wars activeWars=data.activeWars}}
+
 <!-- Ship Group Statistics (Combined Kills & Losses) -->
 {{#if data.shipGroupStats}}
 <div style="margin-bottom: 20px;">

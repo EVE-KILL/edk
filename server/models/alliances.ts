@@ -13,6 +13,7 @@ export interface Alliance {
   creatorId: number;
   dateFounded: string | null;
   executorCorporationId: number;
+  factionId: number | null;
   name: string;
   ticker: string;
 }
@@ -127,6 +128,7 @@ export async function storeAlliance(
     creatorId: number;
     dateFounded: string | null;
     executorCorporationId: number;
+    factionId: number | null;
     name: string;
     ticker: string;
   }
@@ -140,6 +142,7 @@ export async function storeAlliance(
         creatorId: data.creatorId,
         dateFounded: data.dateFounded,
         executorCorporationId: data.executorCorporationId,
+        factionId: data.factionId,
         name: data.name,
         ticker: data.ticker,
       },
@@ -193,8 +196,8 @@ export async function allianceExists(allianceId: number): Promise<boolean> {
  */
 export async function getApproximateAllianceCount(): Promise<number> {
   const result = await database.findOne<{ count: number }>(
-    `SELECT COALESCE(reltuples::bigint, 0) as count 
-     FROM pg_class 
+    `SELECT COALESCE(reltuples::bigint, 0) as count
+     FROM pg_class
      WHERE relname = 'alliances'`
   );
   return Number(result?.count || 0);
