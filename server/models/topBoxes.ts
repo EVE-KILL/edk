@@ -56,7 +56,9 @@ const DEFAULT_ALIAS_CONFIG: Required<FilterAliasConfig> = {
   typeAlias: 't',
 };
 
-function getPeriodRange(periodType: 'hour' | 'day' | 'week' | '14d' | 'month'): PeriodRange {
+function getPeriodRange(
+  periodType: 'hour' | 'day' | 'week' | '14d' | 'month'
+): PeriodRange {
   const end = new Date();
   const start = new Date(end);
 
@@ -118,8 +120,7 @@ function getGroupingParts(
       return {
         groupColumn: 'k."victimShipTypeId"',
         nameColumn: 't.name',
-        joinClause:
-          'LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"',
+        joinClause: 'LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"',
       };
     case 'system':
       return {
@@ -364,11 +365,15 @@ function buildKilllistFilterConditions(
     if (filters.isBig) {
       params.bigShipGroupIds = BIG_SHIP_GROUP_IDS;
       // Use denormalized victimShipGroupId (no JOIN needed)
-      conditions.push(`${killmailColumn('victimShipGroupId')} = ANY(:bigShipGroupIds)`);
+      conditions.push(
+        `${killmailColumn('victimShipGroupId')} = ANY(:bigShipGroupIds)`
+      );
     } else {
       params.notBigShipGroupIds = BIG_SHIP_GROUP_IDS;
       // Use denormalized victimShipGroupId (no JOIN needed)
-      conditions.push(`${killmailColumn('victimShipGroupId')} != ALL(:notBigShipGroupIds)`);
+      conditions.push(
+        `${killmailColumn('victimShipGroupId')} != ALL(:notBigShipGroupIds)`
+      );
     }
   }
 
@@ -385,19 +390,25 @@ function buildKilllistFilterConditions(
   if (filters.shipGroupIds && filters.shipGroupIds.length > 0) {
     params.shipGroupIds = filters.shipGroupIds;
     // Use denormalized victimShipGroupId (no JOIN needed)
-    conditions.push(`${killmailColumn('victimShipGroupId')} = ANY(:shipGroupIds)`);
+    conditions.push(
+      `${killmailColumn('victimShipGroupId')} = ANY(:shipGroupIds)`
+    );
   }
 
   if (filters.minSecurityStatus !== undefined) {
     params.minSecurityStatus = filters.minSecurityStatus;
     // Use denormalized securityStatus (no JOIN needed)
-    conditions.push(`${killmailColumn('securityStatus')} >= :minSecurityStatus`);
+    conditions.push(
+      `${killmailColumn('securityStatus')} >= :minSecurityStatus`
+    );
   }
 
   if (filters.maxSecurityStatus !== undefined) {
     params.maxSecurityStatus = filters.maxSecurityStatus;
     // Use denormalized securityStatus and regionId (no JOIN needed)
-    conditions.push(`${killmailColumn('securityStatus')} <= :maxSecurityStatus`);
+    conditions.push(
+      `${killmailColumn('securityStatus')} <= :maxSecurityStatus`
+    );
 
     if (filters.maxSecurityStatus <= 0) {
       conditions.push(
@@ -411,10 +422,7 @@ function buildKilllistFilterConditions(
     conditions.push(`${killmailColumn('regionId')} = :regionId`);
   }
 
-  if (
-    filters.regionIdMin !== undefined &&
-    filters.regionIdMax !== undefined
-  ) {
+  if (filters.regionIdMin !== undefined && filters.regionIdMax !== undefined) {
     params.regionIdMin = filters.regionIdMin;
     params.regionIdMax = filters.regionIdMax;
     conditions.push(
@@ -476,10 +484,13 @@ export async function getTopSystemsFiltered(
   lookbackDays: number = 7
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
   const systemCondition = `${columnReference('k', 'solarSystemId')} > 0`;
-  
+
   // Always need solarsystems join for name, but types only if filtering by ship
-  const needsTypesJoin = filters.isBig !== undefined || filters.shipGroupIds || filters.groupId !== undefined;
-  
+  const needsTypesJoin =
+    filters.isBig !== undefined ||
+    filters.shipGroupIds ||
+    filters.groupId !== undefined;
+
   const { whereClause, params } = buildFilteredWhereClause(
     filters,
     systemCondition,
@@ -543,6 +554,39 @@ export async function getTopRegionsFiltered(
 }
 
 /**
+ * Get top ships (victim ship types) for filtered kills
+ */
+export async function getTopShipsFiltered(
+  filters: KilllistFilters,
+  limit: number = 10,
+  lookbackDays: number = 7
+): Promise<Array<{ id: number; name: string; kills: number }>> {
+  const shipCondition = `${columnReference('k', 'victimShipTypeId')} > 0`;
+
+  const { whereClause, params } = buildFilteredWhereClause(
+    filters,
+    shipCondition,
+    undefined,
+    lookbackDays
+  );
+
+  const query = `
+    SELECT
+      k."victimShipTypeId" AS id,
+      COALESCE(t.name, 'Unknown') AS name,
+      COUNT(*) AS kills
+    FROM killmails k
+    LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
+    ${whereClause}
+    GROUP BY k."victimShipTypeId", t.name
+    ORDER BY kills DESC
+    LIMIT :limit
+  `;
+
+  return database.find(query, { ...params, limit });
+}
+
+/**
  * Get top characters (attackers) for filtered kills
  */
 export async function getTopCharactersFiltered(
@@ -551,11 +595,11 @@ export async function getTopCharactersFiltered(
   lookbackDays: number = 7
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
   const characterCondition = `${columnReference('k', 'topAttackerCharacterId')} > 0`;
-  
+
   // No JOINs needed! All fields denormalized in killmails table
   const needsSolarSystemsJoin = false;
   const needsTypesJoin = false;
-  
+
   const { whereClause, params } = buildFilteredWhereClause(
     filters,
     characterCondition,
@@ -599,11 +643,11 @@ export async function getTopCorporationsFiltered(
     'k',
     'topAttackerCorporationId'
   )} > 0`;
-  
+
   // No JOINs needed! All fields denormalized in killmails table
   const needsSolarSystemsJoin = false;
   const needsTypesJoin = false;
-  
+
   const { whereClause, params } = buildFilteredWhereClause(
     filters,
     corporationCondition,
@@ -644,11 +688,11 @@ export async function getTopAlliancesFiltered(
   lookbackDays: number = 7
 ): Promise<Array<{ id: number; name: string; kills: number }>> {
   const allianceCondition = `${columnReference('k', 'topAttackerAllianceId')} > 0`;
-  
+
   // No JOINs needed! All fields denormalized in killmails table
   const needsSolarSystemsJoin = false;
   const needsTypesJoin = false;
-  
+
   const { whereClause, params } = buildFilteredWhereClause(
     filters,
     allianceCondition,
@@ -688,11 +732,17 @@ export async function getTopVictimsByAttacker(
   attackerId: number,
   attackerType: 'character' | 'corporation' | 'alliance',
   periodType: 'hour' | 'day' | 'week' | '14d' | 'month',
-  victimType: 'character' | 'corporation' | 'alliance' | 'ship' | 'system' | 'region',
+  victimType:
+    | 'character'
+    | 'corporation'
+    | 'alliance'
+    | 'ship'
+    | 'system'
+    | 'region',
   limit: number = 10
 ): Promise<TopBoxWithName[]> {
   const { start, end } = getPeriodRange(periodType);
-  
+
   // Column to filter attackers
   let attackerColumn: string;
   switch (attackerType) {
@@ -706,27 +756,30 @@ export async function getTopVictimsByAttacker(
       attackerColumn = 'k."topAttackerAllianceId"';
       break;
   }
-  
+
   // Column to group victims
   let groupColumn: string;
   let nameColumn: string;
   let joinClause: string;
-  
+
   switch (victimType) {
     case 'character':
       groupColumn = 'k."victimCharacterId"';
       nameColumn = 'char.name';
-      joinClause = 'LEFT JOIN characters char ON k."victimCharacterId" = char."characterId"';
+      joinClause =
+        'LEFT JOIN characters char ON k."victimCharacterId" = char."characterId"';
       break;
     case 'corporation':
       groupColumn = 'k."victimCorporationId"';
       nameColumn = 'corp.name';
-      joinClause = 'LEFT JOIN corporations corp ON k."victimCorporationId" = corp."corporationId"';
+      joinClause =
+        'LEFT JOIN corporations corp ON k."victimCorporationId" = corp."corporationId"';
       break;
     case 'alliance':
       groupColumn = 'k."victimAllianceId"';
       nameColumn = 'ally.name';
-      joinClause = 'LEFT JOIN alliances ally ON k."victimAllianceId" = ally."allianceId"';
+      joinClause =
+        'LEFT JOIN alliances ally ON k."victimAllianceId" = ally."allianceId"';
       break;
     case 'ship':
       groupColumn = 'k."victimShipTypeId"';
@@ -736,7 +789,8 @@ export async function getTopVictimsByAttacker(
     case 'system':
       groupColumn = 'k."solarSystemId"';
       nameColumn = 'ss.name';
-      joinClause = 'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"';
+      joinClause =
+        'LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"';
       break;
     case 'region':
       groupColumn = 'ss."regionId"';
@@ -747,7 +801,7 @@ export async function getTopVictimsByAttacker(
       `;
       break;
   }
-  
+
   const query = `
     SELECT
       ${groupColumn} AS id,
@@ -767,7 +821,7 @@ export async function getTopVictimsByAttacker(
     ORDER BY kills DESC
     LIMIT :limit
   `;
-  
+
   return database.find<TopBoxWithName>(query, {
     attackerId,
     startTime: start.toISOString(),

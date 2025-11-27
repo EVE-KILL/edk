@@ -6,12 +6,10 @@ import { getCharacterWithCorporationAndAlliance } from '../../../models/characte
 import {
   getEntityKillmails,
   estimateEntityKillmails,
-  estimateEntityKillmails,
 } from '../../../models/killlist';
+import { getMostValuableKillsByCharacter } from '../../../models/mostValuableKills';
+import { getTopVictimsByAttacker } from '../../../models/topBoxes';
 import { parseKilllistFilters } from '../../../helpers/killlist-filters';
-import { getMostValuableLossesByCharacter } from '../../../models/mostValuableKills';
-import { getTopAttackersByVictim } from '../../../models/topBoxes';
-import { track } from '../../../utils/performance-decorators';
 
 import { handleError } from '../../../utils/error';
 
@@ -37,61 +35,31 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
+    // Get character stats using the same query as dashboard
+    const stats = await getEntityStatsFromView(characterId, 'character', 'all');
+
     // Fetch all entity data in parallel
     const [
-      stats,
       topCorps,
       topAlliances,
       topShips,
       topSystems,
       topRegions,
       mostValuable,
-    ] = await track(
-      'character:losses:fetch_dashboard_stats',
-      'application',
-      async () => {
-        // Use cache if available, fallback to view
-        const statsPromise = getEntityStatsFromView(
-          characterId,
-          'character',
-          'all'
-        );
-
-        return await Promise.all([
-          statsPromise,
-          getTopAttackersByVictim(
-            characterId,
-            'character',
-            'week',
-            'corporation',
-            10
-          ),
-          getTopAttackersByVictim(
-            characterId,
-            'character',
-            'week',
-            'alliance',
-            10
-          ),
-          getTopAttackersByVictim(characterId, 'character', 'week', 'ship', 10),
-          getTopAttackersByVictim(
-            characterId,
-            'character',
-            'week',
-            'system',
-            10
-          ),
-          getTopAttackersByVictim(
-            characterId,
-            'character',
-            'week',
-            'region',
-            10
-          ),
-          getMostValuableLossesByCharacter(characterId, 'week', 6),
-        ]);
-      }
-    );
+    ] = await Promise.all([
+      getTopVictimsByAttacker(
+        characterId,
+        'character',
+        'week',
+        'corporation',
+        10
+      ),
+      getTopVictimsByAttacker(characterId, 'character', 'week', 'alliance', 10),
+      getTopVictimsByAttacker(characterId, 'character', 'week', 'ship', 10),
+      getTopVictimsByAttacker(characterId, 'character', 'week', 'system', 10),
+      getTopVictimsByAttacker(characterId, 'character', 'week', 'region', 10),
+      getMostValuableKillsByCharacter(characterId, 'week', 6),
+    ]);
 
     // Get pagination parameters
     const query = getQuery(event);
@@ -177,9 +145,9 @@ export default defineEventHandler(async (event: H3Event) => {
     const top10 = {
       ships: (topShips as any[]).map((s: any) => ({
         ...s,
-        imageType: 'type',
+        imageType: 'ship',
         imageId: s.id,
-        link: `/type/${s.id}`,
+        link: `/item/${s.id}`,
       })),
       characters: [],
       systems: (topSystems as any[]).map((s: any) => ({
@@ -228,16 +196,16 @@ export default defineEventHandler(async (event: H3Event) => {
       },
       {
         ...entityData,
-        killmails,
-        pagination,
         top10Stats: top10,
-        corporationTitle: 'Top Agressor Corps',
-        allianceTitle: 'Top Agressor Alliances',
-        shipTitle: 'Top Agressor Ships',
-        systemTitle: 'Top Systems',
+        corporationTitle: 'Most Hunted Corps',
+        allianceTitle: 'Most Hunted Alliances',
+        shipTitle: 'Most Hunted Ships',
+        systemTitle: 'Top Hunting Grounds',
         regionTitle: 'Top Regions',
         timeRange: 'Last 7 Days',
         mostValuableKills: transformedMostValuable,
+        killmails,
+        pagination,
         filterDefaults: {
           ...userFilters,
           securityStatus,

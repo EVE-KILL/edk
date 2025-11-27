@@ -73,9 +73,9 @@ To create a route with a dynamic parameter, you can use square brackets in the f
 
 You can handle different HTTP methods (POST, PUT, DELETE, etc.) by changing the suffix in the filename:
 
--   `hello.get.ts` -> `GET /hello`
--   `hello.post.ts` -> `POST /hello`
--   `hello.put.ts` -> `PUT /hello`
--   `hello.delete.ts` -> `DELETE /hello`
+- `hello.get.ts` -> `GET /hello`
+- `hello.post.ts` -> `POST /hello`
+- `hello.put.ts` -> `PUT /hello`
+- `hello.delete.ts` -> `DELETE /hello`
 
 If you create a file without a method suffix (e.g., `hello.ts`), it will respond to all HTTP methods.

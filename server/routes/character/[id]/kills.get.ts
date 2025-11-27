@@ -10,12 +10,11 @@ import { getCharacterWithCorporationAndAlliance } from '../../../models/characte
 import {
   getEntityKillmails,
   estimateEntityKillmails,
-  estimateEntityKillmails,
 } from '../../../models/killlist';
-import { parseKilllistFilters } from '../../../helpers/killlist-filters';
-import { track } from '../../../utils/performance-decorators';
 import { getMostValuableKillsByCharacter } from '../../../models/mostValuableKills';
 import { getTopVictimsByAttacker } from '../../../models/topBoxes';
+import { parseKilllistFilters } from '../../../helpers/killlist-filters';
+import { track } from '../../../utils/performance-decorators';
 
 import { handleError } from '../../../utils/error';
 
@@ -46,66 +45,48 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
+    // Get character stats
+    const stats = await track(
+      'character:kills:fetch_stats',
+      'application',
+      async () => {
+        const useCache = await isStatsCachePopulated();
+        return useCache
+          ? await getEntityStatsFromCache(characterId, 'character', 'all')
+          : await getEntityStatsFromView(characterId, 'character', 'all');
+      }
+    );
+
     // Fetch all entity data in parallel
     const [
-      stats,
       topCorps,
       topAlliances,
       topShips,
       topSystems,
       topRegions,
       mostValuable,
-    ] = await track(
-      'character:kills:fetch_dashboard_stats',
-      'application',
-      async () => {
-        // Use cache if available, fallback to view
-        const useCache = await isStatsCachePopulated();
-        const statsPromise = useCache
-          ? getEntityStatsFromCache(characterId, 'character', 'all')
-          : getEntityStatsFromView(characterId, 'character', 'all');
-
-        return await Promise.all([
-          statsPromise,
-          getTopVictimsByAttacker(
-            characterId,
-            'character',
-            'week',
-            'corporation',
-            10
-          ),
-          getTopVictimsByAttacker(
-            characterId,
-            'character',
-            'week',
-            'alliance',
-            10
-          ),
-          getTopVictimsByAttacker(
-            characterId,
-            'character',
-            'week',
-            'ship',
-            10
-          ),
-          getTopVictimsByAttacker(
-            characterId,
-            'character',
-            'week',
-            'system',
-            10
-          ),
-          getTopVictimsByAttacker(
-            characterId,
-            'character',
-            'week',
-            'region',
-            10
-          ),
-          getMostValuableKillsByCharacter(characterId, 'week', 6),
-        ]);
-      }
-    );
+    ] = await track('character:fetch_stats', 'application', async () => {
+      return await Promise.all([
+        getTopVictimsByAttacker(
+          characterId,
+          'character',
+          'week',
+          'corporation',
+          10
+        ),
+        getTopVictimsByAttacker(
+          characterId,
+          'character',
+          'week',
+          'alliance',
+          10
+        ),
+        getTopVictimsByAttacker(characterId, 'character', 'week', 'ship', 10),
+        getTopVictimsByAttacker(characterId, 'character', 'week', 'system', 10),
+        getTopVictimsByAttacker(characterId, 'character', 'week', 'region', 10),
+        getMostValuableKillsByCharacter(characterId, 'week', 6),
+      ]);
+    });
 
     // Get pagination parameters
     const query = getQuery(event);
@@ -214,15 +195,15 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // Top 10 boxes - transform to match partial expectations
     const top10 = await track(
-      'character:kills:transform_top10',
+      'character:transform_top10',
       'application',
       async () => {
         return {
           ships: (topShips as any[]).map((s: any) => ({
             ...s,
-            imageType: 'type',
+            imageType: 'ship',
             imageId: s.id,
-            link: `/type/${s.id}`,
+            link: `/item/${s.id}`,
           })),
           characters: [],
           systems: (topSystems as any[]).map((s: any) => ({
@@ -279,8 +260,6 @@ export default defineEventHandler(async (event: H3Event) => {
       },
       {
         ...entityData,
-        killmails,
-        pagination,
         top10Stats: top10,
         corporationTitle: 'Most Hunted Corps',
         allianceTitle: 'Most Hunted Alliances',
@@ -289,6 +268,8 @@ export default defineEventHandler(async (event: H3Event) => {
         regionTitle: 'Top Regions',
         timeRange: 'Last 7 Days',
         mostValuableKills: transformedMostValuable,
+        killmails,
+        pagination,
         filterDefaults: {
           ...userFilters,
           securityStatus,

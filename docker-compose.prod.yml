@@ -1,48 +1,43 @@
-version: '3.8'
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    image: edk-app-prod
-    container_name: edk-app-prod
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=production
-      - LOG_LEVEL=info
-      - DATABASE_URL=postgres://edk_user:edk_password@postgres:5432/edk
-      - REDIS_URL=redis://redis:6379/0
     ports:
       - '3000:3000'
     depends_on:
       - postgres
       - redis
+      - typesense
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://user:password@postgres:5432/db
+      - REDIS_URL=redis://redis:6379
+      - TYPESENSE_URL=http://typesense:8108
 
   postgres:
     image: postgres:15
-    container_name: edk-postgres-prod
-    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=edk
-      - POSTGRES_USER=edk_user
-      - POSTGRES_PASSWORD=edk_password
-    ports:
-      - '5432:5432'
 
   redis:
-    image: redis:7-alpine
-    container_name: edk-redis-prod
-    restart: unless-stopped
+    image: redis:7
     volumes:
       - redis_data:/data
-    ports:
-      - '6379:6379'
+
+  typesense:
+    image: typesense/typesense:0.24.1
+    environment:
+      - TYPESENSE_API_KEY=xyz
+      - TYPESENSE_DATA_DIR=/data
+    volumes:
+      - typesense_data:/data
 
 volumes:
   postgres_data:
   redis_data:
+  typesense_data:

@@ -10,13 +10,12 @@ import { getAlliance } from '../../../models/alliances';
 import {
   getEntityKillmails,
   estimateEntityKillmails,
-  estimateEntityKillmails,
 } from '../../../models/killlist';
+import { getMostValuableKillsByAlliance } from '../../../models/mostValuableKills';
+import { getTopVictimsByAttacker } from '../../../models/topBoxes';
 import { track } from '../../../utils/performance-decorators';
 
 import { parseKilllistFilters } from '../../../helpers/killlist-filters';
-import { getMostValuableKillsByAlliance } from '../../../models/mostValuableKills';
-import { getTopVictimsByAttacker } from '../../../models/topBoxes';
 
 import { handleError } from '../../../utils/error';
 
@@ -47,9 +46,20 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
+    // Get alliance stats
+    const stats = await track(
+      'alliance:kills:fetch_stats',
+      'application',
+      async () => {
+        const useCache = await isStatsCachePopulated();
+        return useCache
+          ? await getEntityStatsFromCache(allianceId, 'alliance', 'all')
+          : await getEntityStatsFromView(allianceId, 'alliance', 'all');
+      }
+    );
+
     // Fetch all entity data in parallel
     const [
-      stats,
       topCharacters,
       topCorps,
       topAlliances,
@@ -58,17 +68,10 @@ export default defineEventHandler(async (event: H3Event) => {
       topRegions,
       mostValuable,
     ] = await track(
-      'alliance:kills:fetch_dashboard_stats',
+      'alliance:kills:fetch_dashboard_data',
       'application',
       async () => {
-        // Use cache if available, fallback to view
-        const useCache = await isStatsCachePopulated();
-        const statsPromise = useCache
-          ? getEntityStatsFromCache(allianceId, 'alliance', 'all')
-          : getEntityStatsFromView(allianceId, 'alliance', 'all');
-
         return await Promise.all([
-          statsPromise,
           getTopVictimsByAttacker(
             allianceId,
             'alliance',
@@ -181,9 +184,9 @@ export default defineEventHandler(async (event: H3Event) => {
         return {
           ships: (topShips as any[]).map((s: any) => ({
             ...s,
-            imageType: 'type',
+            imageType: 'ship',
             imageId: s.id,
-            link: `/type/${s.id}`,
+            link: `/item/${s.id}`,
           })),
           characters: (topCharacters as any[]).map((c: any) => ({
             ...c,
@@ -221,7 +224,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // Transform most valuable kills to template format
     const transformedMostValuable = await track(
-      'alliance:transform_most_valuable',
+      'alliance:kills:transform_most_valuable',
       'application',
       async () => {
         return mostValuable.map((kill) => {
@@ -245,8 +248,6 @@ export default defineEventHandler(async (event: H3Event) => {
       },
       {
         ...entityData,
-        killmails,
-        pagination,
         top10Stats: top10,
         characterTitle: 'Most Hunted Characters',
         corporationTitle: 'Most Hunted Corps',
@@ -256,6 +257,8 @@ export default defineEventHandler(async (event: H3Event) => {
         regionTitle: 'Top Regions',
         timeRange: 'Last 7 Days',
         mostValuableKills: transformedMostValuable,
+        killmails,
+        pagination,
         filterDefaults: {
           ...userFilters,
           securityStatus,

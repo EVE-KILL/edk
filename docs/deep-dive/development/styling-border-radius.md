@@ -10,6 +10,7 @@ The EVE-KILL EDK template system uses centralized CSS variables to control borde
 ## Location
 
 All border-radius values are defined in:
+
 ```
 templates/default/public/edk.css
 ```
@@ -20,16 +21,17 @@ Look for the "Border Radius" section near the top of the file (around lines 52-6
 
 The site uses four CSS variables to control rounded corners:
 
-| Variable | Purpose | Default | Suggested Values |
-|----------|---------|---------|------------------|
-| `--radius-sm` | Small elements (buttons, cards, inputs, badges) | `0` | `4px` (subtle), `8px` (heavy) |
-| `--radius-md` | Medium elements (modals, large cards) | `0` | `8px` (subtle), `16px` (heavy) |
-| `--radius-lg` | Large elements (hero sections, panels) | `0` | `12px` (subtle), `24px` (heavy) |
-| `--radius-round` | Circular elements (avatars, portraits) | `0` | `50%` (perfect circles) |
+| Variable         | Purpose                                         | Default | Suggested Values                |
+| ---------------- | ----------------------------------------------- | ------- | ------------------------------- |
+| `--radius-sm`    | Small elements (buttons, cards, inputs, badges) | `0`     | `4px` (subtle), `8px` (heavy)   |
+| `--radius-md`    | Medium elements (modals, large cards)           | `0`     | `8px` (subtle), `16px` (heavy)  |
+| `--radius-lg`    | Large elements (hero sections, panels)          | `0`     | `12px` (subtle), `24px` (heavy) |
+| `--radius-round` | Circular elements (avatars, portraits)          | `0`     | `50%` (perfect circles)         |
 
 ## Current Configuration
 
 **No Rounded Corners (Current):**
+
 ```css
 --radius-sm: 0;
 --radius-md: 0;
@@ -40,7 +42,9 @@ The site uses four CSS variables to control rounded corners:
 ## Example Configurations
 
 ### Subtle Rounded Corners
+
 For a modern, clean look with gentle curves:
+
 ```css
 --radius-sm: 4px;
 --radius-md: 8px;
@@ -49,7 +53,9 @@ For a modern, clean look with gentle curves:
 ```
 
 ### Heavy Rounded Corners
+
 For a more pronounced, friendly appearance:
+
 ```css
 --radius-sm: 8px;
 --radius-md: 16px;
@@ -58,7 +64,9 @@ For a more pronounced, friendly appearance:
 ```
 
 ### Sharp Edges (Current)
+
 For a classic, angular look:
+
 ```css
 --radius-sm: 0;
 --radius-md: 0;
@@ -71,6 +79,7 @@ For a classic, angular look:
 All border-radius values throughout the codebase reference these CSS variables:
 
 ### In CSS Files
+
 ```css
 /* Example button styling */
 .killmail-nav__btn {
@@ -89,16 +98,16 @@ All border-radius values throughout the codebase reference these CSS variables:
 ```
 
 ### In Template Files
+
 ```html
 <!-- Example inline style -->
-<div style="border-radius: var(--radius-sm); padding: 16px;">
-  Content here
-</div>
+<div style="border-radius: var(--radius-sm); padding: 16px;">Content here</div>
 ```
 
 ## Files That Use Border Radius
 
 The border-radius variables are used in:
+
 - **CSS File:** `templates/default/public/edk.css` (main stylesheet)
 - **Template Files:** 22 Handlebars `.hbs` files throughout `templates/default/`
 
@@ -113,6 +122,7 @@ All references use CSS variables, so changing the 4 variables in one place updat
 5. Refresh your browser (hard refresh: Cmd+Shift+R / Ctrl+Shift+F5)
 
 **Example change:**
+
 ```css
 /* Before (sharp edges) */
 --radius-sm: 0;
@@ -130,18 +140,21 @@ All references use CSS variables, so changing the 4 variables in one place updat
 ## Design Considerations
 
 ### When to Use Sharp Edges (0)
+
 - Classic, technical aesthetic
 - Emphasis on information density
 - Matches EVE Online's UI style
 - Professional/corporate appearance
 
 ### When to Use Rounded Corners
+
 - Modern, friendly appearance
 - Better visual hierarchy
 - Softer, more approachable design
 - Mobile-first responsive design
 
 ### Circular Elements (`--radius-round: 50%`)
+
 - Character portraits
 - Corporation logos
 - Alliance logos
@@ -151,6 +164,7 @@ All references use CSS variables, so changing the 4 variables in one place updat
 ## Browser Compatibility
 
 CSS custom properties (variables) are supported in all modern browsers:
+
 - Chrome 49+
 - Firefox 31+
 - Safari 9.1+
@@ -190,6 +204,7 @@ After changing border-radius values:
 ## Questions?
 
 If you need to add border-radius to a new element:
+
 1. Use the appropriate CSS variable (`var(--radius-sm)`, `var(--radius-md)`, etc.)
 2. Choose the variable based on element size and importance
 3. Never hardcode pixel values directly

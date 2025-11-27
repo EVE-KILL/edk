@@ -19,6 +19,7 @@ The test environment is configured to be isolated and consistent.
 Before any tests are run, a dedicated test database is automatically created and migrated. This process is handled by the `tests/setup.ts` script, which is preloaded by the test runner (as configured in `bunfig.toml`).
 
 The key steps in the setup process are:
+
 1.  **Drop and Recreate:** The test database (defined by the `TEST_DB_NAME` environment variable, defaulting to `edk_test`) is dropped if it exists and then recreated.
 2.  **Run Migrations:** All SQL migrations from the `db/` directory are applied to ensure the schema is up-to-date.
 

@@ -58,6 +58,7 @@ export default defineEventHandler(async (event: H3Event) => {
       topCharacters,
       topCorporations,
       topAlliances,
+      topShips,
       topSystems,
       topRegions,
       topShips,
@@ -68,6 +69,7 @@ export default defineEventHandler(async (event: H3Event) => {
         getTopByKills('week', 'character', 10),
         getTopByKills('week', 'corporation', 10),
         getTopByKills('week', 'alliance', 10),
+        getTopByKills('week', 'ship', 10),
         getTopByKills('week', 'system', 10),
         getTopByKills('week', 'region', 10),
         getTopByKills('week', 'ship', 10),
@@ -99,6 +101,12 @@ export default defineEventHandler(async (event: H3Event) => {
             imageType: 'alliance',
             imageId: a.id,
             link: `/alliance/${a.id}`,
+          })),
+          ships: topShips.map((s) => ({
+            ...s,
+            imageType: 'ship',
+            imageId: s.id,
+            link: `/item/${s.id}`,
           })),
           systems: topSystems.map((s) => ({
             ...s,

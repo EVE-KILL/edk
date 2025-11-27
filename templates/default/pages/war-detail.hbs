@@ -14,22 +14,30 @@
     <div class="war-hero__fight">
       <!-- Aggressor Side -->
       <div class="war-hero__combatant war-hero__combatant--left">
-        {{> components/eve-image imageType=(fallback war.aggressorAllianceId "alliance" "corporation") imageId=(fallback war.aggressorAllianceId war.aggressorCorporationId) size=64}}
-        <div class="war-hero__combatant-details">
-          <div class="war-hero__combatant-label">Aggressor</div>
-          <div class="war-hero__combatant-name">
+        <div class="war-hero__combatant-meta">
+          <div class="war-hero__combatant-image">
             {{#if war.aggressorAllianceId}}
-            <a href="/alliance/{{war.aggressorAllianceId}}" class="war-hero__link">
-              {{#if war.aggressorAllianceName}}{{war.aggressorAllianceName}}{{else}}Alliance #{{war.aggressorAllianceId}}{{/if}}
-            </a>
-          {{else if war.aggressorCorporationId}}
-            <a href="/corporation/{{war.aggressorCorporationId}}" class="war-hero__link">
-              {{#if war.aggressorCorporationName}}{{war.aggressorCorporationName}}{{else}}Corporation #{{war.aggressorCorporationId}}{{/if}}
-            </a>
-          {{else}}
-            Unknown
-          {{/if}}
-        </div>
+              {{> partials/eve-image type="alliance" id=war.aggressorAllianceId size=64 class="war-hero__avatar"}}
+            {{else if war.aggressorCorporationId}}
+              {{> partials/eve-image type="corporation" id=war.aggressorCorporationId size=64 class="war-hero__avatar"}}
+            {{/if}}
+          </div>
+          <div class="war-hero__combatant-details">
+            <div class="war-hero__combatant-label">Aggressor</div>
+            <div class="war-hero__combatant-name">
+              {{#if war.aggressorAllianceId}}
+                <a href="/alliance/{{war.aggressorAllianceId}}" class="war-hero__link">
+                  {{#if war.aggressorAllianceName}}{{war.aggressorAllianceName}}{{else}}Alliance #{{war.aggressorAllianceId}}{{/if}}
+                </a>
+              {{else if war.aggressorCorporationId}}
+                <a href="/corporation/{{war.aggressorCorporationId}}" class="war-hero__link">
+                  {{#if war.aggressorCorporationName}}{{war.aggressorCorporationName}}{{else}}Corporation #{{war.aggressorCorporationId}}{{/if}}
+                </a>
+              {{else}}
+                Unknown
+              {{/if}}
+            </div>
+          </div>
         </div>
         <div class="war-hero__combatant-stats">
           <div class="war-hero__stat">
@@ -51,22 +59,30 @@
 
       <!-- Defender Side -->
       <div class="war-hero__combatant war-hero__combatant--right">
-        {{> components/eve-image imageType=(fallback war.defenderAllianceId "alliance" "corporation") imageId=(fallback war.defenderAllianceId war.defenderCorporationId) size=64}}
-        <div class="war-hero__combatant-details">
-          <div class="war-hero__combatant-label">Defender</div>
-          <div class="war-hero__combatant-name">
+        <div class="war-hero__combatant-meta">
+          <div class="war-hero__combatant-image">
             {{#if war.defenderAllianceId}}
-            <a href="/alliance/{{war.defenderAllianceId}}" class="war-hero__link">
-              {{#if war.defenderAllianceName}}{{war.defenderAllianceName}}{{else}}Alliance #{{war.defenderAllianceId}}{{/if}}
-            </a>
-          {{else if war.defenderCorporationId}}
-            <a href="/corporation/{{war.defenderCorporationId}}" class="war-hero__link">
-              {{#if war.defenderCorporationName}}{{war.defenderCorporationName}}{{else}}Corporation #{{war.defenderCorporationId}}{{/if}}
-            </a>
-          {{else}}
-            Unknown
-          {{/if}}
-        </div>
+              {{> partials/eve-image type="alliance" id=war.defenderAllianceId size=64 class="war-hero__avatar"}}
+            {{else if war.defenderCorporationId}}
+              {{> partials/eve-image type="corporation" id=war.defenderCorporationId size=64 class="war-hero__avatar"}}
+            {{/if}}
+          </div>
+          <div class="war-hero__combatant-details">
+            <div class="war-hero__combatant-label">Defender</div>
+            <div class="war-hero__combatant-name">
+              {{#if war.defenderAllianceId}}
+                <a href="/alliance/{{war.defenderAllianceId}}" class="war-hero__link">
+                  {{#if war.defenderAllianceName}}{{war.defenderAllianceName}}{{else}}Alliance #{{war.defenderAllianceId}}{{/if}}
+                </a>
+              {{else if war.defenderCorporationId}}
+                <a href="/corporation/{{war.defenderCorporationId}}" class="war-hero__link">
+                  {{#if war.defenderCorporationName}}{{war.defenderCorporationName}}{{else}}Corporation #{{war.defenderCorporationId}}{{/if}}
+                </a>
+              {{else}}
+                Unknown
+              {{/if}}
+            </div>
+          </div>
         </div>
         <div class="war-hero__combatant-stats">
           <div class="war-hero__stat">
@@ -110,8 +126,13 @@
   <div class="war-allies__grid">
     {{#each allies}}
     <a href="{{#if allianceId}}/alliance/{{allianceId}}{{else if corporationId}}/corporation/{{corporationId}}{{/if}}" class="war-allies__item">
-      {{> components/eve-image imageType=(fallback allianceId "alliance" "corporation") imageId=(fallback allianceId corporationId) size=24}}
-      <span>{{#if allianceName}}{{allianceName}}{{else if corporationName}}{{corporationName}}{{/if}}</span>
+      {{#if allianceId}}
+        {{> partials/eve-image type="alliance" id=allianceId size=24 class="war-allies__item-img"}}
+        <span>{{#if allianceName}}{{allianceName}}{{else}}Alliance #{{allianceId}}{{/if}}</span>
+      {{else if corporationId}}
+        {{> partials/eve-image type="corporation" id=corporationId size=24 class="war-allies__item-img"}}
+        <span>{{#if corporationName}}{{corporationName}}{{else}}Corporation #{{corporationId}}{{/if}}</span>
+      {{/if}}
     </a>
     {{/each}}
   </div>
@@ -161,21 +182,36 @@
       <div class="war-versus__section-title">Top Contributors</div>
       <div class="war-versus__participants">
         {{#each topAggressorParticipants}}
-        <a href="{{#if allianceId}}/alliance/{{allianceId}}{{else if corporationId}}/corporation/{{corporationId}}{{/if}}" class="war-versus__participant">
+        <div class="war-versus__participant">
+          <div class="war-versus__participant-logos">
+            {{#if allianceId}}
+              <div class="war-versus__participant-logo">
+                {{> partials/eve-image type="alliance" id=allianceId size=32}}
+              </div>
+            {{/if}}
+            {{#if corporationId}}
+              <div class="war-versus__participant-logo">
+                {{> partials/eve-image type="corporation" id=corporationId size=32}}
+              </div>
+            {{/if}}
+          </div>
           <div class="war-versus__participant-main">
-            {{> components/eve-image imageType=(fallback allianceId "alliance" "corporation") imageId=(fallback allianceId corporationId) size=32}}
-            <div class="war-versus__participant-info">
-              {{#if allianceId}}
-                <div class="war-versus__participant-alliance">{{#if allianceName}}{{allianceName}}{{else}}Alliance #{{allianceId}}{{/if}}</div>
-              {{/if}}
-              <div class="war-versus__participant-corporation">{{#if corporationName}}{{corporationName}}{{else}}Corporation #{{corporationId}}{{/if}}</div>
-            </div>
+            {{#if allianceId}}
+              <div class="war-versus__participant-alliance">
+                <a href="/alliance/{{allianceId}}">{{#if allianceName}}{{allianceName}}{{else}}Alliance #{{allianceId}}{{/if}}</a>
+              </div>
+            {{/if}}
+            {{#if corporationId}}
+              <div class="war-versus__participant-corporation">
+                <a href="/corporation/{{corporationId}}">{{#if corporationName}}{{corporationName}}{{else}}Corporation #{{corporationId}}{{/if}}</a>
+              </div>
+            {{/if}}
           </div>
           <div class="war-versus__participant-stats">
             <span>{{kills}} kills</span>
             <span class="color-green">{{abbreviateISK value}}</span>
           </div>
-        </a>
+        </div>
         {{/each}}
       </div>
     </div>
@@ -249,21 +285,36 @@
       <div class="war-versus__section-title">Top Contributors</div>
       <div class="war-versus__participants">
         {{#each topDefenderParticipants}}
-        <a href="{{#if allianceId}}/alliance/{{allianceId}}{{else if corporationId}}/corporation/{{corporationId}}{{/if}}" class="war-versus__participant">
+        <div class="war-versus__participant">
+          <div class="war-versus__participant-logos">
+            {{#if allianceId}}
+              <div class="war-versus__participant-logo">
+                {{> partials/eve-image type="alliance" id=allianceId size=32}}
+              </div>
+            {{/if}}
+            {{#if corporationId}}
+              <div class="war-versus__participant-logo">
+                {{> partials/eve-image type="corporation" id=corporationId size=32}}
+              </div>
+            {{/if}}
+          </div>
           <div class="war-versus__participant-main">
-            {{> components/eve-image imageType=(fallback allianceId "alliance" "corporation") imageId=(fallback allianceId corporationId) size=32}}
-            <div class="war-versus__participant-info">
-              {{#if allianceId}}
-                <div class="war-versus__participant-alliance">{{#if allianceName}}{{allianceName}}{{else}}Alliance #{{allianceId}}{{/if}}</div>
-              {{/if}}
-              <div class="war-versus__participant-corporation">{{#if corporationName}}{{corporationName}}{{else}}Corporation #{{corporationId}}{{/if}}</div>
-            </div>
+            {{#if allianceId}}
+              <div class="war-versus__participant-alliance">
+                <a href="/alliance/{{allianceId}}">{{#if allianceName}}{{allianceName}}{{else}}Alliance #{{allianceId}}{{/if}}</a>
+              </div>
+            {{/if}}
+            {{#if corporationId}}
+              <div class="war-versus__participant-corporation">
+                <a href="/corporation/{{corporationId}}">{{#if corporationName}}{{corporationName}}{{else}}Corporation #{{corporationId}}{{/if}}</a>
+              </div>
+            {{/if}}
           </div>
           <div class="war-versus__participant-stats">
             <span>{{kills}} kills</span>
             <span class="color-green">{{abbreviateISK value}}</span>
           </div>
-        </a>
+        </div>
         {{/each}}
       </div>
     </div>
@@ -344,25 +395,42 @@
 .war-hero__combatant {
   flex: 1;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 16px;
   max-width: 45%;
+  align-items: center;
+}
+
+.war-hero__combatant-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
 }
 
 .war-hero__combatant-details {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
 }
 
-.war-hero__combatant--left {
+.war-hero__combatant--left .war-hero__combatant-meta {
+  flex-direction: row-reverse;
+}
+
+.war-hero__combatant--left .war-hero__combatant-details {
   align-items: flex-end;
   text-align: right;
 }
 
-.war-hero__combatant--right {
+.war-hero__combatant--right .war-hero__combatant-details {
   align-items: flex-start;
   text-align: left;
+}
+
+.war-hero__combatant-image {
+  flex-shrink: 0;
 }
 
 .war-hero__combatant-label {
@@ -375,11 +443,10 @@
 }
 
 .war-hero__combatant-name {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--color-text-white);
   line-height: 1.3;
-  min-height: 48px;
   display: flex;
   align-items: center;
   font-family: 'Orbitron', 'Rajdhani', 'Russo One', sans-serif;
@@ -399,30 +466,32 @@
 
 .war-hero__combatant-stats {
   display: flex;
-  gap: 16px;
-  margin-top: auto;
-  padding-top: 12px;
+  gap: 24px;
+  justify-content: center;
+  width: 100%;
 }
 
 .war-hero__stat {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  align-items: center;
 }
 
 .war-hero__stat-value {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--color-text-white);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .war-hero__stat-label {
-  font-size: 9px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
   color: var(--color-text-secondary);
   opacity: 0.9;
+  white-space: nowrap;
 }
 
 /* VS Badge */
@@ -526,9 +595,10 @@
   background: rgba(74, 158, 255, 0.1);
   border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  gap: 8px;
+}
+
+.war-allies__item a {
+  color: var(--color-accent-blue);
   text-decoration: none;
 }
 
@@ -644,16 +714,24 @@
 }
 
 .war-versus__participant {
+  display: flex;
+  gap: 10px;
+  align-items: center;
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
   transition: all 0.2s ease;
+}
+
+.war-versus__participant-logos {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  text-decoration: none;
-  color: inherit;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.war-versus__participant-logo {
+  flex-shrink: 0;
 }
 
 .war-versus__participant:hover {
@@ -678,14 +756,9 @@
 
 .war-versus__participant-main {
   display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.war-versus__participant-info {
-  display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  margin-bottom: 4px;
 }
 
 .war-versus__participant-alliance {
@@ -722,9 +795,13 @@
 
 .war-versus__participant-stats {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+  margin-left: auto;
   font-size: 10px;
   color: var(--color-text-secondary);
+  min-width: 100px;
 }
 
 .war-versus__kills {

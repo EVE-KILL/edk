@@ -10,13 +10,12 @@ import { getCorporationWithAlliance } from '../../../models/corporations';
 import {
   getEntityKillmails,
   estimateEntityKillmails,
-  estimateEntityKillmails,
 } from '../../../models/killlist';
+import { getMostValuableKillsByCorporation } from '../../../models/mostValuableKills';
+import { getTopVictimsByAttacker } from '../../../models/topBoxes';
 import { track } from '../../../utils/performance-decorators';
 
 import { parseKilllistFilters } from '../../../helpers/killlist-filters';
-import { getMostValuableLossesByCorporation } from '../../../models/mostValuableKills';
-import { getTopAttackersByVictim } from '../../../models/topBoxes';
 
 import { handleError } from '../../../utils/error';
 
@@ -47,9 +46,20 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
+    // Get corporation stats
+    const stats = await track(
+      'corporation:losses:fetch_stats',
+      'application',
+      async () => {
+        const useCache = await isStatsCachePopulated();
+        return useCache
+          ? await getEntityStatsFromCache(corporationId, 'corporation', 'all')
+          : await getEntityStatsFromView(corporationId, 'corporation', 'all');
+      }
+    );
+
     // Fetch all entity data in parallel
     const [
-      stats,
       topCharacters,
       topCorps,
       topAlliances,
@@ -58,60 +68,53 @@ export default defineEventHandler(async (event: H3Event) => {
       topRegions,
       mostValuable,
     ] = await track(
-      'corporation:losses:fetch_dashboard_stats',
+      'corporation:losses:fetch_dashboard_data',
       'application',
       async () => {
-        // Use cache if available, fallback to view
-        const useCache = await isStatsCachePopulated();
-        const statsPromise = useCache
-          ? getEntityStatsFromCache(corporationId, 'corporation', 'all')
-          : getEntityStatsFromView(corporationId, 'corporation', 'all');
-
         return await Promise.all([
-          statsPromise,
-          getTopAttackersByVictim(
+          getTopVictimsByAttacker(
             corporationId,
             'corporation',
             'week',
             'character',
             10
           ),
-          getTopAttackersByVictim(
+          getTopVictimsByAttacker(
             corporationId,
             'corporation',
             'week',
             'corporation',
             10
           ),
-          getTopAttackersByVictim(
+          getTopVictimsByAttacker(
             corporationId,
             'corporation',
             'week',
             'alliance',
             10
           ),
-          getTopAttackersByVictim(
+          getTopVictimsByAttacker(
             corporationId,
             'corporation',
             'week',
             'ship',
             10
           ),
-          getTopAttackersByVictim(
+          getTopVictimsByAttacker(
             corporationId,
             'corporation',
             'week',
             'system',
             10
           ),
-          getTopAttackersByVictim(
+          getTopVictimsByAttacker(
             corporationId,
             'corporation',
             'week',
             'region',
             10
           ),
-          getMostValuableLossesByCorporation(corporationId, 'week', 6),
+          getMostValuableKillsByCorporation(corporationId, 'week', 6),
         ]);
       }
     );
@@ -224,9 +227,9 @@ export default defineEventHandler(async (event: H3Event) => {
         return {
           ships: (topShips as any[]).map((s: any) => ({
             ...s,
-            imageType: 'type',
+            imageType: 'ship',
             imageId: s.id,
-            link: `/type/${s.id}`,
+            link: `/item/${s.id}`,
           })),
           characters: (topCharacters as any[]).map((c: any) => ({
             ...c,
@@ -264,7 +267,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // Transform most valuable kills to template format
     const transformedMostValuable = await track(
-      'corporation:transform_most_valuable',
+      'corporation:losses:transform_most_valuable',
       'application',
       async () => {
         return mostValuable.map((kill) => {
@@ -288,17 +291,17 @@ export default defineEventHandler(async (event: H3Event) => {
       },
       {
         ...entityData,
-        killmails,
-        pagination,
         top10Stats: top10,
-        characterTitle: 'Top Agressor Characters',
-        corporationTitle: 'Top Agressor Corps',
-        allianceTitle: 'Top Agressor Alliances',
-        shipTitle: 'Top Agressor Ships',
-        systemTitle: 'Top Systems',
+        characterTitle: 'Most Hunted Characters',
+        corporationTitle: 'Most Hunted Corps',
+        allianceTitle: 'Most Hunted Alliances',
+        shipTitle: 'Most Hunted Ships',
+        systemTitle: 'Top Hunting Grounds',
         regionTitle: 'Top Regions',
         timeRange: 'Last 7 Days',
         mostValuableKills: transformedMostValuable,
+        killmails,
+        pagination,
         filterDefaults: {
           ...userFilters,
           securityStatus,

@@ -25,8 +25,8 @@ The application uses BullMQ to manage background jobs. Adding a new queue involv
     }
     ```
 
-    -   The `name` export is used to identify the queue.
-    -   The `default` export is the function that will be called to process jobs from this queue.
+    - The `name` export is used to identify the queue.
+    - The `default` export is the function that will be called to process jobs from this queue.
 
 3.  **The queue is now ready to be used.** The queue runner (`bun queue`) will automatically discover and start processing jobs for this new queue.
 
