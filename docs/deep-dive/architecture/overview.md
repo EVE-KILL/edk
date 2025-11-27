@@ -45,29 +45,32 @@ graph TD
     A -- HTTP/WebSocket --> B
     B -- Renders HTML --> A
     A -- API Calls --> C
-    C -- Jobs --> E
+    C -- Enqueues Jobs --> E
     D -- Real-time Updates --> A
-    E -- Processes Jobs --> H
-    E -- Processes Jobs --> J
-    F -- Scheduled Tasks --> E
-    G -- Ingests Killmails --> E
-    C -- Reads/Writes --> H
+    E -- Processes Killmails --> H
+    E -- Updates Search Index --> J
+    F -- Schedules Periodic Tasks --> E
+    G -- Listens for and Enqueues Killmails --> E
+    C -- Reads/Writes Data --> H
     C -- Caches Data --> I
-    C -- Searches --> J
+    C -- Performs Searches --> J
 ```
-
-*TODO: This diagram will be replaced with a more detailed and polished version.*
 
 ## Data Flow
 
-A typical data flow for a new killmail looks like this:
+The data flow for a new killmail is designed to be asynchronous and resilient, ensuring that the application can handle a high volume of incoming data without impacting the user experience.
 
-1.  The **RedisQ Listener** ingests a new killmail from the zKillboard RedisQ feed.
-2.  The listener enqueues a job in **BullMQ** to process the killmail.
-3.  A **Queue Worker** picks up the job and processes the killmail data, fetching additional details from the ESI API if necessary.
-4.  The processed killmail data is stored in the **PostgreSQL** database.
-5.  The data is also indexed in the **Typesense** search engine.
-6.  The **WebSocket Server** sends a real-time update to any connected clients to notify them of the new killmail.
-7.  A user can then view the killmail in their **Browser**, which is rendered by the **Web Server**.
+1.  **Ingestion:** The **RedisQ Listener** service continuously polls the zKillboard RedisQ feed for new killmails. When a new killmail is detected, it is immediately enqueued as a job in the **BullMQ** processing queue.
 
-*TODO: A more detailed data flow diagram will be added here.*
+2.  **Processing:** A pool of **Queue Workers** listens for new jobs on the queue. When a new killmail job is available, a worker picks it up and begins processing. This involves:
+    *   Fetching additional data from the ESI API, such as character and corporation details.
+    *   Calculating the total value of the killmail.
+    *   Formatting the data into a standardized format.
+
+3.  **Storage:** The processed killmail data is then stored in the **PostgreSQL** database. This includes creating or updating records for the killmail itself, as well as any associated characters, corporations, and alliances.
+
+4.  **Indexing:** Once the killmail has been successfully stored in the database, it is indexed in the **Typesense** search engine. This allows users to quickly and easily search for the killmail using a variety of criteria.
+
+5.  **Real-time Notification:** The **WebSocket Server** sends a real-time update to all connected clients, notifying them of the new killmail. This allows the user interface to be updated in real-time, without the need for the user to refresh the page.
+
+This asynchronous data flow ensures that the application remains responsive and performant, even when under heavy load.
