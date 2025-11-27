@@ -1,14 +1,19 @@
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
+import {
+  getEntityStatsFromCache,
+  isStatsCachePopulated,
+} from '../../../models/entityStatsCache';
 import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getCharacterWithCorporationAndAlliance } from '../../../models/characters';
 import {
   getEntityKillmails,
   estimateEntityKillmails,
-  estimateEntityKillmails,
 } from '../../../models/killlist';
 import { parseKilllistFilters } from '../../../helpers/killlist-filters';
+import { track } from '../../../utils/performance-decorators';
+import { getDashboardData } from '../../../helpers/dashboard-data';
 
 import { handleError } from '../../../utils/error';
 
@@ -24,8 +29,13 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Fetch character basic info using model
-    const characterData =
-      await getCharacterWithCorporationAndAlliance(characterId);
+    const characterData = await track(
+      'character:losses:fetch_basic_info',
+      'application',
+      async () => {
+        return await getCharacterWithCorporationAndAlliance(characterId);
+      }
+    );
 
     if (!characterData) {
       throw createError({
@@ -33,9 +43,6 @@ export default defineEventHandler(async (event: H3Event) => {
         statusMessage: 'Character not found',
       });
     }
-
-    // Get character stats using the same query as dashboard
-    const stats = await getEntityStatsFromView(characterId, 'character', 'all');
 
     // Get pagination parameters
     const query = getQuery(event);
@@ -53,21 +60,44 @@ export default defineEventHandler(async (event: H3Event) => {
       shipClass,
     } = parseKilllistFilters(query);
 
-    // Fetch killmails where character was victim (losses) using model
-    const [killmailsData, totalKillmails] = await Promise.all([
-      getEntityKillmails(
-        characterId,
-        'character',
-        'losses',
-        page,
-        perPage,
-        userFilters
-      ),
-      estimateEntityKillmails(characterId, 'character', 'losses', userFilters),
+    // Fetch all data in parallel
+    const [stats, dashboardData, [killmailsData, totalKillmails]] = await Promise.all([
+      track('character:losses:fetch_stats', 'application', async () => {
+        const useCache = await isStatsCachePopulated();
+        return useCache
+          ? await getEntityStatsFromCache(characterId, 'character', 'all')
+          : await getEntityStatsFromView(characterId, 'character', 'all');
+      }),
+      getDashboardData(characterId, 'character', 'losses', userFilters),
+      track('character:losses:fetch_killmails', 'application', async () => {
+        return await Promise.all([
+          getEntityKillmails(
+            characterId,
+            'character',
+            'losses',
+            page,
+            perPage,
+            userFilters
+          ),
+          estimateEntityKillmails(
+            characterId,
+            'character',
+            'losses',
+            userFilters
+          ),
+        ]);
+      }),
     ]);
 
     // Calculate pagination
-    const totalPages = Math.ceil(totalKillmails / perPage);
+    const totalPages = await track(
+      'character:losses:calculate_pagination',
+      'application',
+      async () => {
+        return Math.ceil(totalKillmails / perPage);
+      }
+    );
+
     const pagination = {
       currentPage: page,
       totalPages,
@@ -82,16 +112,22 @@ export default defineEventHandler(async (event: H3Event) => {
     };
 
     // Transform killmail data to match component expectations
-    const killmails = killmailsData.map((km) => {
-      const normalized = normalizeKillRow(km);
-      return {
-        ...normalized,
-        isLoss: true,
-        killmailTimeRelative: timeAgo(
-          km.killmailTime ?? normalized.killmailTime
-        ),
-      };
-    });
+    const killmails = await track(
+      'character:losses:normalize_killmails',
+      'application',
+      async () => {
+        return killmailsData.map((km) => {
+          const normalized = normalizeKillRow(km);
+          return {
+            ...normalized,
+            isLoss: true,
+            killmailTimeRelative: timeAgo(
+              km.killmailTime ?? normalized.killmailTime
+            ),
+          };
+        });
+      }
+    );
 
     // Entity header data
     const entityData = {
@@ -103,11 +139,13 @@ export default defineEventHandler(async (event: H3Event) => {
       baseUrl: `/character/${characterId}/losses`,
       entityBaseUrl: `/character/${characterId}`,
       currentTab: 'losses',
-      parent: {
-        id: characterData.corporationId,
-        name: characterData.corporationName,
-        ticker: characterData.corporationTicker,
-      },
+      parent: characterData.corporationId
+        ? {
+            id: characterData.corporationId,
+            name: characterData.corporationName,
+            ticker: characterData.corporationTicker,
+          }
+        : null,
       grandparent: characterData.allianceId
         ? {
             id: characterData.allianceId,
@@ -127,6 +165,7 @@ export default defineEventHandler(async (event: H3Event) => {
       },
       {
         ...entityData,
+        ...dashboardData,
         killmails,
         pagination,
         filterDefaults: {

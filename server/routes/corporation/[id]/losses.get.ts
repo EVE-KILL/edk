@@ -10,9 +10,9 @@ import { getCorporationWithAlliance } from '../../../models/corporations';
 import {
   getEntityKillmails,
   estimateEntityKillmails,
-  estimateEntityKillmails,
 } from '../../../models/killlist';
 import { track } from '../../../utils/performance-decorators';
+import { getDashboardData } from '../../../helpers/dashboard-data';
 
 import { parseKilllistFilters } from '../../../helpers/killlist-filters';
 
@@ -45,18 +45,6 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
-    // Get corporation stats
-    const stats = await track(
-      'corporation:losses:fetch_stats',
-      'application',
-      async () => {
-        const useCache = await isStatsCachePopulated();
-        return useCache
-          ? await getEntityStatsFromCache(corporationId, 'corporation', 'all')
-          : await getEntityStatsFromView(corporationId, 'corporation', 'all');
-      }
-    );
-
     // Get pagination parameters
     const query = getQuery(event);
     const page = Math.max(1, Number.parseInt(query.page as string) || 1);
@@ -73,11 +61,16 @@ export default defineEventHandler(async (event: H3Event) => {
       shipClass,
     } = parseKilllistFilters(query);
 
-    // Fetch killmails where corporation was victim (losses) using model
-    const [killmailsData, totalKillmails] = await track(
-      'corporation:losses:fetch_killmails',
-      'application',
-      async () => {
+    // Fetch all data in parallel
+    const [stats, dashboardData, [killmailsData, totalKillmails]] = await Promise.all([
+      track('corporation:losses:fetch_stats', 'application', async () => {
+        const useCache = await isStatsCachePopulated();
+        return useCache
+          ? await getEntityStatsFromCache(corporationId, 'corporation', 'all')
+          : await getEntityStatsFromView(corporationId, 'corporation', 'all');
+      }),
+      getDashboardData(corporationId, 'corporation', 'losses', userFilters),
+      track('corporation:losses:fetch_killmails', 'application', async () => {
         return await Promise.all([
           getEntityKillmails(
             corporationId,
@@ -94,8 +87,8 @@ export default defineEventHandler(async (event: H3Event) => {
             userFilters
           ),
         ]);
-      }
-    );
+      }),
+    ]);
 
     // Calculate pagination
     const totalPages = await track(
@@ -167,6 +160,7 @@ export default defineEventHandler(async (event: H3Event) => {
       },
       {
         ...entityData,
+        ...dashboardData,
         killmails,
         pagination,
         filterDefaults: {

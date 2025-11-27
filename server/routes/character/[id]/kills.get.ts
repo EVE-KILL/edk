@@ -10,10 +10,10 @@ import { getCharacterWithCorporationAndAlliance } from '../../../models/characte
 import {
   getEntityKillmails,
   estimateEntityKillmails,
-  estimateEntityKillmails,
 } from '../../../models/killlist';
 import { parseKilllistFilters } from '../../../helpers/killlist-filters';
 import { track } from '../../../utils/performance-decorators';
+import { getDashboardData } from '../../../helpers/dashboard-data';
 
 import { handleError } from '../../../utils/error';
 
@@ -44,18 +44,6 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
-    // Get character stats
-    const stats = await track(
-      'character:kills:fetch_stats',
-      'application',
-      async () => {
-        const useCache = await isStatsCachePopulated();
-        return useCache
-          ? await getEntityStatsFromCache(characterId, 'character', 'all')
-          : await getEntityStatsFromView(characterId, 'character', 'all');
-      }
-    );
-
     // Get pagination parameters
     const query = getQuery(event);
     const page = Math.max(1, Number.parseInt(query.page as string) || 1);
@@ -72,11 +60,16 @@ export default defineEventHandler(async (event: H3Event) => {
       shipClass,
     } = parseKilllistFilters(query);
 
-    // Fetch killmails where character was attacker (kills) using model
-    const [killmailsData, totalKillmails] = await track(
-      'character:kills:fetch_killmails',
-      'application',
-      async () => {
+    // Fetch all data in parallel
+    const [stats, dashboardData, [killmailsData, totalKillmails]] = await Promise.all([
+      track('character:kills:fetch_stats', 'application', async () => {
+        const useCache = await isStatsCachePopulated();
+        return useCache
+          ? await getEntityStatsFromCache(characterId, 'character', 'all')
+          : await getEntityStatsFromView(characterId, 'character', 'all');
+      }),
+      getDashboardData(characterId, 'character', 'kills', userFilters),
+      track('character:kills:fetch_killmails', 'application', async () => {
         return await Promise.all([
           getEntityKillmails(
             characterId,
@@ -93,8 +86,8 @@ export default defineEventHandler(async (event: H3Event) => {
             userFilters
           ),
         ]);
-      }
-    );
+      }),
+    ]);
 
     // Calculate pagination
     const totalPages = await track(
@@ -171,6 +164,7 @@ export default defineEventHandler(async (event: H3Event) => {
       },
       {
         ...entityData,
+        ...dashboardData,
         killmails,
         pagination,
         filterDefaults: {
