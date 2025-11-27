@@ -40,6 +40,8 @@
       <div class="war-card__header-content">
         <div class="war-card__title">War #{{warId}}</div>
         <div class="war-card__badges">
+          {{#unless finished}}<span class="war-card__badge war-card__badge--active">Active</span>{{/unless}}
+          {{#if finished}}<span class="war-card__badge war-card__badge--finished">Finished</span>{{/if}}
           {{#if mutual}}<span class="war-card__badge war-card__badge--mutual">Mutual</span>{{/if}}
           {{#if openForAllies}}<span class="war-card__badge war-card__badge--allies">Allies</span>{{/if}}
         </div>
@@ -175,6 +177,18 @@
   padding: 2px 6px;
   border-radius: 3px;
   font-weight: 600;
+}
+
+.war-card__badge--active {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.war-card__badge--finished {
+  background: rgba(156, 163, 175, 0.2);
+  color: #9ca3af;
+  border: 1px solid rgba(156, 163, 175, 0.3);
 }
 
 .war-card__badge--mutual {

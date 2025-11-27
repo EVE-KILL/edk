@@ -566,6 +566,8 @@ export default defineEventHandler(async (event: H3Event) => {
       war: {
         ...war,
         declared: war.declared ? timeAgo(war.declared) : null,
+        started: war.started ? timeAgo(war.started) : null,
+        finished: war.finished ? timeAgo(war.finished) : null,
       },
       stats: {
         ...killStats,

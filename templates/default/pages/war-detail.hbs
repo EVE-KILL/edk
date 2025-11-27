@@ -51,10 +51,23 @@
         </div>
       </div>
 
-      <!-- VS Badge -->
+      <!-- VS Badge with War Info -->
       <div class="war-hero__vs">
         <div class="war-hero__vs-text">VS</div>
         <div class="war-hero__vs-score">{{stats.aggressorShipsKilled}} : {{stats.defenderShipsKilled}}</div>
+        <div class="war-hero__vs-info">
+          <div class="war-hero__vs-status {{#unless war.finished}}war-hero__vs-status--active{{/unless}}">
+            {{#if war.finished}}Finished{{else}}Active{{/if}}
+          </div>
+          {{#if war.started}}
+          <div class="war-hero__vs-date">Started {{war.started}}</div>
+          {{else if war.declared}}
+          <div class="war-hero__vs-date">Declared {{war.declared}}</div>
+          {{/if}}
+          {{#if war.finished}}
+          <div class="war-hero__vs-date">Ended {{war.finished}}</div>
+          {{/if}}
+        </div>
       </div>
 
       <!-- Defender Side -->
@@ -527,6 +540,39 @@
   font-weight: 700;
   color: var(--color-text-secondary);
   font-family: 'Rajdhani', monospace;
+}
+
+.war-hero__vs-info {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.war-hero__vs-status {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: rgba(156, 163, 175, 0.2);
+  color: #9ca3af;
+  border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.war-hero__vs-status--active {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.war-hero__vs-date {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  white-space: nowrap;
 }
 
 /* Footer Stats */
