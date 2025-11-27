@@ -11,20 +11,32 @@
 
 <!-- Featured Faction Conflicts -->
 {{#if highlightWars.length}}
-<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 20px; overflow: hidden;">
-  <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
-    <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+<div class="featured-conflicts">
+  <div class="featured-conflicts__header">
+    <div class="featured-conflicts__title">
       Featured Faction Conflicts
     </div>
   </div>
-  <div style="padding: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
+  <div class="featured-conflicts__grid">
     {{#each highlightWars}}
-    <a href="/wars/{{warId}}" style="display: block; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 12px; text-decoration: none; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--color-accent-blue)'; this.style.background='rgba(155, 179, 232, 0.1)'" onmouseout="this.style.borderColor='var(--color-border-dark)'; this.style.background='rgba(0, 0, 0, 0.2)'">
-      <div style="font-size: 10px; text-transform: uppercase; color: var(--color-text-secondary); letter-spacing: 0.5px; margin-bottom: 6px;">War #{{warId}}</div>
-      <div style="font-size: 12px; color: var(--color-text-white); font-weight: 600; line-height: 1.4;">
-        {{#if aggressorAllianceName}}{{aggressorAllianceName}}{{else if aggressorCorporationName}}{{aggressorCorporationName}}{{else}}Aggressor{{/if}}
-        <span style="color: var(--color-text-secondary); font-weight: 400;"> vs </span>
-        {{#if defenderAllianceName}}{{defenderAllianceName}}{{else if defenderCorporationName}}{{defenderCorporationName}}{{else}}Defender{{/if}}
+    <a href="/wars/{{warId}}" class="featured-conflict-card">
+      <div class="featured-conflict-card__id">War #{{warId}}</div>
+      <div class="featured-conflict-card__body">
+        {{#if aggressorAllianceId}}
+          {{entity id=aggressorAllianceId name=aggressorAllianceName type="alliance" size=32}}
+        {{else if aggressorCorporationId}}
+          {{entity id=aggressorCorporationId name=aggressorCorporationName type="corporation" size=32}}
+        {{else}}
+          <span class="entity-name">Aggressor</span>
+        {{/if}}
+        <span class="featured-conflict-card__vs">vs</span>
+        {{#if defenderAllianceId}}
+          {{entity id=defenderAllianceId name=defenderAllianceName type="alliance" size=32}}
+        {{else if defenderCorporationId}}
+          {{entity id=defenderCorporationId name=defenderCorporationName type="corporation" size=32}}
+        {{else}}
+          <span class="entity-name">Defender</span>
+        {{/if}}
       </div>
     </a>
     {{/each}}
@@ -33,9 +45,9 @@
 {{/if}}
 
 <!-- Wars List -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px;">
+<div class="wars-grid">
   {{#each wars}}
-  <div class="war-card" onclick="window.location.href='/wars/{{warId}}';" style="cursor: pointer;">
+  <div class="war-card" onclick="window.location.href='/wars/{{warId}}';">
     <div class="war-card__header">
       <div class="war-card__header-content">
         <div class="war-card__title">War #{{warId}}</div>
@@ -54,7 +66,13 @@
       <!-- Aggressor Side -->
       <div class="war-card__fighter war-card__fighter--left">
         <div class="war-card__fighter-name">
-          {{#if aggressorAllianceName}}{{aggressorAllianceName}}{{else if aggressorCorporationName}}{{aggressorCorporationName}}{{else}}Unknown{{/if}}
+          {{#if aggressorAllianceId}}
+            {{entity id=aggressorAllianceId name=aggressorAllianceName type="alliance" size=48}}
+          {{else if aggressorCorporationId}}
+            {{entity id=aggressorCorporationId name=aggressorCorporationName type="corporation" size=48}}
+          {{else}}
+            <span>Unknown</span>
+          {{/if}}
         </div>
         <div class="war-card__fighter-label">Aggressor</div>
         <div class="war-card__fighter-stats">
@@ -77,7 +95,13 @@
       <!-- Defender Side -->
       <div class="war-card__fighter war-card__fighter--right">
         <div class="war-card__fighter-name">
-          {{#if defenderAllianceName}}{{defenderAllianceName}}{{else if defenderCorporationName}}{{defenderCorporationName}}{{else}}Unknown{{/if}}
+          {{#if defenderAllianceId}}
+            {{entity id=defenderAllianceId name=defenderAllianceName type="alliance" size=48}}
+          {{else if defenderCorporationId}}
+            {{entity id=defenderCorporationId name=defenderCorporationName type="corporation" size=48}}
+          {{else}}
+            <span>Unknown</span>
+          {{/if}}
         </div>
         <div class="war-card__fighter-label">Defender</div>
         <div class="war-card__fighter-stats">
@@ -103,12 +127,97 @@
 </div>
 
 <style>
+/* Featured Faction Conflicts */
+.featured-conflicts {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.featured-conflicts__header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+.featured-conflicts__title {
+  color: var(--color-text-white);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.featured-conflicts__grid {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.featured-conflict-card {
+  display: block;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.featured-conflict-card:hover {
+  border-color: var(--color-accent-blue);
+  background: rgba(155, 179, 232, 0.1);
+}
+
+.featured-conflict-card__id {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.featured-conflict-card__body {
+  font-size: 12px;
+  color: var(--color-text-white);
+  font-weight: 600;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.featured-conflict-card__vs {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.entity-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.entity-image {
+  border-radius: 50%;
+}
+
+.wars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+}
+
 .war-card {
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-sm);
   overflow: hidden;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .war-card:hover {
@@ -249,7 +358,7 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text-white);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 3px rgba(0, 0, 0,.8);
 }
 
 .war-card__fighter-stat-label {

@@ -1,7 +1,9 @@
 import Handlebars from 'handlebars';
 import { readFile, access, readdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { H3Event } from 'h3';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { requestContext } from '../utils/request-context';
 import { env } from './env';
 
@@ -687,6 +689,15 @@ function registerHelpers() {
     }
   );
 
+  // Entity helper
+  try {
+    const helperPath = resolve(fileURLToPath(import.meta.url), `../../../templates/${getTheme()}/helpers/entity.js`);
+    if (fs.existsSync(helperPath)) {
+      Handlebars.registerHelper('entity', require(helperPath));
+    }
+  } catch (e) {
+    // ignore, file might not exist
+  }
   // Switch/case helper for template control flow
   Handlebars.registerHelper(
     'switch',

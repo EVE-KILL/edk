@@ -82,4 +82,10 @@ export default defineNitroConfig({
       'server/fetchers/**',
     ],
   },
+  serverAssets: [
+    {
+      baseName: 'templates',
+      dir: './templates',
+    },
+  ],
 });
