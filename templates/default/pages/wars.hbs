@@ -20,11 +20,17 @@
   <div style="padding: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
     {{#each highlightWars}}
     <a href="/wars/{{warId}}" style="display: block; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 12px; text-decoration: none; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--color-accent-blue)'; this.style.background='rgba(155, 179, 232, 0.1)'" onmouseout="this.style.borderColor='var(--color-border-dark)'; this.style.background='rgba(0, 0, 0, 0.2)'">
-      <div style="font-size: 10px; text-transform: uppercase; color: var(--color-text-secondary); letter-spacing: 0.5px; margin-bottom: 6px;">War #{{warId}}</div>
-      <div style="font-size: 12px; color: var(--color-text-white); font-weight: 600; line-height: 1.4;">
-        {{#if aggressorAllianceName}}{{aggressorAllianceName}}{{else if aggressorCorporationName}}{{aggressorCorporationName}}{{else}}Aggressor{{/if}}
-        <span style="color: var(--color-text-secondary); font-weight: 400;"> vs </span>
-        {{#if defenderAllianceName}}{{defenderAllianceName}}{{else if defenderCorporationName}}{{defenderCorporationName}}{{else}}Defender{{/if}}
+      <div style="font-size: 10px; text-transform: uppercase; color: var(--color-text-secondary); letter-spacing: 0.5px; margin-bottom: 8px;">War #{{warId}}</div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        {{> components/eve-image imageType=(fallback aggressorAllianceId "alliance" "corporation") imageId=(fallback aggressorAllianceId aggressorCorporationId) size=32}}
+        <div style="font-size: 12px; color: var(--color-text-white); font-weight: 600; line-height: 1.4;">
+          {{#if aggressorAllianceName}}{{aggressorAllianceName}}{{else if aggressorCorporationName}}{{aggressorCorporationName}}{{else}}Aggressor{{/if}}
+        </div>
+        <div style="color: var(--color-text-secondary); font-weight: 400; margin: 0 4px;">vs</div>
+        {{> components/eve-image imageType=(fallback defenderAllianceId "alliance" "corporation") imageId=(fallback defenderAllianceId defenderCorporationId) size=32}}
+        <div style="font-size: 12px; color: var(--color-text-white); font-weight: 600; line-height: 1.4;">
+          {{#if defenderAllianceName}}{{defenderAllianceName}}{{else if defenderCorporationName}}{{defenderCorporationName}}{{else}}Defender{{/if}}
+        </div>
       </div>
     </a>
     {{/each}}
@@ -53,10 +59,13 @@
     <div class="war-card__fight">
       <!-- Aggressor Side -->
       <div class="war-card__fighter war-card__fighter--left">
-        <div class="war-card__fighter-name">
-          {{#if aggressorAllianceName}}{{aggressorAllianceName}}{{else if aggressorCorporationName}}{{aggressorCorporationName}}{{else}}Unknown{{/if}}
+        {{> components/eve-image imageType=(fallback aggressorAllianceId "alliance" "corporation") imageId=(fallback aggressorAllianceId aggressorCorporationId) size=48}}
+        <div class="war-card__fighter-details">
+          <div class="war-card__fighter-name">
+            {{#if aggressorAllianceName}}{{aggressorAllianceName}}{{else if aggressorCorporationName}}{{aggressorCorporationName}}{{else}}Unknown{{/if}}
+          </div>
+          <div class="war-card__fighter-label">Aggressor</div>
         </div>
-        <div class="war-card__fighter-label">Aggressor</div>
         <div class="war-card__fighter-stats">
           <div class="war-card__fighter-stat">
             <div class="war-card__fighter-stat-value">{{aggressorShipsKilled}}</div>
@@ -76,10 +85,13 @@
 
       <!-- Defender Side -->
       <div class="war-card__fighter war-card__fighter--right">
-        <div class="war-card__fighter-name">
-          {{#if defenderAllianceName}}{{defenderAllianceName}}{{else if defenderCorporationName}}{{defenderCorporationName}}{{else}}Unknown{{/if}}
+        {{> components/eve-image imageType=(fallback defenderAllianceId "alliance" "corporation") imageId=(fallback defenderAllianceId defenderCorporationId) size=48}}
+        <div class="war-card__fighter-details">
+          <div class="war-card__fighter-name">
+            {{#if defenderAllianceName}}{{defenderAllianceName}}{{else if defenderCorporationName}}{{defenderCorporationName}}{{else}}Unknown{{/if}}
+          </div>
+          <div class="war-card__fighter-label">Defender</div>
         </div>
-        <div class="war-card__fighter-label">Defender</div>
         <div class="war-card__fighter-stats">
           <div class="war-card__fighter-stat">
             <div class="war-card__fighter-stat-value">{{defenderShipsKilled}}</div>
@@ -189,10 +201,15 @@
 .war-card__fighter {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 12px;
   max-width: 48%;
-  min-height: 120px;
+}
+
+.war-card__fighter-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .war-card__fighter--left {

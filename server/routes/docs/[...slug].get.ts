@@ -17,10 +17,7 @@ export default defineEventHandler(async (event: H3Event) => {
           : undefined;
 
     if (!slug) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Document not found',
-      });
+      return sendRedirect(event, '/docs', 302);
     }
 
     const docsIndex = await track('docs:load_index', 'application', () =>

@@ -157,7 +157,6 @@
       selectedIndex = -1;
       
       if (currentResults.length > 0) {
-        addRecentSearch(query);
         renderResults(currentResults);
       } else {
         renderNoResults(query);
@@ -250,14 +249,7 @@
           }
           
           html += `
-            <div class="spotlight-result-item" data-index="${resultIndex}" onclick="window.location.href='${url}'">
-              ${imageHtml}
-              <div class="spotlight-result-content">
-                <div class="spotlight-result-name">${escapeHtml(result.name)}</div>
-                <div class="spotlight-result-type">${result.type}</div>
-              </div>
-              <div class="spotlight-result-arrow">→</div>
-            </div>
+            {{> partials/spotlight-entity-card result=result resultIndex=resultIndex url=url}}
           `;
         });
         
@@ -290,7 +282,7 @@
   }
 
   function navigateToResult(result) {
-    addRecentSearch(result.name);
+    addRecentSearch(searchInput.value);
     window.location.href = getResultUrl(result);
   }
 

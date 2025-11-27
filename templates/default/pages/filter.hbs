@@ -1,0 +1,8 @@
+<!-- Advanced Filter Page -->
+{{> components/page-header title=pageHeader.title breadcrumbs=pageHeader.breadcrumbs}}
+
+<div class="filter-page-layout">
+  <div class="filter-page-main">
+    {{> partials/killlist-filters baseUrl="/filter" filterDefaults=filterDefaults}}
+  </div>
+</div>

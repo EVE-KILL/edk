@@ -14,6 +14,8 @@ import {
 } from '../../../models/killlist';
 import { parseKilllistFilters } from '../../../helpers/killlist-filters';
 import { track } from '../../../utils/performance-decorators';
+import { getMostValuableKillsByCharacter } from '../../../models/mostValuableKills';
+import { getTopVictimsByAttacker } from '../../../models/topBoxes';
 
 import { handleError } from '../../../utils/error';
 
@@ -44,15 +46,64 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
-    // Get character stats
-    const stats = await track(
-      'character:kills:fetch_stats',
+    // Fetch all entity data in parallel
+    const [
+      stats,
+      topCorps,
+      topAlliances,
+      topShips,
+      topSystems,
+      topRegions,
+      mostValuable,
+    ] = await track(
+      'character:kills:fetch_dashboard_stats',
       'application',
       async () => {
+        // Use cache if available, fallback to view
         const useCache = await isStatsCachePopulated();
-        return useCache
-          ? await getEntityStatsFromCache(characterId, 'character', 'all')
-          : await getEntityStatsFromView(characterId, 'character', 'all');
+        const statsPromise = useCache
+          ? getEntityStatsFromCache(characterId, 'character', 'all')
+          : getEntityStatsFromView(characterId, 'character', 'all');
+
+        return await Promise.all([
+          statsPromise,
+          getTopVictimsByAttacker(
+            characterId,
+            'character',
+            'week',
+            'corporation',
+            10
+          ),
+          getTopVictimsByAttacker(
+            characterId,
+            'character',
+            'week',
+            'alliance',
+            10
+          ),
+          getTopVictimsByAttacker(
+            characterId,
+            'character',
+            'week',
+            'ship',
+            10
+          ),
+          getTopVictimsByAttacker(
+            characterId,
+            'character',
+            'week',
+            'system',
+            10
+          ),
+          getTopVictimsByAttacker(
+            characterId,
+            'character',
+            'week',
+            'region',
+            10
+          ),
+          getMostValuableKillsByCharacter(characterId, 'week', 6),
+        ]);
       }
     );
 
@@ -161,6 +212,63 @@ export default defineEventHandler(async (event: H3Event) => {
         : null,
     };
 
+    // Top 10 boxes - transform to match partial expectations
+    const top10 = await track(
+      'character:kills:transform_top10',
+      'application',
+      async () => {
+        return {
+          ships: (topShips as any[]).map((s: any) => ({
+            ...s,
+            imageType: 'type',
+            imageId: s.id,
+            link: `/type/${s.id}`,
+          })),
+          characters: [],
+          systems: (topSystems as any[]).map((s: any) => ({
+            ...s,
+            imageType: 'system',
+            imageId: s.id,
+            link: `/system/${s.id}`,
+          })),
+          regions: (topRegions as any[]).map((r: any) => ({
+            ...r,
+            imageType: 'region',
+            imageId: r.id,
+            link: `/region/${r.id}`,
+          })),
+          corporations: (topCorps as any[]).map((c: any) => ({
+            ...c,
+            imageType: 'corporation',
+            imageId: c.id,
+            link: `/corporation/${c.id}`,
+          })),
+          alliances: (topAlliances as any[]).map((a: any) => ({
+            ...a,
+            imageType: 'alliance',
+            imageId: a.id,
+            link: `/alliance/${a.id}`,
+          })),
+        };
+      }
+    );
+
+    // Transform most valuable kills to template format
+    const transformedMostValuable = await track(
+      'character:transform_most_valuable',
+      'application',
+      async () => {
+        return mostValuable.map((kill) => {
+          const normalized = normalizeKillRow(kill);
+          return {
+            ...normalized,
+            totalValue: kill.totalValue ?? normalized.totalValue,
+            killmailTime: normalized.killmailTime,
+          };
+        });
+      }
+    );
+
     // Render the template
     return render(
       'pages/character-kills',
@@ -173,6 +281,14 @@ export default defineEventHandler(async (event: H3Event) => {
         ...entityData,
         killmails,
         pagination,
+        top10Stats: top10,
+        corporationTitle: 'Most Hunted Corps',
+        allianceTitle: 'Most Hunted Alliances',
+        shipTitle: 'Most Hunted Ships',
+        systemTitle: 'Top Hunting Grounds',
+        regionTitle: 'Top Regions',
+        timeRange: 'Last 7 Days',
+        mostValuableKills: transformedMostValuable,
         filterDefaults: {
           ...userFilters,
           securityStatus,

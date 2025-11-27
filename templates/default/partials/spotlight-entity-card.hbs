@@ -1,0 +1,10 @@
+<div class="spotlight-result-item" data-index="{{resultIndex}}" onclick="window.location.href='{{url}}'">
+  <div class="spotlight-result-image">
+    {{> components/eve-image imageType=result.type imageId=result.id size=32}}
+  </div>
+  <div class="spotlight-result-content">
+    <div class="spotlight-result-name">{{result.name}}</div>
+    <div class="spotlight-result-type">{{result.type}}</div>
+  </div>
+  <div class="spotlight-result-arrow">→</div>
+</div>
