@@ -47,8 +47,8 @@ export async function searchRegions(
 ): Promise<Region[]> {
   return database.find<Region>(
     `SELECT * FROM regions
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -59,7 +59,7 @@ export async function searchRegions(
  */
 export async function getRegionName(regionId: number): Promise<string | null> {
   const row = await database.findOne<{ name: string }>(
-    'SELECT name FROM regions WHERE "regionId" = :regionId',
+    'SELECT "name" FROM regions WHERE "regionId" = :regionId',
     { regionId }
   );
   return row?.name || null;
@@ -91,7 +91,10 @@ export async function countRegions(): Promise<number> {
  * Get stats for a region
  */
 export async function getRegionStats(regionId: number): Promise<any> {
-  const result = await database.findOne<{ kills: number; iskDestroyed: number }>(
+  const result = await database.findOne<{
+    kills: number;
+    iskDestroyed: number;
+  }>(
     `SELECT
       count(k."killmailId") as kills,
       sum(k."totalValue") as "iskDestroyed"

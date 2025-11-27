@@ -23,7 +23,7 @@ export class NPCStationQueries {
   static async searchStations(query: string, limit: number = 10) {
     return database.find(
       `SELECT * FROM "npcStations"
-         WHERE name ILIKE :pattern
+         WHERE "name" ILIKE :pattern
          ORDER BY "stationId"
          LIMIT :limit`,
       { pattern: `%${query}%`, limit }
@@ -32,7 +32,7 @@ export class NPCStationQueries {
 
   static async getStationName(stationId: number): Promise<string | null> {
     const result = await database.findOne<{ name: string }>(
-      'SELECT name FROM "npcStations" WHERE "stationId" = :stationId LIMIT 1',
+      'SELECT "name" FROM "npcStations" WHERE "stationId" = :stationId LIMIT 1',
       { stationId }
     );
     return result?.name || null;

@@ -1,0 +1,27 @@
+<div class="ai-stat-card ai-stat-card--{{color}}" style="
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  {{#if (eq color 'green')}}border-left: 3px solid #51cf66;{{/if}}
+  {{#if (eq color 'red')}}border-left: 3px solid #ff6b6b;{{/if}}
+  {{#if (eq color 'blue')}}border-left: 3px solid #0066cc;{{/if}}
+  {{#if (eq color 'yellow')}}border-left: 3px solid #ffd93d;{{/if}}
+">
+  <div class="ai-stat-card__value" style="
+    font-size: 24px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  ">
+    {{value}}
+  </div>
+  <div class="ai-stat-card__label" style="
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  ">
+    {{label}}
+  </div>
+</div>

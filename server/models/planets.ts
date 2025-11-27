@@ -48,8 +48,8 @@ export async function searchPlanets(
 ): Promise<Planet[]> {
   return database.find<Planet>(
     `SELECT * FROM planets
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -60,7 +60,7 @@ export async function searchPlanets(
  */
 export async function getPlanetName(planetId: number): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM planets WHERE "planetId" = :planetId',
+    'SELECT "name" FROM planets WHERE "planetId" = :planetId',
     { planetId }
   );
   return result?.name || null;

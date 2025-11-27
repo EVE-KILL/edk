@@ -21,7 +21,11 @@ interface ESIAffiliation {
 }
 
 /**
- * Fetch affiliations from ESI in batches of up to 1000 characters
+ * Fetch affiliations from ESI with recursive splitting on errors
+ *
+ * The affiliation endpoint returns 400 if ANY character in the batch is deleted/invalid.
+ * We recursively split the batch in half until we isolate the problematic characters.
+ * After 3 attempts, individual characters are queued for processing.
  */
 async function fetchAffiliations(
   characterIds: number[],
@@ -45,28 +49,42 @@ async function fetchAffiliations(
     return response.data;
   } catch (error) {
     if (attempt >= 3) {
-      logger.error('Failed to fetch affiliations after 3 attempts', {
-        characterCount: characterIds.length,
-        error: String(error),
-      });
-      // Queue individual characters for update
+      // After 3 attempts, queue individual characters for processing
+      // This handles both deleted characters and other persistent errors
+      logger.warn(
+        'Failed to fetch affiliations after 3 attempts, queueing individually',
+        {
+          characterCount: characterIds.length,
+          error: String(error),
+        }
+      );
+
       for (const characterId of characterIds) {
         await enqueueJob(QueueType.CHARACTER, { id: characterId });
       }
+
       return [];
     }
 
-    // Split and retry
+    // Split in half and process both halves recursively
     const half = Math.ceil(characterIds.length / 2);
-    const firstHalf = await fetchAffiliations(
-      characterIds.slice(0, half),
-      attempt + 1
-    );
-    const secondHalf = await fetchAffiliations(
-      characterIds.slice(half),
-      attempt + 1
-    );
-    return [...firstHalf, ...secondHalf];
+    const firstHalf = characterIds.slice(0, half);
+    const secondHalf = characterIds.slice(half);
+
+    logger.debug('Splitting batch due to error', {
+      total: characterIds.length,
+      firstHalfSize: firstHalf.length,
+      secondHalfSize: secondHalf.length,
+      attempt,
+    });
+
+    // Process both halves and merge results
+    const [firstResults, secondResults] = await Promise.all([
+      fetchAffiliations(firstHalf, attempt + 1),
+      fetchAffiliations(secondHalf, attempt + 1),
+    ]);
+
+    return [...firstResults, ...secondResults];
   }
 }
 
@@ -126,12 +144,14 @@ async function processChunk(
     }
   }
 
-  // Update updatedAt for unchanged characters so they aren't processed again soon
-  if (unchangedCharacterIds.length > 0) {
+  // Update updatedAt for ALL characters that got a successful affiliation response
+  // This prevents them from being rechecked too soon
+  const affiliatedCharacterIds = affiliations.map((a) => a.character_id);
+  if (affiliatedCharacterIds.length > 0) {
     await database.sql`
       UPDATE characters
       SET "updatedAt" = NOW()
-      WHERE "characterId" = ANY(${unchangedCharacterIds})
+      WHERE "characterId" = ANY(${affiliatedCharacterIds})
     `;
   }
 
@@ -170,6 +190,7 @@ async function runAffiliationUpdate() {
         FROM characters
         WHERE "lastActive" > NOW() - INTERVAL '365 days'
           AND ("updatedAt" IS NULL OR "updatedAt" < NOW() - INTERVAL '1 day')
+          AND (deleted = FALSE OR deleted IS NULL)
         LIMIT ${LIMIT}
       `,
     },
@@ -183,6 +204,7 @@ async function runAffiliationUpdate() {
         FROM characters
         WHERE ("lastActive" IS NULL OR "lastActive" <= NOW() - INTERVAL '365 days')
           AND ("updatedAt" IS NULL OR "updatedAt" < NOW() - INTERVAL '14 days')
+          AND (deleted = FALSE OR deleted IS NULL)
         LIMIT ${LIMIT}
       `,
     },

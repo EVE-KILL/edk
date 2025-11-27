@@ -63,8 +63,8 @@ export async function searchStationOperations(
 ): Promise<StationOperation[]> {
   return database.find<StationOperation>(
     `SELECT * FROM "stationOperations"
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -77,7 +77,7 @@ export async function getStationOperationName(
   operationId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM "stationOperations" WHERE "operationId" = :operationId',
+    'SELECT "name" FROM "stationOperations" WHERE "operationId" = :operationId',
     { operationId }
   );
   return result?.name || null;

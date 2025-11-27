@@ -66,8 +66,8 @@ export async function searchMarketGroups(
 ): Promise<MarketGroup[]> {
   return database.find<MarketGroup>(
     `SELECT * FROM "marketGroups"
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -80,7 +80,7 @@ export async function getMarketGroupName(
   marketGroupId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM "marketGroups" WHERE "marketGroupId" = :marketGroupId',
+    'SELECT "name" FROM "marketGroups" WHERE "marketGroupId" = :marketGroupId',
     { marketGroupId }
   );
   return result?.name || null;

@@ -1,0 +1,90 @@
+<!-- Detailed Entity Statistics Card -->
+<div style="
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+">
+  {{#if title}}
+  <div style="
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #fff;
+    border-bottom: 1px solid #333;
+    padding-bottom: 12px;
+  ">
+    {{title}}
+  </div>
+  {{/if}}
+  
+  <!-- Primary Stats -->
+  <div style="
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  ">
+    {{#if kills}}
+    <div style="background: #1a1a1a; padding: 12px; border-radius: 4px;">
+      <div style="color: #51cf66; font-size: 22px; font-weight: 600;">
+        {{formatNumber kills}}
+      </div>
+      <div style="color: #666; font-size: 11px; text-transform: uppercase;">Kills</div>
+    </div>
+    {{/if}}
+    
+    {{#if losses}}
+    <div style="background: #1a1a1a; padding: 12px; border-radius: 4px;">
+      <div style="color: #ff6b6b; font-size: 22px; font-weight: 600;">
+        {{formatNumber losses}}
+      </div>
+      <div style="color: #666; font-size: 11px; text-transform: uppercase;">Losses</div>
+    </div>
+    {{/if}}
+    
+    {{#if efficiency}}
+    <div style="background: #1a1a1a; padding: 12px; border-radius: 4px;">
+      <div style="color: #0066cc; font-size: 22px; font-weight: 600;">
+        {{efficiency}}%
+      </div>
+      <div style="color: #666; font-size: 11px; text-transform: uppercase;">Efficiency</div>
+    </div>
+    {{/if}}
+    
+    {{#if iskDestroyed}}
+    <div style="background: #1a1a1a; padding: 12px; border-radius: 4px;">
+      <div style="color: #51cf66; font-size: 22px; font-weight: 600;">
+        {{formatISK iskDestroyed}}
+      </div>
+      <div style="color: #666; font-size: 11px; text-transform: uppercase;">ISK Destroyed</div>
+    </div>
+    {{/if}}
+    
+    {{#if iskLost}}
+    <div style="background: #1a1a1a; padding: 12px; border-radius: 4px;">
+      <div style="color: #ff6b6b; font-size: 22px; font-weight: 600;">
+        {{formatISK iskLost}}
+      </div>
+      <div style="color: #666; font-size: 11px; text-transform: uppercase;">ISK Lost</div>
+    </div>
+    {{/if}}
+  </div>
+  
+  <!-- Additional Stats -->
+  {{#if additionalStats}}
+  <div style="border-top: 1px solid #333; padding-top: 16px;">
+    {{#each additionalStats}}
+    <div style="
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #1a1a1a;
+    ">
+      <div style="color: #999;">{{label}}</div>
+      <div style="color: #fff; font-weight: 600;">{{value}}</div>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+</div>

@@ -40,8 +40,8 @@ export async function searchSkins(
 ): Promise<Skin[]> {
   return database.find<Skin>(
     `SELECT * FROM skins
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -52,7 +52,7 @@ export async function searchSkins(
  */
 export async function getSkinName(skinId: number): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM skins WHERE "skinId" = :skinId',
+    'SELECT "name" FROM skins WHERE "skinId" = :skinId',
     { skinId }
   );
   return result?.name || null;

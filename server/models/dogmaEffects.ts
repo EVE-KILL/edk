@@ -89,8 +89,8 @@ export async function searchDogmaEffects(
 ): Promise<DogmaEffect[]> {
   return database.find<DogmaEffect>(
     `SELECT * FROM "dogmaEffects"
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -103,7 +103,7 @@ export async function getDogmaEffectName(
   effectId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM "dogmaEffects" WHERE "effectId" = :effectId',
+    'SELECT "name" FROM "dogmaEffects" WHERE "effectId" = :effectId',
     { effectId }
   );
   return result?.name || null;

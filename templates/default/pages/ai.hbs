@@ -1,0 +1,24 @@
+{{!-- AI Chat Interface Page --}}
+
+{{> components/page-header 
+  title="AI Assistant" 
+  info=(array 
+    (object icon="🤖" text="Natural language queries")
+    (object icon="🔍" text="Real-time killmail search")
+    (object icon="🌐" text="Web search enabled")
+  )
+}}
+
+<div class="ai-page">
+  <div class="ai-chat-layout">
+    <div id="ai-messages" class="ai-messages">
+      {{> partials/ai-welcome-message}}
+    </div>
+
+    {{> components/ai-input-area}}
+  </div>
+</div>
+
+<script>
+  {{> partials/ai-chat-client}}
+</script>

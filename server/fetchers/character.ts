@@ -59,10 +59,20 @@ async function fetchFromESI(characterId: number): Promise<any | null> {
 
     if (!response.ok) {
       if (response.status === 404) {
-        return null;
+        // Check if error message indicates character is deleted
+        if (
+          response.data &&
+          response.data.error === 'Character has been deleted!'
+        ) {
+          await markCharacterAsDeleted(characterId);
+          return null;
+        }
       }
       throw new Error(`ESI API error: ${response.statusText}`);
     }
+
+    // Character exists - ensure deleted flag is false (in case it was restored)
+    await unmarkCharacterAsDeleted(characterId);
 
     return response.data;
   } catch (error) {
@@ -71,6 +81,36 @@ async function fetchFromESI(characterId: number): Promise<any | null> {
     });
     return null;
   }
+}
+
+/**
+ * Mark a character as deleted in the database
+ */
+async function markCharacterAsDeleted(characterId: number): Promise<void> {
+  const { database } = await import('../helpers/database');
+
+  await database.execute(
+    `UPDATE characters
+     SET deleted = TRUE, "updatedAt" = NOW()
+     WHERE "characterId" = :characterId`,
+    { characterId }
+  );
+
+  logger.info(`Marked character ${characterId} as deleted`);
+}
+
+/**
+ * Unmark a character as deleted (in case it was restored)
+ */
+async function unmarkCharacterAsDeleted(characterId: number): Promise<void> {
+  const { database } = await import('../helpers/database');
+
+  await database.execute(
+    `UPDATE characters
+     SET deleted = FALSE, "updatedAt" = NOW()
+     WHERE "characterId" = :characterId AND deleted = TRUE`,
+    { characterId }
+  );
 }
 
 /**

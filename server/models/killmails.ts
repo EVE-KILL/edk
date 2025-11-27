@@ -1,7 +1,11 @@
 import { database } from '../helpers/database';
 import { logger } from '../helpers/logger';
 import { createHash } from 'crypto';
-import { getLatestPricesForTypes } from './prices';
+import {
+  getLatestPricesForTypes,
+  getPriceFromReprocessing,
+  getCustomPrice,
+} from './prices';
 import { getSolarSystem } from './solarSystems';
 
 /**
@@ -142,7 +146,59 @@ export async function calculateKillmailValues(
     priceDate
   );
 
-  const shipValue = priceMap.get(victim.ship_type_id) ?? 0;
+  // Pricing priority:
+  // 1. Custom prices (AT ships, market manipulation, special cases)
+  // 2. Market prices (for normal items)
+  // 3. Reprocessing prices (fallback for capitals/rare ships without market data)
+  // 4. 0 (no data available)
+
+  let shipValue = 0;
+
+  // Check for custom price first (AT ships, rare ships, market manipulation)
+  const customPrice = await getCustomPrice(victim.ship_type_id, priceDate);
+  if (customPrice !== null) {
+    shipValue = customPrice;
+  } else {
+    // No custom price, check market price
+    shipValue = priceMap.get(victim.ship_type_id) ?? 0;
+
+    if (shipValue === 0) {
+      // No market price, try reprocessing materials as fallback
+      const reprocessingPrice = await getPriceFromReprocessing(
+        victim.ship_type_id,
+        PRICE_REGION_ID,
+        priceDate
+      );
+
+      if (reprocessingPrice > 0) {
+        shipValue = reprocessingPrice;
+      }
+    } else {
+      // We have a market price, but check if it's a Titan or Supercarrier
+      // For these, reprocessing is more stable than sporadic market prices
+      const shipGroupId = await database.findOne<{ groupId: number }>(
+        'SELECT "groupId" FROM types WHERE "typeId" = :typeId',
+        { typeId: victim.ship_type_id }
+      );
+
+      if (
+        shipGroupId &&
+        (shipGroupId.groupId === 30 || shipGroupId.groupId === 659)
+      ) {
+        const reprocessingPrice = await getPriceFromReprocessing(
+          victim.ship_type_id,
+          PRICE_REGION_ID,
+          priceDate
+        );
+
+        // Override market price with reprocessing price for capitals (more accurate)
+        if (reprocessingPrice > 0) {
+          shipValue = reprocessingPrice;
+        }
+      }
+    }
+  }
+
   const itemTotals = { dropped: 0, destroyed: 0 };
   accumulateItemValues(victim.items, priceMap, itemTotals);
 
@@ -810,13 +866,59 @@ export async function getKillmailDetails(
     return null;
   }
 
-  // Fetch ship price separately using the optimized function
-  const priceMap = await getLatestPricesForTypes(
-    [details.victimShipTypeId],
-    PRICE_REGION_ID,
+  // Calculate ship price using the same priority system as when killmail was stored
+  // Priority: Custom prices -> Market prices -> Reprocessing -> 0
+  let victimShipValue = 0;
+
+  // Check custom price first
+  const customPrice = await getCustomPrice(
+    details.victimShipTypeId,
     details.killmailTime
   );
-  const victimShipValue = priceMap.get(details.victimShipTypeId) ?? 0.0;
+  if (customPrice !== null) {
+    victimShipValue = customPrice;
+  } else {
+    // Try market price
+    const priceMap = await getLatestPricesForTypes(
+      [details.victimShipTypeId],
+      PRICE_REGION_ID,
+      details.killmailTime
+    );
+    victimShipValue = priceMap.get(details.victimShipTypeId) ?? 0;
+
+    if (victimShipValue === 0) {
+      // No market price, try reprocessing
+      const reprocessPrice = await getPriceFromReprocessing(
+        details.victimShipTypeId,
+        PRICE_REGION_ID,
+        details.killmailTime
+      );
+      if (reprocessPrice > 0) {
+        victimShipValue = reprocessPrice;
+      }
+    } else {
+      // We have market price, but check if it's a Titan or Supercarrier
+      const shipGroupId = await database.findOne<{ groupId: number }>(
+        'SELECT "groupId" FROM types WHERE "typeId" = :typeId',
+        { typeId: details.victimShipTypeId }
+      );
+
+      if (
+        shipGroupId &&
+        (shipGroupId.groupId === 30 || shipGroupId.groupId === 659)
+      ) {
+        // Override with reprocessing for capitals
+        const reprocessPrice = await getPriceFromReprocessing(
+          details.victimShipTypeId,
+          PRICE_REGION_ID,
+          details.killmailTime
+        );
+        if (reprocessPrice > 0) {
+          victimShipValue = reprocessPrice;
+        }
+      }
+    }
+  }
 
   return {
     ...details,
@@ -1026,8 +1128,6 @@ async function updateEntityLastActive(
   const allianceIds = new Set<number>();
 
   for (const { esi } of killmails) {
-    const killmailTime = new Date(esi.killmail_time);
-
     // Victim entities
     if (esi.victim.character_id) characterIds.add(esi.victim.character_id);
     if (esi.victim.corporation_id)

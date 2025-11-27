@@ -62,8 +62,8 @@ export async function searchDogmaAttributes(
 ): Promise<DogmaAttribute[]> {
   return database.find<DogmaAttribute>(
     `SELECT * FROM "dogmaAttributes"
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -76,7 +76,7 @@ export async function getDogmaAttributeName(
   attributeId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM "dogmaAttributes" WHERE "attributeId" = :attributeId',
+    'SELECT "name" FROM "dogmaAttributes" WHERE "attributeId" = :attributeId',
     { attributeId }
   );
   return result?.name || null;

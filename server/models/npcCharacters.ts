@@ -62,8 +62,8 @@ export async function searchNPCCharacters(
 ): Promise<NPCCharacter[]> {
   return database.find<NPCCharacter>(
     `SELECT * FROM "npcCharacters"
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -76,7 +76,7 @@ export async function getNPCCharacterName(
   characterId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM "npcCharacters" WHERE "characterId" = :characterId',
+    'SELECT "name" FROM "npcCharacters" WHERE "characterId" = :characterId',
     { characterId }
   );
   return result?.name || null;

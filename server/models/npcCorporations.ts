@@ -61,8 +61,8 @@ export async function searchNPCCorporations(
 ): Promise<NPCCorporation[]> {
   return database.find<NPCCorporation>(
     `SELECT * FROM npccorporations
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -75,7 +75,7 @@ export async function getNPCCorporationName(
   corporationId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM npccorporations WHERE "corporationId" = :corporationId',
+    'SELECT "name" FROM npccorporations WHERE "corporationId" = :corporationId',
     { corporationId }
   );
   return result?.name || null;

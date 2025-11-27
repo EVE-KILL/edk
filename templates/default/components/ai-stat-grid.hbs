@@ -1,0 +1,10 @@
+<div class="ai-stat-grid" style="
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+">
+  {{#each stats}}
+    {{> components/ai-stat-card this}}
+  {{/each}}
+</div>

@@ -50,7 +50,7 @@ This file contains instructions and context for AI agents working on this codeba
 - **Never** pass an array of condition fragments to `database.sql(array,'...')` with `'AND'` (including the leading/trailing spaces) or similar separators expecting it to join the fragments. postgres.js treats the array entries as identifiers and calls `str.replace` on them, which blows up at runtime and also causes our DB proxy to try to execute partial fragments, triggering Postgres syntax errors. Instead, filter out falsy fragments and reduce the remaining `sql`` blocks manually, for example:
 
 ```ts
-sql`${left} AND ${right}`
+sql`${left} AND ${right}`;
 ```
 
 ## Testing
@@ -110,12 +110,17 @@ The project includes automatic performance tracking for routes to measure query 
 ### Using Performance Tracking in Routes
 
 **✅ CORRECT - Database queries are tracked:**
+
 ```typescript
 // Use database.query() or other database helper methods
-const result = await database.query<MyType>(`SELECT * FROM table WHERE id = :id`, { id: 123 });
+const result = await database.query<MyType>(
+  `SELECT * FROM table WHERE id = :id`,
+  { id: 123 }
+);
 ```
 
 **❌ WRONG - Bypasses tracking:**
+
 ```typescript
 // DO NOT use database.sql directly - it bypasses performance tracking
 const sql = database.sql;
@@ -130,17 +135,25 @@ For custom tracking of application logic (non-database operations):
 import { track } from '../utils/performance-decorators';
 
 // Track parallel queries
-const [data1, data2] = await track('route:parallel_queries', 'database', async () => {
-  return await Promise.all([
-    database.query('SELECT ...'),
-    database.query('SELECT ...')
-  ]);
-});
+const [data1, data2] = await track(
+  'route:parallel_queries',
+  'database',
+  async () => {
+    return await Promise.all([
+      database.query('SELECT ...'),
+      database.query('SELECT ...'),
+    ]);
+  }
+);
 
 // Track data transformation
-const processedData = await track('route:transform_data', 'application', async () => {
-  return data.map(transformFn);
-});
+const processedData = await track(
+  'route:transform_data',
+  'application',
+  async () => {
+    return data.map(transformFn);
+  }
+);
 ```
 
 ### Performance Best Practices
@@ -187,7 +200,12 @@ Jobs can be scheduled to run on a recurring basis, similar to cron jobs. This is
 All queueing options can be passed through the `JobOptions` object.
 
 ```typescript
-import { enqueueJob, scheduleJob, JobPriority, QueueType } from './server/helpers/queue';
+import {
+  enqueueJob,
+  scheduleJob,
+  JobPriority,
+  QueueType,
+} from './server/helpers/queue';
 
 // High-priority job
 await enqueueJob(
@@ -216,3 +234,61 @@ await scheduleJob(
   }
 );
 ```
+
+## AI Tools
+
+### Price Fitting Tool
+
+**Purpose:** Calculate the ISK value of ship fittings or individual items using database prices.
+
+**Endpoint:** `POST /api/ai/price-fitting`
+
+**When to use:**
+
+- User asks "how much is X worth?"
+- User pastes an EFT fitting to price
+- User asks about ship/item/fitting value
+
+**Request:**
+
+```json
+{
+  "text": "Item name or EFT fitting",
+  "regionId": 10000002 // Optional, defaults to Jita
+}
+```
+
+**Response:**
+
+```json
+{
+  "type": "fitting" | "item",
+  "data": {
+    "totalValue": 1234567890.00,
+    "itemsFound": 25,
+    "itemsNotFound": 0,
+    ...
+  },
+  "html": "Pretty formatted card"
+}
+```
+
+**Examples:**
+
+```bash
+# Simple item
+curl -X POST localhost:3000/api/ai/price-fitting \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Raven"}'
+
+# EFT fitting
+curl -X POST localhost:3000/api/ai/price-fitting \
+  -H "Content-Type: application/json" \
+  -d '{"text": "[Golem, My Fit]\\nModule\\n\\nModule..."}'
+```
+
+**Implementation:**
+
+- `server/helpers/eft-parser.ts` - Parses EFT format
+- `server/helpers/fitting-pricer.ts` - Calculates values from `prices` table
+- `server/routes/api/ai/price-fitting.post.ts` - API endpoint

@@ -78,7 +78,7 @@ export class SDEFetcher {
       }
       const data = await readFile(METADATA_FILE, 'utf-8');
       return JSON.parse(data);
-    } catch {
+    } catch (error) {
       logger.error('Failed to load metadata:', error);
       return null;
     }
@@ -120,7 +120,7 @@ export class SDEFetcher {
       }
 
       throw new Error('Could not find build number in latest.jsonl response');
-    } catch {
+    } catch (error) {
       logger.error('❌ Error fetching latest build:', error);
       throw error;
     }
@@ -166,7 +166,7 @@ export class SDEFetcher {
         eTag: eTag || undefined,
         lastModified: lastModified || undefined,
       };
-    } catch {
+    } catch (error) {
       logger.error('❌ Error downloading SDE:', error);
       throw error;
     }
@@ -190,7 +190,7 @@ export class SDEFetcher {
       await execAsync(`unzip -q "${filepath}" -d "${outputDir}"`);
 
       logger.info(`✅ Extracted: ${filename}`);
-    } catch {
+    } catch (error) {
       logger.error('❌ Error extracting SDE:', error);
       throw error;
     }
@@ -209,7 +209,7 @@ export class SDEFetcher {
       const files = readdirSync(SDE_EXTRACTED_DIR);
 
       return files.filter((f) => f.endsWith('.jsonl')).sort();
-    } catch {
+    } catch (error) {
       logger.error('Error listing tables:', error);
       return [];
     }
@@ -236,19 +236,39 @@ export class SDEFetcher {
   async sync(): Promise<SDEMetadata> {
     await this.ensureDirectories();
 
-    // Get latest build info
-    const { buildNumber, url } = await this.getLatestBuild();
+    // Get latest build info (fallback to cached metadata if offline)
+    let buildNumber: number | null = null;
+    let url: string | null = null;
+    try {
+      const latest = await this.getLatestBuild();
+      buildNumber = latest.buildNumber;
+      url = latest.url;
+    } catch (error) {
+      logger.warn(
+        '⚠️  Could not fetch latest build, falling back to cached metadata if available',
+        error
+      );
+      const cached = await this.loadMetadata();
+      if (!cached) {
+        throw error;
+      }
+      buildNumber = cached.buildNumber;
+      url = cached.url;
+    }
 
     // Load existing metadata
     let metadata = await this.loadMetadata();
 
     // Check if we need to download
-    if (metadata && metadata.buildNumber === buildNumber) {
+    if (metadata && buildNumber && metadata.buildNumber === buildNumber) {
       logger.info(`✅ Already have build ${buildNumber}`);
       return metadata;
     }
 
     // Download
+    if (!buildNumber || !url) {
+      throw new Error('No build information available to download SDE');
+    }
     const { file, eTag, lastModified } = await this.downloadSDE(
       url,
       buildNumber
@@ -299,7 +319,7 @@ export class SDEFetcher {
         await rm(filepath);
         logger.info(`   Deleted: ${files[i]}`);
       }
-    } catch {
+    } catch (error) {
       logger.error('Error during cleanup:', error);
     }
   }
@@ -350,7 +370,7 @@ export class SDEFetcher {
         ],
         ['configKey']
       );
-    } catch {
+    } catch (error) {
       logger.error(`⚠️  Failed to mark ${tableName} as imported:`, error);
       // Don't throw - import succeeded even if we can't mark it
     }
@@ -390,6 +410,12 @@ export class SDEFetcher {
         'skins',
         'dogmaAttributes',
         'dogmaEffects',
+        'typeMaterials',
+        'blueprints',
+        'blueprintActivities',
+        'blueprintMaterials',
+        'blueprintProducts',
+        'blueprintSkills',
       ];
 
       for (const table of tables) {
@@ -399,9 +425,299 @@ export class SDEFetcher {
         );
       }
       logger.info(`   ✓ Optimized ${tables.length} SDE tables`);
-    } catch {
+    } catch (error) {
       logger.warn('⚠️  Failed to optimize tables:', error);
       // Don't throw - optimization is not critical
+    }
+  }
+
+  /**
+   * Import typeMaterials into Postgres
+   */
+  async importTypeMaterials(buildNumber?: number): Promise<void> {
+    // Resolve build number
+    if (!buildNumber) {
+      const metadata = await this.getMetadata();
+      if (!metadata) {
+        logger.error('❌ No build number available for typeMaterials');
+        return;
+      }
+      buildNumber = metadata.buildNumber;
+    }
+
+    if (!this.forceReimport) {
+      const alreadyImported = await this.isTableAlreadyImported(
+        'typeMaterials',
+        buildNumber
+      );
+      if (alreadyImported) {
+        logger.info(
+          `⏭️  Skipping typeMaterials (already imported for build ${buildNumber})`
+        );
+        return;
+      }
+    }
+
+    logger.info('📥 Importing typeMaterials...');
+    const filepath = this.getTablePath('typeMaterials');
+    if (!existsSync(filepath)) {
+      logger.error(`❌ typeMaterials.jsonl not found at ${filepath}`);
+      return;
+    }
+
+    const BATCH_SIZE = 1000;
+    const records: any[] = [];
+    let imported = 0;
+
+    try {
+      for await (const row of streamParseJSONLines(filepath)) {
+        const typeId = row._key || row.typeID || row.typeId;
+        if (!typeId || !row.materials || row.materials.length === 0) {
+          continue;
+        }
+
+        for (const material of row.materials) {
+          const materialTypeId =
+            material.materialTypeID || material.typeID || material.typeId;
+          if (!materialTypeId) continue;
+
+          records.push({
+            typeId: Number(typeId),
+            materialTypeId: Number(materialTypeId),
+            quantity: Number(material.quantity) || 0,
+          });
+
+          if (records.length >= BATCH_SIZE) {
+            await database.bulkUpsert('typematerials', records, [
+              'typeId',
+              'materialTypeId',
+            ]);
+            imported += records.length;
+            logger.info(`   Inserted ${imported} typeMaterials rows...`);
+            records.length = 0;
+          }
+        }
+      }
+
+      if (records.length > 0) {
+        await database.bulkUpsert('typematerials', records, [
+          'typeId',
+          'materialTypeId',
+        ]);
+        imported += records.length;
+      }
+
+      await this.markTableAsImported('typeMaterials', buildNumber, imported);
+      logger.info(`✅ Imported ${imported} typeMaterials rows`);
+    } catch (error) {
+      logger.error('❌ Error importing typeMaterials:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Import blueprints (activities, materials, products, skills) into Postgres
+   */
+  async importBlueprints(buildNumber?: number): Promise<void> {
+    if (!buildNumber) {
+      const metadata = await this.getMetadata();
+      if (!metadata) {
+        logger.error('❌ No build number available for blueprints');
+        return;
+      }
+      buildNumber = metadata.buildNumber;
+    }
+
+    if (!this.forceReimport) {
+      const alreadyImported = await this.isTableAlreadyImported(
+        'blueprints',
+        buildNumber
+      );
+      if (alreadyImported) {
+        logger.info(
+          `⏭️  Skipping blueprints (already imported for build ${buildNumber})`
+        );
+        return;
+      }
+    }
+
+    logger.info('📥 Importing blueprints...');
+    const filepath = this.getTablePath('blueprints');
+    if (!existsSync(filepath)) {
+      logger.error(`❌ blueprints.jsonl not found at ${filepath}`);
+      return;
+    }
+
+    const BATCH_SIZE = 1000;
+    const blueprintRows: any[] = [];
+    const activityRows: any[] = [];
+    const materialRows: any[] = [];
+    const productRows: any[] = [];
+    const skillRows: any[] = [];
+    let importedBlueprints = 0;
+    const blueprintSeen = new Set<number>();
+    const activitySeen = new Set<string>();
+    const materialSeen = new Set<string>();
+    const productSeen = new Set<string>();
+    const skillSeen = new Set<string>();
+
+    const flush = async () => {
+      if (blueprintRows.length > 0) {
+        await database.bulkUpsert(
+          'blueprints',
+          blueprintRows,
+          'blueprintTypeId'
+        );
+        importedBlueprints += blueprintRows.length;
+        blueprintRows.length = 0;
+        logger.info(`   Inserted ${importedBlueprints} blueprint rows...`);
+      }
+      if (activityRows.length > 0) {
+        await database.bulkUpsert('blueprintactivities', activityRows, [
+          'blueprintTypeId',
+          'activity',
+        ]);
+        activityRows.length = 0;
+      }
+      if (materialRows.length > 0) {
+        await database.bulkUpsert('blueprintmaterials', materialRows, [
+          'blueprintTypeId',
+          'activity',
+          'materialTypeId',
+        ]);
+        materialRows.length = 0;
+      }
+      if (productRows.length > 0) {
+        await database.bulkUpsert('blueprintproducts', productRows, [
+          'blueprintTypeId',
+          'activity',
+          'productTypeId',
+        ]);
+        productRows.length = 0;
+      }
+      if (skillRows.length > 0) {
+        await database.bulkUpsert('blueprintskills', skillRows, [
+          'blueprintTypeId',
+          'activity',
+          'skillTypeId',
+        ]);
+        skillRows.length = 0;
+      }
+    };
+
+    try {
+      for await (const row of streamParseJSONLines(filepath)) {
+        const blueprintTypeId =
+          row._key || row.blueprintTypeID || row.blueprintTypeId;
+        if (!blueprintTypeId) continue;
+
+        const bpIdNum = Number(blueprintTypeId);
+        if (!blueprintSeen.has(bpIdNum)) {
+          blueprintSeen.add(bpIdNum);
+          blueprintRows.push({
+            blueprintTypeId: bpIdNum,
+            maxProductionLimit: row.maxProductionLimit
+              ? Number(row.maxProductionLimit)
+              : null,
+          });
+        }
+
+        const activities = row.activities || {};
+        for (const [activity, activityData] of Object.entries(activities)) {
+          const activityKey = `${bpIdNum}|${activity}`;
+          if (!activitySeen.has(activityKey)) {
+            activitySeen.add(activityKey);
+            activityRows.push({
+              blueprintTypeId: bpIdNum,
+              activity,
+              time: activityData?.time ? Number(activityData.time) : null,
+            });
+          }
+
+          if (Array.isArray(activityData?.materials)) {
+            for (const material of activityData.materials) {
+              const materialTypeId =
+                material.typeID || material.materialTypeID || material.typeId;
+              if (!materialTypeId) continue;
+
+              const materialKey = `${bpIdNum}|${activity}|${materialTypeId}`;
+              if (materialSeen.has(materialKey)) continue;
+              materialSeen.add(materialKey);
+
+              materialRows.push({
+                blueprintTypeId: bpIdNum,
+                activity,
+                materialTypeId: Number(materialTypeId),
+                quantity: Number(material.quantity) || 0,
+              });
+            }
+          }
+
+          if (Array.isArray(activityData?.products)) {
+            for (const product of activityData.products) {
+              const productTypeId =
+                product.typeID || product.productTypeID || product.typeId;
+              if (!productTypeId) continue;
+
+              const productKey = `${bpIdNum}|${activity}|${productTypeId}`;
+              if (productSeen.has(productKey)) continue;
+              productSeen.add(productKey);
+
+              productRows.push({
+                blueprintTypeId: bpIdNum,
+                activity,
+                productTypeId: Number(productTypeId),
+                quantity: Number(product.quantity) || 0,
+                probability:
+                  product.probability !== undefined
+                    ? Number(product.probability)
+                    : null,
+              });
+            }
+          }
+
+          if (Array.isArray(activityData?.skills)) {
+            for (const skill of activityData.skills) {
+              const skillTypeId =
+                skill.typeID || skill.skillTypeID || skill.typeId;
+              if (!skillTypeId) continue;
+
+              const skillKey = `${bpIdNum}|${activity}|${skillTypeId}`;
+              if (skillSeen.has(skillKey)) continue;
+              skillSeen.add(skillKey);
+
+              skillRows.push({
+                blueprintTypeId: bpIdNum,
+                activity,
+                skillTypeId: Number(skillTypeId),
+                level: Number(skill.level) || 0,
+              });
+            }
+          }
+        }
+
+        if (
+          blueprintRows.length >= BATCH_SIZE ||
+          activityRows.length >= BATCH_SIZE ||
+          materialRows.length >= BATCH_SIZE ||
+          productRows.length >= BATCH_SIZE ||
+          skillRows.length >= BATCH_SIZE
+        ) {
+          await flush();
+        }
+      }
+
+      await flush();
+
+      await this.markTableAsImported(
+        'blueprints',
+        buildNumber,
+        importedBlueprints
+      );
+      logger.info(`✅ Imported ${importedBlueprints} blueprints`);
+    } catch (error) {
+      logger.error('❌ Error importing blueprints:', error);
+      throw error;
     }
   }
 
@@ -500,7 +816,7 @@ export class SDEFetcher {
       await this.markTableAsImported('mapSolarSystems', buildNumber, imported);
 
       logger.info(`✅ Imported ${imported} solar systems`);
-    } catch {
+    } catch (error) {
       logger.error('❌ Error importing mapSolarSystems:', error);
       throw error;
     }
@@ -582,7 +898,7 @@ export class SDEFetcher {
       await this.markTableAsImported('mapRegions', buildNumber, imported);
 
       logger.info(`✅ Imported ${imported} regions`);
-    } catch {
+    } catch (error) {
       logger.error('❌ Error importing mapRegions:', error);
       throw error;
     }
@@ -665,7 +981,7 @@ export class SDEFetcher {
       );
 
       logger.info(`✅ Imported ${imported} constellations`);
-    } catch {
+    } catch (error) {
       logger.error('❌ Error importing mapConstellations:', error);
       throw error;
     }
@@ -689,7 +1005,7 @@ export class SDEFetcher {
       );
 
       logger.info(`   ✓ Updated regionId in solarsystems`);
-    } catch {
+    } catch (error) {
       logger.error('⚠️  Error post-processing map tables:', error);
       // Don't throw - this is not critical
     }
@@ -799,7 +1115,7 @@ export class SDEFetcher {
 
       logger.info(`✅ Imported ${imported} ${tableName}`);
       return imported;
-    } catch {
+    } catch (error) {
       logger.error(`❌ Error importing ${tableName}:`, error);
       throw error;
     }

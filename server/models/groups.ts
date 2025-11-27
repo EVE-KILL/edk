@@ -31,7 +31,7 @@ export async function getGroupsByCategory(
   categoryId: number
 ): Promise<Group[]> {
   return database.find<Group>(
-    'SELECT * FROM groups WHERE "categoryId" = :categoryId ORDER BY name',
+    'SELECT * FROM groups WHERE "categoryId" = :categoryId ORDER BY "name"',
     { categoryId }
   );
 }
@@ -41,7 +41,7 @@ export async function getGroupsByCategory(
  */
 export async function getPublishedGroups(): Promise<Group[]> {
   return database.find<Group>(
-    'SELECT * FROM groups WHERE published = 1 ORDER BY "categoryId", name'
+    'SELECT * FROM groups WHERE published = 1 ORDER BY "categoryId", "name"'
   );
 }
 
@@ -54,8 +54,8 @@ export async function searchGroups(
 ): Promise<Group[]> {
   return database.find<Group>(
     `SELECT * FROM groups
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -66,7 +66,7 @@ export async function searchGroups(
  */
 export async function getGroupName(groupId: number): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM groups WHERE "groupId" = :groupId',
+    'SELECT "name" FROM groups WHERE "groupId" = :groupId',
     { groupId }
   );
   return result?.name || null;

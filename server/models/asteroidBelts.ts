@@ -50,8 +50,8 @@ export async function searchAsteroidBelts(
 ): Promise<AsteroidBelt[]> {
   return database.find<AsteroidBelt>(
     `SELECT * FROM "asteroidBelts"
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );

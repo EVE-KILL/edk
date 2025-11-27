@@ -1,0 +1,124 @@
+<!-- Ship Class Statistics Component -->
+<div class="ship-class-stats" data-expand-group>
+  <div class="ship-class-stats__header">
+    <span class="ship-class-stats__title">Ship Classes Destroyed</span>
+  </div>
+  <div class="ship-class-stats__list">
+    {{#each shipClassStats.top}}
+    <div class="ship-class-stats__item">
+      <div class="ship-class-stats__name">{{category}}</div>
+      <div class="ship-class-stats__count">{{total}}</div>
+    </div>
+    {{/each}}
+
+    {{#if shipClassStats.rest}}
+    {{#if shipClassStats.rest.length}}
+    <div class="ship-class-stats__expand-trigger" data-expand-trigger aria-expanded="false">
+      <div class="ship-class-stats__expand-text">+ Show more classes</div>
+    </div>
+
+    <div class="ship-class-stats__expanded" data-expand-content style="display: none;">
+      {{#each shipClassStats.rest}}
+      <div class="ship-class-stats__item">
+        <div class="ship-class-stats__name">{{category}}</div>
+        <div class="ship-class-stats__count">{{total}}</div>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+    {{/if}}
+  </div>
+</div>
+
+<style>
+.ship-class-stats {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.ship-class-stats__header {
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+.ship-class-stats__title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.ship-class-stats__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.ship-class-stats__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s ease;
+}
+
+.ship-class-stats__item:hover {
+  background: rgba(74, 158, 255, 0.1);
+}
+
+.ship-class-stats__name {
+  font-size: 11px;
+  color: var(--color-text-white);
+  font-weight: 500;
+}
+
+.ship-class-stats__count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-accent-blue);
+  min-width: 24px;
+  text-align: right;
+}
+
+.ship-class-stats__expand-trigger {
+  padding: 8px 12px;
+  background: rgba(74, 158, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.ship-class-stats__expand-trigger:hover {
+  background: rgba(74, 158, 255, 0.15);
+}
+
+.ship-class-stats__expand-trigger.expanded {
+  background: rgba(74, 158, 255, 0.1);
+}
+
+.ship-class-stats__expand-text {
+  font-size: 10px;
+  color: var(--color-accent-blue);
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+.ship-class-stats__expanded {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ship-class-stats__expanded .ship-class-stats__item {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.ship-class-stats__expanded .ship-class-stats__item:hover {
+  background: rgba(74, 158, 255, 0.1);
+}
+</style>

@@ -1,0 +1,89 @@
+<!-- Single Killmail Card -->
+<div style="
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+  border-left: 3px solid #0066cc;
+">
+  <div style="display: flex; gap: 16px; align-items: start;">
+    <!-- Ship Image -->
+    <div style="flex-shrink: 0;">
+      {{> partials/eve-image type="ship" id=victimShipTypeId size=64 alt="Ship"}}
+    </div>
+    
+    <!-- Killmail Info -->
+    <div style="flex: 1;">
+      <!-- Header -->
+      <div style="margin-bottom: 12px;">
+        <a href="/killmail/{{killmailId}}" style="
+          color: #0066cc;
+          text-decoration: none;
+          font-size: 18px;
+          font-weight: 600;
+        ">
+          Killmail #{{killmailId}}
+        </a>
+        <div style="color: #999; font-size: 13px; margin-top: 4px;">
+          {{formatDate killmailTime}}
+        </div>
+      </div>
+      
+      <!-- Victim -->
+      <div style="margin-bottom: 12px;">
+        <div style="color: #666; font-size: 11px; margin-bottom: 4px;">VICTIM</div>
+        <div style="color: #fff; font-size: 15px;">
+          {{#if victimCharacterName}}
+            <a href="/character/{{victimCharacterId}}" style="color: #fff; text-decoration: none;">
+              {{victimCharacterName}}
+            </a>
+          {{else}}
+            Unknown
+          {{/if}}
+        </div>
+        {{#if victimCorporationName}}
+        <div style="color: #999; font-size: 13px;">
+          {{victimCorporationName}}
+          {{#if victimAllianceName}}
+            <span style="color: #666;"> • </span>{{victimAllianceName}}
+          {{/if}}
+        </div>
+        {{/if}}
+      </div>
+      
+      <!-- Details Grid -->
+      <div style="
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+      ">
+        <div>
+          <div style="color: #666; font-size: 11px;">VALUE</div>
+          <div style="color: #51cf66; font-size: 15px; font-weight: 600;">
+            {{formatISK totalValue}}
+          </div>
+        </div>
+        
+        {{#if solarSystemName}}
+        <div>
+          <div style="color: #666; font-size: 11px;">SYSTEM</div>
+          <div style="color: #fff; font-size: 15px;">
+            <a href="/system/{{solarSystemId}}" style="color: #fff; text-decoration: none;">
+              {{solarSystemName}}
+            </a>
+          </div>
+        </div>
+        {{/if}}
+        
+        {{#if attackerCount}}
+        <div>
+          <div style="color: #666; font-size: 11px;">ATTACKERS</div>
+          <div style="color: #fff; font-size: 15px;">
+            {{attackerCount}}
+          </div>
+        </div>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+<!-- Generic Text Box for AI Responses -->
+<div class="ai-text-box {{#if type}}ai-text-box--{{type}}{{/if}}" style="
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+  color: #ccc;
+  line-height: 1.6;
+  {{#if (eq type 'info')}}border-left: 3px solid #0066cc;{{/if}}
+  {{#if (eq type 'success')}}border-left: 3px solid #51cf66;{{/if}}
+  {{#if (eq type 'warning')}}border-left: 3px solid #ffd93d;{{/if}}
+  {{#if (eq type 'error')}}border-left: 3px solid #ff6b6b;{{/if}}
+">
+  {{#if title}}
+  <div style="
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #fff;
+  ">
+    {{title}}
+  </div>
+  {{/if}}
+  
+  <div style="white-space: pre-wrap;">
+{{{text}}}
+  </div>
+</div>

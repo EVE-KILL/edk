@@ -15,7 +15,7 @@ export class TypeQueries {
 
   static async getTypeName(typeId: number): Promise<string | null> {
     const result = await database.findOne<{ name: string }>(
-      'SELECT name FROM types WHERE "typeId" = :typeId LIMIT 1',
+      'SELECT "name" FROM types WHERE "typeId" = :typeId LIMIT 1',
       { typeId }
     );
     return result?.name || null;
@@ -31,7 +31,7 @@ export class TypeQueries {
   static async searchTypes(query: string, limit: number = 10) {
     return database.find(
       `SELECT * FROM types
-         WHERE name ILIKE :pattern
+         WHERE "name" ILIKE :pattern
          ORDER BY "typeId"
          LIMIT :limit`,
       { pattern: `%${query}%`, limit }

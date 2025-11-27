@@ -112,6 +112,8 @@ export default {
 
       // Item/Type tables
       await defaultSdeFetcher.importConfiguredTable(typesConfig);
+      await defaultSdeFetcher.importTypeMaterials();
+      await defaultSdeFetcher.importBlueprints();
       await defaultSdeFetcher.importConfiguredTable(groupsConfig);
       await defaultSdeFetcher.importConfiguredTable(categoriesConfig);
 

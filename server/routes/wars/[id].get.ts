@@ -19,6 +19,82 @@ import {
 
 const PER_PAGE = 25;
 
+// Group IDs mapping for logical ship class grouping
+const SHIP_CLASS_GROUPS: Record<number, { category: string; order: number }> = {
+  // Frigates
+  25: { category: 'Frigate', order: 1 }, // Frigate
+  237: { category: 'Frigate', order: 1 }, // Assault Frigate
+  324: { category: 'Frigate', order: 1 }, // Interceptor
+  831: { category: 'Frigate', order: 1 }, // Covert Ops
+  893: { category: 'Frigate', order: 1 }, // Stealth Bomber
+  // Destroyers
+  420: { category: 'Destroyer', order: 2 }, // Destroyer
+  541: { category: 'Destroyer', order: 2 }, // Interdictory Destroyer
+  // Cruisers
+  906: { category: 'Cruiser', order: 3 }, // Heavy Assault Cruiser
+  26: { category: 'Cruiser', order: 3 }, // Cruiser
+  833: { category: 'Cruiser', order: 3 }, // Logistics
+  358: { category: 'Cruiser', order: 3 }, // Heavy Cruiser
+  894: { category: 'Cruiser', order: 3 }, // Electronic Attack Ship
+  832: { category: 'Cruiser', order: 3 }, // Recon Ship
+  963: { category: 'Cruiser', order: 3 }, // Strategic Cruiser
+  // Battle Cruisers
+  419: { category: 'Battle Cruiser', order: 4 }, // Battlecruiser
+  540: { category: 'Battle Cruiser', order: 4 }, // Command Ship
+  // Battleships
+  27: { category: 'Battleship', order: 5 }, // Battleship
+  898: { category: 'Battleship', order: 5 }, // Black Ops
+  900: { category: 'Battleship', order: 5 }, // Marauder
+  // Capital Ships
+  547: { category: 'Carrier', order: 6 }, // Carrier
+  659: { category: 'Super Carrier', order: 7 }, // Supercarrier
+  485: { category: 'Dreadnought', order: 8 }, // Dreadnought
+  30: { category: 'Titan', order: 9 }, // Titan
+  // Industrial & Structures
+  513: { category: 'Freighter', order: 10 }, // Freighter
+  902: { category: 'Freighter', order: 10 }, // Jump Freighter
+  // Structures
+  1657: { category: 'Structure', order: 11 }, // Astrahus
+  1406: { category: 'Structure', order: 11 }, // Fortizar
+  1404: { category: 'Structure', order: 11 }, // Keepstar
+  1408: { category: 'Structure', order: 11 }, // Structure
+  2017: { category: 'Structure', order: 11 }, // Structure
+  2016: { category: 'Structure', order: 11 }, // Structure
+};
+
+interface ShipClassCategory {
+  category: string;
+  total: number;
+  order: number;
+}
+
+function groupShipClassStats(
+  stats: Array<{ groupId: number; groupName: string; count: number }>
+): { top: ShipClassCategory[]; rest: ShipClassCategory[] } {
+  const grouped = new Map<string, ShipClassCategory>();
+
+  for (const stat of stats) {
+    const classInfo = SHIP_CLASS_GROUPS[stat.groupId];
+    const category = classInfo?.category || stat.groupName;
+    const order = classInfo?.order || 999;
+
+    const key = category;
+    if (!grouped.has(key)) {
+      grouped.set(key, { category, total: 0, order });
+    }
+
+    const entry = grouped.get(key)!;
+    entry.total += stat.count;
+  }
+
+  // Sort by total count descending
+  const sorted = Array.from(grouped.values()).sort((a, b) => b.total - a.total);
+  return {
+    top: sorted.slice(0, 10),
+    rest: sorted.slice(10),
+  };
+}
+
 export default defineEventHandler(async (event: H3Event) => {
   try {
     const warId = Number.parseInt(getRouterParam(event, 'id') || '0', 10);
@@ -60,6 +136,8 @@ export default defineEventHandler(async (event: H3Event) => {
       killStats,
       topAggressorParticipants,
       topDefenderParticipants,
+      aggressorShipClassStats,
+      defenderShipClassStats,
     ] = await track('war:stats', 'database', async () => {
       const allies = await database.query<any>(
         `SELECT wa.*, c.name as "corporationName", a.name as "allianceName"
@@ -83,20 +161,20 @@ export default defineEventHandler(async (event: H3Event) => {
                   COALESCE(SUM(k."totalValue"), 0)::float as "totalValue",
                   MIN(k."killmailTime") as "firstKill",
                   MAX(k."killmailTime") as "lastKill",
-                  COUNT(DISTINCT k."killmailId") FILTER (WHERE 
-                    k."victimCorporationId" = w."defenderCorporationId" OR 
+                  COUNT(DISTINCT k."killmailId") FILTER (WHERE
+                    k."victimCorporationId" = w."defenderCorporationId" OR
                     k."victimAllianceId" = w."defenderAllianceId"
                   )::int AS "aggressorShipsKilled",
-                  COUNT(DISTINCT k."killmailId") FILTER (WHERE 
-                    k."victimCorporationId" = w."aggressorCorporationId" OR 
+                  COUNT(DISTINCT k."killmailId") FILTER (WHERE
+                    k."victimCorporationId" = w."aggressorCorporationId" OR
                     k."victimAllianceId" = w."aggressorAllianceId"
                   )::int AS "defenderShipsKilled",
-                  COALESCE(SUM(k."totalValue") FILTER (WHERE 
-                    k."victimCorporationId" = w."defenderCorporationId" OR 
+                  COALESCE(SUM(k."totalValue") FILTER (WHERE
+                    k."victimCorporationId" = w."defenderCorporationId" OR
                     k."victimAllianceId" = w."defenderAllianceId"
                   ), 0)::float AS "aggressorIskDestroyed",
-                  COALESCE(SUM(k."totalValue") FILTER (WHERE 
-                    k."victimCorporationId" = w."aggressorCorporationId" OR 
+                  COALESCE(SUM(k."totalValue") FILTER (WHERE
+                    k."victimCorporationId" = w."aggressorCorporationId" OR
                     k."victimAllianceId" = w."aggressorAllianceId"
                   ), 0)::float AS "defenderIskDestroyed"
            FROM killmails k
@@ -106,10 +184,11 @@ export default defineEventHandler(async (event: H3Event) => {
 
       // Get top aggressor participants (killed defenders)
       const topAggressorParticipants = await database.query<any>(
-        `SELECT 
-            COALESCE(k."topAttackerAllianceId", k."topAttackerCorporationId") as id,
-            COALESCE(a.name, c.name) as name,
-            CASE WHEN k."topAttackerAllianceId" IS NOT NULL THEN 'alliance' ELSE 'corporation' END as type,
+        `SELECT
+            k."topAttackerCorporationId" as "corporationId",
+            c.name as "corporationName",
+            k."topAttackerAllianceId" as "allianceId",
+            a.name as "allianceName",
             count(*)::int as kills,
             COALESCE(sum(k."totalValue"),0)::float as value
            FROM killmails k
@@ -126,10 +205,11 @@ export default defineEventHandler(async (event: H3Event) => {
 
       // Get top defender participants (killed aggressors)
       const topDefenderParticipants = await database.query<any>(
-        `SELECT 
-            COALESCE(k."topAttackerAllianceId", k."topAttackerCorporationId") as id,
-            COALESCE(a.name, c.name) as name,
-            CASE WHEN k."topAttackerAllianceId" IS NOT NULL THEN 'alliance' ELSE 'corporation' END as type,
+        `SELECT
+            k."topAttackerCorporationId" as "corporationId",
+            c.name as "corporationName",
+            k."topAttackerAllianceId" as "allianceId",
+            a.name as "allianceName",
             count(*)::int as kills,
             COALESCE(sum(k."totalValue"),0)::float as value
            FROM killmails k
@@ -144,7 +224,46 @@ export default defineEventHandler(async (event: H3Event) => {
            LIMIT 10`
       );
 
-      return [allies, stats, topAggressorParticipants, topDefenderParticipants];
+      // Get ship class stats for aggressor (victims they killed)
+      const aggressorShipClassStats = await database.query<any>(
+        `SELECT
+            g."groupId",
+            g."name" as "groupName",
+            COUNT(DISTINCT k."killmailId")::int as "count"
+           FROM killmails k
+           JOIN wars w ON w."warId" = k."warId"
+           JOIN types t ON t."typeId" = k."victimShipTypeId"
+           JOIN groups g ON g."groupId" = t."groupId"
+           WHERE k."warId" = ${warId}
+             AND (k."victimCorporationId" = w."defenderCorporationId" OR k."victimAllianceId" = w."defenderAllianceId")
+           GROUP BY g."groupId", g."name"
+           ORDER BY "count" DESC`
+      );
+
+      // Get ship class stats for defender (victims they killed)
+      const defenderShipClassStats = await database.query<any>(
+        `SELECT
+            g."groupId",
+            g."name" as "groupName",
+            COUNT(DISTINCT k."killmailId")::int as "count"
+           FROM killmails k
+           JOIN wars w ON w."warId" = k."warId"
+           JOIN types t ON t."typeId" = k."victimShipTypeId"
+           JOIN groups g ON g."groupId" = t."groupId"
+           WHERE k."warId" = ${warId}
+             AND (k."victimCorporationId" = w."aggressorCorporationId" OR k."victimAllianceId" = w."aggressorAllianceId")
+           GROUP BY g."groupId", g."name"
+           ORDER BY "count" DESC`
+      );
+
+      return [
+        allies,
+        stats,
+        topAggressorParticipants,
+        topDefenderParticipants,
+        aggressorShipClassStats,
+        defenderShipClassStats,
+      ];
     });
 
     // Parse filter parameters from existing query object
@@ -239,7 +358,7 @@ export default defineEventHandler(async (event: H3Event) => {
       async () => {
         // Aggressor kills (killed defenders)
         const aggressorKills = await database.query<any>(
-          `SELECT k.*, 
+          `SELECT k.*,
                   ss.name as "solarSystemName",
                   r.name as "regionName",
                   victim_char.name as "victimCharacterName",
@@ -255,7 +374,7 @@ export default defineEventHandler(async (event: H3Event) => {
            LEFT JOIN alliances victim_ally ON victim_ally."allianceId" = k."victimAllianceId"
            LEFT JOIN types victim_ship ON victim_ship."typeId" = k."victimShipTypeId"
            WHERE k."warId" = ${warId}
-             AND (k."victimCorporationId" = w."defenderCorporationId" 
+             AND (k."victimCorporationId" = w."defenderCorporationId"
                   OR k."victimAllianceId" = w."defenderAllianceId")
            ORDER BY k."killmailTime" DESC
            LIMIT 3`
@@ -263,7 +382,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
         // Defender kills (killed aggressors)
         const defenderKills = await database.query<any>(
-          `SELECT k.*, 
+          `SELECT k.*,
                   ss.name as "solarSystemName",
                   r.name as "regionName",
                   victim_char.name as "victimCharacterName",
@@ -279,7 +398,7 @@ export default defineEventHandler(async (event: H3Event) => {
            LEFT JOIN alliances victim_ally ON victim_ally."allianceId" = k."victimAllianceId"
            LEFT JOIN types victim_ship ON victim_ship."typeId" = k."victimShipTypeId"
            WHERE k."warId" = ${warId}
-             AND (k."victimCorporationId" = w."aggressorCorporationId" 
+             AND (k."victimCorporationId" = w."aggressorCorporationId"
                   OR k."victimAllianceId" = w."aggressorAllianceId")
            ORDER BY k."killmailTime" DESC
            LIMIT 3`
@@ -353,7 +472,7 @@ export default defineEventHandler(async (event: H3Event) => {
       'database',
       async () => {
         return await database.query<any>(
-          `SELECT k.*, 
+          `SELECT k.*,
                   ss.name as "solarSystemName",
                   r.name as "regionName",
                   victim_char.name as "victimCharacterName",
@@ -478,6 +597,14 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const breadcrumbData = generateBreadcrumbStructuredData(breadcrumbs);
 
+    // Group ship class stats into logical categories
+    const aggressorShipClassCategories = groupShipClassStats(
+      aggressorShipClassStats
+    );
+    const defenderShipClassCategories = groupShipClassStats(
+      defenderShipClassStats
+    );
+
     // Build filter query string for pagination
     const filterParams = new URLSearchParams();
     if (minTotalValue) filterParams.set('minTotalValue', String(minTotalValue));
@@ -532,6 +659,8 @@ export default defineEventHandler(async (event: H3Event) => {
       allies,
       topAggressorParticipants,
       topDefenderParticipants,
+      aggressorShipClassStats: aggressorShipClassCategories,
+      defenderShipClassStats: defenderShipClassCategories,
       aggressorKills,
       defenderKills,
       mostValuable,

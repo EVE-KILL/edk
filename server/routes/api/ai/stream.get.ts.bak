@@ -1,0 +1,153 @@
+/**
+ * AI Query Endpoint
+ * 
+ * GET /api/ai/stream?query=your+question
+ */
+
+import OpenAI from 'openai';
+
+export default defineEventHandler(async (event) => {
+  const query = getQuery(event);
+  const userQuery = query.query as string;
+
+  if (!userQuery) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Missing query parameter',
+    });
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  const model = process.env.AI_MODEL || 'x-ai/grok-2-1212';
+
+  if (!apiKey) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'OPENAI_API_KEY is not set',
+    });
+  }
+
+  try {
+    const htmlParts: string[] = [];
+    const toolsUsed: string[] = [];
+    let finalMessage = '';
+
+    // Lazy-load dependencies
+    const { getAllToolDefinitions, executeTool } = await import('../../../ai/tool-loader');
+    const { database } = await import('../../../helpers/database');
+    const { render } = await import('../../../helpers/templates');
+
+    const tools = getAllToolDefinitions();
+    console.info('Tools loaded:', tools.length);
+
+    const client = new OpenAI({ apiKey, baseURL: 'https://openrouter.ai/api/v1' });
+
+      const systemPrompt = `You are a helpful AI assistant for EVE-KILL, a killmail tracking system for EVE Online.
+
+You have access to tools that display killmail data AND can search the web. When the user asks a question:
+1. Determine which tool(s) best answer their question
+2. If the user asks about current EVE Online events, updates, or general information NOT in killmails, use web_search
+3. If the user mentions a location name (like "Jita" or "Delve"), use lookup_location first to get the ID
+4. For complex queries with multiple filters (location + value + timeframe), use search_killmails
+5. Call the appropriate tool(s) with all relevant parameters
+6. The tools will display visual results directly to the user
+7. You'll receive detailed stats back - USE THESE STATS in your response to provide specific numbers and context
+
+Important:
+- Always mention the specific numbers from the stats (total value, count, averages)
+- For expensive kills, mention the top kill value and ship
+- For searches, mention what filters were applied
+- If web search is used, cite the sources
+- Be conversational but specific with the data
+
+Current date: ${new Date().toISOString().split('T')[0]}`;
+
+      let messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userQuery },
+      ];
+
+      const maxTurns = 10;
+      let turn = 0;
+
+      while (turn < maxTurns) {
+        turn++;
+        console.info('AI turn:', turn);
+
+        const response = await client.chat.completions.create({
+          model,
+          messages,
+          tools,
+          timeout: 30000,
+        });
+
+        const choice = response.choices[0];
+        if (!choice?.message) break;
+
+        const assistantMessage = choice.message;
+        messages.push(assistantMessage);
+
+        // Handle tool calls
+        if (assistantMessage.tool_calls?.length) {
+          console.info('Tool calls:', assistantMessage.tool_calls.map(t => t.function.name));
+
+          await eventStream.push(JSON.stringify({
+            type: 'tool_usage',
+            tools: assistantMessage.tool_calls.map(t => t.function.name).join(', '),
+          }));
+
+          for (const toolCall of assistantMessage.tool_calls) {
+            const toolName = toolCall.function.name;
+            const args = JSON.parse(toolCall.function.arguments);
+
+            const toolContext = {
+              database,
+              render,
+              logger: { info: console.info, warn: console.warn, error: console.error, debug: console.debug, success: console.log },
+            };
+
+            const result = await executeTool(toolName, args, toolContext);
+
+            if (result.html) {
+              await eventStream.push(JSON.stringify({
+                type: 'html',
+                content: result.html,
+              }));
+            }
+
+            messages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: result.error || JSON.stringify(result.stats || {}),
+            });
+          }
+
+          continue;
+        }
+
+        // No tool calls - send text response
+        if (assistantMessage.content) {
+          await eventStream.push(JSON.stringify({
+            type: 'message',
+            content: assistantMessage.content,
+          }));
+        }
+
+        break;
+      }
+
+      await eventStream.push(JSON.stringify({ type: 'done' }));
+      await eventStream.close();
+
+    } catch (error: any) {
+      console.error('AI stream error:', error.message);
+      await eventStream.push(JSON.stringify({
+        type: 'error',
+        content: error.message || 'An error occurred',
+      }));
+      await eventStream.close();
+    }
+  })();
+
+  return eventStream.send();
+});

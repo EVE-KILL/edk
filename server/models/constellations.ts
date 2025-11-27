@@ -53,8 +53,8 @@ export async function searchConstellations(
 ): Promise<Constellation[]> {
   return database.find<Constellation>(
     `SELECT * FROM constellations
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -67,7 +67,7 @@ export async function getConstellationName(
   constellationId: number
 ): Promise<string | null> {
   const row = await database.findOne<{ name: string }>(
-    'SELECT name FROM constellations WHERE "constellationId" = :constellationId',
+    'SELECT "name" FROM constellations WHERE "constellationId" = :constellationId',
     { constellationId }
   );
   return row?.name || null;

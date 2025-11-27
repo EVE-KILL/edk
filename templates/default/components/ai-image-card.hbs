@@ -1,0 +1,29 @@
+<!-- Image Card for Ships/Characters/Items -->
+<div style="
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+  display: inline-block;
+  text-align: center;
+">
+  <div style="margin-bottom: 12px;">
+    {{> partials/eve-image type=imageType id=imageId size=128 alt=name}}
+  </div>
+  
+  <div style="color: #fff; font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+    {{name}}
+  </div>
+  
+  {{#if subtitle}}
+  <div style="color: #999; font-size: 13px;">
+    {{subtitle}}
+  </div>
+  {{/if}}
+  
+  {{#if description}}
+  <div style="color: #666; font-size: 12px; margin-top: 8px; max-width: 300px;">
+    {{description}}
+  </div>
+  {{/if}}
+</div>

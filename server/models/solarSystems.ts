@@ -78,8 +78,8 @@ export async function searchSolarSystems(
 ): Promise<SolarSystem[]> {
   return database.find<SolarSystem>(
     `SELECT * FROM solarsystems
-       WHERE name ILIKE :pattern
-       ORDER BY name
+       WHERE "name" ILIKE :pattern
+       ORDER BY "name"
        LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -92,7 +92,7 @@ export async function getSolarSystemName(
   solarSystemId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM solarsystems WHERE "solarSystemId" = :solarSystemId',
+    'SELECT "name" FROM solarsystems WHERE "solarSystemId" = :solarSystemId',
     { solarSystemId }
   );
   return result?.name || null;
@@ -145,7 +145,10 @@ export async function countSolarSystems(): Promise<number> {
  * Get stats for a solar system
  */
 export async function getSystemStats(solarSystemId: number): Promise<any> {
-  const result = await database.findOne<{ kills: number; iskDestroyed: number }>(
+  const result = await database.findOne<{
+    kills: number;
+    iskDestroyed: number;
+  }>(
     `SELECT
       count(*) as kills,
       sum("totalValue") as "iskDestroyed"

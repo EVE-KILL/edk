@@ -90,4 +90,49 @@ export const logger = {
   success: (message: string, data?: Record<string, any>) => {
     log({ level: 'success', message, timestamp: new Date(), data });
   },
+
+  withTag: (tag: string) => {
+    return {
+      info: (message: string, data?: Record<string, any>) => {
+        log({
+          level: 'info',
+          message: `[${tag}] ${message}`,
+          timestamp: new Date(),
+          data,
+        });
+      },
+      warn: (message: string, data?: Record<string, any>) => {
+        log({
+          level: 'warn',
+          message: `[${tag}] ${message}`,
+          timestamp: new Date(),
+          data,
+        });
+      },
+      error: (message: string, data?: Record<string, any>) => {
+        log({
+          level: 'error',
+          message: `[${tag}] ${message}`,
+          timestamp: new Date(),
+          data,
+        });
+      },
+      debug: (message: string, data?: Record<string, any>) => {
+        log({
+          level: 'debug',
+          message: `[${tag}] ${message}`,
+          timestamp: new Date(),
+          data,
+        });
+      },
+      success: (message: string, data?: Record<string, any>) => {
+        log({
+          level: 'success',
+          message: `[${tag}] ${message}`,
+          timestamp: new Date(),
+          data,
+        });
+      },
+    };
+  },
 };

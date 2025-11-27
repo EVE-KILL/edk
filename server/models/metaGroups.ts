@@ -41,8 +41,8 @@ export async function searchMetaGroups(
 ): Promise<MetaGroup[]> {
   return database.find<MetaGroup>(
     `SELECT * FROM "metaGroups"
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -55,7 +55,7 @@ export async function getMetaGroupName(
   metaGroupId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM "metaGroups" WHERE "metaGroupId" = :metaGroupId',
+    'SELECT "name" FROM "metaGroups" WHERE "metaGroupId" = :metaGroupId',
     { metaGroupId }
   );
   return result?.name || null;

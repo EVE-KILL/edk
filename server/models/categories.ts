@@ -30,7 +30,7 @@ export async function getCategory(
  */
 export async function getPublishedCategories(): Promise<Category[]> {
   return database.find<Category>(
-    'SELECT * FROM categories WHERE published = 1 ORDER BY name'
+    'SELECT * FROM categories WHERE published = 1 ORDER BY "name"'
   );
 }
 
@@ -38,7 +38,7 @@ export async function getPublishedCategories(): Promise<Category[]> {
  * Get all categories
  */
 export async function getAllCategories(): Promise<Category[]> {
-  return database.find<Category>('SELECT * FROM categories ORDER BY name');
+  return database.find<Category>('SELECT * FROM categories ORDER BY "name"');
 }
 
 /**
@@ -50,8 +50,8 @@ export async function searchCategories(
 ): Promise<Category[]> {
   return database.find<Category>(
     `SELECT * FROM categories
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );

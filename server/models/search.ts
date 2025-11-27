@@ -12,6 +12,7 @@ export interface SearchResult {
   type: string;
   rawId: string;
   similarity?: number;
+  memberCount?: number | null;
 }
 
 /**
@@ -38,6 +39,7 @@ export async function searchEntities(
     id: string;
     name: string;
     type: string;
+    memberCount?: number | null;
     rank: number;
   }>(
     `
@@ -46,10 +48,11 @@ export async function searchEntities(
         "characterId"::text as id,
         name,
         'character' as type,
+        NULL::int as "memberCount",
         1 as rank
       FROM characters
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY name
+      ORDER BY "name"
       LIMIT :limit
     )
     UNION ALL
@@ -58,10 +61,11 @@ export async function searchEntities(
         "corporationId"::text as id,
         name,
         'corporation' as type,
+        "memberCount",
         1 as rank
       FROM corporations
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY name
+      ORDER BY "name"
       LIMIT :limit
     )
     UNION ALL
@@ -70,10 +74,13 @@ export async function searchEntities(
         "allianceId"::text as id,
         name,
         'alliance' as type,
+        COALESCE((
+          SELECT SUM(c."memberCount") FROM corporations c WHERE c."allianceId" = alliances."allianceId"
+        ), 0) as "memberCount",
         1 as rank
       FROM alliances
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY name
+      ORDER BY "name"
       LIMIT :limit
     )
     UNION ALL
@@ -88,7 +95,7 @@ export async function searchEntities(
         name IS NOT NULL 
         AND "published" = true 
         AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY name
+      ORDER BY "name"
       LIMIT :limit
     )
     UNION ALL
@@ -100,7 +107,7 @@ export async function searchEntities(
         1 as rank
       FROM solarsystems
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY name
+      ORDER BY "name"
       LIMIT :limit
     )
     UNION ALL
@@ -112,7 +119,7 @@ export async function searchEntities(
         1 as rank
       FROM constellations
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY name
+      ORDER BY "name"
       LIMIT :limit
     )
     UNION ALL
@@ -124,10 +131,10 @@ export async function searchEntities(
         1 as rank
       FROM regions
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY name
+      ORDER BY "name"
       LIMIT :limit
     )
-    ORDER BY name
+    ORDER BY "name"
     `,
     { searchTerm, prefixPattern, limit }
   );
@@ -140,5 +147,6 @@ export async function searchEntities(
     type: row.type,
     rawId: row.id,
     similarity: row.rank,
+    memberCount: row.memberCount ?? null,
   }));
 }

@@ -15,7 +15,7 @@ export class FactionQueries {
 
   static async getFactionName(factionId: number): Promise<string | null> {
     const result = await database.findOne<{ name: string }>(
-      'SELECT name FROM factions WHERE "factionId" = :factionId LIMIT 1',
+      'SELECT "name" FROM factions WHERE "factionId" = :factionId LIMIT 1',
       { factionId }
     );
     return result?.name || null;
@@ -28,7 +28,7 @@ export class FactionQueries {
   static async searchFactions(query: string, limit: number = 10) {
     return database.find(
       `SELECT * FROM factions
-         WHERE name ILIKE :pattern
+         WHERE "name" ILIKE :pattern
          ORDER BY "factionId"
          LIMIT :limit`,
       { pattern: `%${query}%`, limit }

@@ -36,7 +36,7 @@ export async function getCharacterInfo(
 ): Promise<CharacterInfo | null> {
   // First get character name from characters table
   const character = await database.findOne<{ name: string }>(
-    `SELECT name
+    `SELECT "name"
     FROM characters
     WHERE "characterId" = :characterId
     LIMIT 1`,
@@ -592,8 +592,8 @@ export async function searchCharacters(
 ): Promise<Character[]> {
   return database.find<Character>(
     `SELECT * FROM characters
-    WHERE name ILIKE :pattern
-    ORDER BY name
+    WHERE "name" ILIKE :pattern
+    ORDER BY "name"
     LIMIT :limit`,
     { pattern: `%${searchTerm}%`, limit }
   );
@@ -606,7 +606,7 @@ export async function getCharacterName(
   characterId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM characters WHERE "characterId" = :characterId',
+    'SELECT "name" FROM characters WHERE "characterId" = :characterId',
     { characterId }
   );
   return result?.name || null;

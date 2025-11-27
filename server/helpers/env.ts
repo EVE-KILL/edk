@@ -4,7 +4,9 @@ const DEFAULT_DATABASE_URL =
   'postgresql://edk_user:edk_password@localhost:5432/edk';
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z
+    .enum(['development', 'production', 'test'])
+    .default('development'),
   DATABASE_URL: z.string().url().default(DEFAULT_DATABASE_URL),
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
@@ -62,6 +64,8 @@ const envSchema = z.object({
   DEBUG: z.string().optional(),
   HOST: z.string().optional(),
   PORT: z.coerce.number().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  AI_MODEL: z.string().default('x-ai/grok-2-1212'),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -72,8 +72,8 @@ export async function searchStargates(
 ): Promise<Stargate[]> {
   return database.find<Stargate>(
     `SELECT * FROM stargates
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -86,7 +86,7 @@ export async function getStargateName(
   stargateId: number
 ): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM stargates WHERE "stargateId" = :stargateId',
+    'SELECT "name" FROM stargates WHERE "stargateId" = :stargateId',
     { stargateId }
   );
   return result?.name || null;

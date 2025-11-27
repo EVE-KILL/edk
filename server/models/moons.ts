@@ -57,8 +57,8 @@ export async function searchMoons(
 ): Promise<Moon[]> {
   return database.find<Moon>(
     `SELECT * FROM moons
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -69,7 +69,7 @@ export async function searchMoons(
  */
 export async function getMoonName(moonId: number): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM moons WHERE "moonId" = :moonId',
+    'SELECT "name" FROM moons WHERE "moonId" = :moonId',
     { moonId }
   );
   return result?.name || null;

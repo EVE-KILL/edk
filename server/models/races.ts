@@ -39,8 +39,8 @@ export async function searchRaces(
 ): Promise<Race[]> {
   return database.find<Race>(
     `SELECT * FROM races
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );
@@ -51,7 +51,7 @@ export async function searchRaces(
  */
 export async function getRaceName(raceId: number): Promise<string | null> {
   const result = await database.findOne<{ name: string }>(
-    'SELECT name FROM races WHERE "raceId" = :raceId',
+    'SELECT "name" FROM races WHERE "raceId" = :raceId',
     { raceId }
   );
   return result?.name || null;

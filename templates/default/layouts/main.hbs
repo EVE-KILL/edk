@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <!-- Primary Meta Tags -->
     <title>{{#if page.title}}{{page.title}}{{else if title}}{{title}}{{/if}}{{#unless page.skipSiteName}} - {{#if config.title}}{{config.title}}{{else}}EVE Kill{{/if}}{{/unless}}</title>
     <meta name="title" content="{{#if page.title}}{{page.title}}{{else if title}}{{title}}{{else}}Home{{/if}}{{#unless page.skipSiteName}} - {{#if config.title}}{{config.title}}{{else}}EVE Kill{{/if}}{{/unless}}" />
@@ -12,7 +12,7 @@
     <meta name="author" content="{{#if config.title}}{{config.title}}{{else}}EVE Kill{{/if}}" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="{{#if page.url}}{{config.siteUrl}}{{page.url}}{{else}}{{config.siteUrl}}{{/if}}" />
-    
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="{{#if page.type}}{{page.type}}{{else}}website{{/if}}" />
     <meta property="og:url" content="{{#if page.url}}{{config.siteUrl}}{{page.url}}{{else}}{{config.siteUrl}}{{/if}}" />
@@ -23,7 +23,7 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="{{#if config.title}}{{config.title}}{{else}}EVE Kill{{/if}}" />
     <meta property="og:locale" content="en_US" />
-    
+
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="{{#if page.url}}{{config.siteUrl}}{{page.url}}{{else}}{{config.siteUrl}}{{/if}}" />
@@ -34,12 +34,12 @@
     <meta name="twitter:site" content="{{config.twitterHandle}}" />
     <meta name="twitter:creator" content="{{config.twitterHandle}}" />
     {{/if}}
-    
+
     <!-- Additional Meta Tags -->
     <meta name="theme-color" content="#1a1a1a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    
+
     {{#if page.structuredData}}
     <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -1032,16 +1032,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Dynamically position dropdowns based on screen position
             const dropdowns = document.querySelectorAll('.nav-dropdown');
-            
+
             dropdowns.forEach(function(dropdown) {
                 const content = dropdown.querySelector('.nav-dropdown-content');
                 if (!content) return;
-                
+
                 dropdown.addEventListener('mouseenter', function() {
                     const rect = dropdown.getBoundingClientRect();
                     const screenWidth = window.innerWidth;
                     const midpoint = screenWidth / 2;
-                    
+
                     // If dropdown is in right half of screen, align to right
                     if (rect.left > midpoint) {
                         content.classList.add('align-right');
@@ -1052,6 +1052,9 @@
             });
         });
     </script>
+
+    <!-- Expand/Collapse Component Library -->
+    <script src="/expand-collapse.js"></script>
 
     {{{footerContent}}}
 </body>

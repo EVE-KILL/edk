@@ -236,3 +236,82 @@ export async function getLatestPricesForTypes(
 
   return priceMap;
 }
+
+/**
+ * Get custom price for a type ID (hardcoded prices for rare/special items)
+ *
+ * @param typeId Type ID to check
+ * @param asOfDate Optional date for time-based pricing
+ * @returns Custom price if found, null otherwise
+ */
+export async function getCustomPrice(
+  typeId: number,
+  asOfDate?: string | Date
+): Promise<number | null> {
+  const dateString = asOfDate
+    ? typeof asOfDate === 'string'
+      ? asOfDate.split('T')[0]
+      : asOfDate.toISOString().split('T')[0]
+    : new Date().toISOString().split('T')[0];
+
+  const result = await database.findOne<{ customPrice: string }>(
+    `SELECT "customPrice"
+     FROM customprices
+     WHERE "typeId" = :typeId
+       AND ("validFrom" IS NULL OR "validFrom" <= :dateString)
+       AND ("validUntil" IS NULL OR "validUntil" > :dateString)
+     ORDER BY "validFrom" DESC NULLS LAST
+     LIMIT 1`,
+    { typeId, dateString }
+  );
+
+  return result ? Number(result.customPrice) : null;
+}
+
+/**
+ * Calculate price based on reprocessing materials (typematerials)
+ * This provides a more stable price estimate based on base material values
+ * Used for items like Titans and Supercarriers where market prices are unreliable
+ *
+ * @param typeId Type ID to calculate price for
+ * @param regionId Region ID for material prices (default: 10000002 - The Forge)
+ * @param asOfDate Optional date for historical pricing
+ * @returns Calculated price based on reprocessing materials, or 0 if no materials found
+ */
+export async function getPriceFromReprocessing(
+  typeId: number,
+  regionId: number = DEFAULT_PRICE_REGION_ID,
+  asOfDate?: string | Date
+): Promise<number> {
+  // Get reprocessing materials for this type
+  const materials = await database.find<{
+    materialTypeId: number;
+    quantity: number;
+  }>(
+    `SELECT "materialTypeId", "quantity"
+     FROM typematerials
+     WHERE "typeId" = :typeId`,
+    { typeId }
+  );
+
+  if (materials.length === 0) {
+    return 0;
+  }
+
+  // Get prices for all materials
+  const materialTypeIds = materials.map((m) => m.materialTypeId);
+  const materialPrices = await getLatestPricesForTypes(
+    materialTypeIds,
+    regionId,
+    asOfDate
+  );
+
+  // Calculate total value
+  let totalValue = 0;
+  for (const material of materials) {
+    const materialPrice = materialPrices.get(material.materialTypeId) ?? 0;
+    totalValue += materialPrice * material.quantity;
+  }
+
+  return totalValue;
+}

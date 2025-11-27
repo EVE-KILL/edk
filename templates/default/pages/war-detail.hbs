@@ -146,17 +146,29 @@
       </div>
     </div>
 
+    <!-- Aggressor Ship Class Stats -->
+    {{#if aggressorShipClassStats.top}}
+    <div class="war-versus__section">
+      {{> components/ship-class-stats shipClassStats=aggressorShipClassStats}}
+    </div>
+    {{/if}}
+
     <!-- Aggressor Top Participants -->
     <div class="war-versus__section">
       <div class="war-versus__section-title">Top Contributors</div>
       <div class="war-versus__participants">
         {{#each topAggressorParticipants}}
         <div class="war-versus__participant">
-          <div class="war-versus__participant-name">
-            {{#if id}}
-              <a href="/{{type}}/{{id}}">{{#if name}}{{name}}{{else}}#{{id}}{{/if}}</a>
-            {{else}}
-              Unknown
+          <div class="war-versus__participant-main">
+            {{#if allianceId}}
+              <div class="war-versus__participant-alliance">
+                <a href="/alliance/{{allianceId}}">{{#if allianceName}}{{allianceName}}{{else}}Alliance #{{allianceId}}{{/if}}</a>
+              </div>
+            {{/if}}
+            {{#if corporationId}}
+              <div class="war-versus__participant-corporation">
+                <a href="/corporation/{{corporationId}}">{{#if corporationName}}{{corporationName}}{{else}}Corporation #{{corporationId}}{{/if}}</a>
+              </div>
             {{/if}}
           </div>
           <div class="war-versus__participant-stats">
@@ -225,17 +237,29 @@
       </div>
     </div>
 
+    <!-- Defender Ship Class Stats -->
+    {{#if defenderShipClassStats.top}}
+    <div class="war-versus__section">
+      {{> components/ship-class-stats shipClassStats=defenderShipClassStats}}
+    </div>
+    {{/if}}
+
     <!-- Defender Top Participants -->
     <div class="war-versus__section">
       <div class="war-versus__section-title">Top Contributors</div>
       <div class="war-versus__participants">
         {{#each topDefenderParticipants}}
         <div class="war-versus__participant">
-          <div class="war-versus__participant-name">
-            {{#if id}}
-              <a href="/{{type}}/{{id}}">{{#if name}}{{name}}{{else}}#{{id}}{{/if}}</a>
-            {{else}}
-              Unknown
+          <div class="war-versus__participant-main">
+            {{#if allianceId}}
+              <div class="war-versus__participant-alliance">
+                <a href="/alliance/{{allianceId}}">{{#if allianceName}}{{allianceName}}{{else}}Alliance #{{allianceId}}{{/if}}</a>
+              </div>
+            {{/if}}
+            {{#if corporationId}}
+              <div class="war-versus__participant-corporation">
+                <a href="/corporation/{{corporationId}}">{{#if corporationName}}{{corporationName}}{{else}}Corporation #{{corporationId}}{{/if}}</a>
+              </div>
             {{/if}}
           </div>
           <div class="war-versus__participant-stats">
@@ -642,6 +666,45 @@
 }
 
 .war-versus__participant-name a:hover {
+  color: var(--color-accent-gold);
+}
+
+.war-versus__participant-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 4px;
+}
+
+.war-versus__participant-alliance {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-white);
+}
+
+.war-versus__participant-alliance a {
+  color: var(--color-accent-blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.war-versus__participant-alliance a:hover {
+  color: var(--color-accent-gold);
+}
+
+.war-versus__participant-corporation {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  margin-left: 8px;
+}
+
+.war-versus__participant-corporation a {
+  color: var(--color-accent-blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.war-versus__participant-corporation a:hover {
   color: var(--color-accent-gold);
 }
 

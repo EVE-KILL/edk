@@ -57,8 +57,8 @@ export async function searchAncestries(
 ): Promise<Ancestry[]> {
   return database.find<Ancestry>(
     `SELECT * FROM ancestries
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );

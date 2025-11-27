@@ -1,0 +1,55 @@
+{{#if title}}
+<div style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #fff;">
+  {{title}}
+</div>
+{{/if}}
+
+<div style="overflow-x: auto;">
+  <table class="ai-data-table" style="
+    width: 100%;
+    border-collapse: collapse;
+    background: #2a2a2a;
+    border-radius: 8px;
+    overflow: hidden;
+  ">
+    <thead>
+      <tr style="background: #1a1a1a;">
+        {{#each columns}}
+        <th style="
+          padding: 12px 16px;
+          text-align: left;
+          font-size: 12px;
+          font-weight: 600;
+          color: #999;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border-bottom: 1px solid #333;
+        ">
+          {{this}}
+        </th>
+        {{/each}}
+      </tr>
+    </thead>
+    <tbody>
+      {{#each rows}}
+      <tr style="border-bottom: 1px solid #333;">
+        {{#each this}}
+        <td style="
+          padding: 12px 16px;
+          color: #ccc;
+          font-size: 14px;
+        ">
+          {{this}}
+        </td>
+        {{/each}}
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+
+{{#unless rows.length}}
+<div style="padding: 24px; text-align: center; color: #666;">
+  No data found
+</div>
+{{/unless}}

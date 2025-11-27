@@ -61,8 +61,8 @@ export async function searchStars(
 ): Promise<Star[]> {
   return database.find<Star>(
     `SELECT * FROM stars
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${namePattern}%`, limit }
   );

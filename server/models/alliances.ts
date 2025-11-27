@@ -50,8 +50,8 @@ export async function searchAlliances(
 ): Promise<Alliance[]> {
   return database.find<Alliance>(
     `SELECT * FROM alliances
-     WHERE name ILIKE :pattern
-     ORDER BY name
+     WHERE "name" ILIKE :pattern
+     ORDER BY "name"
      LIMIT :limit`,
     { pattern: `%${searchTerm}%`, limit }
   );
@@ -64,7 +64,7 @@ export async function getAllianceName(
   allianceId: number
 ): Promise<string | null> {
   const row = await database.findOne<{ name: string }>(
-    'SELECT name FROM alliances WHERE "allianceId" = :allianceId',
+    'SELECT "name" FROM alliances WHERE "allianceId" = :allianceId',
     { allianceId }
   );
   return row?.name || null;
