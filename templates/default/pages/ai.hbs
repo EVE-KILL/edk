@@ -9,14 +9,12 @@
   )
 }}
 
-<div class="ai-page">
-  <div class="ai-chat-layout">
-    <div id="ai-messages" class="ai-messages">
-      {{> partials/ai-welcome-message}}
-    </div>
-
-    {{> components/ai-input-area}}
+<div class="ai-chat-layout">
+  <div id="ai-messages" class="ai-messages">
+    {{> partials/ai-welcome-message}}
   </div>
+
+  {{> components/ai-input-area}}
 </div>
 
 <script>

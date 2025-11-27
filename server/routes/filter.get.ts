@@ -162,49 +162,45 @@ export default defineEventHandler(async (event: H3Event) => {
       topAlliancesFormatted,
       topSystemsFormatted,
       topRegionsFormatted,
-    } = await track(
-      'filter:format_top_boxes',
-      'application',
-      async () => {
-        return {
-          topCharactersFormatted: topCharacters.map((c) => ({
-            name: c.name,
-            kills: c.kills,
-            imageType: 'character',
-            imageId: c.id,
-            link: `/character/${c.id}`,
-          })),
-          topCorporationsFormatted: topCorporations.map((c) => ({
-            name: c.name,
-            kills: c.kills,
-            imageType: 'corporation',
-            imageId: c.id,
-            link: `/corporation/${c.id}`,
-          })),
-          topAlliancesFormatted: topAlliances.map((a) => ({
-            name: a.name,
-            kills: a.kills,
-            imageType: 'alliance',
-            imageId: a.id,
-            link: `/alliance/${a.id}`,
-          })),
-          topSystemsFormatted: topSystems.map((s) => ({
-            name: s.name,
-            kills: s.kills,
-            imageType: 'system',
-            imageId: s.id,
-            link: `/system/${s.id}`,
-          })),
-          topRegionsFormatted: topRegions.map((r) => ({
-            name: r.name,
-            kills: r.kills,
-            imageType: 'region',
-            imageId: r.id,
-            link: `/region/${r.id}`,
-          })),
-        };
-      }
-    );
+    } = await track('filter:format_top_boxes', 'application', async () => {
+      return {
+        topCharactersFormatted: topCharacters.map((c) => ({
+          name: c.name,
+          kills: c.kills,
+          imageType: 'character',
+          imageId: c.id,
+          link: `/character/${c.id}`,
+        })),
+        topCorporationsFormatted: topCorporations.map((c) => ({
+          name: c.name,
+          kills: c.kills,
+          imageType: 'corporation',
+          imageId: c.id,
+          link: `/corporation/${c.id}`,
+        })),
+        topAlliancesFormatted: topAlliances.map((a) => ({
+          name: a.name,
+          kills: a.kills,
+          imageType: 'alliance',
+          imageId: a.id,
+          link: `/alliance/${a.id}`,
+        })),
+        topSystemsFormatted: topSystems.map((s) => ({
+          name: s.name,
+          kills: s.kills,
+          imageType: 'system',
+          imageId: s.id,
+          link: `/system/${s.id}`,
+        })),
+        topRegionsFormatted: topRegions.map((r) => ({
+          name: r.name,
+          kills: r.kills,
+          imageType: 'region',
+          imageId: r.id,
+          link: `/region/${r.id}`,
+        })),
+      };
+    });
 
     // Pagination
     const pagination = {
