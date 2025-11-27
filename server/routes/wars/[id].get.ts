@@ -19,82 +19,6 @@ import {
 
 const PER_PAGE = 25;
 
-// Group IDs mapping for logical ship class grouping
-const SHIP_CLASS_GROUPS: Record<number, { category: string; order: number }> = {
-  // Frigates
-  25: { category: 'Frigate', order: 1 }, // Frigate
-  237: { category: 'Frigate', order: 1 }, // Assault Frigate
-  324: { category: 'Frigate', order: 1 }, // Interceptor
-  831: { category: 'Frigate', order: 1 }, // Covert Ops
-  893: { category: 'Frigate', order: 1 }, // Stealth Bomber
-  // Destroyers
-  420: { category: 'Destroyer', order: 2 }, // Destroyer
-  541: { category: 'Destroyer', order: 2 }, // Interdictory Destroyer
-  // Cruisers
-  906: { category: 'Cruiser', order: 3 }, // Heavy Assault Cruiser
-  26: { category: 'Cruiser', order: 3 }, // Cruiser
-  833: { category: 'Cruiser', order: 3 }, // Logistics
-  358: { category: 'Cruiser', order: 3 }, // Heavy Cruiser
-  894: { category: 'Cruiser', order: 3 }, // Electronic Attack Ship
-  832: { category: 'Cruiser', order: 3 }, // Recon Ship
-  963: { category: 'Cruiser', order: 3 }, // Strategic Cruiser
-  // Battle Cruisers
-  419: { category: 'Battle Cruiser', order: 4 }, // Battlecruiser
-  540: { category: 'Battle Cruiser', order: 4 }, // Command Ship
-  // Battleships
-  27: { category: 'Battleship', order: 5 }, // Battleship
-  898: { category: 'Battleship', order: 5 }, // Black Ops
-  900: { category: 'Battleship', order: 5 }, // Marauder
-  // Capital Ships
-  547: { category: 'Carrier', order: 6 }, // Carrier
-  659: { category: 'Super Carrier', order: 7 }, // Supercarrier
-  485: { category: 'Dreadnought', order: 8 }, // Dreadnought
-  30: { category: 'Titan', order: 9 }, // Titan
-  // Industrial & Structures
-  513: { category: 'Freighter', order: 10 }, // Freighter
-  902: { category: 'Freighter', order: 10 }, // Jump Freighter
-  // Structures
-  1657: { category: 'Structure', order: 11 }, // Astrahus
-  1406: { category: 'Structure', order: 11 }, // Fortizar
-  1404: { category: 'Structure', order: 11 }, // Keepstar
-  1408: { category: 'Structure', order: 11 }, // Structure
-  2017: { category: 'Structure', order: 11 }, // Structure
-  2016: { category: 'Structure', order: 11 }, // Structure
-};
-
-interface ShipClassCategory {
-  category: string;
-  total: number;
-  order: number;
-}
-
-function groupShipClassStats(
-  stats: Array<{ groupId: number; groupName: string; count: number }>
-): { top: ShipClassCategory[]; rest: ShipClassCategory[] } {
-  const grouped = new Map<string, ShipClassCategory>();
-
-  for (const stat of stats) {
-    const classInfo = SHIP_CLASS_GROUPS[stat.groupId];
-    const category = classInfo?.category || stat.groupName;
-    const order = classInfo?.order || 999;
-
-    const key = category;
-    if (!grouped.has(key)) {
-      grouped.set(key, { category, total: 0, order });
-    }
-
-    const entry = grouped.get(key)!;
-    entry.total += stat.count;
-  }
-
-  // Sort by total count descending
-  const sorted = Array.from(grouped.values()).sort((a, b) => b.total - a.total);
-  return {
-    top: sorted.slice(0, 10),
-    rest: sorted.slice(10),
-  };
-}
-
 export default defineEventHandler(async (event: H3Event) => {
   try {
     const warId = Number.parseInt(getRouterParam(event, 'id') || '0', 10);
@@ -597,14 +521,6 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const breadcrumbData = generateBreadcrumbStructuredData(breadcrumbs);
 
-    // Group ship class stats into logical categories
-    const aggressorShipClassCategories = groupShipClassStats(
-      aggressorShipClassStats
-    );
-    const defenderShipClassCategories = groupShipClassStats(
-      defenderShipClassStats
-    );
-
     // Build filter query string for pagination
     const filterParams = new URLSearchParams();
     if (minTotalValue) filterParams.set('minTotalValue', String(minTotalValue));
@@ -659,8 +575,8 @@ export default defineEventHandler(async (event: H3Event) => {
       allies,
       topAggressorParticipants,
       topDefenderParticipants,
-      aggressorShipClassStats: aggressorShipClassCategories,
-      defenderShipClassStats: defenderShipClassCategories,
+      aggressorShipClassStats,
+      defenderShipClassStats,
       aggressorKills,
       defenderKills,
       mostValuable,

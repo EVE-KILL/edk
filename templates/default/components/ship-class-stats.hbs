@@ -4,29 +4,13 @@
     <span class="ship-class-stats__title">Ship Classes Destroyed</span>
   </div>
   <div class="ship-class-stats__list">
-    {{#each shipClassStats.top}}
+    {{#each shipClassStats}}
     <div class="ship-class-stats__item">
-      <div class="ship-class-stats__name">{{category}}</div>
-      <div class="ship-class-stats__count">{{total}}</div>
+      {{> partials/eve-image type="group" id=groupId size=32 alt=groupName class="ship-class-stats__icon"}}
+      <div class="ship-class-stats__name">{{groupName}}</div>
+      <div class="ship-class-stats__count">{{count}}</div>
     </div>
     {{/each}}
-
-    {{#if shipClassStats.rest}}
-    {{#if shipClassStats.rest.length}}
-    <div class="ship-class-stats__expand-trigger" data-expand-trigger aria-expanded="false">
-      <div class="ship-class-stats__expand-text">+ Show more classes</div>
-    </div>
-
-    <div class="ship-class-stats__expanded" data-expand-content style="display: none;">
-      {{#each shipClassStats.rest}}
-      <div class="ship-class-stats__item">
-        <div class="ship-class-stats__name">{{category}}</div>
-        <div class="ship-class-stats__count">{{total}}</div>
-      </div>
-      {{/each}}
-    </div>
-    {{/if}}
-    {{/if}}
   </div>
 </div>
 
@@ -60,11 +44,15 @@
 
 .ship-class-stats__item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
   padding: 8px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   transition: background 0.2s ease;
+}
+
+.ship-class-stats__icon {
+  flex-shrink: 0;
 }
 
 .ship-class-stats__item:hover {
