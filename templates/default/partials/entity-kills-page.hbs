@@ -12,14 +12,32 @@
 </div>
 {{/if}}
 
-<!-- Killlist Filters -->
-{{#if data.filterDefaults}}
-<div style="margin-bottom: 20px;">
-    {{> partials/killlist-filters filterDefaults=data.filterDefaults baseUrl=data.baseUrl pagination=data.pagination}}
-</div>
+<!-- Most Valuable Kills -->
+{{#if data.mostValuableKills}}
+{{#if data.timeRange}}
+{{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange=data.timeRange}}
+{{else}}
+{{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange="Last 7 Days"}}
+{{/if}}
 {{/if}}
 
-<!-- Kills List -->
-<div style="margin-bottom: 20px;">
+<!-- Recent Activity with Top 10 Sidebar -->
+<div style="display: grid; grid-template-columns: minmax(200px, 225px) 1fr; gap: 12px; width: 100%; box-sizing: border-box; margin-bottom: 20px;">
+  <!-- Top 10 Sidebar -->
+  <aside style="min-width: 0; overflow: hidden;">
+    {{#if data.top10Stats}}
+      {{> components/top-10-stats stats=data.top10Stats corporationTitle=data.corporationTitle allianceTitle=data.allianceTitle shipTitle=data.shipTitle systemTitle=data.systemTitle regionTitle=data.regionTitle timeRange=data.timeRange}}
+    {{/if}}
+  </aside>
+
+  <!-- Kills List -->
+  <section style="min-width: 0; overflow: hidden;">
+      <!-- Killlist Filters -->
+    {{#if data.filterDefaults}}
+    <div style="margin-bottom: 20px;">
+        {{> partials/killlist-filters filterDefaults=data.filterDefaults baseUrl=data.baseUrl pagination=data.pagination}}
+    </div>
+    {{/if}}
     {{> partials/killmail-list killmails=data.killmails wsFilter=data.wsFilter}}
+  </section>
 </div>
