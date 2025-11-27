@@ -1,8 +1,13 @@
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
+import {
+  getEntityStatsFromCache,
+  isStatsCachePopulated,
+} from '../../../models/entityStatsCache';
 import { getEntityStatsFromView } from '../../../models/entityStatsView';
 import { getCharacterWithCorporationAndAlliance } from '../../../models/characters';
+import { track } from '../../../utils/performance-decorators';
 import {
   getEntityKillmails,
   estimateEntityKillmails,
@@ -35,8 +40,17 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
-    // Get character stats using the same query as dashboard
-    const stats = await getEntityStatsFromView(characterId, 'character', 'all');
+    // Get character stats
+    const stats = await track(
+      'character:losses:fetch_stats',
+      'application',
+      async () => {
+        const useCache = await isStatsCachePopulated();
+        return useCache
+          ? await getEntityStatsFromCache(characterId, 'character', 'all')
+          : await getEntityStatsFromView(characterId, 'character', 'all');
+      }
+    );
 
     // Fetch all entity data in parallel
     const [
@@ -46,20 +60,44 @@ export default defineEventHandler(async (event: H3Event) => {
       topSystems,
       topRegions,
       mostValuable,
-    ] = await Promise.all([
-      getTopVictimsByAttacker(
-        characterId,
-        'character',
-        'week',
-        'corporation',
-        10
-      ),
-      getTopVictimsByAttacker(characterId, 'character', 'week', 'alliance', 10),
-      getTopVictimsByAttacker(characterId, 'character', 'week', 'ship', 10),
-      getTopVictimsByAttacker(characterId, 'character', 'week', 'system', 10),
-      getTopVictimsByAttacker(characterId, 'character', 'week', 'region', 10),
-      getMostValuableKillsByCharacter(characterId, 'week', 6),
-    ]);
+    ] = await track(
+      'character:losses:fetch_dashboard_data',
+      'application',
+      async () => {
+        return await Promise.all([
+          getTopVictimsByAttacker(
+            characterId,
+            'character',
+            'week',
+            'corporation',
+            10
+          ),
+          getTopVictimsByAttacker(
+            characterId,
+            'character',
+            'week',
+            'alliance',
+            10
+          ),
+          getTopVictimsByAttacker(characterId, 'character', 'week', 'ship', 10),
+          getTopVictimsByAttacker(
+            characterId,
+            'character',
+            'week',
+            'system',
+            10
+          ),
+          getTopVictimsByAttacker(
+            characterId,
+            'character',
+            'week',
+            'region',
+            10
+          ),
+          getMostValuableKillsByCharacter(characterId, 'week', 6),
+        ]);
+      }
+    );
 
     // Get pagination parameters
     const query = getQuery(event);
@@ -186,6 +224,50 @@ export default defineEventHandler(async (event: H3Event) => {
       };
     });
 
+    // Get EVE time
+    const eveTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    // Page header light data
+    const breadcrumbParts = [{ label: 'Home', url: '/' }];
+    if (characterData.allianceName) {
+      breadcrumbParts.push({
+        label: characterData.allianceName,
+        url: `/alliance/${characterData.allianceId}`,
+      });
+    }
+    if (characterData.corporationName) {
+      breadcrumbParts.push({
+        label: characterData.corporationName,
+        url: `/corporation/${characterData.corporationId}`,
+      });
+    }
+    breadcrumbParts.push({
+      label: characterData.name,
+      url: `/character/${characterId}`,
+    });
+
+    const pageHeaderLight = {
+      title: characterData.name,
+      breadcrumbs: breadcrumbParts,
+      info: [
+        { icon: '🕐', text: `EVE Time: ${eveTime}` },
+        ...(characterData.corporationId
+          ? [
+              {
+                logo: { type: 'corporation', id: characterData.corporationId },
+              },
+            ]
+          : []),
+        ...(characterData.allianceId
+          ? [
+              {
+                logo: { type: 'alliance', id: characterData.allianceId },
+              },
+            ]
+          : []),
+      ],
+    };
+
     // Render the template
     return render(
       'pages/character-losses',
@@ -195,6 +277,7 @@ export default defineEventHandler(async (event: H3Event) => {
         keywords: 'eve online, character, killmail, losses, pvp',
       },
       {
+        pageHeaderLight,
         ...entityData,
         top10Stats: top10,
         corporationTitle: 'Most Hunted Corps',
