@@ -12,27 +12,16 @@
 
 <div class="killlist-wrapper">
   <!-- Top 10 Stats (Left Sidebar) -->
-  {{#if data.topBoxesAvailable}}
+  {{#if data.topCharactersFormatted}}
+  {{#if data.topCharactersFormatted.length}}
   <div class="top-10-container">
-    {{#if data.topCharactersFormatted.length}}
-      {{> partials/top-10-box title="Top Characters" items=data.topCharactersFormatted timeRange=data.topTimeRangeLabel}}
-    {{/if}}
-    {{#if data.topCorporationsFormatted.length}}
-      {{> partials/top-10-box title="Top Corporations" items=data.topCorporationsFormatted timeRange=data.topTimeRangeLabel}}
-    {{/if}}
-    {{#if data.topAlliancesFormatted.length}}
-      {{> partials/top-10-box title="Top Alliances" items=data.topAlliancesFormatted timeRange=data.topTimeRangeLabel}}
-    {{/if}}
-    {{#if data.topShipsFormatted.length}}
-      {{> partials/top-10-box title="Top Ships" items=data.topShipsFormatted timeRange=data.topTimeRangeLabel}}
-    {{/if}}
-    {{#if data.topSystemsFormatted.length}}
-      {{> partials/top-10-box title="Top Systems" items=data.topSystemsFormatted timeRange=data.topTimeRangeLabel}}
-    {{/if}}
-    {{#if data.topRegionsFormatted.length}}
-      {{> partials/top-10-box title="Top Regions" items=data.topRegionsFormatted timeRange=data.topTimeRangeLabel}}
-    {{/if}}
+    {{> partials/top-10-box title="Top Characters" items=data.topCharactersFormatted timeRange=data.topTimeRangeLabel}}
+    {{> partials/top-10-box title="Top Corporations" items=data.topCorporationsFormatted timeRange=data.topTimeRangeLabel}}
+    {{> partials/top-10-box title="Top Alliances" items=data.topAlliancesFormatted timeRange=data.topTimeRangeLabel}}
+    {{> partials/top-10-box title="Top Systems" items=data.topSystemsFormatted timeRange=data.topTimeRangeLabel}}
+    {{> partials/top-10-box title="Top Regions" items=data.topRegionsFormatted timeRange=data.topTimeRangeLabel}}
   </div>
+  {{/if}}
   {{/if}}
 
   <!-- Main Content Area (Right 80%) -->
