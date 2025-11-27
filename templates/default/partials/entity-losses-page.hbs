@@ -7,10 +7,10 @@
 <!-- Losses List -->
 <section style="margin-bottom: 20px;">
   <!-- Killlist Filters -->
-  {{#if data.filterDefaults}}
+  {{#if filterDefaults}}
   <div style="margin-bottom: 20px;">
-    {{> partials/killlist-filters filterDefaults=data.filterDefaults baseUrl=data.baseUrl pagination=data.pagination}}
+    {{> partials/killlist-filters filterDefaults=filterDefaults baseUrl=baseUrl pagination=pagination}}
   </div>
   {{/if}}
-  {{> partials/killmail-list killmails=data.killmails wsFilter=data.wsFilter}}
+  {{> partials/killmail-list killmails=killmails wsFilter=wsFilter}}
 </section>

@@ -172,7 +172,7 @@ export default defineEventHandler(async (event: H3Event) => {
           const normalized = normalizeKillRow(km);
           return {
             ...normalized,
-            isLoss: km.victimAllianceId === allianceId,
+            isLoss: Number(km.victimAllianceId) === allianceId,
             killmailTimeRelative: timeAgo(
               km.killmailTime ?? normalized.killmailTime
             ),

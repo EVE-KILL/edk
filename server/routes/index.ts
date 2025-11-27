@@ -118,12 +118,6 @@ export default defineEventHandler(async (event: H3Event) => {
             imageId: r.id,
             link: `/region/${r.id}`,
           })),
-          ships: topShips.map((s) => ({
-            ...s,
-            imageType: 'ship',
-            imageId: s.id,
-            link: `/item/${s.id}`,
-          })),
         };
 
         return { totalPages, top10 };
