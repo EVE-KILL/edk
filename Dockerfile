@@ -1,28 +1,39 @@
-# Stage 1: Install all dependencies
-FROM oven/bun:1 as deps
+# Dockerfile for EVE-KILL
+
+# --- 1. Builder Stage ---
+FROM oven/bun:1.0 as builder
+
 WORKDIR /app
-COPY package.json bun.lock ./
+
+# Copy package.json and bun.lockb
+COPY package.json bun.lockb ./
+
+# Install dependencies
 RUN bun install --frozen-lockfile
 
-# Stage 2: Build the application
-FROM deps as build
-WORKDIR /app
+# Copy the rest of the application code
 COPY . .
+
+# Build the application
 RUN bun run build
 
-# Stage 3: Production image
-FROM oven/bun:1 as production
+
+# --- 2. Runner Stage ---
+FROM oven/bun:1.0-slim as runner
+
 WORKDIR /app
 
-# Copy production dependencies
-COPY package.json bun.lock ./
+# Copy package.json and bun.lockb
+COPY package.json bun.lockb ./
+
+# Install production dependencies
 RUN bun install --frozen-lockfile --production
 
-# Copy built artifacts from the build stage
-COPY --from=build /app/.output ./.output
-# Copy docs so the /docs route can render content at runtime
-COPY --from=build /app/docs ./docs
+# Copy the build output from the builder stage
+COPY --from=builder /app/.output ./.output
 
-# Expose port and start the application
+# Expose the port the application runs on
 EXPOSE 3000
-CMD ["bun", ".output/server/index.mjs"]
+
+# Set the command to run the application
+CMD ["node", ".output/server/index.mjs"]
