@@ -7,8 +7,6 @@
   let searchTimeout = null;
   let currentResults = [];
   let selectedIndex = -1;
-  let recentSearches = [];
-  const MAX_RECENT = 5;
 
   // State
   let isOpen = false;
@@ -19,7 +17,6 @@
   // Initialize on DOM ready
   document.addEventListener('DOMContentLoaded', () => {
     createSpotlightDOM();
-    loadRecentSearches();
     setupKeyboardShortcuts();
     console.log('[spotlight] Ready (Cmd/Ctrl + K to open)');
   });
@@ -157,7 +154,6 @@
       selectedIndex = -1;
       
       if (currentResults.length > 0) {
-        addRecentSearch(query);
         renderResults(currentResults);
       } else {
         renderNoResults(query);
@@ -183,11 +179,12 @@
     html += '</div>';
     
     // Recent searches
+    const recentSearches = window.SearchHistory ? window.SearchHistory.get() : [];
     if (recentSearches.length > 0) {
       html += '<div class="spotlight-section">';
       html += '<div class="spotlight-section-title">Recent Searches</div>';
       html += '<div class="spotlight-recent-list">';
-      recentSearches.forEach((search, index) => {
+      recentSearches.forEach((search) => {
         html += `
           <button class="spotlight-recent-item" onclick="window.spotlightSelectRecent('${escapeHtml(search)}')">
             <span>🕒 ${escapeHtml(search)}</span>
@@ -203,16 +200,16 @@
   }
 
   function renderResults(results) {
-    // Group by type
-    const grouped = {};
-    results.forEach(result => {
-      if (!grouped[result.type]) grouped[result.type] = [];
-      grouped[result.type].push(result);
-    });
+    const grouped = results.reduce((acc, result) => {
+      if (!acc[result.type]) {
+        acc[result.type] = [];
+      }
+      acc[result.type].push(result);
+      return acc;
+    }, {});
 
-    let html = '';
-    
     const typeConfig = {
+      killmail: { label: 'Killmails', icon: '💥' },
       character: { label: 'Characters', icon: '👤' },
       corporation: { label: 'Corporations', icon: '🏢' },
       alliance: { label: 'Alliances', icon: '🛡️' },
@@ -222,46 +219,74 @@
       item: { label: 'Items', icon: '📦' }
     };
 
+    let html = '';
+    const imageServerUrl = window.__EDK_IMAGE_URL || 'https://images.evetech.net';
+
     Object.keys(typeConfig).forEach(type => {
       if (grouped[type] && grouped[type].length > 0) {
         const config = typeConfig[type];
         html += `<div class="spotlight-section">`;
         html += `<div class="spotlight-section-title">${config.icon} ${config.label}</div>`;
-        
+        html += `<div class="spotlight-grid">`;
+
         grouped[type].forEach(result => {
           const resultIndex = results.indexOf(result);
           const url = getResultUrl(result);
-          const entityId = result.id || result.rawId;
-          
-          // Get entity image
-          let imageHtml = '';
-          const imageServerUrl = 'https://images.evetech.net';
-          
-          if (type === 'character') {
-            imageHtml = `<img src="${imageServerUrl}/characters/${entityId}/portrait?size=64" alt="${escapeHtml(result.name)}" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--color-border-dark); object-fit: cover; margin-right: 12px;" loading="lazy" onerror="this.style.display='none'" />`;
-          } else if (type === 'corporation') {
-            imageHtml = `<img src="${imageServerUrl}/corporations/${entityId}/logo?size=64" alt="${escapeHtml(result.name)}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark); object-fit: cover; margin-right: 12px;" loading="lazy" onerror="this.style.display='none'" />`;
-          } else if (type === 'alliance') {
-            imageHtml = `<img src="${imageServerUrl}/alliances/${entityId}/logo?size=64" alt="${escapeHtml(result.name)}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark); object-fit: cover; margin-right: 12px;" loading="lazy" onerror="this.style.display='none'" />`;
-          } else if (type === 'item') {
-            imageHtml = `<img src="${imageServerUrl}/types/${entityId}/icon?size=64" alt="${escapeHtml(result.name)}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--color-border-dark); object-fit: cover; margin-right: 12px;" loading="lazy" onerror="this.style.display='none'" />`;
-          } else if (type === 'system' || type === 'constellation' || type === 'region') {
-            imageHtml = `<div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #FF9800, #F57C00); display: flex; align-items: center; justify-content: center; border: 1px solid var(--color-border-dark); font-size: 16px; margin-right: 12px;">⭐</div>`;
+          const id = result.id || result.rawId;
+
+          let image = '';
+          let subtext = '';
+          let valueText = '';
+
+          switch (type) {
+            case 'character':
+              image = `<img src="${imageServerUrl}/characters/${id}/portrait?size=128" alt="${escapeHtml(result.name)}" class="spotlight-card__image spotlight-card__image--char" loading="lazy" onerror="this.style.display='none'">`;
+              subtext = result.corporationName || 'No Corporation';
+              if (result.allianceName) subtext += ` / ${result.allianceName}`;
+              break;
+            case 'corporation':
+              image = `<img src="${imageServerUrl}/corporations/${id}/logo?size=128" alt="${escapeHtml(result.name)}" class="spotlight-card__image" loading="lazy" onerror="this.style.display='none'">`;
+              subtext = result.allianceName || 'No Alliance';
+              break;
+            case 'alliance':
+              image = `<img src="${imageServerUrl}/alliances/${id}/logo?size=128" alt="${escapeHtml(result.name)}" class="spotlight-card__image" loading="lazy" onerror="this.style.display='none'">`;
+              subtext = `Ticker: ${result.ticker || 'N/A'}`;
+              break;
+            case 'item':
+              image = `<img src="${imageServerUrl}/types/${id}/icon?size=64" alt="${escapeHtml(result.name)}" class="spotlight-card__image spotlight-card__image--item" loading="lazy" onerror="this.style.display='none'">`;
+              subtext = result.groupName || 'Item';
+              break;
+            case 'system':
+              image = `<div class="spotlight-card__placeholder-icon">🌟</div>`;
+              subtext = result.regionName || 'Unknown Region';
+              break;
+            case 'constellation':
+              image = `<div class="spotlight-card__placeholder-icon">🌌</div>`;
+              subtext = result.regionName || 'Unknown Region';
+              break;
+            case 'region':
+              image = `<div class="spotlight-card__placeholder-icon">🗺️</div>`;
+              subtext = 'Region';
+              break;
+            case 'killmail':
+              image = `<img src="${imageServerUrl}/types/${result.shipTypeId}/render?size=128" alt="${escapeHtml(result.name)}" class="spotlight-card__image" loading="lazy" onerror="this.style.display='none'">`;
+              subtext = `Victim: ${result.victimName || 'N/A'}`;
+              valueText = `<div class="spotlight-card__value">${result.value ? `${(result.value / 1e9).toFixed(2)}B ISK` : 'Value N/A'}</div>`;
+              break;
           }
-          
+
           html += `
-            <div class="spotlight-result-item" data-index="${resultIndex}" onclick="window.location.href='${url}'">
-              ${imageHtml}
-              <div class="spotlight-result-content">
-                <div class="spotlight-result-name">${escapeHtml(result.name)}</div>
-                <div class="spotlight-result-type">${result.type}</div>
+            <div class="spotlight-result-item spotlight-card" data-index="${resultIndex}" onclick="navigateToResult(currentResults[${resultIndex}])">
+              <div class="spotlight-card__image-container">${image}</div>
+              <div class="spotlight-card__content">
+                <div class="spotlight-card__name">${escapeHtml(result.name)}</div>
+                <div class="spotlight-card__subtext">${escapeHtml(subtext)}</div>
+                ${valueText}
               </div>
-              <div class="spotlight-result-arrow">→</div>
             </div>
           `;
         });
-        
-        html += `</div>`;
+        html += `</div></div>`;
       }
     });
 
@@ -290,7 +315,9 @@
   }
 
   function navigateToResult(result) {
-    addRecentSearch(result.name);
+    if (window.SearchHistory) {
+      window.SearchHistory.add(searchInput.value);
+    }
     window.location.href = getResultUrl(result);
   }
 
@@ -302,39 +329,10 @@
       system: `/system/${result.id}`,
       constellation: `/constellation/${result.id}`,
       region: `/region/${result.id}`,
-      item: `/item/${result.id}`
+      item: `/item/${result.id}`,
+      killmail: `/kill/${result.id}`
     };
     return routes[result.type] || '#';
-  }
-
-  // Recent searches management
-  function loadRecentSearches() {
-    try {
-      const stored = localStorage.getItem('spotlightRecentSearches');
-      if (stored) {
-        recentSearches = JSON.parse(stored);
-      }
-    } catch (e) {
-      console.warn('[spotlight] Failed to load recent searches');
-    }
-  }
-
-  function saveRecentSearches() {
-    try {
-      localStorage.setItem('spotlightRecentSearches', JSON.stringify(recentSearches));
-    } catch (e) {
-      console.warn('[spotlight] Failed to save recent searches');
-    }
-  }
-
-  function addRecentSearch(query) {
-    // Remove if exists
-    recentSearches = recentSearches.filter(s => s !== query);
-    // Add to front
-    recentSearches.unshift(query);
-    // Limit size
-    recentSearches = recentSearches.slice(0, MAX_RECENT);
-    saveRecentSearches();
   }
 
   // Global function for recent search selection

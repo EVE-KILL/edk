@@ -71,10 +71,40 @@
 
     // Handle focus
     searchInput.addEventListener('focus', () => {
-      if (currentResults.length > 0) {
+      if (searchInput.value.length < 2) {
+        renderRecentSearches();
+      } else if (currentResults.length > 0) {
         showResults();
       }
     });
+
+    function renderRecentSearches() {
+      const history = window.SearchHistory ? window.SearchHistory.get() : [];
+      if (history.length === 0) {
+        hideResults();
+        return;
+      }
+
+      let html = '<div class="search-group">';
+      html += '<div class="search-group-label">🕒 Recent Searches</div>';
+      history.forEach(term => {
+        html += `
+          <div class="search-result-item" onmousedown="event.preventDefault(); window.setSearchTerm('${escapeHtml(term)}');">
+            <div class="search-result-name">${escapeHtml(term)}</div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      searchResults.innerHTML = html;
+      showResults();
+    }
+
+    // A global function to set the search term and trigger input, needed to bypass blur listener
+    window.setSearchTerm = (term) => {
+      searchInput.value = term;
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      searchInput.focus();
+    };
 
     async function performSearch(query) {
       try {
@@ -159,6 +189,9 @@
     }
 
     function navigateToResult(result) {
+      if (window.SearchHistory) {
+        window.SearchHistory.add(searchInput.value);
+      }
       window.location.href = getResultUrl(result);
     }
 
