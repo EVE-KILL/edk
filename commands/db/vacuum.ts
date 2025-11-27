@@ -34,7 +34,9 @@ async function vacuumTable(
   if (options.verbose) vacuumCmd += ' VERBOSE';
 
   try {
-    await sql.unsafe(`${vacuumCmd} ${tableName}`);
+    // Properly quote table name to handle mixed case identifiers
+    const quotedTable = `"${tableName}"`;
+    await sql.unsafe(`${vacuumCmd} ${quotedTable}`);
     return {
       success: true,
       duration: (performance.now() - startTime) / 1000,
@@ -192,8 +194,9 @@ export default {
     const sizesBefore = new Map<string, number>();
     for (const table of tablesToVacuum) {
       try {
+        // Use identifier() for proper quoting
         const result = await sql`
-          SELECT pg_total_relation_size(${`public.${table}`}) AS bytes
+          SELECT pg_total_relation_size(${'public.' + table}) AS bytes
         `;
         sizesBefore.set(table, Number(result[0].bytes));
       } catch {
@@ -258,7 +261,7 @@ export default {
         let sizeAfter = 0;
         try {
           const afterResult = await sql`
-            SELECT pg_total_relation_size(${`public.${table}`}) AS bytes
+            SELECT pg_total_relation_size(${'public.' + table}) AS bytes
           `;
           sizeAfter = Number(afterResult[0].bytes);
         } catch {
@@ -299,7 +302,9 @@ export default {
         try {
           logger.info(`Reindexing ${result.table}...`);
           const startReindex = performance.now();
-          await sql.unsafe(`REINDEX TABLE ${result.table}`);
+          // Properly quote table name
+          const quotedTable = `"${result.table}"`;
+          await sql.unsafe(`REINDEX TABLE ${quotedTable}`);
           const duration = ((performance.now() - startReindex) / 1000).toFixed(
             2
           );
