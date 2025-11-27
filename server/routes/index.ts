@@ -58,6 +58,7 @@ export default defineEventHandler(async (event: H3Event) => {
       topCharacters,
       topCorporations,
       topAlliances,
+      topShips,
       topSystems,
       topRegions,
     ] = await track('frontpage:parallel_queries', 'application', async () => {
@@ -67,6 +68,7 @@ export default defineEventHandler(async (event: H3Event) => {
         getTopByKills('week', 'character', 10),
         getTopByKills('week', 'corporation', 10),
         getTopByKills('week', 'alliance', 10),
+        getTopByKills('week', 'ship', 10),
         getTopByKills('week', 'system', 10),
         getTopByKills('week', 'region', 10),
       ]);
@@ -97,6 +99,12 @@ export default defineEventHandler(async (event: H3Event) => {
             imageType: 'alliance',
             imageId: a.id,
             link: `/alliance/${a.id}`,
+          })),
+          ships: topShips.map((s) => ({
+            ...s,
+            imageType: 'type',
+            imageId: s.id,
+            link: `/ship/${s.id}`,
           })),
           systems: topSystems.map((s) => ({
             ...s,
