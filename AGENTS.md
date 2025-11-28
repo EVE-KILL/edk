@@ -91,7 +91,7 @@ sql`${left} AND ${right}`;
 - **Docker:** `docker compose up -d postgres redis` for local services.
 - **Makefile:** `make setup` (full env bootstrap; heavy, runs once), `make migrate`, `make import-sde`, `make reset` (stops containers and wipes `.data/`), `make wait-for-services`, `make dev` (`make dev-tmux` alias; interactive tmux session for dev/ws/queue/cronjobs/redisq; only for local use, not CI; auto-runs `make setup` once via `.data/.configured` flag).
 - **Local services:** Postgres, Redis, and Typesense are already installed/configured in the environment; `docker compose up` will bring them online if needed.
-- **Materialized views:** `bun cli db:refresh` refreshes all MVs (`top_*_weekly`, `celestials`). `kill_list` is now a regular view (not materialized) to avoid storing 90M+ rows. `bun cli sde:refresh-mv` refreshes `celestials` after SDE imports.
+- **Materialized views:** `bun cli db:refresh` refreshes all MVs (`top_*_weekly`, `celestials`, `war_*`). `kill_list` is now a regular view (not materialized) to avoid storing 90M+ rows. `bun cli sde:refresh-mv` refreshes `celestials` after SDE imports. War statistics MVs (`war_stats`, `war_participants`, `war_ship_classes`) are refreshed hourly via cron to optimize long-running war queries.
 
 ## Performance Tracking
 

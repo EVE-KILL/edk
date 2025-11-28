@@ -9,6 +9,10 @@ const materializedViews = [
   'top_systems_weekly',
   'top_regions_weekly',
   'celestials',
+  'war_stats',
+  'war_participants',
+  'war_ship_classes',
+  'war_most_valuable_kills',
 ];
 
 async function refreshView(viewName: string) {
@@ -36,6 +40,6 @@ async function action() {
 
 export default () => ({
   description:
-    'Refreshes all materialized views (top_* weekly, celestials).',
+    'Refreshes all materialized views (top_* weekly, celestials, war_*).',
   action,
 });

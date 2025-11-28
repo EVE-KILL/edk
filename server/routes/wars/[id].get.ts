@@ -16,6 +16,15 @@ import {
   generateWarKeywords,
   generateBreadcrumbStructuredData,
 } from '../../helpers/seo';
+import {
+  getWarStats,
+  getTopAggressorParticipants,
+  getTopDefenderParticipants,
+  getAggressorShipClassStats,
+  getDefenderShipClassStats,
+  hasWarStats,
+  getMostValuableKillmailIds,
+} from '../../models/war-stats';
 
 const PER_PAGE = 25;
 
@@ -77,10 +86,10 @@ export default defineEventHandler(async (event: H3Event) => {
     const [
       allies,
       killStats,
-      topAggressorParticipants,
-      topDefenderParticipants,
-      aggressorShipClassStats,
-      defenderShipClassStats,
+      topAggressorParticipantsRaw,
+      topDefenderParticipantsRaw,
+      aggressorShipClassStatsRaw,
+      defenderShipClassStatsRaw,
     ] = await track('war:stats', 'database', async () => {
       const allies = await database.query<any>(
         `SELECT wa.*, c.name as "corporationName", a.name as "allianceName"
@@ -90,217 +99,212 @@ export default defineEventHandler(async (event: H3Event) => {
            WHERE wa."warId" = ${warId}`
       );
 
+      // Check if we have materialized view data for this war
+      const hasMaterializedStats = await hasWarStats(warId);
+
       let stats;
-      if (isLegendaryWar) {
-        // For legendary faction wars, match by victimFactionId
-        [stats] = await database.query<{
-          killCount: number;
-          totalValue: number;
-          firstKill: string | null;
-          lastKill: string | null;
-          aggressorShipsKilled: number;
-          defenderShipsKilled: number;
-          aggressorIskDestroyed: number;
-          defenderIskDestroyed: number;
-        }>(
-          `SELECT COUNT(DISTINCT k."killmailId")::int as "killCount",
-                    COALESCE(SUM(k."totalValue"), 0)::float as "totalValue",
-                    MIN(k."killmailTime") as "firstKill",
-                    MAX(k."killmailTime") as "lastKill",
-                    COUNT(DISTINCT k."killmailId") FILTER (WHERE
-                      k."victimFactionId" = w."defenderAllianceId"
-                    )::int AS "aggressorShipsKilled",
-                    COUNT(DISTINCT k."killmailId") FILTER (WHERE
-                      k."victimFactionId" = w."aggressorAllianceId"
-                    )::int AS "defenderShipsKilled",
-                    COALESCE(SUM(k."totalValue") FILTER (WHERE
-                      k."victimFactionId" = w."defenderAllianceId"
-                    ), 0)::float AS "aggressorIskDestroyed",
-                    COALESCE(SUM(k."totalValue") FILTER (WHERE
-                      k."victimFactionId" = w."aggressorAllianceId"
-                    ), 0)::float AS "defenderIskDestroyed"
-             FROM killmails k
-             JOIN wars w ON w."warId" = ${warId}
-             WHERE k."victimFactionId" IN (w."aggressorAllianceId", w."defenderAllianceId")
-               AND k."warId" IS NULL`
-        );
+      if (hasMaterializedStats) {
+        // Use fast materialized view lookup
+        stats = await getWarStats(warId);
       } else {
-        // For regular wars, match by corporation/alliance IDs
-        [stats] = await database.query<{
-          killCount: number;
-          totalValue: number;
-          firstKill: string | null;
-          lastKill: string | null;
-          aggressorShipsKilled: number;
-          defenderShipsKilled: number;
-          aggressorIskDestroyed: number;
-          defenderIskDestroyed: number;
-        }>(
-          `SELECT COUNT(DISTINCT k."killmailId")::int as "killCount",
-                    COALESCE(SUM(k."totalValue"), 0)::float as "totalValue",
-                    MIN(k."killmailTime") as "firstKill",
-                    MAX(k."killmailTime") as "lastKill",
-                    COUNT(DISTINCT k."killmailId") FILTER (WHERE
-                      k."victimCorporationId" = w."defenderCorporationId" OR
-                      k."victimAllianceId" = w."defenderAllianceId"
-                    )::int AS "aggressorShipsKilled",
-                    COUNT(DISTINCT k."killmailId") FILTER (WHERE
-                      k."victimCorporationId" = w."aggressorCorporationId" OR
-                      k."victimAllianceId" = w."aggressorAllianceId"
-                    )::int AS "defenderShipsKilled",
-                    COALESCE(SUM(k."totalValue") FILTER (WHERE
-                      k."victimCorporationId" = w."defenderCorporationId" OR
-                      k."victimAllianceId" = w."defenderAllianceId"
-                    ), 0)::float AS "aggressorIskDestroyed",
-                    COALESCE(SUM(k."totalValue") FILTER (WHERE
-                      k."victimCorporationId" = w."aggressorCorporationId" OR
-                      k."victimAllianceId" = w."aggressorAllianceId"
-                    ), 0)::float AS "defenderIskDestroyed"
-             FROM killmails k
-             JOIN wars w ON w."warId" = k."warId"
-             WHERE k."warId" = ${warId}`
-        );
+        // Fall back to live aggregation for wars not yet in materialized view
+        if (isLegendaryWar) {
+          // For legendary faction wars, match by victimFactionId
+          [stats] = await database.query<{
+            killCount: number;
+            totalValue: number;
+            firstKill: string | null;
+            lastKill: string | null;
+            aggressorShipsKilled: number;
+            defenderShipsKilled: number;
+            aggressorIskDestroyed: number;
+            defenderIskDestroyed: number;
+          }>(
+            `SELECT COUNT(DISTINCT k."killmailId")::int as "killCount",
+                      COALESCE(SUM(k."totalValue"), 0)::float as "totalValue",
+                      MIN(k."killmailTime") as "firstKill",
+                      MAX(k."killmailTime") as "lastKill",
+                      COUNT(DISTINCT k."killmailId") FILTER (WHERE
+                        k."victimFactionId" = w."defenderAllianceId"
+                      )::int AS "aggressorShipsKilled",
+                      COUNT(DISTINCT k."killmailId") FILTER (WHERE
+                        k."victimFactionId" = w."aggressorAllianceId"
+                      )::int AS "defenderShipsKilled",
+                      COALESCE(SUM(k."totalValue") FILTER (WHERE
+                        k."victimFactionId" = w."defenderAllianceId"
+                      ), 0)::float AS "aggressorIskDestroyed",
+                      COALESCE(SUM(k."totalValue") FILTER (WHERE
+                        k."victimFactionId" = w."aggressorAllianceId"
+                      ), 0)::float AS "defenderIskDestroyed"
+               FROM killmails k
+               JOIN wars w ON w."warId" = ${warId}
+               WHERE k."victimFactionId" IN (w."aggressorAllianceId", w."defenderAllianceId")
+                 AND k."warId" IS NULL`
+          );
+        } else {
+          // For regular wars, match by corporation/alliance IDs
+          [stats] = await database.query<{
+            killCount: number;
+            totalValue: number;
+            firstKill: string | null;
+            lastKill: string | null;
+            aggressorShipsKilled: number;
+            defenderShipsKilled: number;
+            aggressorIskDestroyed: number;
+            defenderIskDestroyed: number;
+          }>(
+            `SELECT COUNT(DISTINCT k."killmailId")::int as "killCount",
+                      COALESCE(SUM(k."totalValue"), 0)::float as "totalValue",
+                      MIN(k."killmailTime") as "firstKill",
+                      MAX(k."killmailTime") as "lastKill",
+                      COUNT(DISTINCT k."killmailId") FILTER (WHERE
+                        k."victimCorporationId" = w."defenderCorporationId" OR
+                        k."victimAllianceId" = w."defenderAllianceId"
+                      )::int AS "aggressorShipsKilled",
+                      COUNT(DISTINCT k."killmailId") FILTER (WHERE
+                        k."victimCorporationId" = w."aggressorCorporationId" OR
+                        k."victimAllianceId" = w."aggressorAllianceId"
+                      )::int AS "defenderShipsKilled",
+                      COALESCE(SUM(k."totalValue") FILTER (WHERE
+                        k."victimCorporationId" = w."defenderCorporationId" OR
+                        k."victimAllianceId" = w."defenderAllianceId"
+                      ), 0)::float AS "aggressorIskDestroyed",
+                      COALESCE(SUM(k."totalValue") FILTER (WHERE
+                        k."victimCorporationId" = w."aggressorCorporationId" OR
+                        k."victimAllianceId" = w."aggressorAllianceId"
+                      ), 0)::float AS "defenderIskDestroyed"
+               FROM killmails k
+               JOIN wars w ON w."warId" = k."warId"
+               WHERE k."warId" = ${warId}`
+          );
+        }
       }
 
-      // Get top aggressor participants (killed defenders)
-      const topAggressorParticipants = isLegendaryWar
-        ? await database.query<any>(
-            `SELECT
-                k."topAttackerCorporationId" as "corporationId",
-                c.name as "corporationName",
-                k."topAttackerAllianceId" as "allianceId",
-                a.name as "allianceName",
-                count(*)::int as kills,
-                COALESCE(sum(k."totalValue"),0)::float as value
-               FROM killmails k
-               LEFT JOIN alliances a ON a."allianceId" = k."topAttackerAllianceId"
-               LEFT JOIN corporations c ON c."corporationId" = k."topAttackerCorporationId"
-               WHERE k."victimFactionId" = ${war.defenderAllianceId}
-                 AND k."warId" IS NULL
-                 AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
-               GROUP BY k."topAttackerAllianceId", k."topAttackerCorporationId", a.name, c.name
-               ORDER BY kills DESC
-               LIMIT 10`
-          )
-        : await database.query<any>(
-            `SELECT
-                k."topAttackerCorporationId" as "corporationId",
-                c.name as "corporationName",
-                k."topAttackerAllianceId" as "allianceId",
-                a.name as "allianceName",
-                count(*)::int as kills,
-                COALESCE(sum(k."totalValue"),0)::float as value
-               FROM killmails k
-               JOIN wars w ON w."warId" = k."warId"
-               LEFT JOIN alliances a ON a."allianceId" = k."topAttackerAllianceId"
-               LEFT JOIN corporations c ON c."corporationId" = k."topAttackerCorporationId"
-               WHERE k."warId" = ${warId}
-                 AND (k."victimCorporationId" = w."defenderCorporationId" OR k."victimAllianceId" = w."defenderAllianceId")
-                 AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
-               GROUP BY k."topAttackerAllianceId", k."topAttackerCorporationId", a.name, c.name
-               ORDER BY kills DESC
-               LIMIT 10`
-          );
+      // Get top participants from materialized view if available
+      const topAggressorParticipants = hasMaterializedStats
+        ? await getTopAggressorParticipants(warId, 10)
+        : isLegendaryWar
+          ? await database.query<any>(
+              `SELECT
+                  k."topAttackerCorporationId" as "corporationId",
+                  k."topAttackerAllianceId" as "allianceId",
+                  count(*)::int as kills,
+                  COALESCE(sum(k."totalValue"),0)::float as value
+                 FROM killmails k
+                 WHERE k."victimFactionId" = ${war.defenderAllianceId}
+                   AND k."warId" IS NULL
+                   AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
+                 GROUP BY k."topAttackerAllianceId", k."topAttackerCorporationId"
+                 ORDER BY kills DESC
+                 LIMIT 10`
+            )
+          : await database.query<any>(
+              `SELECT
+                  k."topAttackerCorporationId" as "corporationId",
+                  k."topAttackerAllianceId" as "allianceId",
+                  count(*)::int as kills,
+                  COALESCE(sum(k."totalValue"),0)::float as value
+                 FROM killmails k
+                 JOIN wars w ON w."warId" = k."warId"
+                 WHERE k."warId" = ${warId}
+                   AND (k."victimCorporationId" = w."defenderCorporationId" OR k."victimAllianceId" = w."defenderAllianceId")
+                   AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
+                 GROUP BY k."topAttackerAllianceId", k."topAttackerCorporationId"
+                 ORDER BY kills DESC
+                 LIMIT 10`
+            );
 
-      // Get top defender participants (killed aggressors)
-      const topDefenderParticipants = isLegendaryWar
-        ? await database.query<any>(
-            `SELECT
-                k."topAttackerCorporationId" as "corporationId",
-                c.name as "corporationName",
-                k."topAttackerAllianceId" as "allianceId",
-                a.name as "allianceName",
-                count(*)::int as kills,
-                COALESCE(sum(k."totalValue"),0)::float as value
-               FROM killmails k
-               LEFT JOIN alliances a ON a."allianceId" = k."topAttackerAllianceId"
-               LEFT JOIN corporations c ON c."corporationId" = k."topAttackerCorporationId"
-               WHERE k."victimFactionId" = ${war.aggressorAllianceId}
-                 AND k."warId" IS NULL
-                 AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
-               GROUP BY k."topAttackerAllianceId", k."topAttackerCorporationId", a.name, c.name
-               ORDER BY kills DESC
-               LIMIT 10`
-          )
-        : await database.query<any>(
-            `SELECT
-                k."topAttackerCorporationId" as "corporationId",
-                c.name as "corporationName",
-                k."topAttackerAllianceId" as "allianceId",
-                a.name as "allianceName",
-                count(*)::int as kills,
-                COALESCE(sum(k."totalValue"),0)::float as value
-               FROM killmails k
-               JOIN wars w ON w."warId" = k."warId"
-               LEFT JOIN alliances a ON a."allianceId" = k."topAttackerAllianceId"
-               LEFT JOIN corporations c ON c."corporationId" = k."topAttackerCorporationId"
-               WHERE k."warId" = ${warId}
-                 AND (k."victimCorporationId" = w."aggressorCorporationId" OR k."victimAllianceId" = w."aggressorAllianceId")
-                 AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
-               GROUP BY k."topAttackerAllianceId", k."topAttackerCorporationId", a.name, c.name
-               ORDER BY kills DESC
-               LIMIT 10`
-          );
+      const topDefenderParticipants = hasMaterializedStats
+        ? await getTopDefenderParticipants(warId, 10)
+        : isLegendaryWar
+          ? await database.query<any>(
+              `SELECT
+                  k."topAttackerCorporationId" as "corporationId",
+                  k."topAttackerAllianceId" as "allianceId",
+                  count(*)::int as kills,
+                  COALESCE(sum(k."totalValue"),0)::float as value
+                 FROM killmails k
+                 WHERE k."victimFactionId" = ${war.aggressorAllianceId}
+                   AND k."warId" IS NULL
+                   AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
+                 GROUP BY k."topAttackerAllianceId", k."topAttackerCorporationId"
+                 ORDER BY kills DESC
+                 LIMIT 10`
+            )
+          : await database.query<any>(
+              `SELECT
+                  k."topAttackerCorporationId" as "corporationId",
+                  k."topAttackerAllianceId" as "allianceId",
+                  count(*)::int as kills,
+                  COALESCE(sum(k."totalValue"),0)::float as value
+                 FROM killmails k
+                 JOIN wars w ON w."warId" = k."warId"
+                 WHERE k."warId" = ${warId}
+                   AND (k."victimCorporationId" = w."aggressorCorporationId" OR k."victimAllianceId" = w."aggressorAllianceId")
+                   AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
+                 GROUP BY k."topAttackerAllianceId", k."topAttackerCorporationId"
+                 ORDER BY kills DESC
+                 LIMIT 10`
+            );
 
-      // Get ship class stats for aggressor (victims they killed)
-      const aggressorShipClassStats = isLegendaryWar
-        ? await database.query<any>(
-            `SELECT
-                g."groupId",
-                g."name" as "groupName",
-                COUNT(DISTINCT k."killmailId")::int as "count"
-               FROM killmails k
-               JOIN types t ON t."typeId" = k."victimShipTypeId"
-               JOIN groups g ON g."groupId" = t."groupId"
-               WHERE k."victimFactionId" = ${war.defenderAllianceId}
-                 AND k."warId" IS NULL
-               GROUP BY g."groupId", g."name"
-               ORDER BY "count" DESC`
-          )
-        : await database.query<any>(
-            `SELECT
-                g."groupId",
-                g."name" as "groupName",
-                COUNT(DISTINCT k."killmailId")::int as "count"
-               FROM killmails k
-               JOIN wars w ON w."warId" = k."warId"
-               JOIN types t ON t."typeId" = k."victimShipTypeId"
-               JOIN groups g ON g."groupId" = t."groupId"
-               WHERE k."warId" = ${warId}
-                 AND (k."victimCorporationId" = w."defenderCorporationId" OR k."victimAllianceId" = w."defenderAllianceId")
-               GROUP BY g."groupId", g."name"
-               ORDER BY "count" DESC`
-          );
+      // Get ship class stats from materialized view if available
+      const aggressorShipClassStats = hasMaterializedStats
+        ? await getAggressorShipClassStats(warId)
+        : isLegendaryWar
+          ? await database.query<any>(
+              `SELECT
+                  g."groupId",
+                  COUNT(DISTINCT k."killmailId")::int as "count"
+                 FROM killmails k
+                 JOIN types t ON t."typeId" = k."victimShipTypeId"
+                 JOIN groups g ON g."groupId" = t."groupId"
+                 WHERE k."victimFactionId" = ${war.defenderAllianceId}
+                   AND k."warId" IS NULL
+                 GROUP BY g."groupId"
+                 ORDER BY "count" DESC`
+            )
+          : await database.query<any>(
+              `SELECT
+                  g."groupId",
+                  COUNT(DISTINCT k."killmailId")::int as "count"
+                 FROM killmails k
+                 JOIN wars w ON w."warId" = k."warId"
+                 JOIN types t ON t."typeId" = k."victimShipTypeId"
+                 JOIN groups g ON g."groupId" = t."groupId"
+                 WHERE k."warId" = ${warId}
+                   AND (k."victimCorporationId" = w."defenderCorporationId" OR k."victimAllianceId" = w."defenderAllianceId")
+                 GROUP BY g."groupId"
+                 ORDER BY "count" DESC`
+            );
 
-      // Get ship class stats for defender (victims they killed)
-      const defenderShipClassStats = isLegendaryWar
-        ? await database.query<any>(
-            `SELECT
-                g."groupId",
-                g."name" as "groupName",
-                COUNT(DISTINCT k."killmailId")::int as "count"
-               FROM killmails k
-               JOIN types t ON t."typeId" = k."victimShipTypeId"
-               JOIN groups g ON g."groupId" = t."groupId"
-               WHERE k."victimFactionId" = ${war.aggressorAllianceId}
-                 AND k."warId" IS NULL
-               GROUP BY g."groupId", g."name"
-               ORDER BY "count" DESC`
-          )
-        : await database.query<any>(
-            `SELECT
-                g."groupId",
-                g."name" as "groupName",
-                COUNT(DISTINCT k."killmailId")::int as "count"
-               FROM killmails k
-               JOIN wars w ON w."warId" = k."warId"
-               JOIN types t ON t."typeId" = k."victimShipTypeId"
-               JOIN groups g ON g."groupId" = t."groupId"
-               WHERE k."warId" = ${warId}
-                 AND (k."victimCorporationId" = w."aggressorCorporationId" OR k."victimAllianceId" = w."aggressorAllianceId")
-               GROUP BY g."groupId", g."name"
-               ORDER BY "count" DESC`
-          );
+      const defenderShipClassStats = hasMaterializedStats
+        ? await getDefenderShipClassStats(warId)
+        : isLegendaryWar
+          ? await database.query<any>(
+              `SELECT
+                  g."groupId",
+                  COUNT(DISTINCT k."killmailId")::int as "count"
+                 FROM killmails k
+                 JOIN types t ON t."typeId" = k."victimShipTypeId"
+                 JOIN groups g ON g."groupId" = t."groupId"
+                 WHERE k."victimFactionId" = ${war.aggressorAllianceId}
+                   AND k."warId" IS NULL
+                 GROUP BY g."groupId"
+                 ORDER BY "count" DESC`
+            )
+          : await database.query<any>(
+              `SELECT
+                  g."groupId",
+                  COUNT(DISTINCT k."killmailId")::int as "count"
+                 FROM killmails k
+                 JOIN wars w ON w."warId" = k."warId"
+                 JOIN types t ON t."typeId" = k."victimShipTypeId"
+                 JOIN groups g ON g."groupId" = t."groupId"
+                 WHERE k."warId" = ${warId}
+                   AND (k."victimCorporationId" = w."aggressorCorporationId" OR k."victimAllianceId" = w."aggressorAllianceId")
+                 GROUP BY g."groupId"
+                 ORDER BY "count" DESC`
+            );
 
       return [
         allies,
@@ -311,6 +315,64 @@ export default defineEventHandler(async (event: H3Event) => {
         defenderShipClassStats,
       ];
     });
+
+    // Enrich participants with names from database
+    const topAggressorParticipants = await Promise.all(
+      topAggressorParticipantsRaw.map(async (p: any) => {
+        const names: any = {};
+        if (p.corporationId) {
+          const [corp] = await database.query<any>(
+            `SELECT name as "corporationName" FROM corporations WHERE "corporationId" = ${p.corporationId} LIMIT 1`
+          );
+          names.corporationName = corp?.corporationName;
+        }
+        if (p.allianceId) {
+          const [ally] = await database.query<any>(
+            `SELECT name as "allianceName" FROM alliances WHERE "allianceId" = ${p.allianceId} LIMIT 1`
+          );
+          names.allianceName = ally?.allianceName;
+        }
+        return { ...p, ...names };
+      })
+    );
+
+    const topDefenderParticipants = await Promise.all(
+      topDefenderParticipantsRaw.map(async (p: any) => {
+        const names: any = {};
+        if (p.corporationId) {
+          const [corp] = await database.query<any>(
+            `SELECT name as "corporationName" FROM corporations WHERE "corporationId" = ${p.corporationId} LIMIT 1`
+          );
+          names.corporationName = corp?.corporationName;
+        }
+        if (p.allianceId) {
+          const [ally] = await database.query<any>(
+            `SELECT name as "allianceName" FROM alliances WHERE "allianceId" = ${p.allianceId} LIMIT 1`
+          );
+          names.allianceName = ally?.allianceName;
+        }
+        return { ...p, ...names };
+      })
+    );
+
+    // Enrich ship class stats with group names
+    const aggressorShipClassStats = await Promise.all(
+      aggressorShipClassStatsRaw.map(async (s: any) => {
+        const [group] = await database.query<any>(
+          `SELECT name as "groupName" FROM groups WHERE "groupId" = ${s.groupId} LIMIT 1`
+        );
+        return { ...s, groupName: group?.groupName };
+      })
+    );
+
+    const defenderShipClassStats = await Promise.all(
+      defenderShipClassStatsRaw.map(async (s: any) => {
+        const [group] = await database.query<any>(
+          `SELECT name as "groupName" FROM groups WHERE "groupId" = ${s.groupId} LIMIT 1`
+        );
+        return { ...s, groupName: group?.groupName };
+      })
+    );
 
     // Parse filter parameters from existing query object
     const minTotalValue = query.minTotalValue
@@ -573,7 +635,18 @@ export default defineEventHandler(async (event: H3Event) => {
       'war:most_valuable',
       'database',
       async () => {
-        if (isLegendaryWar) {
+        // Check if we have materialized view data
+        const hasMaterializedStats = await hasWarStats(warId);
+
+        if (hasMaterializedStats) {
+          // Use materialized view to get killmail IDs, then fetch full details
+          const killmailIds = await getMostValuableKillmailIds(warId, 6);
+
+          if (killmailIds.length === 0) {
+            return [];
+          }
+
+          // Fetch full killmail details for the top valuable kills
           return await database.query<any>(
             `SELECT k.*,
                     ss.name as "solarSystemName",
@@ -597,39 +670,69 @@ export default defineEventHandler(async (event: H3Event) => {
              LEFT JOIN corporations attacker_corp ON attacker_corp."corporationId" = k."topAttackerCorporationId"
              LEFT JOIN alliances attacker_ally ON attacker_ally."allianceId" = k."topAttackerAllianceId"
              LEFT JOIN types attacker_ship ON attacker_ship."typeId" = k."topAttackerShipTypeId"
-             WHERE k."victimFactionId" IN (${war.aggressorAllianceId}, ${war.defenderAllianceId})
-               AND k."warId" IS NULL
-             ORDER BY k."totalValue" DESC
-             LIMIT 6`
+             WHERE k."killmailId" = ANY(ARRAY[${killmailIds.join(',')}])
+             ORDER BY k."totalValue" DESC`
           );
         } else {
-          return await database.query<any>(
-            `SELECT k.*,
-                    ss.name as "solarSystemName",
-                    r.name as "regionName",
-                    victim_char.name as "victimCharacterName",
-                    victim_corp.name as "victimCorporationName",
-                    victim_ally.name as "victimAllianceName",
-                    victim_ship.name as "victimShipName",
-                    attacker_char.name as "attackerCharacterName",
-                    attacker_corp.name as "attackerCorporationName",
-                    attacker_ally.name as "attackerAllianceName",
-                    attacker_ship.name as "attackerShipName"
-             FROM killmails k
-             LEFT JOIN solarsystems ss ON ss."solarSystemId" = k."solarSystemId"
-             LEFT JOIN regions r ON r."regionId" = k."regionId"
-             LEFT JOIN characters victim_char ON victim_char."characterId" = k."victimCharacterId"
-             LEFT JOIN corporations victim_corp ON victim_corp."corporationId" = k."victimCorporationId"
-             LEFT JOIN alliances victim_ally ON victim_ally."allianceId" = k."victimAllianceId"
-             LEFT JOIN types victim_ship ON victim_ship."typeId" = k."victimShipTypeId"
-             LEFT JOIN characters attacker_char ON attacker_char."characterId" = k."topAttackerCharacterId"
-             LEFT JOIN corporations attacker_corp ON attacker_corp."corporationId" = k."topAttackerCorporationId"
-             LEFT JOIN alliances attacker_ally ON attacker_ally."allianceId" = k."topAttackerAllianceId"
-             LEFT JOIN types attacker_ship ON attacker_ship."typeId" = k."topAttackerShipTypeId"
-             WHERE k."warId" = ${warId}
-             ORDER BY k."totalValue" DESC
-             LIMIT 6`
-          );
+          // Fall back to live query for wars not in materialized view
+          if (isLegendaryWar) {
+            return await database.query<any>(
+              `SELECT k.*,
+                      ss.name as "solarSystemName",
+                      r.name as "regionName",
+                      victim_char.name as "victimCharacterName",
+                      victim_corp.name as "victimCorporationName",
+                      victim_ally.name as "victimAllianceName",
+                      victim_ship.name as "victimShipName",
+                      attacker_char.name as "attackerCharacterName",
+                      attacker_corp.name as "attackerCorporationName",
+                      attacker_ally.name as "attackerAllianceName",
+                      attacker_ship.name as "attackerShipName"
+               FROM killmails k
+               LEFT JOIN solarsystems ss ON ss."solarSystemId" = k."solarSystemId"
+               LEFT JOIN regions r ON r."regionId" = k."regionId"
+               LEFT JOIN characters victim_char ON victim_char."characterId" = k."victimCharacterId"
+               LEFT JOIN corporations victim_corp ON victim_corp."corporationId" = k."victimCorporationId"
+               LEFT JOIN alliances victim_ally ON victim_ally."allianceId" = k."victimAllianceId"
+               LEFT JOIN types victim_ship ON victim_ship."typeId" = k."victimShipTypeId"
+               LEFT JOIN characters attacker_char ON attacker_char."characterId" = k."topAttackerCharacterId"
+               LEFT JOIN corporations attacker_corp ON attacker_corp."corporationId" = k."topAttackerCorporationId"
+               LEFT JOIN alliances attacker_ally ON attacker_ally."allianceId" = k."topAttackerAllianceId"
+               LEFT JOIN types attacker_ship ON attacker_ship."typeId" = k."topAttackerShipTypeId"
+               WHERE k."victimFactionId" IN (${war.aggressorAllianceId}, ${war.defenderAllianceId})
+                 AND k."warId" IS NULL
+               ORDER BY k."totalValue" DESC
+               LIMIT 6`
+            );
+          } else {
+            return await database.query<any>(
+              `SELECT k.*,
+                      ss.name as "solarSystemName",
+                      r.name as "regionName",
+                      victim_char.name as "victimCharacterName",
+                      victim_corp.name as "victimCorporationName",
+                      victim_ally.name as "victimAllianceName",
+                      victim_ship.name as "victimShipName",
+                      attacker_char.name as "attackerCharacterName",
+                      attacker_corp.name as "attackerCorporationName",
+                      attacker_ally.name as "attackerAllianceName",
+                      attacker_ship.name as "attackerShipName"
+               FROM killmails k
+               LEFT JOIN solarsystems ss ON ss."solarSystemId" = k."solarSystemId"
+               LEFT JOIN regions r ON r."regionId" = k."regionId"
+               LEFT JOIN characters victim_char ON victim_char."characterId" = k."victimCharacterId"
+               LEFT JOIN corporations victim_corp ON victim_corp."corporationId" = k."victimCorporationId"
+               LEFT JOIN alliances victim_ally ON victim_ally."allianceId" = k."victimAllianceId"
+               LEFT JOIN types victim_ship ON victim_ship."typeId" = k."victimShipTypeId"
+               LEFT JOIN characters attacker_char ON attacker_char."characterId" = k."topAttackerCharacterId"
+               LEFT JOIN corporations attacker_corp ON attacker_corp."corporationId" = k."topAttackerCorporationId"
+               LEFT JOIN alliances attacker_ally ON attacker_ally."allianceId" = k."topAttackerAllianceId"
+               LEFT JOIN types attacker_ship ON attacker_ship."typeId" = k."topAttackerShipTypeId"
+               WHERE k."warId" = ${warId}
+               ORDER BY k."totalValue" DESC
+               LIMIT 6`
+            );
+          }
         }
       }
     );

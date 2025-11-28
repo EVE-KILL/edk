@@ -3,37 +3,37 @@ import { database } from '../server/helpers/database';
 import { fetchESI } from '../server/helpers/esi';
 import { enqueueJob, QueueType, getQueueStats } from '../server/helpers/queue';
 
-export default {
-  name: 'affiliation-update',
-  description: 'Updates character affiliations and queues entity updates',
-  schedule: '*/5 * * * *', // Every 5 minutes
+export const name = 'affiliation-update';
+export const description =
+  'Updates character affiliations and queues entity updates';
+export const schedule = '0 */5 * * * *'; // Every 5 minutes
 
-  async run() {
-    logger.info('Starting character affiliation update');
+export async function action() {
+  logger.info('Starting character affiliation update');
 
-    // Check if queue is busy
-    const stats = await getQueueStats(QueueType.CHARACTER);
-    if (stats.waiting > 0 || stats.active > 0) {
-      logger.info('Character queue is busy, skipping affiliation update', {
-        waiting: stats.waiting,
-        active: stats.active,
-      });
-      return;
-    }
+  // Check if queue is busy
+  const stats = await getQueueStats(QueueType.CHARACTER);
+  if (stats.waiting > 0 || stats.active > 0) {
+    logger.info('Character queue is busy, skipping affiliation update', {
+      waiting: stats.waiting,
+      active: stats.active,
+    });
+    return;
+  }
 
-    const LIMIT = 10000; // Fetch up to 10k characters (will split into chunks of 1000 for ESI)
+  const LIMIT = 10000; // Fetch up to 10k characters (will split into chunks of 1000 for ESI)
 
-    /**
-     * Priority-based character selection:
-     * 1. Active in last 365 days AND not updated in last 1 day
-     * 2. Not active in last 365 days AND not updated in last 14 days
-     */
+  /**
+   * Priority-based character selection:
+   * 1. Active in last 365 days AND not updated in last 1 day
+   * 2. Not active in last 365 days AND not updated in last 14 days
+   */
 
-    const queries = [
-      {
-        name: 'Active characters (365 days)',
-        query: database.sql<CharacterAffiliation[]>`
-          SELECT 
+  const queries = [
+    {
+      name: 'Active characters (365 days)',
+      query: database.sql<CharacterAffiliation[]>`
+          SELECT
             "characterId",
             "corporationId",
             "allianceId"
@@ -42,11 +42,11 @@ export default {
             AND ("updatedAt" IS NULL OR "updatedAt" < NOW() - INTERVAL '1 day')
           LIMIT ${LIMIT}
         `,
-      },
-      {
-        name: 'Inactive characters (>365 days)',
-        query: database.sql<CharacterAffiliation[]>`
-          SELECT 
+    },
+    {
+      name: 'Inactive characters (>365 days)',
+      query: database.sql<CharacterAffiliation[]>`
+          SELECT
             "characterId",
             "corporationId",
             "allianceId"
@@ -55,49 +55,48 @@ export default {
             AND ("updatedAt" IS NULL OR "updatedAt" < NOW() - INTERVAL '14 days')
           LIMIT ${LIMIT}
         `,
-      },
-    ];
+    },
+  ];
 
-    const characters: CharacterAffiliation[] = [];
+  const characters: CharacterAffiliation[] = [];
 
-    for (const { name, query } of queries) {
-      const startTime = Date.now();
-      const result = await query;
-      const queryTime = Date.now() - startTime;
+  for (const { name, query } of queries) {
+    const startTime = Date.now();
+    const result = await query;
+    const queryTime = Date.now() - startTime;
 
-      logger.info(`Query executed: ${name}`, {
-        queryTime: `${queryTime}ms`,
-        found: result.length,
-      });
-
-      characters.push(...result);
-    }
-
-    if (characters.length === 0) {
-      logger.info('No characters need affiliation update');
-      return;
-    }
-
-    logger.info(`Found ${characters.length} characters to check`);
-
-    // Split into chunks of 1000 (ESI limit for affiliation endpoint)
-    const chunks: CharacterAffiliation[][] = [];
-    for (let i = 0; i < characters.length; i += 1000) {
-      chunks.push(characters.slice(i, i + 1000));
-    }
-
-    let totalQueued = 0;
-    for (const chunk of chunks) {
-      const queued = await processChunk(chunk);
-      totalQueued += queued;
-    }
-
-    logger.success('Affiliation update complete', {
-      checked: characters.length,
-      queued: totalQueued,
+    logger.info(`Query executed: ${name}`, {
+      queryTime: `${queryTime}ms`,
+      found: result.length,
     });
-  },
-};
+
+    characters.push(...result);
+  }
+
+  if (characters.length === 0) {
+    logger.info('No characters need affiliation update');
+    return;
+  }
+
+  logger.info(`Found ${characters.length} characters to check`);
+
+  // Split into chunks of 1000 (ESI limit for affiliation endpoint)
+  const chunks: CharacterAffiliation[][] = [];
+  for (let i = 0; i < characters.length; i += 1000) {
+    chunks.push(characters.slice(i, i + 1000));
+  }
+
+  let totalQueued = 0;
+  for (const chunk of chunks) {
+    const queued = await processChunk(chunk);
+    totalQueued += queued;
+  }
+
+  logger.success('Affiliation update complete', {
+    checked: characters.length,
+    queued: totalQueued,
+  });
+}
 
 interface CharacterAffiliation {
   characterId: number;
