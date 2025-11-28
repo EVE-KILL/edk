@@ -1,15 +1,15 @@
-{{!-- 
+{{!--
   Lightweight Page Header Component
-  
+
   Usage:
-    {{> components/page-header 
+    {{> components/page-header
       title="Page Title"
       eyebrow="Optional eyebrow"
       breadcrumbs=breadcrumbs
       info=info
       meta=meta
     }}
-    
+
   Parameters:
     - title: Main page title (required)
     - eyebrow: Optional eyebrow text
@@ -25,16 +25,16 @@
 
   <div class="page-header-light__row">
     <h1 class="page-header-light__title">{{title}}</h1>
-    
+
     {{#if info}}
     <div class="page-header-light__info">
       {{#each info}}
         <span class="page-header-light__info-item">
           {{#if this.icon}}<span class="page-header-light__icon">{{this.icon}}</span>{{/if}}
           {{#if this.logo}}
-            <img src="{{../config.imageServerUrl}}/{{this.logo.type}}s/{{this.logo.id}}/logo?size=32" 
-                 alt="{{this.logo.type}} logo" 
-                 style="width: 24px; height: 24px; border-radius: 3px; vertical-align: middle;" 
+            <img src="{{../config.imageServerUrl}}/{{this.logo.type}}s/{{this.logo.id}}/logo?size=32"
+                 alt="{{this.logo.type}} logo"
+                 style="width: 24px; height: 24px; border-radius: 3px; vertical-align: middle;"
                  loading="lazy" />
           {{/if}}
           {{#if this.text}}{{this.text}}{{/if}}
@@ -62,7 +62,7 @@
     </div>
     {{/if}}
   </div>
-  
+
   {{#if breadcrumbs}}
   <div class="page-header-light__breadcrumbs">
     {{#each breadcrumbs}}
@@ -71,6 +71,12 @@
         <span class="page-header-light__breadcrumbs-sep">/</span>
       {{/unless}}
     {{/each}}
+  </div>
+  {{/if}}
+
+  {{#if navbarData}}
+  <div class="page-header-light__navbar">
+    {{> partials/killmail-navbar-content killmail=navbarData.killmail solarSystem=navbarData.solarSystem victim=navbarData.victim siblings=navbarData.siblings battle=navbarData.battle}}
   </div>
   {{/if}}
 </div>

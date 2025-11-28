@@ -59,6 +59,7 @@ const SHIP_GROUPS = {
   battleships: [27, 898, 900],
   capitals: [547, 485],
   freighters: [513, 902],
+  industrials: [28, 380, 513, 902, 941, 883, 463, 543],
   supercarriers: [659],
   titans: [30],
   citadels: [1657, 1406, 1404, 1408, 2017, 2016],
@@ -143,6 +144,7 @@ function generateRoutingKeys(killmail: any): string[] {
     if (SHIP_GROUPS.battleships.includes(shipGroupId)) keys.push('battleships');
     if (SHIP_GROUPS.capitals.includes(shipGroupId)) keys.push('capitals');
     if (SHIP_GROUPS.freighters.includes(shipGroupId)) keys.push('freighters');
+    if (SHIP_GROUPS.industrials.includes(shipGroupId)) keys.push('industrials');
     if (SHIP_GROUPS.supercarriers.includes(shipGroupId))
       keys.push('supercarriers');
     if (SHIP_GROUPS.titans.includes(shipGroupId)) keys.push('titans');

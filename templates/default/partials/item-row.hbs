@@ -1,9 +1,9 @@
 {{!-- Item Row Partial - Displays a single item with quantity, price, total value, and destroyed/dropped status --}}
-<tr class="kb-table-row-odd" 
-    style="cursor: pointer;" 
+<tr class="kb-table-row-odd"
+    style="cursor: pointer;"
     onclick="window.location.href='/item/{{this.typeId}}';"
-    data-quantity="{{this.quantity}}" 
-    data-price="{{this.price}}" 
+    data-quantity="{{this.quantity}}"
+    data-price="{{this.price}}"
     data-total-value="{{this.totalValue}}"
     data-status="{{#if this.isDestroyed}}destroyed{{else}}dropped{{/if}}">
     <td class="kb-table-cell" style="padding: 4px 8px;">
@@ -32,9 +32,51 @@
     </td>
 </tr>
 
+{{!-- Nested items (if any) --}}
+{{#if this.nestedItems}}
+    {{#each this.nestedItems}}
+    <tr class="kb-table-row-odd nested-item-row"
+        style="cursor: pointer; background: rgba(0, 0, 0, 0.15); height: 28px;"
+        onclick="window.location.href='/item/{{this.typeId}}';"
+        data-quantity="{{this.quantity}}"
+        data-price="{{this.price}}"
+        data-total-value="{{this.totalValue}}"
+        data-status="{{#if this.isDestroyed}}destroyed{{else}}dropped{{/if}}">
+        <td class="kb-table-cell" style="padding: 2px 8px 2px 20px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <svg style="width: 12px; height: 12px; opacity: 0.4; flex-shrink: 0;" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 8 L12 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                {{> partials/eve-image type="item" id=this.typeId size=20 alt=this.name singleton=this.singleton}}
+                <span class="item-name" style="font-size: 0.9em; opacity: 0.85;">{{this.name}}</span>
+            </div>
+        </td>
+        <td class="kb-table-cell" style="text-align: center; padding: 2px 8px; font-size: 0.9em;">{{this.quantity}}</td>
+        <td class="kb-table-cell" style="text-align: right; padding: 2px 8px; font-size: 0.9em;">
+            {{#if this.price}}
+                <span>{{formatISK this.price}}</span>
+            {{else}}
+                <span style="color: var(--color-text-secondary);">N/A</span>
+            {{/if}}
+        </td>
+        <td class="kb-table-cell" style="text-align: right; padding: 2px 8px; font-size: 0.9em;">
+            {{#if this.totalValue}}
+                <span class="isk-value">{{formatISK this.totalValue}}</span>
+            {{else}}
+                <span style="color: var(--color-text-secondary);">N/A</span>
+            {{/if}}
+        </td>
+        <td class="kb-table-cell" style="text-align: center; padding: 2px 8px; font-size: 0.85em;">
+            <span class="{{#if this.isDestroyed}}kl-loss{{else}}kl-kill{{/if}}">{{#if this.isDestroyed}}Destroyed{{else}}Dropped{{/if}}</span>
+        </td>
+    </tr>
+    {{/each}}
+{{/if}}
+
 <style>
 .kb-table-row-odd:hover,
-.kb-table-row-even:hover {
+.kb-table-row-even:hover,
+.nested-item-row:hover {
     background: rgba(74, 158, 255, 0.1) !important;
     transition: background 0.2s ease;
 }

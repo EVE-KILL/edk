@@ -10,5 +10,20 @@ export default defineEventHandler(async (event: H3Event) => {
     additionalCSS: ['/css/ai-page.css'],
   };
 
-  return await render('pages/ai.hbs', pageContext, {}, event);
+  const data = {
+    pageHeader: {
+      title: 'AI Assistant',
+      breadcrumbs: [
+        { label: 'Home', url: '/' },
+        { label: 'AI Assistant', url: '/ai' },
+      ],
+      meta: [
+        { type: 'icon', icon: '🤖', text: 'Natural language queries' },
+        { type: 'icon', icon: '🔍', text: 'Real-time killmail search' },
+        { type: 'icon', icon: '🌐', text: 'Web search enabled' },
+      ],
+    },
+  };
+
+  return await render('pages/ai.hbs', pageContext, data, event);
 });

@@ -20,15 +20,29 @@ export default defineEventHandler(async (event: H3Event) => {
       return sendRedirect(event, '/docs', 302);
     }
 
+    // Strip .md extension if present in URL
+    const cleanSlug = slug.endsWith('.md') ? slug.slice(0, -3) : slug;
+
+    // If the slug had .md extension, redirect to clean URL
+    if (slug !== cleanSlug) {
+      return sendRedirect(event, `/docs/${cleanSlug}`, 301);
+    }
+
     const docsIndex = await track('docs:load_index', 'application', () =>
       getDocsIndex()
     );
 
     const docPage = await track('docs:load_doc', 'application', () =>
-      getDocPage(slug, docsIndex)
+      getDocPage(cleanSlug, docsIndex)
     );
 
-    const breadcrumbs = slug.split('/').map((part, index, parts) => ({
+    // If the requested slug doesn't match the actual doc slug (e.g., directory path),
+    // redirect to the actual document URL
+    if (docPage.slug !== cleanSlug) {
+      return sendRedirect(event, `/docs/${docPage.slug}`, 302);
+    }
+
+    const breadcrumbs = cleanSlug.split('/').map((part, index, parts) => ({
       label: part.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
       url: `/docs/${parts.slice(0, index + 1).join('/')}`,
     }));

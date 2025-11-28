@@ -137,12 +137,30 @@ function buildSections(files: DocFileMeta[]): DocsIndex {
     });
   }
 
+  // Define section order for better organization
+  const sectionOrder = ['general', 'systems', 'guides', 'reference'];
+
   const sections = Array.from(sectionsMap.values())
     .map((section) => ({
       ...section,
       items: section.items.sort((a, b) => a.title.localeCompare(b.title)),
     }))
-    .sort((a, b) => a.title.localeCompare(b.title));
+    .sort((a, b) => {
+      const aIndex = sectionOrder.indexOf(a.key);
+      const bIndex = sectionOrder.indexOf(b.key);
+
+      // If both sections are in the order array, sort by order
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+
+      // If only one is in the order array, it comes first
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+
+      // Otherwise, sort alphabetically
+      return a.title.localeCompare(b.title);
+    });
 
   const flat = sections.flatMap((section) => section.items);
 
@@ -275,7 +293,25 @@ export async function getDocPage(
     });
   }
 
-  const matchingNav = docsIndex.flat.find((item) => item.slug === targetSlug);
+  let matchingNav = docsIndex.flat.find((item) => item.slug === targetSlug);
+
+  // If no exact match, check if slug is a directory path and find first file in that directory
+  if (!matchingNav) {
+    const directoryPrefix = targetSlug.endsWith('/')
+      ? targetSlug
+      : `${targetSlug}/`;
+    const filesInDirectory = docsIndex.flat.filter((item) =>
+      item.slug.startsWith(directoryPrefix)
+    );
+
+    if (filesInDirectory.length > 0) {
+      // Sort and pick the first file (alphabetically)
+      matchingNav = filesInDirectory.sort((a, b) =>
+        a.slug.localeCompare(b.slug)
+      )[0];
+    }
+  }
+
   if (!matchingNav) {
     throw createError({
       statusCode: 404,

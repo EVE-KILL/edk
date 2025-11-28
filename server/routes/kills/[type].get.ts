@@ -42,6 +42,8 @@ const SHIP_GROUPS = {
   capitals: [547, 485],
   // Freighters
   freighters: [513, 902],
+  // Industrials (Industrial Ships, Haulers, Transport Ships, Mining Barges, Exhumers, Industrial Command Ships)
+  industrials: [28, 380, 513, 902, 941, 883, 463, 543],
   // Supercarriers
   supercarriers: [659],
   // Titans
@@ -83,6 +85,7 @@ const VALID_KILL_TYPES = [
   'supercarriers',
   'titans',
   'freighters',
+  'industrials',
   'citadels',
   'structures',
   't1',
@@ -193,6 +196,10 @@ function buildFiltersForType(type: KillType): KilllistFilters {
       filters.shipGroupIds = SHIP_GROUPS.freighters;
       break;
 
+    case 'industrials':
+      filters.shipGroupIds = SHIP_GROUPS.industrials;
+      break;
+
     case 'citadels':
       filters.shipGroupIds = SHIP_GROUPS.citadels;
       break;
@@ -244,6 +251,7 @@ function getTitleForType(type: KillType): string {
     supercarriers: 'Supercarrier Kills',
     titans: 'Titan Kills',
     freighters: 'Freighter Kills',
+    industrials: 'Industrial Kills',
     citadels: 'Citadel Kills',
     structures: 'Structure Kills',
     t1: 'T1 Ship Kills',
@@ -355,6 +363,8 @@ export default defineEventHandler(async (event: H3Event) => {
         effectiveShipClass = 'titan';
       } else if (killType === 'freighters') {
         effectiveShipClass = 'freighter';
+      } else if (killType === 'industrials') {
+        effectiveShipClass = 'industrial';
       } else if (killType === 'citadels' || killType === 'structures') {
         effectiveShipClass = 'structure';
       }

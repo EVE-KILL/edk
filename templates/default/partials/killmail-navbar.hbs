@@ -1,24 +1,10 @@
 <!-- Killmail Navigation Bar -->
 <nav class="killmail-nav">
     <div class="killmail-nav__container">
-        <!-- Primary Info Section -->
-        <div class="killmail-nav__primary">
-            <div class="killmail-nav__killmail-info">
-                <span class="killmail-nav__label">Killmail:</span>
-                <button
-                    class="killmail-nav__killmail-id"
-                    onclick="navigator.clipboard.writeText(window.location.href); this.textContent='Copied!'; setTimeout(() => this.textContent='{{killmail.killmailId}}', 2000);"
-                    title="Click to copy killmail link"
-                >
-                    {{killmail.killmailId}}
-                </button>
-            </div>
-        </div>
-
         <!-- Center Actions -->
+        {{#if battle.isInBattle}}
         <div class="killmail-nav__actions">
             <!-- Battle Button (if in battle) -->
-            {{#if battle.isInBattle}}
             <a
                 href="/battle/{{killmail.killmailId}}"
                 class="killmail-nav__btn killmail-nav__btn--battle"
@@ -26,19 +12,8 @@
             >
                 ⚔️ Battle ({{battle.killCount}})
             </a>
-            {{/if}}
-
-            <!-- Raw Killmail via ESI -->
-            <a
-                href="https://esi.evetech.net/latest/killmails/{{killmail.killmailId}}/{{killmail.hash}}/"
-                class="killmail-nav__btn killmail-nav__btn--secondary"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="View raw killmail via ESI API"
-            >
-                📄 ESI
-            </a>
         </div>
+        {{/if}}
 
         <!-- External Links Dropdowns -->
         <div class="killmail-nav__dropdowns">

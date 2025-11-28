@@ -19,152 +19,7 @@ import {
   generateKillmailDescription,
   generateKillmailKeywords,
 } from '../../helpers/seo';
-
-// Item slot mapping - which flag number corresponds to which slot
-const SLOT_MAPPING: Record<number, string> = {
-  // High slots (27-34)
-  27: 'highSlots',
-  28: 'highSlots',
-  29: 'highSlots',
-  30: 'highSlots',
-  31: 'highSlots',
-  32: 'highSlots',
-  33: 'highSlots',
-  34: 'highSlots',
-  // Med slots (19-26)
-  19: 'medSlots',
-  20: 'medSlots',
-  21: 'medSlots',
-  22: 'medSlots',
-  23: 'medSlots',
-  24: 'medSlots',
-  25: 'medSlots',
-  26: 'medSlots',
-  // Low slots (11-18)
-  11: 'lowSlots',
-  12: 'lowSlots',
-  13: 'lowSlots',
-  14: 'lowSlots',
-  15: 'lowSlots',
-  16: 'lowSlots',
-  17: 'lowSlots',
-  18: 'lowSlots',
-  // Rig slots (92-99)
-  92: 'rigSlots',
-  93: 'rigSlots',
-  94: 'rigSlots',
-  95: 'rigSlots',
-  96: 'rigSlots',
-  97: 'rigSlots',
-  98: 'rigSlots',
-  99: 'rigSlots',
-  // Subsystem slots (125-132)
-  125: 'subSlots',
-  126: 'subSlots',
-  127: 'subSlots',
-  128: 'subSlots',
-  129: 'subSlots',
-  130: 'subSlots',
-  131: 'subSlots',
-  132: 'subSlots',
-  // Drone bay
-  87: 'droneBay',
-  // Cargo/Container
-  5: 'cargo',
-  // Fuel bay
-  133: 'fuelBay',
-  // Ore hold
-  134: 'oreHold',
-  // Gas hold
-  135: 'gasHold',
-  // Mineral hold
-  136: 'mineralHold',
-  // Salvage hold
-  137: 'salvageHold',
-  // Ship hold
-  138: 'shipHold',
-  // Small ship hold
-  139: 'smallShipHold',
-  // Medium ship hold
-  140: 'mediumShipHold',
-  // Large ship hold
-  141: 'largeShipHold',
-  // Industrial ship hold
-  142: 'industrialShipHold',
-  // Ammo hold
-  143: 'ammoHold',
-  // Quafe bay
-  154: 'quafeBay',
-  // Fleet hangar
-  155: 'fleetHangar',
-  // Fighter bay
-  158: 'fighterBay',
-  // Fighter launch tubes
-  159: 'fighterTube1',
-  160: 'fighterTube2',
-  161: 'fighterTube3',
-  162: 'fighterTube4',
-  163: 'fighterTube5',
-  // Structure services
-  164: 'structureService1',
-  165: 'structureService2',
-  166: 'structureService3',
-  167: 'structureService4',
-  168: 'structureService5',
-  169: 'structureService6',
-  170: 'structureService7',
-  171: 'structureService8',
-  // Structure fuel
-  172: 'structureFuel',
-  // Core room
-  180: 'coreRoom',
-  // Infrastructure hangar
-  185: 'infrastructureHangar',
-  // Moon material bay
-  186: 'moonMaterialBay',
-  // Ship hangar
-  90: 'shipHangar',
-  // Implants
-  89: 'implants',
-  // Unflagged
-  0: 'other',
-};
-
-const SLOT_NAMES: Record<number, string> = {
-  27: 'High Slot 1',
-  28: 'High Slot 2',
-  29: 'High Slot 3',
-  30: 'High Slot 4',
-  31: 'High Slot 5',
-  32: 'High Slot 6',
-  33: 'High Slot 7',
-  34: 'High Slot 8',
-  19: 'Med Slot 1',
-  20: 'Med Slot 2',
-  21: 'Med Slot 3',
-  22: 'Med Slot 4',
-  23: 'Med Slot 5',
-  24: 'Med Slot 6',
-  25: 'Med Slot 7',
-  26: 'Med Slot 8',
-  11: 'Low Slot 1',
-  12: 'Low Slot 2',
-  13: 'Low Slot 3',
-  14: 'Low Slot 4',
-  15: 'Low Slot 5',
-  16: 'Low Slot 6',
-  17: 'Low Slot 7',
-  18: 'Low Slot 8',
-  92: 'Rig Slot 1',
-  93: 'Rig Slot 2',
-  94: 'Rig Slot 3',
-  125: 'Subsystem Slot 1',
-  126: 'Subsystem Slot 2',
-  127: 'Subsystem Slot 3',
-  128: 'Subsystem Slot 4',
-  87: 'Drone Bay',
-  5: 'Cargo Hold',
-};
+import { loadFlagMappings, getSlotKey } from '../../models/inventoryFlags';
 
 interface ItemSlot {
   typeId: number;
@@ -177,10 +32,13 @@ interface ItemSlot {
   slotName: string;
   flag: number;
   isDestroyed: boolean;
+  singleton?: number;
   ammo?: ItemSlot;
+  nestedItems?: ItemSlot[];
 }
 
 interface ItemsBySlot {
+  [key: string]: ItemSlot[];
   highSlots: ItemSlot[];
   medSlots: ItemSlot[];
   lowSlots: ItemSlot[];
@@ -188,14 +46,6 @@ interface ItemsBySlot {
   subSlots: ItemSlot[];
   droneBay: ItemSlot[];
   cargo: ItemSlot[];
-  fuelBay: ItemSlot[];
-  oreHold: ItemSlot[];
-  gasHold: ItemSlot[];
-  mineralHold: ItemSlot[];
-  salvageHold: ItemSlot[];
-  shipHold: ItemSlot[];
-  smallShipHold: ItemSlot[];
-  mediumShipHold: ItemSlot[];
   largeShipHold: ItemSlot[];
   industrialShipHold: ItemSlot[];
   ammoHold: ItemSlot[];
@@ -239,10 +89,12 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const id = parseInt(killmailId, 10);
 
-    // Fetch killmail data
+    // Load flag mappings (synchronous) and fetch killmail data
+    const flagNames = loadFlagMappings();
+
     const [killmail, itemsWithDetails] = await track(
       'killmail:fetch_data',
-      'application',
+      'database',
       async () => {
         return await Promise.all([
           getKillmailDetails(id),
@@ -258,6 +110,9 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
+    // Flag name lookup map
+    const flagToSlotName = flagNames;
+
     // Organize items by slot
     const {
       itemsBySlot,
@@ -266,6 +121,8 @@ export default defineEventHandler(async (event: H3Event) => {
       totalDropped,
       fitValue,
     } = await track('killmail:organize_items', 'application', async () => {
+      // Initialize itemsBySlot with core slots
+      // Additional bay/hold slots will be created dynamically as needed
       const itemsBySlot: ItemsBySlot = {
         highSlots: [],
         medSlots: [],
@@ -274,39 +131,6 @@ export default defineEventHandler(async (event: H3Event) => {
         subSlots: [],
         droneBay: [],
         cargo: [],
-        fuelBay: [],
-        oreHold: [],
-        gasHold: [],
-        mineralHold: [],
-        salvageHold: [],
-        shipHold: [],
-        smallShipHold: [],
-        mediumShipHold: [],
-        largeShipHold: [],
-        industrialShipHold: [],
-        ammoHold: [],
-        quafeBay: [],
-        fleetHangar: [],
-        fighterBay: [],
-        fighterTube1: [],
-        fighterTube2: [],
-        fighterTube3: [],
-        fighterTube4: [],
-        fighterTube5: [],
-        structureService1: [],
-        structureService2: [],
-        structureService3: [],
-        structureService4: [],
-        structureService5: [],
-        structureService6: [],
-        structureService7: [],
-        structureService8: [],
-        structureFuel: [],
-        coreRoom: [],
-        infrastructureHangar: [],
-        moonMaterialBay: [],
-        shipHangar: [],
-        implants: [],
         other: [],
       };
 
@@ -331,11 +155,37 @@ export default defineEventHandler(async (event: H3Event) => {
 
       const AMMO_CATEGORY_ID = 8;
 
-      // Step 1: Group items for Items Destroyed & Dropped table
+      // Step 1: Build item map for nesting lookup
+      const itemMap = new Map<number, (typeof itemsWithDetails)[0]>();
+      for (const item of itemsWithDetails) {
+        itemMap.set(item.id, item);
+      }
+
+      // Step 2: Group root items only (items without parentItemId) for Items Destroyed & Dropped table
       // Group by typeId + dropped/destroyed status
-      const groupedItemsMap = new Map<string, (typeof itemsWithDetails)[0]>();
+      const groupedItemsMap = new Map<
+        string,
+        (typeof itemsWithDetails)[0] & {
+          nestedItems?: (typeof itemsWithDetails)[0][];
+        }
+      >();
+
+      // First pass: separate ammo from other items
+      const ammoItemsByFlag = new Map<number, (typeof itemsWithDetails)[0][]>();
 
       for (const item of itemsWithDetails) {
+        // Skip items that are nested inside containers
+        if (item.parentItemId !== null) continue;
+
+        // Collect ammo separately by flag
+        if (item.categoryId === AMMO_CATEGORY_ID) {
+          if (!ammoItemsByFlag.has(item.flag)) {
+            ammoItemsByFlag.set(item.flag, []);
+          }
+          ammoItemsByFlag.get(item.flag)!.push(item);
+          continue; // Don't add ammo to main items list
+        }
+
         const hasDropped = item.quantityDropped > 0 ? '1' : '0';
         const hasDestroyed = item.quantityDestroyed > 0 ? '1' : '0';
         const key = `${item.itemTypeId}_${hasDropped}_${hasDestroyed}`;
@@ -346,7 +196,47 @@ export default defineEventHandler(async (event: H3Event) => {
           existing.quantityDropped += item.quantityDropped;
           existing.quantityDestroyed += item.quantityDestroyed;
         } else {
-          groupedItemsMap.set(key, { ...item });
+          groupedItemsMap.set(key, { ...item, nestedItems: [] });
+        }
+      }
+
+      // Second pass: attach container contents and ammo to their parent items
+      for (const item of itemsWithDetails) {
+        if (item.parentItemId === null) continue;
+
+        const parent = itemMap.get(item.parentItemId);
+        if (!parent) continue;
+
+        // Find the grouped parent item
+        for (const [, groupedItem] of groupedItemsMap) {
+          if (
+            groupedItem.id === parent.id ||
+            (groupedItem.itemTypeId === parent.itemTypeId &&
+              groupedItem.flag === parent.flag)
+          ) {
+            if (!groupedItem.nestedItems) groupedItem.nestedItems = [];
+            groupedItem.nestedItems.push(item);
+            break;
+          }
+        }
+      }
+
+      // Third pass: attach ammo to modules ONLY in high/mid/low slots
+      for (const [, groupedItem] of groupedItemsMap) {
+        // Only attach ammo to items in fitting slots (not cargo, drone bay, etc.)
+        const slotKey = getSlotKey(groupedItem.flag);
+        if (
+          slotKey !== 'highSlots' &&
+          slotKey !== 'medSlots' &&
+          slotKey !== 'lowSlots'
+        ) {
+          continue;
+        }
+
+        const ammoItems = ammoItemsByFlag.get(groupedItem.flag);
+        if (ammoItems && ammoItems.length > 0) {
+          if (!groupedItem.nestedItems) groupedItem.nestedItems = [];
+          groupedItem.nestedItems.push(...ammoItems);
         }
       }
 
@@ -354,12 +244,36 @@ export default defineEventHandler(async (event: H3Event) => {
 
       // Process grouped items for the items table
       for (const item of groupedItems) {
-        const slotKey =
-          (SLOT_MAPPING[item.flag] as keyof ItemsBySlot) || 'other';
+        const slotKey = getSlotKey(item.flag);
         const totalQuantity = item.quantityDropped + item.quantityDestroyed;
-        const itemValue = (item.price || 0) * totalQuantity;
 
-        const slotItem: ItemSlot = {
+        // Calculate item value including nested items
+        let itemValue = (item.price || 0) * totalQuantity;
+        const nestedItems: ItemSlot[] = [];
+
+        if (item.nestedItems && item.nestedItems.length > 0) {
+          for (const nested of item.nestedItems) {
+            const nestedQty = nested.quantityDropped + nested.quantityDestroyed;
+            const nestedValue = (nested.price || 0) * nestedQty;
+            itemValue += nestedValue;
+
+            nestedItems.push({
+              typeId: nested.itemTypeId,
+              name: nested.name || 'Unknown',
+              quantity: nestedQty,
+              quantityDropped: nested.quantityDropped,
+              quantityDestroyed: nested.quantityDestroyed,
+              price: nested.price || 0,
+              totalValue: nestedValue,
+              slotName: flagToSlotName.get(item.flag) || `Flag ${item.flag}`,
+              flag: nested.flag,
+              singleton: nested.singleton || 0,
+              isDestroyed: nested.quantityDestroyed > 0,
+            });
+          }
+        }
+
+        const slotItem: ItemSlot & { nestedItems?: ItemSlot[] } = {
           typeId: item.itemTypeId,
           name: item.name || 'Unknown',
           quantity: totalQuantity,
@@ -367,16 +281,28 @@ export default defineEventHandler(async (event: H3Event) => {
           quantityDestroyed: item.quantityDestroyed,
           price: item.price || 0,
           totalValue: itemValue,
-          slotName: SLOT_NAMES[item.flag] || `Slot ${item.flag}`,
+          slotName: flagToSlotName.get(item.flag) || `Flag ${item.flag}`,
           flag: item.flag,
           singleton: item.singleton || 0,
           isDestroyed: item.quantityDestroyed > 0,
+          nestedItems: nestedItems.length > 0 ? nestedItems : undefined,
         };
+
+        // Initialize slot array if it doesn't exist
+        if (!itemsBySlot[slotKey]) {
+          itemsBySlot[slotKey] = [];
+        }
 
         itemsBySlot[slotKey].push(slotItem);
 
         totalDestroyed += item.quantityDestroyed * (item.price || 0);
         totalDropped += item.quantityDropped * (item.price || 0);
+
+        // Add nested item values to totals
+        for (const nested of nestedItems) {
+          totalDestroyed += nested.quantityDestroyed * nested.price;
+          totalDropped += nested.quantityDropped * nested.price;
+        }
       }
 
       // Step 2: Build fitting wheel data structure
@@ -433,7 +359,7 @@ export default defineEventHandler(async (event: H3Event) => {
             quantityDestroyed: ammoItem.quantityDestroyed,
             price: ammoItem.price || 0,
             totalValue: ammoValue,
-            slotName: SLOT_NAMES[flag] || `Slot ${flag}`,
+            slotName: flagToSlotName.get(flag) || `Flag ${flag}`,
             flag: flag,
             isDestroyed: ammoItem.quantityDestroyed > 0,
           };
@@ -447,7 +373,7 @@ export default defineEventHandler(async (event: H3Event) => {
           quantityDestroyed: item.quantityDestroyed,
           price: item.price || 0,
           totalValue: itemValue,
-          slotName: SLOT_NAMES[flag] || `Slot ${flag}`,
+          slotName: flagToSlotName.get(flag) || `Flag ${flag}`,
           flag: flag,
           singleton: item.singleton || 0,
           isDestroyed: item.quantityDestroyed > 0,
@@ -728,6 +654,32 @@ export default defineEventHandler(async (event: H3Event) => {
           shipTypeId: s.victimShipTypeId,
           totalValue: s.totalValue,
         })),
+        meta: [
+          {
+            type: 'custom',
+            html: `<button
+                class="killmail-nav__killmail-id"
+                onclick="navigator.clipboard.writeText('https://esi.evetech.net/latest/killmails/${killmail.killmailId}/${killmail.hash}/'); this.textContent='Copied!'; setTimeout(() => this.textContent='${killmail.killmailId}', 2000);"
+                title="Click to copy ESI URL"
+                style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); padding: 6px 12px; border-radius: var(--radius-sm); color: var(--color-text-primary); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s ease;"
+              >
+                ${killmail.killmailId}
+              </button>`,
+          },
+          {
+            type: 'custom',
+            html: `<a
+                href="https://esi.evetech.net/latest/killmails/${killmail.killmailId}/${killmail.hash}/"
+                class="killmail-nav__btn killmail-nav__btn--secondary"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="View raw killmail via ESI API"
+                style="background: var(--color-bg-secondary); border: 1px solid var(--color-border-default); padding: 6px 12px; border-radius: var(--radius-sm); color: var(--color-text-primary); font-size: 13px; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s ease;"
+              >
+                📄 ESI
+              </a>`,
+          },
+        ],
         finalBlow: finalBlowAttacker
           ? {
               character: finalBlowAttacker.characterId

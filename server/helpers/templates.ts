@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import type { H3Event } from 'h3';
 import { requestContext } from '../utils/request-context';
 import { env } from './env';
+import { getAllFlags, getSlotKeysInOrder } from '../models/inventoryFlags';
 
 export interface NormalizedKillmailEntity {
   id: number | null;
@@ -519,79 +520,78 @@ function registerHelpers() {
 
     const sections: Array<{ title: string; items: any[] }> = [];
 
-    // Section map matching Thessia's order and naming
-    const sectionMap = [
-      { key: 'highSlots', title: 'High Slots' },
-      { key: 'medSlots', title: 'Medium Slots' },
-      { key: 'lowSlots', title: 'Low Slots' },
-      { key: 'rigSlots', title: 'Rig Slots' },
-      { key: 'subSlots', title: 'Subsystems' },
-      { key: 'droneBay', title: 'Drone Bay' },
-      { key: 'cargo', title: 'Cargo Hold' },
-      { key: 'fuelBay', title: 'Fuel Bay' },
-      { key: 'fleetHangar', title: 'Fleet Hangar' },
-      { key: 'fighterBay', title: 'Fighter Bay' },
-      // Fighter tubes (combined)
-      { key: 'fighterTube1', title: 'Fighter Launch Tubes' },
-      { key: 'fighterTube2', title: 'Fighter Launch Tubes' },
-      { key: 'fighterTube3', title: 'Fighter Launch Tubes' },
-      { key: 'fighterTube4', title: 'Fighter Launch Tubes' },
-      { key: 'fighterTube5', title: 'Fighter Launch Tubes' },
-      { key: 'shipHangar', title: 'Ship Hangar' },
-      { key: 'oreHold', title: 'Ore Hold' },
-      { key: 'gasHold', title: 'Gas Hold' },
-      { key: 'mineralHold', title: 'Mineral Hold' },
-      { key: 'salvageHold', title: 'Salvage Hold' },
-      { key: 'shipHold', title: 'Ship Hold' },
-      { key: 'smallShipHold', title: 'Small Ship Hold' },
-      { key: 'mediumShipHold', title: 'Medium Ship Hold' },
-      { key: 'largeShipHold', title: 'Large Ship Hold' },
-      { key: 'industrialShipHold', title: 'Industrial Ship Hold' },
-      { key: 'ammoHold', title: 'Ammo Hold' },
-      { key: 'quafeBay', title: 'Quafe Bay' },
-      // Structure services (combined)
-      { key: 'structureService1', title: 'Structure Services' },
-      { key: 'structureService2', title: 'Structure Services' },
-      { key: 'structureService3', title: 'Structure Services' },
-      { key: 'structureService4', title: 'Structure Services' },
-      { key: 'structureService5', title: 'Structure Services' },
-      { key: 'structureService6', title: 'Structure Services' },
-      { key: 'structureService7', title: 'Structure Services' },
-      { key: 'structureService8', title: 'Structure Services' },
-      { key: 'structureFuel', title: 'Structure Fuel' },
-      { key: 'implants', title: 'Implants' },
-      { key: 'infrastructureHangar', title: 'Infrastructure Hangar' },
-      { key: 'coreRoom', title: 'Core Room' },
-      { key: 'moonMaterialBay', title: 'Moon Material Bay' },
-      { key: 'other', title: 'Other' },
-    ];
+    // Get all inventory flags and build a mapping of slotKey to display title
+    const allFlags = getAllFlags();
+    const slotKeyToTitle = new Map<string, string>();
 
-    // Track which combined sections we've already added
-    const addedCombinedSections = new Set<string>();
+    for (const flag of allFlags) {
+      if (!slotKeyToTitle.has(flag.slotKey)) {
+        // Convert slotKey to display title (e.g., 'droneBay' -> 'Drone Bay')
+        const title = flag.slotKey
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^./, (str) => str.toUpperCase())
+          .trim();
+        slotKeyToTitle.set(flag.slotKey, title);
+      }
+    }
 
-    for (const { key, title } of sectionMap) {
-      const itemsInSection = items[key];
+    // Get display order from inventory flags (sorted by displayOrder property)
+    const displayOrder = getSlotKeysInOrder();
+
+    // Process sections in display order
+    const processedKeys = new Set<string>();
+
+    for (const slotKey of displayOrder) {
+      const itemsInSection = items[slotKey];
 
       // Skip if no items in this section
-      if (!Array.isArray(itemsInSection) || itemsInSection.length === 0)
+      if (!Array.isArray(itemsInSection) || itemsInSection.length === 0) {
         continue;
-
-      // For combined sections (Fighter Launch Tubes, Structure Services), only add once
-      if (title === 'Fighter Launch Tubes' || title === 'Structure Services') {
-        if (addedCombinedSections.has(title)) {
-          // Append to existing section
-          const existingSection = sections.find((s) => s.title === title);
-          if (existingSection) {
-            existingSection.items.push(...itemsInSection);
-          }
-          continue;
-        } else {
-          // Mark as added and add section
-          addedCombinedSections.add(title);
-        }
       }
 
+      // Handle combined sections (fighter tubes, structure services)
+      if (slotKey === 'fighterTube') {
+        // Collect all fighter tube items
+        const fighterTubeItems: any[] = [];
+        for (let i = 0; i <= 5; i++) {
+          const tubeKey = i === 0 ? 'fighterTube' : `fighterTube${i}`;
+          if (items[tubeKey]?.length > 0) {
+            fighterTubeItems.push(...items[tubeKey]);
+            processedKeys.add(tubeKey);
+          }
+        }
+        if (fighterTubeItems.length > 0) {
+          sections.push({
+            title: 'Fighter Launch Tubes',
+            items: fighterTubeItems,
+          });
+        }
+        continue;
+      }
+
+      // Get title from mapping, fallback to formatted slotKey
+      const title =
+        slotKeyToTitle.get(slotKey) ||
+        slotKey
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^./, (str) => str.toUpperCase())
+          .trim();
+
       sections.push({ title, items: itemsInSection });
+      processedKeys.add(slotKey);
+    }
+
+    // Handle any remaining sections not in display order (future-proofing)
+    for (const slotKey of Object.keys(items)) {
+      if (!processedKeys.has(slotKey) && items[slotKey]?.length > 0) {
+        const title =
+          slotKeyToTitle.get(slotKey) ||
+          slotKey
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^./, (str: string) => str.toUpperCase())
+            .trim();
+        sections.push({ title, items: items[slotKey] });
+      }
     }
 
     return sections;

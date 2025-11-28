@@ -7,21 +7,45 @@
 
   <div class="docs-layout">
     <aside class="docs-sidebar">
-      <div class="docs-sidebar__title">All Pages</div>
-      {{#each navSections}}
-        <div class="docs-nav-section">
-          <div class="docs-nav-section__heading">{{this.title}}</div>
-          <ul class="docs-nav">
-            {{#each this.items}}
-              <li>
-                <a href="/docs/{{this.slug}}" class="{{#ifEquals ../currentDoc.slug this.slug}}is-active{{/ifEquals}}">
-                  <div class="docs-nav__label">{{this.title}}</div>
-                </a>
-              </li>
-            {{/each}}
-          </ul>
-        </div>
-      {{/each}}
+      <div class="docs-sidebar__header">
+        <h3 class="docs-sidebar__title">Documentation</h3>
+        <p class="docs-sidebar__subtitle">Navigate through guides, systems, and references</p>
+      </div>
+
+      <nav class="docs-nav">
+        {{#each navSections}}
+          <div class="docs-nav__section">
+            <div class="docs-nav__section-header">
+              <span class="docs-nav__section-icon">
+                {{#ifEquals this.key "guides"}}🛠️{{/ifEquals}}
+                {{#ifEquals this.key "systems"}}⚙️{{/ifEquals}}
+                {{#ifEquals this.key "reference"}}📖{{/ifEquals}}
+                {{#ifEquals this.key "general"}}📄{{/ifEquals}}
+              </span>
+              <h4 class="docs-nav__section-title">{{this.title}}</h4>
+              <span class="docs-nav__section-count">{{this.items.length}}</span>
+            </div>
+            <ul class="docs-nav__list">
+              {{#each this.items}}
+                <li class="docs-nav__item">
+                  <a href="/docs/{{this.slug}}"
+                     class="docs-nav__link {{#ifEquals ../../currentDoc.slug this.slug}}docs-nav__link--active{{/ifEquals}}"
+                     title="{{this.title}}">
+                    <span class="docs-nav__link-text">{{this.title}}</span>
+                    {{#ifEquals ../../currentDoc.slug this.slug}}
+                      <span class="docs-nav__link-indicator">→</span>
+                    {{/ifEquals}}
+                  </a>
+                </li>
+              {{/each}}
+            </ul>
+          </div>
+        {{/each}}
+      </nav>
+
+      <div class="docs-sidebar__footer">
+        <a href="/docs" class="docs-sidebar__home-link">← Back to Docs Home</a>
+      </div>
     </aside>
 
     <section class="docs-content">
@@ -30,7 +54,16 @@
           {{{currentDoc.contentHtml}}}
         </article>
 
-        <div class="docs-source">Source: docs/{{currentDoc.relativePath}}.md</div>
+        <footer class="docs-footer">
+          <div class="docs-footer__meta">
+            <span class="docs-footer__label">File:</span>
+            <code class="docs-footer__path">docs/{{currentDoc.relativePath}}.md</code>
+          </div>
+          <div class="docs-footer__meta">
+            <span class="docs-footer__label">Last updated:</span>
+            <time class="docs-footer__date">{{currentDoc.updatedAt}}</time>
+          </div>
+        </footer>
       </div>
     </section>
   </div>

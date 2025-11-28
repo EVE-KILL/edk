@@ -51,6 +51,7 @@
       <option value="supercarrier" {{#if (eq filterDefaults.shipClass "supercarrier")}}selected{{/if}}>Supercarrier</option>
       <option value="titan" {{#if (eq filterDefaults.shipClass "titan")}}selected{{/if}}>Titan</option>
       <option value="freighter" {{#if (eq filterDefaults.shipClass "freighter")}}selected{{/if}}>Freighter</option>
+      <option value="industrial" {{#if (eq filterDefaults.shipClass "industrial")}}selected{{/if}}>Industrial</option>
       <option value="structure" {{#if (eq filterDefaults.shipClass "structure")}}selected{{/if}}>Structure</option>
     </select>
 
@@ -413,7 +414,7 @@ function updateKillTypeInputs(select) {
   document.getElementById('filter-solo').value = '';
   document.getElementById('filter-awox').value = '';
   document.getElementById('filter-npc').value = '';
-  
+
   // Set the selected one
   if (select.value) {
     document.getElementById('filter-' + select.value).value = '1';
@@ -425,7 +426,7 @@ function toggleCapsules(checkbox) {
   // Remove old hidden input if exists
   const oldInput = document.getElementById('filter-capsules-hidden');
   if (oldInput) oldInput.remove();
-  
+
   // Create new hidden input with appropriate name/value
   if (!checkbox.checked) {
     // Unchecked = filter out capsules = add noCapsules=1
@@ -437,7 +438,7 @@ function toggleCapsules(checkbox) {
     form.appendChild(input);
   }
   // Checked = include capsules = don't add any parameter (default behavior)
-  
+
   submitFilters(form);
 }
 
@@ -452,7 +453,7 @@ function submitFilters(form) {
       input.disabled = true;
     }
   });
-  
+
   // Add scroll anchor to URL
   const url = new URL(form.action, window.location.origin);
   const formData = new FormData(form);
@@ -472,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Ensure correct limit is selected (fixes default selection issue)
     limitSelect.value = "{{pagination.limit}}";
   }
-  
+
   // Scroll to filters if hash is present
   if (window.location.hash === '#filters') {
     setTimeout(() => {

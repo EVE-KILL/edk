@@ -137,6 +137,7 @@ export default {
       // Dogma tables
       await defaultSdeFetcher.importConfiguredTable(dogmaAttributesConfig);
       await defaultSdeFetcher.importConfiguredTable(dogmaEffectsConfig);
+      await defaultSdeFetcher.importTypeDogma();
 
       // Optimize materialized views
       await defaultSdeFetcher.optimizeViews();

@@ -124,6 +124,7 @@ CREATE INDEX IF NOT EXISTS "idx_attackers_time" ON attackers ("killmailTime");
 
 -- Items table - Partitioned by RANGE on killmailTime (monthly partitions)
 -- Note: singleton is SMALLINT (0/1/2) not BOOLEAN due to EVE API format
+-- parentItemId tracks nested items (e.g., items inside containers like plastic wrap)
 CREATE TABLE IF NOT EXISTS items (
   "id" BIGSERIAL NOT NULL,
   "killmailId" BIGINT NOT NULL,
@@ -133,6 +134,7 @@ CREATE TABLE IF NOT EXISTS items (
   "quantityDropped" INTEGER,
   "quantityDestroyed" INTEGER,
   "singleton" SMALLINT,
+  "parentItemId" BIGINT,
 
   PRIMARY KEY ("id", "killmailTime")
 ) PARTITION BY RANGE ("killmailTime");
@@ -142,6 +144,7 @@ CREATE INDEX IF NOT EXISTS "idx_items_item_type" ON items ("itemTypeId");
 CREATE INDEX IF NOT EXISTS "idx_items_flag" ON items ("flag");
 CREATE INDEX IF NOT EXISTS "idx_items_time" ON items ("killmailTime");
 CREATE INDEX IF NOT EXISTS "idx_items_killmail_type" ON items ("killmailId", "itemTypeId") WHERE "itemTypeId" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS "idx_items_parent" ON items ("parentItemId") WHERE "parentItemId" IS NOT NULL;
 
 -- Add faction IDs for faction warfare tracking
 ALTER TABLE killmails ADD COLUMN IF NOT EXISTS "victimFactionId" INTEGER;

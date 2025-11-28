@@ -246,11 +246,17 @@
               break;
             case 'corporation':
               image = `<img src="${imageServerUrl}/corporations/${id}/logo?size=128" alt="${escapeHtml(result.name)}" class="spotlight-card__image" loading="lazy" onerror="this.style.display='none'">`;
-              subtext = result.allianceName || 'No Alliance';
+              subtext = result.ticker ? `[${result.ticker}]` : 'Corporation';
+              if (result.memberCount) {
+                subtext += ` • ${result.memberCount.toLocaleString()} members`;
+              }
               break;
             case 'alliance':
               image = `<img src="${imageServerUrl}/alliances/${id}/logo?size=128" alt="${escapeHtml(result.name)}" class="spotlight-card__image" loading="lazy" onerror="this.style.display='none'">`;
-              subtext = `Ticker: ${result.ticker || 'N/A'}`;
+              subtext = result.ticker ? `<${result.ticker}>` : 'Alliance';
+              if (result.memberCount) {
+                subtext += ` • ${result.memberCount.toLocaleString()} members`;
+              }
               break;
             case 'item':
               image = `<img src="${imageServerUrl}/types/${id}/icon?size=64" alt="${escapeHtml(result.name)}" class="spotlight-card__image spotlight-card__image--item" loading="lazy" onerror="this.style.display='none'">`;

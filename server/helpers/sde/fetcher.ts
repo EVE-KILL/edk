@@ -722,6 +722,94 @@ export class SDEFetcher {
   }
 
   /**
+   * Import typeDogma table (dogma attributes per type)
+   * Custom import since each type has an array of attributes
+   */
+  async importTypeDogma(buildNumber?: number): Promise<void> {
+    if (!buildNumber) {
+      const metadata = await this.getMetadata();
+      if (!metadata) {
+        logger.error('❌ No build number available for typeDogma');
+        return;
+      }
+      buildNumber = metadata.buildNumber;
+    }
+
+    if (!this.forceReimport) {
+      const alreadyImported = await this.isTableAlreadyImported(
+        'typeDogma',
+        buildNumber
+      );
+      if (alreadyImported) {
+        logger.info(
+          `⏭️  Skipping typeDogma (already imported for build ${buildNumber})`
+        );
+        return;
+      }
+    }
+
+    logger.info('📥 Importing typeDogma...');
+    const filepath = this.getTablePath('typeDogma');
+    if (!existsSync(filepath)) {
+      logger.error(`❌ typeDogma.jsonl not found at ${filepath}`);
+      return;
+    }
+
+    const BATCH_SIZE = 5000;
+    const rows: any[] = [];
+    let importedCount = 0;
+    const seen = new Set<string>();
+
+    const flush = async () => {
+      if (rows.length > 0) {
+        await database.bulkUpsert('typedogma', rows, ['typeId', 'attributeId']);
+        importedCount += rows.length;
+        rows.length = 0;
+        logger.info(`   Inserted ${importedCount} typeDogma rows...`);
+      }
+    };
+
+    try {
+      for await (const row of streamParseJSONLines(filepath)) {
+        const typeId = row._key || row.typeID || row.typeId;
+        if (!typeId) continue;
+
+        const dogmaAttributes = row.dogmaAttributes;
+        if (!Array.isArray(dogmaAttributes)) continue;
+
+        for (const attr of dogmaAttributes) {
+          const attributeId = attr.attributeID || attr.attributeId;
+          const value = attr.value;
+
+          if (attributeId === undefined || value === undefined) continue;
+
+          const key = `${typeId}:${attributeId}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+
+          rows.push({
+            typeId: Number(typeId),
+            attributeId: Number(attributeId),
+            value: Number(value),
+          });
+
+          if (rows.length >= BATCH_SIZE) {
+            await flush();
+          }
+        }
+      }
+
+      await flush();
+
+      await this.markTableAsImported('typeDogma', buildNumber, importedCount);
+      logger.info(`✅ Imported ${importedCount} typeDogma rows`);
+    } catch (error) {
+      logger.error('❌ Error importing typeDogma:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Import mapSolarSystems table into ClickHouse
    */
   async importMapSolarSystems(buildNumber?: number): Promise<void> {

@@ -13,6 +13,7 @@ export interface SearchResult {
   rawId: string;
   similarity?: number;
   memberCount?: number | null;
+  ticker?: string | null;
 }
 
 /**
@@ -35,67 +36,80 @@ export async function searchEntities(
 
   // Prefix-only search for optimal index usage
   // Uses functional index on LOWER(name) with text_pattern_ops
+  // Deduplicates by name, keeping only the most recently created entity
   const results = await database.find<{
     id: string;
     name: string;
     type: string;
     memberCount?: number | null;
+    ticker?: string | null;
     rank: number;
   }>(
     `
     (
-      SELECT
+      SELECT DISTINCT ON (name)
         "characterId"::text as id,
         name,
         'character' as type,
         NULL::int as "memberCount",
+        NULL::text as ticker,
         1 as rank
       FROM characters
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY "name"
+      ORDER BY name, "birthday" DESC NULLS LAST
       LIMIT :limit
     )
     UNION ALL
     (
-      SELECT
+      SELECT DISTINCT ON (name)
         "corporationId"::text as id,
         name,
         'corporation' as type,
         "memberCount",
+        ticker,
         1 as rank
       FROM corporations
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY "name"
+      ORDER BY name, "dateFounded" DESC NULLS LAST
       LIMIT :limit
     )
     UNION ALL
     (
-      SELECT
+      SELECT DISTINCT ON (name)
         "allianceId"::text as id,
         name,
         'alliance' as type,
         COALESCE((
           SELECT SUM(c."memberCount") FROM corporations c WHERE c."allianceId" = alliances."allianceId"
         ), 0) as "memberCount",
+        ticker,
         1 as rank
       FROM alliances
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY "name"
+      ORDER BY name, "dateFounded" DESC NULLS LAST
       LIMIT :limit
     )
     UNION ALL
     (
       SELECT
-        "typeId"::text as id,
-        name,
+        t."typeId"::text as id,
+        t.name,
         'item' as type,
+        NULL::int as "memberCount",
+        NULL::text as ticker,
         1 as rank
-      FROM types
-      WHERE 
-        name IS NOT NULL 
-        AND "published" = true 
-        AND LOWER(name) LIKE LOWER(:prefixPattern)
-      ORDER BY "name"
+      FROM types t
+      INNER JOIN groups g ON t."groupId" = g."groupId"
+      INNER JOIN categories c ON g."categoryId" = c."categoryId"
+      WHERE
+        t.name IS NOT NULL
+        AND t."published" = true
+        AND g."published" = true
+        AND c."published" = true
+        AND c."categoryId" != 9
+        AND t.name NOT ILIKE '%blueprint%'
+        AND LOWER(t.name) LIKE LOWER(:prefixPattern)
+      ORDER BY t."name"
       LIMIT :limit
     )
     UNION ALL
@@ -104,6 +118,8 @@ export async function searchEntities(
         "solarSystemId"::text as id,
         name,
         'system' as type,
+        NULL::int as "memberCount",
+        NULL::text as ticker,
         1 as rank
       FROM solarsystems
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
@@ -116,6 +132,8 @@ export async function searchEntities(
         "constellationId"::text as id,
         name,
         'constellation' as type,
+        NULL::int as "memberCount",
+        NULL::text as ticker,
         1 as rank
       FROM constellations
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
@@ -128,6 +146,8 @@ export async function searchEntities(
         "regionId"::text as id,
         name,
         'region' as type,
+        NULL::int as "memberCount",
+        NULL::text as ticker,
         1 as rank
       FROM regions
       WHERE name IS NOT NULL AND LOWER(name) LIKE LOWER(:prefixPattern)
@@ -148,5 +168,6 @@ export async function searchEntities(
     rawId: row.id,
     similarity: row.rank,
     memberCount: row.memberCount ?? null,
+    ticker: row.ticker ?? null,
   }));
 }

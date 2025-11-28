@@ -6,10 +6,9 @@
         (obj label="Killmails" url="/kills/latest")
         (obj label=(concat "Killmail #" data.killmail.killmailId) url=(concat "/killmail/" data.killmail.killmailId))
     )
+    meta=data.meta
+    navbarData=data
 }}
-
-<!-- Sibling Killmails Navbar -->
-{{> partials/killmail-navbar killmail=data.killmail solarSystem=data.solarSystem victim=data.victim siblings=data.siblings}}
 
 <!-- Two Column Layout -->
 <div class="killmail-detail-wrapper">

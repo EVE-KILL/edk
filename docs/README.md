@@ -1,118 +1,109 @@
-# EVE-KILL (EDK)
+# Documentation Structure
 
-Self-hosted, EVE Online killboard built with Bun, Nitro, PostgreSQL, Redis, and Typesense.
+This folder contains the complete EVE-KILL documentation, organized by topic and purpose.
 
-## Stack
+## Folder Structure
 
-- Runtime: Bun
-- Framework: Nitro
-- Data: PostgreSQL (`postgres.js`), Redis (BullMQ), Typesense
-
-## Features
-
-- 🚀 **Real-time killmail ingestion** from EVE-KILL WebSocket and RedisQ
-- 📊 **Comprehensive statistics** for characters, corporations, alliances, systems, and ships
-- 🎯 **Advanced filtering** by ship class, security status, tech level, and more
-- 🔍 **Full-text search** powered by Typesense
-- 📱 **Responsive design** with server-side rendering
-- 🌐 **SEO optimized** with Open Graph, Twitter Cards, and JSON-LD structured data
-- 🎨 **Themeable** with Handlebars templates
-- ⚡ **High performance** with Redis caching and database partitioning
-- 🔐 **EVE SSO authentication** with customizable scopes
-
-## Prerequisites
-
-- Bun installed (`bun --version`)
-- Docker + Docker Compose (provides Postgres, Redis, Typesense)
-- `tmux` (required only for `make dev`)
-
-**Note**: If you're using your own PostgreSQL server (not Docker), you must set `max_locks_per_transaction = 200` in `postgresql.conf` due to the partitioned table structure (60+ partitions). The Docker setup handles this automatically.
-
-## Quick start
-
-1: Copy envs and edit as needed:
-
-```bash
-cp .env.example .env
+```
+docs/
+├── index.md              # Main documentation landing page
+├── systems/              # System-level documentation
+│   ├── killmail-processing.md
+│   ├── entity-tracking.md
+│   ├── queue-system.md
+│   ├── search.md
+│   └── database.md
+├── guides/               # Developer how-to guides
+│   ├── getting-started.md
+│   ├── adding-features.md
+│   └── testing.md
+└── reference/            # Reference material
+    ├── architecture.md
+    ├── configuration.md
+    ├── code-style.md
+    └── websocket.md
 ```
 
-2: Bootstrap everything (containers, deps, migrations, SDE import, search seed):
+## Systems Documentation
+
+The `systems/` folder contains deep dives into the major systems:
+
+- **killmail-processing.md** - How killmails flow from ingestion to storage
+- **entity-tracking.md** - Character, corporation, and alliance management
+- **queue-system.md** - BullMQ job processing and patterns
+- **search.md** - PostgreSQL pg_trgm full-text search
+- **database.md** - Schema, partitioning, indexes, and performance
+
+## Developer Guides
+
+The `guides/` folder contains step-by-step instructions:
+
+- **getting-started.md** - Local development environment setup
+- **adding-features.md** - How to add routes, models, queues, templates
+- **testing.md** - Writing and running tests
+
+## Reference Material
+
+The `reference/` folder contains specifications and conventions:
+
+- **architecture.md** - High-level system design and data flow
+- **configuration.md** - Environment variables and settings
+- **code-style.md** - TypeScript conventions and patterns
+- **websocket.md** - WebSocket API specification
+
+## Viewing Documentation
+
+### Locally
+
+Start the development server and navigate to `/docs`:
 
 ```bash
-make setup
+bun dev
+# Open http://localhost:3000/docs
 ```
 
-3: Start the full dev stack (Nitro dev server, WebSocket server, queues, cronjobs, RedisQ listener):
+### Files
 
-```bash
-make dev
-```
+All documentation is in Markdown format and can be viewed in any Markdown reader or on GitHub.
 
-`make dev` opens a tmux session; exit with `Ctrl+b` then `d` (detach) or `Ctrl+c` in each pane to stop.
+## Contributing to Documentation
 
-## Manual setup (if you skip make)
+When adding new documentation:
 
-```bash
-cp .env.example .env
-docker compose up -d postgres redis typesense
-bun install
-bun cli db:migrate
-bun cli db:partitions
-bun cli sde:download
-bun cli sde:refresh-mv
-bun cli search:seed
-```
+1. **Systems** - Add deep technical documentation about how major systems work
+2. **Guides** - Add step-by-step tutorials for common development tasks
+3. **Reference** - Add specifications, conventions, or API references
 
-Then run the app:
+Keep documentation:
 
-- Nitro dev server: `bun dev`
-- WebSocket server: `bun ws`
-- Queues: `bun queue` (or `bun queue <name> --limit 5` to test a single queue)
-- Cron jobs: `bun cronjobs`
-- RedisQ listener: `bun cli listeners:redisq`
+- Clear and concise
+- With code examples where appropriate
+- Up-to-date with the codebase
+- Organized by topic, not by file/folder structure
 
-## Code Quality
+## What's Documented
 
-This project uses `husky`, `lint-staged`, and `commitlint` to enforce code quality and consistent commit messages.
+### Systems (Complete Deep Dives)
 
-- **Pre-commit**: Before you commit, `lint-staged` will automatically run `eslint` and `prettier` on any staged `.ts` files. It will also format other file types like JSON and Markdown. Type-checking is not included in the pre-commit hook due to a large number of existing errors, but it is still run as a separate check in CI.
-- **Commit Message**: Your commit messages will be linted to ensure they follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
+- ✅ Killmail processing flow from ingestion to storage
+- ✅ Entity tracking (characters, corps, alliances) with ESI integration
+- ✅ Queue system architecture with BullMQ and priorities
+- ✅ PostgreSQL database with partitioning and performance tuning
+- ✅ Search system using pg_trgm extension
 
-These hooks are installed automatically when you run `bun install`.
+### Guides (Step-by-Step Tutorials)
 
-## Running tests
+- ✅ Local development environment setup
+- ✅ Adding routes, models, queues, cron jobs, and CLI commands
+- ✅ Writing and running tests with Bun
 
-```bash
-bun test
-```
+### Reference (Specifications & Conventions)
 
-Tests preload `tests/setup.ts`, which recreates the test database (`TEST_DB_NAME`, default `edk_test`) and runs migrations automatically.
+- ✅ High-level architecture and data flow
+- ✅ Environment variables and configuration
+- ✅ TypeScript code style and naming conventions
+- ✅ WebSocket API specification
 
-## Project layout
+## Navigation
 
-- `server/` – Nitro routes, plugins (schema migration, db connection), helpers (database, templates, typesense, redis)
-- `templates/` and `oldtemplates/` – Handlebars views
-- `commands/` – CLI commands loaded by `bun cli`
-- `queue/` – BullMQ processors, started via `bun queue`
-- `cronjobs/` – Scheduled jobs, run with `bun cronjobs`
-- `db/` – SQL migrations (columns use mixed-case and must be quoted in raw SQL)
-- `tests/` – Bun tests and fixtures
-
-## Environment
-
-- Postgres: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_URL`
-- Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_URL`
-- Typesense: `TYPESENSE_HOST`, `TYPESENSE_PORT`, `TYPESENSE_PROTOCOL`, `TYPESENSE_API_KEY`
-- Ingestion/search: `REDISQ_ID` (zKillboard queue ID), `IMAGE_SERVER_URL`
-- Tests: `TEST_DB_NAME` (optional override)
-
-## Useful commands
-
-- `bun cli` – shows all available CLI commands
-- `bun cli db:migrate` – apply migrations (auto-adds missing columns from SQL files)
-- `bun cli db:partitions` – ensure partition tables exist
-- `bun cli sde:download` / `bun cli sde:refresh-mv` – pull and hydrate EVE SDE data
-- `bun cli search:seed` – rebuild Typesense search index
-- `bun cli listeners:redisq` – start the killmail listener
-
-For detailed production deployment instructions, please see the [Production Deployment Guide](./docs/production-deployment.md).
+Start with [index.md](./index.md) for the main documentation landing page.

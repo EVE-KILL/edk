@@ -68,7 +68,7 @@
 
     tooltipName.textContent = name;
     tooltipValue.textContent = formatNumber(totalValue) + ' ISK';
-    
+
     // Format status text
     const statusCapitalized = status.charAt(0).toUpperCase() + status.slice(1);
     tooltipStatus.innerHTML = `<span class="status-${status}">${statusCapitalized}</span>`;
@@ -169,21 +169,69 @@
     // Add positioned class to make slot visible
     slot.classList.add('positioned');
 
-    // Tooltip events for module
-    const moduleContainer = slot.querySelector('.module-container');
-    if (moduleContainer) {
-      moduleContainer.addEventListener('mouseenter', () => showTooltip(slot));
-      moduleContainer.addEventListener('mouseleave', hideTooltip);
-      moduleContainer.addEventListener('click', togglePinned);
-    }
-
-    // Tooltip events for ammo overlay
+    // Position ammo overlay radially if present
     const ammoOverlay = slot.querySelector('.ammo-overlay');
     if (ammoOverlay) {
-      ammoOverlay.addEventListener('mouseenter', () => showTooltip(ammoOverlay));
-      ammoOverlay.addEventListener('mouseleave', hideTooltip);
-      ammoOverlay.addEventListener('click', togglePinned);
+      // Calculate the angle for this slot
+      let angle = 0;
+      switch (slotType) {
+        case 'high':
+          angle = -125 + slotIndex * 10.5;
+          break;
+        case 'mid':
+          angle = 0 - 37 + slotIndex * 10.5;
+          break;
+        case 'low':
+          angle = 90 - 36 + slotIndex * 10.5;
+          break;
+      }
+
+      // Calculate radial offset (inward toward center)
+      // The ammo should be positioned along the same angle, but closer to the ship
+      const ammoOffsetDistance = -25; // negative = toward center, positive = away from center
+      const rad = angle * (Math.PI / 180);
+      const offsetX = ammoOffsetDistance * Math.cos(rad);
+      const offsetY = ammoOffsetDistance * Math.sin(rad);
+
+      // Apply the radial positioning
+      ammoOverlay.style.left = `calc(50% + ${offsetX}px)`;
+      ammoOverlay.style.top = `calc(50% + ${offsetY}px)`;
+      ammoOverlay.style.transform = 'translate(-50%, -50%)';
+      ammoOverlay.style.bottom = 'auto';
+      ammoOverlay.style.right = 'auto';
     }
+
+    // Tooltip events - use the slot as the common container
+    // This prevents gaps between module and ammo from causing flickering
+    slot.addEventListener('mouseenter', (e) => {
+      // Determine which element to show tooltip for (ammo takes precedence)
+      if (ammoOverlay && e.target.closest('.ammo-overlay')) {
+        showTooltip(ammoOverlay);
+      } else {
+        showTooltip(slot);
+      }
+    });
+
+    // Watch for movement within the slot to switch between module/ammo
+    slot.addEventListener('mouseover', (e) => {
+      if (ammoOverlay) {
+        const isOverAmmo = e.target.closest('.ammo-overlay');
+        if (isOverAmmo && tooltipName.textContent !== ammoOverlay.dataset.name) {
+          showTooltip(ammoOverlay);
+        } else if (!isOverAmmo && tooltipName.textContent !== slot.dataset.name) {
+          showTooltip(slot);
+        }
+      }
+    });
+
+    slot.addEventListener('mouseleave', hideTooltip);
+    slot.addEventListener('click', (e) => {
+      // Update tooltip based on what was clicked
+      if (ammoOverlay && e.target.closest('.ammo-overlay')) {
+        showTooltip(ammoOverlay);
+      }
+      togglePinned();
+    });
   });
 
   // Tooltip overlay hover handling

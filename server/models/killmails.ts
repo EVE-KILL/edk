@@ -40,6 +40,15 @@ export interface ESIKillmailItem {
   items?: ESIKillmailItem[];
 }
 
+interface FlattenedItem {
+  flag: number;
+  item_type_id: number;
+  quantity_dropped?: number;
+  quantity_destroyed?: number;
+  singleton: number;
+  parentIndex?: number; // Index in the flattened array of the parent container
+}
+
 /**
  * ESI Killmail format - matches exactly what ESI API returns/expects
  * Used for both input (from ESI) and output (to our API)
@@ -293,7 +302,7 @@ export async function getKillmail(
 
   // Get items
   const items = await database.find<any>(
-    'SELECT * FROM items WHERE "killmailId" = :killmailId AND "killmailTime" = :killmailTime',
+    'SELECT * FROM items WHERE "killmailId" = :killmailId AND "killmailTime" = :killmailTime ORDER BY id',
     { killmailId, killmailTime: killmail.killmailTime }
   );
 
@@ -301,6 +310,59 @@ export async function getKillmail(
   // ClickHouse DateTime is returned as a string "YYYY-MM-DD HH:MM:SS"
   // Convert to ISO format
   const killmailTime = new Date(killmail.killmailTime).toISOString();
+
+  // Reconstruct nested item structure from flat data using parentItemId
+  function reconstructItems(allItems: any[]): ESIKillmailItem[] {
+    // Create a map of item.id -> item for quick lookup
+    const itemMap = new Map<number, any>();
+    allItems.forEach((item) => itemMap.set(Number(item.id), item));
+
+    // Build the tree structure
+    const rootItems: ESIKillmailItem[] = [];
+    const childrenMap = new Map<number, ESIKillmailItem[]>();
+
+    for (const item of allItems) {
+      const esiItem: ESIKillmailItem = {
+        flag: item.flag,
+        item_type_id: item.itemTypeId,
+        quantity_dropped: item.quantityDropped || 0,
+        quantity_destroyed: item.quantityDestroyed || 0,
+        singleton: item.singleton,
+      };
+
+      const parentId = item.parentItemId ? Number(item.parentItemId) : null;
+
+      if (parentId === null) {
+        // Root item (no parent)
+        rootItems.push(esiItem);
+        // Store reference for potential children
+        childrenMap.set(Number(item.id), (esiItem.items = []));
+      } else {
+        // Child item - add to parent's items array
+        if (!childrenMap.has(parentId)) {
+          childrenMap.set(parentId, []);
+        }
+        childrenMap.get(parentId)!.push(esiItem);
+      }
+    }
+
+    // Clean up empty items arrays
+    for (const item of rootItems) {
+      cleanupEmptyItems(item);
+    }
+
+    return rootItems;
+  }
+
+  function cleanupEmptyItems(item: ESIKillmailItem): void {
+    if (item.items && item.items.length === 0) {
+      delete item.items;
+    } else if (item.items) {
+      item.items.forEach(cleanupEmptyItems);
+    }
+  }
+
+  const reconstructedItems = reconstructItems(items);
 
   // Reconstruct ESI format
   return {
@@ -319,13 +381,7 @@ export async function getKillmail(
         y: killmail.positionY,
         z: killmail.positionZ,
       },
-      items: items.map((item: any) => ({
-        flag: item.flag,
-        item_type_id: item.itemTypeId,
-        quantity_dropped: item.quantityDropped || 0,
-        quantity_destroyed: item.quantityDestroyed || 0,
-        singleton: item.singleton,
-      })),
+      items: reconstructedItems,
     },
     attackers: attackers.map((attacker: any) => ({
       alliance_id: attacker.allianceId,
@@ -356,6 +412,37 @@ function calculateKillmailHash(esiData: ESIKillmail): string {
 /**
  * Store complete ESI killmail data with related records
  */
+/**
+ * Recursively flatten items, including those inside containers
+ * Tracks parent-child relationships via parentIndex
+ */
+function flattenItems(items: ESIKillmailItem[]): FlattenedItem[] {
+  const result: FlattenedItem[] = [];
+
+  function flatten(items: ESIKillmailItem[], parentIndex?: number): void {
+    for (const item of items) {
+      // Add the container/item itself
+      const currentIndex = result.length;
+      result.push({
+        flag: item.flag,
+        item_type_id: item.item_type_id,
+        quantity_dropped: item.quantity_dropped,
+        quantity_destroyed: item.quantity_destroyed,
+        singleton: item.singleton,
+        parentIndex,
+      });
+
+      // If the item has nested items, recursively flatten them with this item as parent
+      if (item.items && item.items.length > 0) {
+        flatten(item.items, currentIndex);
+      }
+    }
+  }
+
+  flatten(items);
+  return result;
+}
+
 export async function storeKillmail(
   esiData: ESIKillmail,
   hash?: string,
@@ -475,9 +562,12 @@ export async function storeKillmail(
       await database.bulkInsert('attackers', attackerRecords);
     }
 
-    // Insert items
+    // Insert items (flattened to include container contents with parent tracking)
     if (victim.items && victim.items.length > 0) {
-      const itemRecords = victim.items.map((item) => ({
+      const flattenedItems = flattenItems(victim.items);
+
+      // First pass: insert all items without parentItemId to get their IDs
+      const itemRecords = flattenedItems.map((item) => ({
         killmailId: esiData.killmail_id,
         killmailTime: killmailIso,
         flag: item.flag ?? 0,
@@ -485,9 +575,48 @@ export async function storeKillmail(
         quantityDropped: item.quantity_dropped ?? 0,
         quantityDestroyed: item.quantity_destroyed ?? 0,
         singleton: item.singleton ?? 0,
+        parentItemId: null, // Will be updated in second pass if needed
       }));
 
-      await database.bulkInsert('items', itemRecords);
+      // Insert items and get their IDs back (PostgreSQL RETURNING clause)
+      const sql = database.sql;
+      const insertedItems = await sql<Array<{ id: bigint }>>`
+        INSERT INTO items ${sql(
+          itemRecords,
+          'killmailId',
+          'killmailTime',
+          'flag',
+          'itemTypeId',
+          'quantityDropped',
+          'quantityDestroyed',
+          'singleton',
+          'parentItemId'
+        )}
+        RETURNING id
+      `;
+
+      // Second pass: update parentItemId for nested items
+      const itemIds = insertedItems.map((row) => Number(row.id));
+      const updates: Array<{ id: number; parentItemId: number }> = [];
+
+      for (let i = 0; i < flattenedItems.length; i++) {
+        const item = flattenedItems[i];
+        if (item.parentIndex !== undefined) {
+          updates.push({
+            id: itemIds[i],
+            parentItemId: itemIds[item.parentIndex],
+          });
+        }
+      }
+
+      // Batch update parent relationships
+      if (updates.length > 0) {
+        await sql`
+          UPDATE items SET "parentItemId" = update_data."parentItemId"::bigint
+          FROM (VALUES ${sql(updates.map((u) => [u.id, u.parentItemId]))}) AS update_data(id, "parentItemId")
+          WHERE items.id = update_data.id::bigint
+        `;
+      }
     }
 
     // Update lastActive timestamps for involved entities
@@ -716,31 +845,77 @@ export async function storeKillmailsBulk(
       );
     }
 
-    // Prepare all item records
-    const allItemRecords = newKillmails.flatMap(({ esi }) => {
-      const victim = esi.victim;
-      if (!victim.items || victim.items.length === 0) return [];
+    // Insert items with proper parent tracking
+    // We process killmails in batches, but within each batch we need to insert items
+    // per-killmail to track parent relationships properly
+    const sql = database.sql;
+    let totalItemsInserted = 0;
 
-      return victim.items.map((item) => ({
+    for (const { esi } of newKillmails) {
+      const victim = esi.victim;
+      if (!victim.items || victim.items.length === 0) continue;
+
+      const flattenedItems = flattenItems(victim.items);
+      const killmailTime = esi.killmail_time ?? new Date().toISOString();
+
+      // First pass: insert all items without parentItemId
+      const itemRecords = flattenedItems.map((item) => ({
         killmailId: esi.killmail_id ?? 0,
-        killmailTime: esi.killmail_time ?? new Date().toISOString(),
+        killmailTime: killmailTime,
         flag: item.flag ?? 0,
         itemTypeId: item.item_type_id ?? 0,
         quantityDropped: item.quantity_dropped ?? 0,
         quantityDestroyed: item.quantity_destroyed ?? 0,
         singleton: item.singleton ?? 0,
+        parentItemId: null,
       }));
-    });
 
-    // Insert items in chunks to avoid parameter limit (65534)
-    // Each item has ~8 columns, so max ~8000 items per batch
-    if (allItemRecords.length > 0) {
-      const ITEM_CHUNK_SIZE = 5000;
-      for (let i = 0; i < allItemRecords.length; i += ITEM_CHUNK_SIZE) {
-        const chunk = allItemRecords.slice(i, i + ITEM_CHUNK_SIZE);
-        await database.bulkInsert('items', chunk);
+      // Insert and get IDs back
+      const insertedItems = await sql<Array<{ id: bigint }>>`
+        INSERT INTO items ${sql(
+          itemRecords,
+          'killmailId',
+          'killmailTime',
+          'flag',
+          'itemTypeId',
+          'quantityDropped',
+          'quantityDestroyed',
+          'singleton',
+          'parentItemId'
+        )}
+        RETURNING id
+      `;
+
+      totalItemsInserted += insertedItems.length;
+
+      // Second pass: update parent relationships if any exist
+      const itemIds = insertedItems.map((row) => Number(row.id));
+      const updates: Array<{ id: number; parentItemId: number }> = [];
+
+      for (let i = 0; i < flattenedItems.length; i++) {
+        const item = flattenedItems[i];
+        if (item.parentIndex !== undefined) {
+          updates.push({
+            id: itemIds[i],
+            parentItemId: itemIds[item.parentIndex],
+          });
+        }
       }
-      logger.info(`[Killmail] Stored ${allItemRecords.length} items in bulk`);
+
+      // Batch update parent relationships for this killmail
+      if (updates.length > 0) {
+        await sql`
+          UPDATE items SET "parentItemId" = update_data."parentItemId"::bigint
+          FROM (VALUES ${sql(updates.map((u) => [u.id, u.parentItemId]))}) AS update_data(id, "parentItemId")
+          WHERE items.id = update_data.id::bigint
+        `;
+      }
+    }
+
+    if (totalItemsInserted > 0) {
+      logger.info(
+        `[Killmail] Stored ${totalItemsInserted} items in bulk with parent tracking`
+      );
     }
 
     // Update lastActive timestamps for all involved entities
@@ -785,6 +960,7 @@ export interface KillmailDetails {
 }
 
 export interface KillmailItem {
+  id: number;
   itemTypeId: number;
   name: string;
   quantityDropped: number;
@@ -792,6 +968,7 @@ export interface KillmailItem {
   flag: number;
   price: number;
   categoryId: number;
+  parentItemId: number | null;
 }
 
 export interface KillmailAttacker {
@@ -952,6 +1129,7 @@ export async function getKillmailItems(
 ): Promise<KillmailItem[]> {
   // First, get the killmail date and items
   const itemsWithTypes = await database.find<{
+    id: number;
     itemTypeId: number;
     name: string | null;
     quantityDropped: number;
@@ -960,8 +1138,10 @@ export async function getKillmailItems(
     singleton: number;
     killmailTime: string;
     categoryId: number;
+    parentItemId: number | null;
   }>(
     `SELECT
+      i.id,
       i."itemTypeId",
       t.name,
       i."quantityDropped",
@@ -969,13 +1149,15 @@ export async function getKillmailItems(
       i.flag,
       i.singleton,
       k."killmailTime",
-      COALESCE(g."categoryId", 0) as "categoryId"
+      COALESCE(g."categoryId", 0) as "categoryId",
+      i."parentItemId"
     FROM items i
     LEFT JOIN types t ON i."itemTypeId" = t."typeId"
     LEFT JOIN groups g ON t."groupId" = g."groupId"
     JOIN killmails k ON i."killmailId" = k."killmailId" AND i."killmailTime" = k."killmailTime"
     WHERE i."killmailId" = :killmailId
-      AND i."itemTypeId" IS NOT NULL`,
+      AND i."itemTypeId" IS NOT NULL
+    ORDER BY i.id`,
     { killmailId }
   );
 
@@ -1017,6 +1199,7 @@ export async function getKillmailItems(
     }
 
     return {
+      id: Number(item.id),
       itemTypeId: item.itemTypeId,
       name: item.name ?? 'Unknown',
       quantityDropped: item.quantityDropped,
@@ -1025,6 +1208,7 @@ export async function getKillmailItems(
       singleton: item.singleton,
       price,
       categoryId: item.categoryId,
+      parentItemId: item.parentItemId ? Number(item.parentItemId) : null,
     };
   });
 }

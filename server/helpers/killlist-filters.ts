@@ -133,6 +133,7 @@ export function parseKilllistFilters(query: Record<string, any>): {
     supercarrier: [659], // Supercarriers
     titan: [30], // Titans
     freighter: [513, 902], // Freighters and Jump Freighters
+    industrial: [28, 380, 513, 902, 941, 883, 463, 543], // Industrial Ships, Haulers, Transports, Mining Barges, Exhumers, Industrial Command Ships, Capital Industrials
     structure: [1657, 1406, 1404, 1408, 2017, 2016], // Structures/Citadels
   };
 

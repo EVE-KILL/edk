@@ -44,3 +44,14 @@ CREATE TABLE IF NOT EXISTS dogmaEffects (
     "softPenetrationAttributeId" INTEGER,
     "trackingSpeedAttributeId" INTEGER
 );
+
+-- Type Dogma table (attributes per type)
+CREATE TABLE IF NOT EXISTS typeDogma (
+    "typeId" INTEGER NOT NULL,
+    "attributeId" INTEGER NOT NULL,
+    value DOUBLE PRECISION NOT NULL,
+    PRIMARY KEY ("typeId", "attributeId")
+);
+
+CREATE INDEX IF NOT EXISTS idx_typedogma_typeid ON typeDogma("typeId");
+CREATE INDEX IF NOT EXISTS idx_typedogma_attributeid ON typeDogma("attributeId");
