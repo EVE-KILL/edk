@@ -22,7 +22,7 @@
     celestialCounts=data.celestialCounts
 }}
 
-<!-- Celestial Objects Section - Compact Side by Side -->
+<!-- Celestial Objects Section -->
 <div style="margin-bottom: 20px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); overflow: hidden;">
     <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
         <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -34,22 +34,22 @@
         <!-- Planets & Moons -->
         {{#if data.celestials}}
         <div style="padding: 12px; border-right: 1px solid var(--color-border-dark);">
-            <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; color: var(--color-text-secondary); margin-bottom: 10px;">
+            <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; color: var(--color-text-secondary); margin-bottom: 8px;">
                 Planets & Moons
             </div>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px;">
                 {{#each data.celestials}}
-                <div style="padding: 6px 8px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-xs); display: flex; align-items: center; gap: 8px;">
+                <div style="padding: 4px 6px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-xs); display: flex; align-items: center; gap: 6px;">
                     <img src="https://images.evetech.net/types/{{this.typeId}}/icon?size=32"
                          alt="{{this.name}}"
-                         style="width: 24px; height: 24px; border-radius: 3px; flex-shrink: 0;"
+                         style="width: 20px; height: 20px; border-radius: 3px; flex-shrink: 0;"
                          loading="lazy" />
                     <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; font-size: 10px; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <div style="font-weight: 600; font-size: 9px; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             {{this.name}}
                         </div>
-                        <div style="color: var(--color-text-secondary); font-size: 8px;">
-                            {{this.typeName}}{{#if this.moonCount}} · {{this.moonCount}} moon{{#if (gt this.moonCount 1)}}s{{/if}}{{/if}}
+                        <div style="color: var(--color-text-secondary); font-size: 7px;">
+                            {{this.typeName}}{{#if this.moonCount}} · {{this.moonCount}}m{{/if}}
                         </div>
                     </div>
                 </div>
@@ -61,24 +61,23 @@
         <!-- Stargates -->
         {{#if data.stargates}}
         <div style="padding: 12px;">
-            <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; color: var(--color-text-secondary); margin-bottom: 10px;">
+            <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; color: var(--color-text-secondary); margin-bottom: 8px;">
                 Stargates
             </div>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px;">
                 {{#each data.stargates}}
-                <div style="padding: 6px 8px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-xs); display: flex; align-items: center; gap: 6px;">
-                    <div style="color: var(--color-text-secondary); font-size: 14px; flex-shrink: 0;">→</div>
+                <div style="padding: 4px 6px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-xs); display: flex; align-items: center; gap: 4px;">
                     <div style="flex: 1; min-width: 0;">
                         {{#if this.destinationSystem}}
                         <a href="/system/{{this.destinationSystem.solarSystemId}}"
-                           style="color: var(--color-accent-blue-bright); text-decoration: none; font-size: 10px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                           style="color: var(--color-accent-blue-bright); text-decoration: none; font-size: 9px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             {{this.destinationSystem.name}}
                         </a>
-                        <div style="color: var(--color-text-secondary); font-size: 8px;">
+                        <div style="color: var(--color-text-secondary); font-size: 7px;">
                             Sec: {{formatNumber this.destinationSystem.securityStatus decimals=2}}
                         </div>
                         {{else}}
-                        <div style="color: var(--color-text-tertiary); font-size: 9px; font-style: italic;">
+                        <div style="color: var(--color-text-tertiary); font-size: 7px; font-style: italic;">
                             Unknown
                         </div>
                         {{/if}}
