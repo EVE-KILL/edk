@@ -64,9 +64,9 @@ Database connection URL from CloudNativePG secret
 */}}
 {{- define "edk.databaseURL" -}}
 {{- if .Values.database.pooler.enabled }}
-{{- printf "postgresql://$(PGUSER):$(PGPASSWORD)@%s-pooler:5432/$(PGDATABASE)?sslmode=require" (include "edk.fullname" .) }}
+{{- printf "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@%s-pooler:5432/$(POSTGRES_DB)?sslmode=require" (include "edk.fullname" .) }}
 {{- else }}
-{{- printf "postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)?sslmode=require" }}
+{{- printf "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=require" }}
 {{- end }}
 {{- end }}
 
@@ -74,48 +74,116 @@ Database connection URL from CloudNativePG secret
 Common environment variables
 */}}
 {{- define "edk.commonEnv" -}}
+# Application
 - name: NODE_ENV
   value: {{ .Values.global.env.NODE_ENV | quote }}
-- name: EDK_CONTAINER
-  value: {{ .Values.global.env.EDK_CONTAINER | quote }}
+- name: THEME
+  value: {{ .Values.global.env.THEME | quote }}
+# EVE Online
+- name: IMAGE_SERVER_URL
+  value: {{ .Values.global.env.IMAGE_SERVER_URL | quote }}
+- name: ESI_SERVER_URL
+  value: {{ .Values.global.env.ESI_SERVER_URL | quote }}
+# Redis
 - name: REDIS_HOST
   value: {{ .Values.global.env.REDIS_HOST | quote }}
 - name: REDIS_PORT
   value: {{ .Values.global.env.REDIS_PORT | quote }}
-# Database credentials from CloudNativePG
-- name: PGHOST
+# WebSocket
+- name: WS_PORT
+  value: {{ .Values.global.env.WS_PORT | quote }}
+- name: WS_HOST
+  value: {{ .Values.global.env.WS_HOST | quote }}
+- name: WS_PING_INTERVAL
+  value: {{ .Values.global.env.WS_PING_INTERVAL | quote }}
+- name: WS_PING_TIMEOUT
+  value: {{ .Values.global.env.WS_PING_TIMEOUT | quote }}
+- name: WS_CLEANUP_INTERVAL
+  value: {{ .Values.global.env.WS_CLEANUP_INTERVAL | quote }}
+# Followed entities
+- name: FOLLOWED_CHARACTER_IDS
+  value: {{ .Values.global.env.FOLLOWED_CHARACTER_IDS | quote }}
+- name: FOLLOWED_CORPORATION_IDS
+  value: {{ .Values.global.env.FOLLOWED_CORPORATION_IDS | quote }}
+- name: FOLLOWED_ALLIANCE_IDS
+  value: {{ .Values.global.env.FOLLOWED_ALLIANCE_IDS | quote }}
+# Database credentials from CloudNativePG secret
+- name: POSTGRES_HOST
   valueFrom:
     secretKeyRef:
       name: {{ .Values.database.secretName }}
       key: host
-- name: PGPORT
+- name: POSTGRES_PORT
   valueFrom:
     secretKeyRef:
       name: {{ .Values.database.secretName }}
       key: port
-- name: PGDATABASE
+- name: POSTGRES_DB
   valueFrom:
     secretKeyRef:
       name: {{ .Values.database.secretName }}
       key: dbname
-- name: PGUSER
+- name: POSTGRES_USER
   valueFrom:
     secretKeyRef:
       name: {{ .Values.database.secretName }}
       key: username
-- name: PGPASSWORD
+- name: POSTGRES_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ .Values.database.secretName }}
       key: password
 - name: DATABASE_URL
   value: {{ include "edk.databaseURL" . | quote }}
-# Redis password (if configured)
+# Secrets from edk-secrets (if they exist)
 {{- if .Values.global.env.sensitive.REDIS_PASSWORD }}
 - name: REDIS_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ include "edk.fullname" . }}-secrets
       key: redis-password
+      optional: true
+{{- end }}
+{{- if .Values.global.env.sensitive.EVE_CLIENT_ID }}
+- name: EVE_CLIENT_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "edk.fullname" . }}-secrets
+      key: eve-client-id
+      optional: true
+- name: EVE_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "edk.fullname" . }}-secrets
+      key: eve-client-secret
+      optional: true
+- name: EVE_CLIENT_REDIRECT
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "edk.fullname" . }}-secrets
+      key: eve-client-redirect
+      optional: true
+{{- end }}
+{{- if .Values.global.env.sensitive.REDISQ_ID }}
+- name: REDISQ_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "edk.fullname" . }}-secrets
+      key: redisq-id
+      optional: true
+{{- end }}
+{{- if .Values.global.env.sensitive.OPENAI_API_KEY }}
+- name: OPENAI_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "edk.fullname" . }}-secrets
+      key: openai-api-key
+      optional: true
+- name: AI_MODEL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "edk.fullname" . }}-secrets
+      key: ai-model
+      optional: true
 {{- end }}
 {{- end }}

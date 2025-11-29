@@ -9,14 +9,53 @@ global:
   # Environment variables shared across all services
   env:
     NODE_ENV: production
-    EDK_CONTAINER: "true"
+    THEME: default
+
+    # EVE Online
+    IMAGE_SERVER_URL: https://images.evetech.net
+    ESI_SERVER_URL: https://esi.evetech.net
+
+    # Redis
     REDIS_HOST: redis
     REDIS_PORT: "6379"
 
-    # Sensitive values (should be overridden or use secrets)
+    # WebSocket
+    WS_PORT: "3002"
+    WS_HOST: "0.0.0.0"
+    WS_PING_INTERVAL: "30000"
+    WS_PING_TIMEOUT: "10000"
+    WS_CLEANUP_INTERVAL: "60000"
+
+    # Followed entities (comma-separated IDs)
+    FOLLOWED_CHARACTER_IDS: ""
+    FOLLOWED_CORPORATION_IDS: ""
+    FOLLOWED_ALLIANCE_IDS: ""
+
+    # Sensitive values (should be overridden with secrets)
     sensitive:
-      DATABASE_URL: "" # Will be set from CloudNativePG secret
+      # Database
+      DATABASE_URL: "" # Constructed from secret
+      POSTGRES_PASSWORD: ""
+
+      # Redis
       REDIS_PASSWORD: ""
+      REDIS_URL: ""
+
+      # EVE OAuth
+      EVE_CLIENT_ID: ""
+      EVE_CLIENT_SECRET: ""
+      EVE_CLIENT_REDIRECT: ""
+      EVE_CLIENT_ID_DEV: ""
+      EVE_CLIENT_SECRET_DEV: ""
+      EVE_CLIENT_REDIRECT_DEV: ""
+
+      # RedisQ
+      REDISQ_ID: ""
+
+      # AI (optional)
+      OPENAI_API_KEY: ""
+      AI_MODEL: ""
+      TAVILY_API_KEY: ""
 
 # Frontend web application
 web:
@@ -171,7 +210,7 @@ redis:
     repository: redis
     tag: "7-alpine"
     pullPolicy: IfNotPresent
-  
+
   resources:
     requests:
       cpu: 100m
@@ -179,9 +218,9 @@ redis:
     limits:
       cpu: 500m
       memory: 512Mi
-  
+
   persistence:
-    enabled: false  # Ephemeral, no persistence needed
+    enabled: false # Ephemeral, no persistence needed
 
 # Ingress configuration (using Nginx Ingress)
 ingress:
@@ -295,16 +334,16 @@ podAnnotations: {}
 # Pod security context
 podSecurityContext:
   fsGroup: 1000
-  runAsNonRoot: false  # Allow running as root for now (app writes to /app/.data)
+  runAsNonRoot: false # Allow running as root for now (app writes to /app/.data)
   # runAsUser: 1000
 
-# Security context for containers
+  # Security context for containers
 securityContext:
   allowPrivilegeEscalation: false
   capabilities:
     drop:
-      - ALL
-  readOnlyRootFilesystem: false  # Nitro needs to write to .output/cache and .data/
+    - ALL
+  readOnlyRootFilesystem: false # Nitro needs to write to .output/cache and .data/
 
 # Node selector
 nodeSelector: {}
