@@ -292,3 +292,7 @@ curl -X POST localhost:3000/api/ai/price-fitting \
 - `server/helpers/eft-parser.ts` - Parses EFT format
 - `server/helpers/fitting-pricer.ts` - Calculates values from `prices` table
 - `server/routes/api/ai/price-fitting.post.ts` - API endpoint
+
+# Important things to keep in mind
+
+1. Do not start the dev server, ever - assume that it is running. If not, ask for it

@@ -19,12 +19,12 @@ export const mapStargatesConfig: TableConfig = {
     { source: 'position.z', target: 'positionZ', type: 'number' },
     { source: 'solarSystemID', target: 'solarSystemId', type: 'number' },
     {
-      source: 'destination.stargateId',
+      source: 'destination.stargateID',
       target: 'destinationGateId',
       type: 'number',
     },
     {
-      source: 'destination.solarSystemId',
+      source: 'destination.solarSystemID',
       target: 'destinationSolarSystemId',
       type: 'number',
     },

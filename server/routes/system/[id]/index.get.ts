@@ -6,9 +6,14 @@ import { render, normalizeKillRow } from '../../../helpers/templates';
 import { getSolarSystem } from '../../../models/solarSystems';
 import { getRegion } from '../../../models/regions';
 import { getConstellation } from '../../../models/constellations';
+import { getPlanetsBySystem } from '../../../models/planets';
+import { getMoonsBySystem } from '../../../models/moons';
+import { getStargatesBySystem } from '../../../models/stargates';
+import { getStarBySystem } from '../../../models/stars';
+import { getAsteroidBeltsBySystem } from '../../../models/asteroidBelts';
 import {
   getFilteredKillsWithNames,
-  estimateFilteredKills, estimateFilteredKills,
+  estimateFilteredKills,
 } from '../../../models/killlist';
 import {
   parseKilllistFilters,
@@ -44,10 +49,23 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
-    // Fetch region and constellation info
-    const [region, constellation] = await Promise.all([
+    // Fetch celestial data
+    const [
+      region,
+      constellation,
+      planets,
+      moons,
+      stargates,
+      star,
+      asteroidBelts,
+    ] = await Promise.all([
       getRegion(system.regionId),
       getConstellation(system.constellationId),
+      getPlanetsBySystem(solarSystemId),
+      getMoonsBySystem(solarSystemId),
+      getStargatesBySystem(solarSystemId),
+      getStarBySystem(solarSystemId),
+      getAsteroidBeltsBySystem(solarSystemId),
     ]);
 
     // Get pagination parameters
@@ -88,17 +106,6 @@ export default defineEventHandler(async (event: H3Event) => {
     // Normalize killmail data
     const killmails = killmailsData.map(normalizeKillRow);
 
-    // Simple stats from killmail count
-    const stats = {
-      kills: totalKillmails,
-      losses: 0,
-      iskDestroyed: 0,
-      iskLost: 0,
-      efficiency: 0,
-      iskEfficiency: 0,
-      killLossRatio: 0,
-    };
-
     // Format most valuable kills
     const mostValuableKills = mostValuable.map((km) => ({
       ...normalizeKillRow(km),
@@ -127,15 +134,115 @@ export default defineEventHandler(async (event: H3Event) => {
       link: `/alliance/${a.id}`,
     }));
 
+    // Get planet type names
+    const planetTypeIds = [...new Set(planets.map((p) => p.typeId))];
+    const planetTypesData = await database.find<{
+      typeId: number;
+      name: string;
+    }>(`SELECT "typeId", "name" FROM types WHERE "typeId" = ANY(:typeIds)`, {
+      typeIds: planetTypeIds,
+    });
+    const planetTypeMap = new Map(
+      planetTypesData.map((t) => [t.typeId, t.name])
+    );
+
+    // Organize moons by planet (even though planetId might be null)
+    const moonsByPlanet = new Map<number, typeof moons>();
+    for (const moon of moons) {
+      if (moon.planetId) {
+        if (!moonsByPlanet.has(moon.planetId)) {
+          moonsByPlanet.set(moon.planetId, []);
+        }
+        moonsByPlanet.get(moon.planetId)!.push(moon);
+      }
+    }
+
+    // Build celestial hierarchy for display
+    const celestials = planets
+      .sort((a, b) => (a.celestialIndex || 0) - (b.celestialIndex || 0))
+      .map((planet) => ({
+        planetId: planet.planetId,
+        name: planet.name || `Planet ${planet.celestialIndex}`,
+        typeId: planet.typeId,
+        typeName: planetTypeMap.get(planet.typeId) || 'Unknown',
+        celestialIndex: planet.celestialIndex,
+        moonCount: moonsByPlanet.get(planet.planetId)?.length || 0,
+      }));
+
+    // Get stargate destinations
+    const stargateConnections = await Promise.all(
+      stargates.map(async (stargate) => {
+        const destinationSystem = stargate.destinationSolarSystemId
+          ? await getSolarSystem(stargate.destinationSolarSystemId)
+          : null;
+
+        return {
+          stargateId: stargate.stargateId,
+          name: stargate.name || 'Stargate',
+          destinationSystem: destinationSystem
+            ? {
+                solarSystemId: destinationSystem.solarSystemId,
+                name: destinationSystem.name,
+                securityStatus: destinationSystem.securityStatus,
+              }
+            : null,
+        };
+      })
+    );
+
+    // Build system properties for page header pills
+    const systemProperties = [];
+    if (system.hub)
+      systemProperties.push({
+        type: 'pill',
+        text: 'Hub',
+        class: 'page-header__pill--info',
+      });
+    if (system.border)
+      systemProperties.push({
+        type: 'pill',
+        text: 'Border',
+        class: 'page-header__pill--warning',
+      });
+    if (system.regional)
+      systemProperties.push({
+        type: 'pill',
+        text: 'Regional',
+        class: 'page-header__pill--success',
+      });
+    if (system.corridor)
+      systemProperties.push({
+        type: 'pill',
+        text: 'Corridor',
+        class: 'page-header__pill--secondary',
+      });
+    if (system.fringe)
+      systemProperties.push({
+        type: 'pill',
+        text: 'Fringe',
+        class: 'page-header__pill--secondary',
+      });
+
     const data = {
-      entityId: solarSystemId,
-      entityType: 'system',
+      solarSystemId,
+      imageUrl: `https://images.evetech.net/types/${star?.typeId || 3802}/render?size=256`,
       name: system.name,
-      type: 'system',
-      stats,
+      kills: totalKillmails,
       system,
       region,
       constellation,
+      systemProperties,
+      // Celestial data
+      star,
+      celestials,
+      stargates: stargateConnections,
+      asteroidBelts,
+      celestialCounts: {
+        planets: planets.length,
+        moons: moons.length,
+        stargates: stargates.length,
+        asteroidBelts: asteroidBelts.length,
+      },
       recentKillmails: killmails,
       mostValuableKills,
       top10Stats: {

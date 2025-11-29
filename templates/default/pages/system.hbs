@@ -7,39 +7,89 @@
         (obj label=data.constellation.name url=(concat "/constellation/" data.constellation.constellationId))
         (obj label=data.system.name url=(concat "/system/" data.system.solarSystemId))
     )
+    meta=data.systemProperties
 }}
 
-<!-- System Stats Header -->
-{{> partials/entity-stats}}
+<!-- System Stats Header with Integrated Info -->
+{{> components/system-stats
+    solarSystemId=data.solarSystemId
+    name=data.name
+    imageUrl=data.imageUrl
+    kills=data.kills
+    system=data.system
+    region=data.region
+    constellation=data.constellation
+    celestialCounts=data.celestialCounts
+}}
 
-<!-- System Info -->
-{{#if data.system}}
-<div style="margin-bottom: 20px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 16px;">
-    <div style="display: grid; grid-template-columns: auto 1fr; gap: 12px 24px; max-width: 800px;">
-        {{#if data.region}}
-        <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Region:</span>
-        <span><a href="/region/{{data.region.regionId}}" style="color: var(--color-accent-blue-bright); text-decoration: none;">{{data.region.name}}</a></span>
+<!-- Celestial Objects Section - Compact Side by Side -->
+<div style="margin-bottom: 20px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); overflow: hidden;">
+    <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+        <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Celestial Objects
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0;">
+        <!-- Planets & Moons -->
+        {{#if data.celestials}}
+        <div style="padding: 12px; border-right: 1px solid var(--color-border-dark);">
+            <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; color: var(--color-text-secondary); margin-bottom: 10px;">
+                Planets & Moons
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                {{#each data.celestials}}
+                <div style="padding: 6px 8px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-xs); display: flex; align-items: center; gap: 8px;">
+                    <img src="https://images.evetech.net/types/{{this.typeId}}/icon?size=32"
+                         alt="{{this.name}}"
+                         style="width: 24px; height: 24px; border-radius: 3px; flex-shrink: 0;"
+                         loading="lazy" />
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; font-size: 10px; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{this.name}}
+                        </div>
+                        <div style="color: var(--color-text-secondary); font-size: 8px;">
+                            {{this.typeName}}{{#if this.moonCount}} · {{this.moonCount}} moon{{#if (gt this.moonCount 1)}}s{{/if}}{{/if}}
+                        </div>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
         {{/if}}
 
-        {{#if data.constellation}}
-        <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Constellation:</span>
-        <span><a href="/constellation/{{data.constellation.constellationId}}" style="color: var(--color-accent-blue-bright); text-decoration: none;">{{data.constellation.name}}</a></span>
-        {{/if}}
-
-        {{#if data.system.securityStatus}}
-        <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Security:</span>
-        <span>{{formatNumber data.system.securityStatus}}</span>
-        {{/if}}
-
-        {{#if data.system.securityClass}}
-        <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Class:</span>
-        <span>{{data.system.securityClass}}</span>
+        <!-- Stargates -->
+        {{#if data.stargates}}
+        <div style="padding: 12px;">
+            <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; color: var(--color-text-secondary); margin-bottom: 10px;">
+                Stargates
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                {{#each data.stargates}}
+                <div style="padding: 6px 8px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-xs); display: flex; align-items: center; gap: 6px;">
+                    <div style="color: var(--color-text-secondary); font-size: 14px; flex-shrink: 0;">→</div>
+                    <div style="flex: 1; min-width: 0;">
+                        {{#if this.destinationSystem}}
+                        <a href="/system/{{this.destinationSystem.solarSystemId}}"
+                           style="color: var(--color-accent-blue-bright); text-decoration: none; font-size: 10px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{this.destinationSystem.name}}
+                        </a>
+                        <div style="color: var(--color-text-secondary); font-size: 8px;">
+                            Sec: {{formatNumber this.destinationSystem.securityStatus decimals=2}}
+                        </div>
+                        {{else}}
+                        <div style="color: var(--color-text-tertiary); font-size: 9px; font-style: italic;">
+                            Unknown
+                        </div>
+                        {{/if}}
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
         {{/if}}
     </div>
-</div>
-{{/if}}
-
-<!-- Most Valuable Kills -->
+</div><!-- Most Valuable Kills -->
 {{#if data.mostValuableKills}}
 {{> partials/mostvaluable mostValuableKills=data.mostValuableKills timeRange="Last 7 Days"}}
 {{/if}}
@@ -49,19 +99,17 @@
   <!-- Top 10 Sidebar -->
   <aside style="min-width: 0; overflow: hidden;">
     {{#if data.top10Stats}}
-      {{> components/top-10-stats stats=data.top10Stats timeRange="Last 7 Days"}}
+      {{> components/top-10-stats stats=data.top10Stats characterTitle="Top Characters" corporationTitle="Top Corporations" allianceTitle="Top Alliances" timeRange="Last 7 Days"}}
     {{/if}}
   </aside>
 
   <!-- Recent Killmails -->
   <section style="min-width: 0; overflow: hidden;">
+      <!-- Filters Above Killmail List -->
+      {{#if data.filterDefaults}}
+        {{> partials/killlist-filters baseUrl=data.baseUrl filterDefaults=data.filterDefaults pagination=data.pagination filterQueryString=data.filterQueryString}}
+      {{/if}}
+
       {{> partials/killmail-list killmails=data.recentKillmails wsFilter=data.wsFilter}}
   </section>
 </div>
-
-<!-- Pagination -->
-{{#if data.pagination}}
-    {{#if data.filterDefaults}}
-      {{> partials/killlist-filters baseUrl=data.baseUrl filterDefaults=data.filterDefaults pagination=data.pagination filterQueryString=data.filterQueryString}}
-    {{/if}}
-{{/if}}

@@ -24,7 +24,7 @@ export async function getAsteroidBelt(
   asteroidBeltId: number
 ): Promise<AsteroidBelt | null> {
   return database.findOne<AsteroidBelt>(
-    'SELECT * FROM "asteroidBelts" WHERE "asteroidBeltId" = :asteroidBeltId',
+    'SELECT * FROM asteroidbelts WHERE "asteroidBeltId" = :asteroidBeltId',
     { asteroidBeltId }
   );
 }
@@ -36,7 +36,7 @@ export async function getAsteroidBeltsBySystem(
   solarSystemId: number
 ): Promise<AsteroidBelt[]> {
   return database.find<AsteroidBelt>(
-    'SELECT * FROM "asteroidBelts" WHERE "solarSystemId" = :solarSystemId ORDER BY "celestialIndex"',
+    'SELECT * FROM asteroidbelts WHERE "solarSystemId" = :solarSystemId ORDER BY "celestialIndex"',
     { solarSystemId }
   );
 }
@@ -49,7 +49,7 @@ export async function searchAsteroidBelts(
   limit: number = 10
 ): Promise<AsteroidBelt[]> {
   return database.find<AsteroidBelt>(
-    `SELECT * FROM "asteroidBelts"
+    `SELECT * FROM asteroidbelts
      WHERE "name" ILIKE :pattern
      ORDER BY "name"
      LIMIT :limit`,

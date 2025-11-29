@@ -1,0 +1,307 @@
+{{!--
+  System Stats Header Component
+  Custom header for solar system pages showing image, kill count, and system info
+
+  Usage:
+  {{> components/system-stats
+      solarSystemId=solarSystemId
+      name=name
+      imageUrl=imageUrl
+      kills=kills
+      system=system
+      region=region
+      constellation=constellation
+      celestialCounts=celestialCounts
+  }}
+
+  Props:
+  - solarSystemId: number (system ID)
+  - name: string (system name)
+  - imageUrl: string (star type render URL)
+  - kills: number (total kills in system)
+  - system: object (system data with securityStatus, securityClass, etc.)
+  - region: object (region data with regionId, name)
+  - constellation: object (constellation data with constellationId, name)
+  - celestialCounts: object (planets, moons, stargates, asteroidBelts counts)
+--}}
+<div class="system-hero">
+  <div class="system-hero__container">
+    <div class="system-hero__content">
+      <!-- Star Image -->
+      <div class="system-hero__image-section">
+        <div class="system-hero__image-wrapper">
+          <img src="{{imageUrl}}" alt="{{name}}" class="system-hero__image" />
+        </div>
+      </div>
+
+      <!-- System Info Grid -->
+      <div class="system-hero__info">
+        <!-- Kill Stats (prominent) -->
+        <div class="system-hero__stat-card system-hero__stat-card--prominent">
+          <div class="system-hero__stat-header">Statistics</div>
+          <div class="system-hero__stat-content">
+            <div class="system-hero__stat-row">
+              <span class="system-hero__stat-label">Kills:</span>
+              <span class="system-hero__stat-value color-green">{{formatNumber kills}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="system-hero__stat-card">
+          <div class="system-hero__stat-header">Location</div>
+          <div class="system-hero__stat-content">
+            <div class="system-hero__stat-row">
+              <span class="system-hero__stat-label">Region:</span>
+              <span class="system-hero__stat-value">
+                <a href="/region/{{region.regionId}}" class="system-hero__link">{{region.name}}</a>
+              </span>
+            </div>
+            <div class="system-hero__stat-row">
+              <span class="system-hero__stat-label">Constellation:</span>
+              <span class="system-hero__stat-value">
+                <a href="/constellation/{{constellation.constellationId}}" class="system-hero__link">{{constellation.name}}</a>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security -->
+        <div class="system-hero__stat-card">
+          <div class="system-hero__stat-header">Security</div>
+          <div class="system-hero__stat-content">
+            <div class="system-hero__stat-row">
+              <span class="system-hero__stat-label">Status:</span>
+              <span class="system-hero__stat-value">{{formatNumber system.securityStatus decimals=3}}</span>
+            </div>
+            <div class="system-hero__stat-row">
+              <span class="system-hero__stat-label">Class:</span>
+              <span class="system-hero__stat-value">{{system.securityClass}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Celestials (two columns) -->
+        <div class="system-hero__stat-card">
+          <div class="system-hero__stat-header">Celestials</div>
+          <div class="system-hero__stat-content system-hero__stat-content--grid">
+            <div class="system-hero__stat-row">
+              <span class="system-hero__stat-label">Planets:</span>
+              <span class="system-hero__stat-value">{{celestialCounts.planets}}</span>
+            </div>
+            <div class="system-hero__stat-row">
+              <span class="system-hero__stat-label">Stargates:</span>
+              <span class="system-hero__stat-value">{{celestialCounts.stargates}}</span>
+            </div>
+            <div class="system-hero__stat-row">
+              <span class="system-hero__stat-label">Moons:</span>
+              <span class="system-hero__stat-value">{{celestialCounts.moons}}</span>
+            </div>
+            <div class="system-hero__stat-row">
+              <span class="system-hero__stat-label">Belts:</span>
+              <span class="system-hero__stat-value">{{celestialCounts.asteroidBelts}}</span>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.system-hero {
+  margin-bottom: var(--spacing-lg);
+  width: 100%;
+}
+
+.system-hero__container {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: 100%;
+}
+
+.system-hero__content {
+  display: flex;
+  gap: 16px;
+  align-items: start;
+  padding: 16px;
+}
+
+.system-hero__image-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.system-hero__image-wrapper {
+  width: 256px;
+  height: 256px;
+}
+
+.system-hero__image {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+.system-hero__info {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.system-hero__stat-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.system-hero__stat-card--prominent {
+  grid-column: 1 / -1;
+}
+
+.system-hero__stat-header {
+  background: transparent;
+  padding: 10px 12px;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.system-hero__stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+}
+
+.system-hero__stat-content--badges {
+  padding: 12px;
+  flex-wrap: wrap;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.system-hero__stat-content--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.system-hero__stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--color-border-dark);
+  transition: background-color 0.2s ease;
+  gap: 12px;
+}
+
+.system-hero__stat-row:last-child {
+  border-bottom: none;
+}
+
+.system-hero__stat-row:hover {
+  background: rgba(74, 158, 255, 0.15);
+}
+
+.system-hero__stat-label {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.system-hero__stat-value {
+  font-weight: 600;
+  font-size: 11px;
+  text-align: right;
+}
+
+.system-hero__link {
+  color: var(--color-accent-blue-bright);
+  text-decoration: none;
+  transition: color var(--transition-normal);
+}
+
+.system-hero__link:hover {
+  color: var(--color-accent-gold);
+  text-decoration: underline;
+}
+
+.system-hero__badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.system-hero__badge--info {
+  background: rgba(74, 158, 255, 0.2);
+  color: #4a9eff;
+  border: 1px solid rgba(74, 158, 255, 0.3);
+}
+
+.system-hero__badge--warning {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.system-hero__badge--success {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.system-hero__badge--secondary {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.color-green {
+  color: #4ade80;
+}
+
+@media (max-width: 768px) {
+  .system-hero__content {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .system-hero__image-section {
+    margin: 0 auto;
+  }
+
+  .system-hero__info {
+    grid-template-columns: 1fr;
+  }
+
+  .system-hero__stat-card--prominent {
+    grid-column: 1;
+  }
+}
+</style>
