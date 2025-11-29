@@ -1,42 +1,17 @@
 # Dockerfile for EVE-KILL EDK
-# Multi-stage build that preserves source for CLI/queue/cron/ws workers
+# Single-stage build that copies source 1:1 and builds Nitro in-place
 
-# Build stage
-FROM oven/bun:alpine AS builder
-WORKDIR /build
+FROM oven/bun:alpine
+WORKDIR /app
 
-# Copy package files
-COPY package.json bun.lock ./
+# Copy entire application 1:1
+COPY . .
 
 # Install dependencies
 RUN bun install --frozen-lockfile
 
-# Copy source files
-COPY . .
-
-# Build the Nitro application
+# Build the Nitro application (creates .output directory)
 RUN bun run build
-
-# Production stage
-FROM oven/bun:alpine
-WORKDIR /app
-
-# Copy package files and install production dependencies
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile --production --ignore-scripts
-
-# Copy built Nitro output from builder
-COPY --from=builder /build/.output /app/.output
-
-# Copy source files needed for CLI, queue, cron, and websocket workers
-COPY cli.ts cronjobs.ts queue.ts ws.ts ./
-COPY commands ./commands
-COPY cronjobs ./cronjobs
-COPY queue ./queue
-COPY ws ./ws
-COPY db ./db
-COPY server ./server
-COPY templates ./templates
 
 # Set environment variable to indicate container environment
 ENV NODE_ENV=production
@@ -47,4 +22,4 @@ EXPOSE 3000
 
 # Default command runs the Nitro server
 # Can be overridden for queue/cron/ws/cli workers
-CMD ["bun", "--bun", "run", ".output/server/index.mjs"]
+CMD ["bun", "--bun", ".output/server/index.mjs"]
