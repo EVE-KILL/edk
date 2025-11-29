@@ -2,26 +2,27 @@
  * Helper to categorize dogma attributes into logical groups
  */
 
-export interface DogmaAttribute {
-  attributeId: number;
+import type { DogmaAttribute as DogmaAttributeModel } from '../models/dogmaAttributes';
+
+export interface DogmaAttributeWithValue extends Pick<
+  DogmaAttributeModel,
+  'attributeId' | 'name' | 'displayName' | 'unitId'
+> {
   value: number;
-  name: string;
-  displayName: string;
-  unitId: number;
 }
 
 export interface CategorizedAttributes {
   categoryName: string;
-  attributes: DogmaAttribute[];
+  attributes: DogmaAttributeWithValue[];
 }
 
 /**
  * Categorize dogma attributes into logical groups for display
  */
 export function categorizeDogmaAttributes(
-  attributes: DogmaAttribute[]
+  attributes: DogmaAttributeWithValue[]
 ): CategorizedAttributes[] {
-  const categories = new Map<string, DogmaAttribute[]>();
+  const categories = new Map<string, DogmaAttributeWithValue[]>();
 
   // Define category mappings based on attribute names/display names
   const categoryMap: Record<string, string> = {
