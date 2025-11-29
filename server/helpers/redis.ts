@@ -17,7 +17,14 @@ export function createRedisClient() {
   if (env.REDIS_PASSWORD) {
     config.password = env.REDIS_PASSWORD;
   }
-  return new Redis(config);
+  const client = new Redis(config);
+
+  // Handle connection errors to prevent unhandled error events
+  client.on('error', (err) => {
+    logger.error('Redis connection error', { error: err.message });
+  });
+
+  return client;
 }
 
 let baseStorage: ReturnType<typeof createStorage> | null = null;

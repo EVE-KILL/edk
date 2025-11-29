@@ -15,6 +15,13 @@ function getRedisClient(): Redis {
       redisConfig.password = env.REDIS_PASSWORD;
     }
     redis = new Redis(redisConfig);
+
+    // Handle connection errors to prevent unhandled error events
+    redis.on('error', (err) => {
+      logger.error('Redis connection error in cache helper', {
+        error: err.message,
+      });
+    });
   }
   return redis;
 }
