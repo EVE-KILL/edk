@@ -49,6 +49,7 @@ export default defineEventHandler(async (event: H3Event) => {
         shortDescription: string | null;
         solarSystemId: number | null;
         solarSystemName: string | null;
+        regionId: number | null;
         regionName: string | null;
         corporationId: number | null;
         corporationName: string | null;
@@ -62,6 +63,7 @@ export default defineEventHandler(async (event: H3Event) => {
           f."shortDescription",
           f."solarSystemId",
           s.name as "solarSystemName",
+          s."regionId" as "regionId",
           r.name as "regionName",
           f."corporationId",
           corp.name as "corporationName",
@@ -196,59 +198,56 @@ export default defineEventHandler(async (event: H3Event) => {
     );
 
     // Format top boxes data
-    const {
-      topCharactersFormatted,
-      topCorporationsFormatted,
-      topAlliancesFormatted,
-      topSystemsFormatted,
-      topRegionsFormatted,
-      topShipsFormatted,
-    } = await track('faction:format_top_boxes', 'application', async () => {
-      return {
-        topCharactersFormatted: topCharacters.map((c) => ({
-          name: c.name,
-          kills: c.kills,
-          imageType: 'character',
-          imageId: c.id,
-          link: `/character/${c.id}`,
-        })),
-        topCorporationsFormatted: topCorporations.map((c) => ({
-          name: c.name,
-          kills: c.kills,
-          imageType: 'corporation',
-          imageId: c.id,
-          link: `/corporation/${c.id}`,
-        })),
-        topAlliancesFormatted: topAlliances.map((a) => ({
-          name: a.name,
-          kills: a.kills,
-          imageType: 'alliance',
-          imageId: a.id,
-          link: `/alliance/${a.id}`,
-        })),
-        topSystemsFormatted: topSystems.map((s) => ({
-          name: s.name,
-          kills: s.kills,
-          imageType: 'system',
-          imageId: s.id,
-          link: `/system/${s.id}`,
-        })),
-        topRegionsFormatted: topRegions.map((r) => ({
-          name: r.name,
-          kills: r.kills,
-          imageType: 'region',
-          imageId: r.id,
-          link: `/region/${r.id}`,
-        })),
-        topShipsFormatted: topShips.map((s) => ({
-          name: s.name,
-          kills: s.kills,
-          imageType: 'ship',
-          imageId: s.id,
-          link: `/item/${s.id}`,
-        })),
-      };
-    });
+    const top10Stats = await track(
+      'faction:format_top_boxes',
+      'application',
+      async () => {
+        return {
+          characters: topCharacters.map((c) => ({
+            name: c.name,
+            kills: c.kills,
+            imageType: 'character',
+            imageId: c.id,
+            link: `/character/${c.id}`,
+          })),
+          corporations: topCorporations.map((c) => ({
+            name: c.name,
+            kills: c.kills,
+            imageType: 'corporation',
+            imageId: c.id,
+            link: `/corporation/${c.id}`,
+          })),
+          alliances: topAlliances.map((a) => ({
+            name: a.name,
+            kills: a.kills,
+            imageType: 'alliance',
+            imageId: a.id,
+            link: `/alliance/${a.id}`,
+          })),
+          systems: topSystems.map((s) => ({
+            name: s.name,
+            kills: s.kills,
+            imageType: 'system',
+            imageId: s.id,
+            link: `/system/${s.id}`,
+          })),
+          regions: topRegions.map((r) => ({
+            name: r.name,
+            kills: r.kills,
+            imageType: 'region',
+            imageId: r.id,
+            link: `/region/${r.id}`,
+          })),
+          ships: topShips.map((s) => ({
+            name: s.name,
+            kills: s.kills,
+            imageType: 'ship',
+            imageId: s.id,
+            link: `/item/${s.id}`,
+          })),
+        };
+      }
+    );
 
     // Pagination
     const pagination = {
@@ -265,7 +264,6 @@ export default defineEventHandler(async (event: H3Event) => {
     };
 
     const baseUrl = `/faction/${factionId}`;
-    const eveTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     const description = faction.description
       ? `${faction.name} - ${faction.description.substring(0, 160)}...`
@@ -279,18 +277,34 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const structuredData = generateBreadcrumbStructuredData(breadcrumbs);
 
-    const pageHeaderLight = {
+    const pageHeader = {
       title: faction.name,
-      subtitle: faction.shortDescription || 'Faction Warfare',
       breadcrumbs,
-      info: [
-        { icon: '🕐', text: `EVE Time: ${eveTime}` },
-        { text: `Total: ${totalKillmails.toLocaleString()} losses` },
-      ],
     };
 
+    // Build faction properties for page header pills
+    const factionProperties: Array<{ label: string; value: string | number }> =
+      [];
+
+    if (faction.solarSystemName) {
+      factionProperties.push({
+        label: 'Home System',
+        value: faction.solarSystemName,
+      });
+    }
+
+    if (faction.corporationName) {
+      factionProperties.push({
+        label: 'Corporation',
+        value: faction.corporationName,
+      });
+    }
+
+    // Format faction logo URL
+    const imageUrl = `https://images.evetech.net/corporations/${factionId}/logo?size=256`;
+
     return await render(
-      'pages/kills',
+      'pages/faction',
       {
         title: `${faction.name} - Faction`,
         description,
@@ -301,17 +315,41 @@ export default defineEventHandler(async (event: H3Event) => {
         structuredData,
       },
       {
-        pageHeaderLight,
-        title: faction.name,
+        pageHeader,
+        factionProperties,
+        factionId,
+        name: faction.name,
+        imageUrl,
+        kills: totalKillmails,
+        faction: {
+          description: faction.description,
+          homeSystem: faction.solarSystemId
+            ? {
+                solarSystemId: faction.solarSystemId,
+                name: faction.solarSystemName,
+                regionName: faction.regionName,
+                regionId: faction.regionId,
+              }
+            : null,
+          corporation: faction.corporationId
+            ? {
+                corporationId: faction.corporationId,
+                name: faction.corporationName,
+              }
+            : null,
+          militiaCorporation: faction.militiaCorporationId
+            ? {
+                militiaCorporationId: faction.militiaCorporationId,
+                name: faction.militiaCorporationName,
+              }
+            : null,
+          sizeFactor: null, // Would need to fetch from factions table if needed
+          stationCount: null, // Would need to count from npcStations if needed
+        },
         baseUrl,
         recentKillmails,
         pagination,
-        topCharactersFormatted,
-        topCorporationsFormatted,
-        topAlliancesFormatted,
-        topSystemsFormatted,
-        topRegionsFormatted,
-        topShipsFormatted,
+        top10Stats,
         mostValuableKills,
         wsFilter: {
           type: 'faction',
@@ -320,27 +358,6 @@ export default defineEventHandler(async (event: H3Event) => {
         },
         topTimeRangeLabel: `Last ${TOP_BOX_LOOKBACK_DAYS} Days`,
         mostValuableTimeRange: `Last ${MOST_VALUABLE_LOOKBACK_DAYS} Days`,
-        topBoxesAvailable:
-          topCharacters.length +
-            topCorporations.length +
-            topAlliances.length +
-            topSystems.length +
-            topRegions.length +
-            topShips.length >
-          0,
-        // Faction-specific data
-        factionInfo: {
-          factionId: factionId,
-          description: faction.description,
-          solarSystemId: faction.solarSystemId,
-          solarSystemName: faction.solarSystemName,
-          regionName: faction.regionName,
-          corporationId: faction.corporationId,
-          corporationName: faction.corporationName,
-          militiaCorporationId: faction.militiaCorporationId,
-          militiaCorporationName: faction.militiaCorporationName,
-        },
-        activeWars,
       },
       event
     );
