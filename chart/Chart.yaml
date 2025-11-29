@@ -13,6 +13,6 @@ maintainers:
     email: admin@eve-kill.com
 dependencies:
   - name: redis
-    version: "20.5.2"
+    version: "24.0.0"
     repository: https://charts.bitnami.com/bitnami
     condition: redis.enabled

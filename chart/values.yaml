@@ -183,39 +183,96 @@ redis:
         cpu: 500m
         memory: 512Mi
 
-# Gateway API configuration (using Cilium)
-gateway:
+# Ingress configuration (using Nginx Ingress)
+ingress:
   enabled: true
-  gatewayClassName: cilium
+  className: nginx
   
-  # HTTPRoute configuration
-  httpRoute:
-    hostnames:
-      - eve-kill.com
-    
-    # TLS configuration via cert-manager
-    tls:
-      enabled: true
-      certificateRef:
-        name: edk-tls
-        kind: Secret
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
   
-  # Certificate via cert-manager
-  certificate:
-    enabled: true
-    issuerRef:
-      name: letsencrypt-prod
-      kind: ClusterIssuer
-    dnsNames:
-      - eve-kill.com
+  hosts:
+    - host: eve-kill.com
+      paths:
+        - path: /
+          pathType: Prefix
+  
+  tls:
+    - secretName: edk-tls
+      hosts:
+        - eve-kill.com
 
-# CloudNativePG Database Connection
+# CloudNativePG Database
 database:
-  # Reference to existing CloudNativePG cluster
-  clusterName: postgres  # Name of the Cluster resource in eve-kill namespace
+  # Create the PostgreSQL cluster as part of this chart
+  createCluster: true
   
-  # Secret name created by CloudNativePG operator (custom name configured in cluster)
+  # Cluster configuration
+  clusterName: postgres
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.2
+  instances: 3
+  
+  # Database and user
+  database: evekill
+  owner: evekill
+  
+  # Secret for credentials (will be created by chart)
   secretName: postgres-app-credentials
+  password: "changeme-evekill-password"  # CHANGE THIS IN PRODUCTION
+  
+  # PostgreSQL parameters (high-performance tuning)
+  parameters:
+    max_connections: "300"
+    shared_buffers: "8GB"
+    effective_cache_size: "24GB"
+    maintenance_work_mem: "2GB"
+    checkpoint_completion_target: "0.9"
+    wal_buffers: "16MB"
+    default_statistics_target: "100"
+    random_page_cost: "1.1"
+    effective_io_concurrency: "200"
+    max_locks_per_transaction: "1024"
+    default_toast_compression: "lz4"
+    work_mem: "27MB"
+    min_wal_size: "2GB"
+    max_wal_size: "8GB"
+  
+  # Storage configuration
+  storage:
+    storageClass: longhorn
+    size: 200Gi
+  
+  walStorage:
+    storageClass: longhorn
+    size: 20Gi
+  
+  # Resources
+  resources:
+    requests:
+      memory: "10Gi"
+      cpu: "2000m"
+    limits:
+      memory: "32Gi"
+      cpu: "14000m"
+  
+  # Monitoring
+  monitoring:
+    enablePodMonitor: true
+  
+  # High availability
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: "preferred"
+  
+  # Update strategy
+  primaryUpdateStrategy: unsupervised
+  
+  # Keel annotations for auto-updates
+  annotations:
+    keel.sh/policy: major
+    keel.sh/trigger: poll
   
   # Connection pooling via PgBouncer (CNPG Pooler)
   pooler:

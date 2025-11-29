@@ -4,6 +4,11 @@ This Helm chart deploys the EVE-KILL EDK application on Kubernetes with the foll
 
 ## Components
 
+- **PostgreSQL Cluster** (3 instances via CloudNativePG)
+  - High-availability with automatic failover
+  - PgBouncer connection pooling
+  - Persistent storage with Longhorn
+- **Redis** (via Bitnami chart dependency)
 - **Web Frontend** (3 replicas with HPA)
 - **Queue Workers** (separate pods per queue type):
   - Alliance queue (1 replica)
@@ -14,15 +19,16 @@ This Helm chart deploys the EVE-KILL EDK application on Kubernetes with the foll
   - Price queue (1 replica)
 - **Cronjobs** (1 replica)
 - **WebSocket Listener** (1 replica)
+- **Nginx Ingress** with cert-manager TLS
 
 ## Prerequisites
 
 - Kubernetes 1.25+
 - Helm 3.10+
-- Gateway API installed (Cilium Gateway API controller)
+- Nginx Ingress Controller installed
 - cert-manager installed
 - CloudNativePG operator installed
-- Existing PostgreSQL cluster named `postgres` in `eve-kill` namespace (via CloudNativePG)
+- Longhorn storage class (or adjust `database.storage.storageClass` in values)
 
 ## Installation
 
@@ -33,7 +39,14 @@ helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 ```
 
-### 2. Install the Chart
+### 2. Update Chart Dependencies
+
+```bash
+cd chart
+helm dependency update
+```
+
+### 3. Install the Chart
 
 ```bash
 helm install edk ./chart \
@@ -165,8 +178,14 @@ helm upgrade edk ./chart \
 
 ## Uninstalling
 
+**⚠️ WARNING:** Uninstalling will delete the PostgreSQL cluster and all data!
+
 ```bash
+# Uninstall the chart
 helm uninstall edk --namespace eve-kill
+
+# PVCs are retained by default - delete manually if needed
+kubectl delete pvc -n eve-kill -l cnpg.io/cluster=postgres
 ```
 
 ## Values

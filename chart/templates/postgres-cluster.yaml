@@ -1,0 +1,77 @@
+{{- if .Values.database.createCluster }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.database.secretName }}
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+type: kubernetes.io/basic-auth
+stringData:
+  username: {{ .Values.database.owner }}
+  password: {{ .Values.database.password | quote }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.database.clusterName }}
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+  {{- with .Values.database.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  instances: {{ .Values.database.instances }}
+  imageName: {{ .Values.database.imageName }}
+
+  primaryUpdateStrategy: {{ .Values.database.primaryUpdateStrategy }}
+
+  postgresql:
+    parameters:
+      {{- range $key, $value := .Values.database.parameters }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+
+  bootstrap:
+    initdb:
+      database: {{ .Values.database.database }}
+      owner: {{ .Values.database.owner }}
+      secret:
+        name: {{ .Values.database.secretName }}
+
+  storage:
+    storageClass: {{ .Values.database.storage.storageClass }}
+    size: {{ .Values.database.storage.size }}
+    pvcTemplate:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.database.storage.size }}
+      storageClassName: {{ .Values.database.storage.storageClass }}
+      volumeMode: Filesystem
+
+  walStorage:
+    storageClass: {{ .Values.database.walStorage.storageClass }}
+    size: {{ .Values.database.walStorage.size }}
+    pvcTemplate:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.database.walStorage.size }}
+      storageClassName: {{ .Values.database.walStorage.storageClass }}
+      volumeMode: Filesystem
+
+  monitoring:
+    enablePodMonitor: {{ .Values.database.monitoring.enablePodMonitor }}
+
+  resources:
+    {{- toYaml .Values.database.resources | nindent 4 }}
+
+  affinity:
+    enablePodAntiAffinity: {{ .Values.database.affinity.enablePodAntiAffinity }}
+    podAntiAffinityType: {{ .Values.database.affinity.podAntiAffinityType | quote }}
+    topologyKey: kubernetes.io/hostname
+{{- end }}

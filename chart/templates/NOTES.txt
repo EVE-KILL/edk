@@ -21,25 +21,35 @@
 
 {{- end }}
 
-{{- if .Values.gateway.enabled }}
+{{- if .Values.ingress.enabled }}
 
-🌐 Gateway API:
+🌐 Ingress (Nginx):
   Hostnames:
-{{- range .Values.gateway.httpRoute.hostnames }}
-    - {{ . }}
+{{- range .Values.ingress.hosts }}
+    - {{ .host }}
 {{- end }}
-  {{- if .Values.gateway.certificate.enabled }}
+  {{- if .Values.ingress.tls }}
   TLS: Enabled (cert-manager)
   {{- end }}
 
 {{- end }}
 
 📝 Database:
-  CloudNativePG Cluster: {{ .Values.database.clusterName }}
+  {{- if .Values.database.createCluster }}
+  CloudNativePG Cluster: {{ .Values.database.clusterName }} (created by chart)
+  {{- else }}
+  CloudNativePG Cluster: {{ .Values.database.clusterName }} (external)
+  {{- end }}
   Secret: {{ .Values.database.secretName }}
+  {{- if .Values.database.pooler.enabled }}
+  PgBouncer Pooler: Enabled ({{ .Values.database.pooler.instances }} instances)
+  {{- end }}
 
 🔍 To check the status:
   kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+  {{- if .Values.database.createCluster }}
+  kubectl get cluster -n {{ .Release.Namespace }} {{ .Values.database.clusterName }}
+  {{- end }}
 
 📊 To view logs:
   Web:       kubectl logs -l app.kubernetes.io/component=web -n {{ .Release.Namespace }}
@@ -48,8 +58,8 @@
   WebSocket: kubectl logs -l app.kubernetes.io/component=websocket -n {{ .Release.Namespace }}
 
 🚀 Application should be available at:
-{{- range .Values.gateway.httpRoute.hostnames }}
-  https://{{ . }}
+{{- range .Values.ingress.hosts }}
+  https://{{ .host }}
 {{- end }}
 
 💡 For more information, see the chart README.md
