@@ -1,12 +1,12 @@
-import { logger } from '../server/helpers/logger';
-import { database } from '../server/helpers/database';
-import { fetchESI } from '../server/helpers/esi';
+import { logger } from '../../server/helpers/logger';
+import { database } from '../../server/helpers/database';
+import { fetchESI } from '../../server/helpers/esi';
 import {
   enqueueJob,
   QueueType,
   getQueueStats,
   closeAllQueues,
-} from '../server/helpers/queue';
+} from '../../server/helpers/queue';
 
 interface CharacterAffiliation {
   characterId: number;
@@ -263,6 +263,8 @@ async function action() {
   }
 }
 
-export const description =
-  'Update character affiliations and queue entity updates';
-export { action };
+export default () => ({
+  description:
+    'Update character affiliations and queue entity updates for changed data',
+  action,
+});

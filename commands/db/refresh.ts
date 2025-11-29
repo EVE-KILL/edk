@@ -6,8 +6,8 @@ import { logger } from '../../server/helpers/logger';
  */
 async function getMaterializedViews(): Promise<string[]> {
   const result = await database.query<{ matviewname: string }>(
-    `SELECT matviewname 
-     FROM pg_matviews 
+    `SELECT matviewname
+     FROM pg_matviews
      WHERE schemaname = 'public'
      ORDER BY matviewname`
   );

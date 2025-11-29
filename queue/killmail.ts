@@ -211,11 +211,11 @@ async function publishKillmailToWebSocket(killmailId: number): Promise<void> {
         k.npc,
         k.solo,
         k.awox,
-        
+
         -- Entity names from JOINs
         sys.name as "solarSystemName",
         reg.name as "regionName",
-        
+
         vc.name as "victimCharacterName",
         vcorp.name as "victimCorporationName",
         vcorp.ticker as "victimCorporationTicker",
@@ -224,14 +224,14 @@ async function publishKillmailToWebSocket(killmailId: number): Promise<void> {
         vship.name as "victimShipName",
         vgroup.name as "victimShipGroup",
         vgroup."groupId" as "victimShipGroupId",
-        
+
         ac.name as "attackerCharacterName",
         acorp.name as "attackerCorporationName",
         acorp.ticker as "attackerCorporationTicker",
         aa.name as "attackerAllianceName",
         aa.ticker as "attackerAllianceTicker",
         aship.name as "attackerShipName"
-        
+
       FROM killmails k
       LEFT JOIN solarsystems sys ON k."solarSystemId" = sys."solarSystemId"
       LEFT JOIN regions reg ON k."regionId" = reg."regionId"

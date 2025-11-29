@@ -1,9 +1,6 @@
-import { logger } from '../server/helpers/logger';
-import { database } from '../server/helpers/database';
-import { calculateKillmailValues } from '../server/models/killmails';
-
-export const description =
-  'Recalculate all killmail values using correct region prices';
+import { logger } from '../../server/helpers/logger';
+import { database } from '../../server/helpers/database';
+import { calculateKillmailValues } from '../../server/models/killmails';
 
 interface KillmailBatch {
   killmailId: number;
@@ -38,7 +35,7 @@ async function recalculateValues() {
   while (processedCount < totalCount) {
     // Fetch a batch of killmails
     const batch = await database.sql<KillmailBatch[]>`
-      SELECT 
+      SELECT
         "killmailId",
         "killmailTime",
         "solarSystemId",
@@ -76,7 +73,7 @@ async function recalculateValues() {
 
         // Fetch items for this killmail
         const items = await database.sql`
-          SELECT 
+          SELECT
             "itemTypeId",
             "quantityDropped",
             "quantityDestroyed",
@@ -160,4 +157,8 @@ async function action() {
   }
 }
 
-export { action };
+export default () => ({
+  description:
+    'Recalculate killmail values using correct region prices (The Forge)',
+  action,
+});
