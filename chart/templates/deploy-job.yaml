@@ -1,0 +1,42 @@
+{{- if .Values.deployJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "edk.fullname" . }}-deploy
+  labels:
+    app.kubernetes.io/name: {{ include "edk.name" . }}
+    app.kubernetes.io/component: deploy-job
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "edk.name" . }}
+        app.kubernetes.io/component: deploy-job
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: edk-deploy
+          image: "{{ .Values.deployJob.image.repository }}:{{ .Values.deployJob.image.tag }}"
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "Running DB migrations"
+              bun cli db:migrate
+              echo "Downloading SDE"
+              bun cli sde:download
+              echo "Refreshing DB materialized views"
+              bun cli db:refresh
+          env:
+            - name: DATABASE_URL
+              value: {{ .Values.global.env.sensitive.DATABASE_URL | default "" | quote }}
+            - name: REDIS_HOST
+              value: {{ .Values.global.env.REDIS_HOST | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.global.env.REDIS_PORT | quote }}
+            - name: REDIS_PASSWORD
+              value: {{ .Values.global.env.sensitive.REDIS_PASSWORD | default "" | quote }}
+      backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+{{- end }}
