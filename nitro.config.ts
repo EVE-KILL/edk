@@ -41,21 +41,8 @@ export default defineNitroConfig({
   future: {
     nativeSWR: true,
   },
-  storage: {
-    redis: {
-      driver: 'redis',
-      host: env.REDIS_HOST,
-      port: env.REDIS_PORT,
-      ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
-    },
-    cache: {
-      driver: 'redis',
-      host: env.REDIS_HOST,
-      port: env.REDIS_PORT,
-      ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
-      db: 0,
-    },
-  },
+  // Redis storage is now mounted dynamically via server/plugins/redis-storage.ts
+  // This allows better error handling and graceful degradation if Redis is unavailable
   openAPI: {
     meta: {
       title: 'EDK API',
