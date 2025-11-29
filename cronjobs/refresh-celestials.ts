@@ -6,7 +6,7 @@ export const schedule = '0 0 0 * * *'; // Runs every day at midnight UTC
 
 export async function action() {
   return new Promise<void>((resolve, reject) => {
-    const child = spawn('bun', ['cli', 'sde:refresh-mv'], {
+    const child = spawn('bun', ['cli', 'db:refresh', 'celestials'], {
       stdio: 'inherit',
     });
 
@@ -14,7 +14,7 @@ export async function action() {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error(`Process exited with code ${code}`));
+        reject(new Error(`db:refresh celestials exited with code ${code}`));
       }
     });
 

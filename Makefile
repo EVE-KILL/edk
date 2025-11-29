@@ -19,7 +19,7 @@ setup: ## Setup the development environment (Docker, install deps, migrate DB, d
 	@bun cli db:migrate
 	@bun cli db:partitions
 	@bun cli sde:download
-	@bun cli sde:refresh-mv
+	@bun cli db:refresh celestials
 	@echo "Setup complete!"
 
 reset: ## Reset the development environment (remove all Docker volumes and data)
@@ -36,7 +36,7 @@ migrate: ## Run database migrations
 import-sde: ## Download and import the latest SDE data
 	@echo "Importing SDE..."
 	@bun cli sde:download
-	@bun cli sde:refresh-mv
+	@bun cli db:refresh celestials
 	@echo "SDE import complete!"
 
 DATA_FLAG := .data/.configured

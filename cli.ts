@@ -83,6 +83,7 @@ async function loadCommandsRecursive(
 interface CommandConfig {
   description?: string;
   options?: Array<{ flags: string; description: string }>;
+  arguments?: Array<{ name: string; description: string }>;
   action: (options: any, ...args: any[]) => Promise<void> | void;
 }
 
@@ -91,7 +92,14 @@ function registerCommand(
   name: string,
   config: CommandConfig
 ): void {
-  let cmd = program.command(name);
+  // Build command name with arguments if provided
+  let commandSignature = name;
+  if (config.arguments && Array.isArray(config.arguments)) {
+    const argNames = config.arguments.map((arg) => arg.name).join(' ');
+    commandSignature = `${name} ${argNames}`;
+  }
+
+  let cmd = program.command(commandSignature);
 
   if (config.description) {
     cmd = cmd.description(config.description);

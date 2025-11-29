@@ -148,7 +148,21 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     // At this point, all entity and price data should be in the database
     // The materialized view will populate with complete data
     logger.info(`[killmail] ${killmailId}: Storing killmail...`);
-    await storeKillmail(killmail, hash, warId);
+    try {
+      await storeKillmail(killmail, hash, warId);
+    } catch (storeError: any) {
+      // Handle duplicate key errors gracefully (code 23505)
+      // Killmails can be received from multiple sources (WebSocket, RedisQ, backfill)
+      if (storeError?.code === '23505') {
+        logger.info(
+          `[killmail] ${killmailId}: Already exists in database (duplicate)`
+        );
+        // Don't publish to WebSocket for duplicates
+        return;
+      }
+      // Re-throw other storage errors
+      throw storeError;
+    }
 
     // Step 6: Publish to Redis for WebSocket broadcast
     logger.info(`[killmail] ${killmailId}: Publishing to WebSocket...`);
@@ -157,11 +171,15 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     logger.success(
       `✅ [killmail] Successfully processed killmail ${killmailId}`
     );
-  } catch (error) {
+  } catch (error: any) {
+    const errorMessage = error?.message || String(error);
+    const errorCode = error?.code;
     logger.error(`❌ [killmail] Error processing killmail ${killmailId}:`, {
-      error,
+      error: errorMessage,
+      code: errorCode,
+      detail: error?.detail,
     });
-    throw error; // Re-throw to trigger retry
+    throw new Error(errorMessage); // Re-throw with proper string message
   }
 }
 

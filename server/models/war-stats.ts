@@ -176,20 +176,6 @@ export async function getDefenderShipClassStats(
 }
 
 /**
- * Refresh all war statistics materialized views
- * Should be called periodically (e.g., every hour) via cron job
- */
-export async function refreshWarStats(): Promise<void> {
-  const sql = database.sql;
-
-  // Refresh concurrently to avoid locking
-  await sql`REFRESH MATERIALIZED VIEW CONCURRENTLY war_stats`;
-  await sql`REFRESH MATERIALIZED VIEW CONCURRENTLY war_participants`;
-  await sql`REFRESH MATERIALIZED VIEW CONCURRENTLY war_ship_classes`;
-  await sql`REFRESH MATERIALIZED VIEW CONCURRENTLY war_most_valuable_kills`;
-}
-
-/**
  * Check if war stats exist for a given war
  * Useful for determining if we should fall back to live queries
  */

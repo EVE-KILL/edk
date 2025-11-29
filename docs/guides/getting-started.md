@@ -47,7 +47,7 @@ bun install
 bun cli db:migrate
 bun cli db:partitions
 bun cli sde:download
-bun cli sde:refresh-mv
+bun cli db:refresh celestials
 ```
 
 Then run each in a separate terminal:
