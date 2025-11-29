@@ -4,6 +4,9 @@
 import type { H3Event } from 'h3';
 import { render, normalizeKillRow } from '../../../helpers/templates';
 import { getRegion } from '../../../models/regions';
+import { getConstellationsByRegion } from '../../../models/constellations';
+import { getSolarSystemsByRegion } from '../../../models/solarSystems';
+import { FactionQueries } from '../../../models/factions';
 import {
   getFilteredKillsWithNames,
   estimateFilteredKills,
@@ -44,6 +47,13 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
+    // Fetch faction, constellations, and all systems in region
+    const [faction, constellations, allSystemsInRegion] = await Promise.all([
+      region.factionId ? FactionQueries.getFaction(region.factionId) : null,
+      getConstellationsByRegion(regionId),
+      getSolarSystemsByRegion(regionId),
+    ]);
+
     // Get pagination parameters
     const query = getQuery(event);
     const page = Math.max(1, Number.parseInt(query.page as string) || 1);
@@ -80,16 +90,55 @@ export default defineEventHandler(async (event: H3Event) => {
     // Normalize killmail data
     const killmails = killmailsData.map(normalizeKillRow);
 
-    // Simple stats from killmail count
-    const stats = {
-      kills: totalKillmails,
-      losses: 0,
-      iskDestroyed: 0,
-      iskLost: 0,
-      efficiency: 0,
-      iskEfficiency: 0,
-      killLossRatio: 0,
-    };
+    // Build region properties for page header pills
+    const regionProperties = [];
+    if (region.wormholeClassId) {
+      regionProperties.push({
+        type: 'pill',
+        text: `C${region.wormholeClassId}`,
+        class: 'page-header__pill--danger',
+      });
+    }
+    if (faction) {
+      regionProperties.push({
+        type: 'pill',
+        text: faction.name,
+        class: 'page-header__pill--info',
+      });
+    }
+
+    // Format constellations for display with average and lowest security
+    const constellationsFormatted = constellations
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((c) => {
+        // Get all systems in this constellation
+        const systemsInConstellation = allSystemsInRegion.filter(
+          (s) => s.constellationId === c.constellationId
+        );
+
+        // Calculate average security status
+        const avgSecurity =
+          systemsInConstellation.length > 0
+            ? systemsInConstellation.reduce(
+                (sum, s) => sum + s.securityStatus,
+                0
+              ) / systemsInConstellation.length
+            : 0;
+
+        // Find lowest security status
+        const lowestSecurity =
+          systemsInConstellation.length > 0
+            ? Math.min(...systemsInConstellation.map((s) => s.securityStatus))
+            : 0;
+
+        return {
+          constellationId: c.constellationId,
+          name: c.name,
+          systemCount: c.solarSystemIds?.length || 0,
+          avgSecurity: avgSecurity,
+          lowestSecurity: lowestSecurity,
+        };
+      });
 
     // Format most valuable kills
     const mostValuableKills = mostValuable.map((km) => ({
@@ -125,12 +174,18 @@ export default defineEventHandler(async (event: H3Event) => {
     }));
 
     const data = {
-      entityId: regionId,
-      entityType: 'region',
+      regionId,
+      imageUrl: faction
+        ? `https://images.evetech.net/corporations/${faction.corporationId || faction.factionId}/logo?size=256`
+        : 'https://images.evetech.net/alliances/1/logo?size=256',
       name: region.name,
-      type: 'region',
-      stats,
+      kills: totalKillmails,
       region,
+      faction,
+      regionProperties,
+      // Constellations data
+      constellations: constellationsFormatted,
+      constellationCount: constellations.length,
       recentKillmails: killmails,
       mostValuableKills,
       top10Stats: {

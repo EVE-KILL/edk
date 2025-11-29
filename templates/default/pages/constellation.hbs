@@ -22,24 +22,24 @@
     </div>
 
     <div style="padding: 12px;">
-        <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 6px;">
             {{#each data.systems}}
-            <div style="padding: 6px 8px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-xs); display: flex; align-items: center; gap: 6px;">
+            <div style="padding: 4px 6px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-xs); display: flex; align-items: center; gap: 4px;">
                 <div style="flex: 1; min-width: 0;">
                     <a href="/system/{{this.solarSystemId}}"
-                       style="color: var(--color-accent-blue-bright); text-decoration: none; font-size: 10px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                       style="color: var(--color-accent-blue-bright); text-decoration: none; font-size: 9px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                         {{this.name}}
                     </a>
-                    <div style="color: var(--color-text-secondary); font-size: 8px; display: flex; align-items: center; gap: 6px;">
+                    <div style="color: var(--color-text-secondary); font-size: 7px; display: flex; align-items: center; gap: 4px;">
                         <span>Sec: {{formatNumber this.securityStatus decimals=2}}</span>
                         {{#if this.isHub}}
                         <span style="color: #4a9eff;">· Hub</span>
                         {{/if}}
                         {{#if this.isRegional}}
-                        <span style="color: #4ade80;">· Regional</span>
+                        <span style="color: #4ade80;">· Rgn</span>
                         {{/if}}
                         {{#if this.isBorder}}
-                        <span style="color: #fbbf24;">· Border</span>
+                        <span style="color: #fbbf24;">· Bdr</span>
                         {{/if}}
                     </div>
                 </div>
@@ -70,7 +70,7 @@
     {{#if data.filterDefaults}}
       {{> partials/killlist-filters baseUrl=data.baseUrl filterDefaults=data.filterDefaults pagination=data.pagination filterQueryString=data.filterQueryString}}
     {{/if}}
-    
+
     {{> partials/killmail-list killmails=data.recentKillmails wsFilter=data.wsFilter}}
   </section>
 </div>
