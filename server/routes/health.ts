@@ -13,8 +13,10 @@ async function getGitCommitHash() {
   try {
     const { stdout } = await execAsync('git rev-parse --short HEAD');
     return stdout.trim();
-  } catch {
-    logger.error('Error getting git commit hash:', error);
+  } catch (error) {
+    logger.error('Error getting git commit hash:', {
+      error: (error as Error).message,
+    });
     return 'unknown';
   }
 }
@@ -25,8 +27,10 @@ async function getDbStatus() {
     await database.sql`SELECT 1`;
     const latency = Date.now() - startTime;
     return { status: 'ok', latency: `${latency}ms` };
-  } catch {
-    logger.error('Error checking database status:', error);
+  } catch (error) {
+    logger.error('Error checking database status:', {
+      error: (error as Error).message,
+    });
     const latency = Date.now() - startTime;
     return {
       status: 'error',
@@ -42,8 +46,10 @@ async function getRedisStatus() {
     await cache.get('healthcheck');
     const latency = Date.now() - startTime;
     return { status: 'ok', latency: `${latency}ms` };
-  } catch {
-    logger.error('Error checking Redis status:', error);
+  } catch (error) {
+    logger.error('Error checking Redis status:', {
+      error: (error as Error).message,
+    });
     const latency = Date.now() - startTime;
     return {
       status: 'error',
@@ -98,7 +104,7 @@ async function getMemoryUsage() {
       rss: `${(memUsage.rss / 1024 / 1024).toFixed(2)}MB`,
       heap_total: `${(memUsage.heapTotal / 1024 / 1024).toFixed(2)}MB`,
     };
-  } catch {
+  } catch (error) {
     return { error: (error as Error).message };
   }
 }
@@ -115,7 +121,7 @@ async function getDiskSpace() {
       free: `${(free / 1024 / 1024 / 1024).toFixed(2)}GB`,
       used_percentage: `${((used / total) * 100).toFixed(2)}%`,
     };
-  } catch {
+  } catch (error) {
     return { error: (error as Error).message };
   }
 }
