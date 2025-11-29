@@ -12,6 +12,7 @@ export function createRedisClient() {
     host: REDIS_HOST,
     port: REDIS_PORT,
     db: 0,
+    lazyConnect: true,
   };
   if (env.REDIS_PASSWORD) {
     config.password = env.REDIS_PASSWORD;
@@ -19,17 +20,24 @@ export function createRedisClient() {
   return new Redis(config);
 }
 
-const storageConfig: any = {
-  host: REDIS_HOST,
-  port: REDIS_PORT,
-};
-if (env.REDIS_PASSWORD) {
-  storageConfig.password = env.REDIS_PASSWORD;
-}
+let baseStorage: ReturnType<typeof createStorage> | null = null;
 
-const baseStorage = createStorage({
-  driver: redisDriver(storageConfig),
-});
+function getBaseStorage() {
+  if (!baseStorage) {
+    const storageConfig: any = {
+      host: REDIS_HOST,
+      port: REDIS_PORT,
+      lazyConnect: true,
+    };
+    if (env.REDIS_PASSWORD) {
+      storageConfig.password = env.REDIS_PASSWORD;
+    }
+    baseStorage = createStorage({
+      driver: redisDriver(storageConfig),
+    });
+  }
+  return baseStorage;
+}
 
 /**
  * Tracked Redis storage wrapper
@@ -51,76 +59,81 @@ class TrackedStorage {
   }
 
   async getItem<T = any>(key: string): Promise<T | null> {
-    return this.trackOperation('get', () => baseStorage.getItem<T>(key));
+    return this.trackOperation('get', () => getBaseStorage().getItem<T>(key));
   }
 
   async setItem(key: string, value: any): Promise<void> {
-    return this.trackOperation('set', () => baseStorage.setItem(key, value));
+    return this.trackOperation('set', () =>
+      getBaseStorage().setItem(key, value)
+    );
   }
 
   async removeItem(key: string): Promise<void> {
-    return this.trackOperation('del', () => baseStorage.removeItem(key));
+    return this.trackOperation('del', () => getBaseStorage().removeItem(key));
   }
 
   async hasItem(key: string): Promise<boolean> {
-    return this.trackOperation('exists', () => baseStorage.hasItem(key));
+    return this.trackOperation('exists', () => getBaseStorage().hasItem(key));
   }
 
   async getKeys(base?: string): Promise<string[]> {
-    return this.trackOperation('keys', () => baseStorage.getKeys(base));
+    return this.trackOperation('keys', () => getBaseStorage().getKeys(base));
   }
 
   async clear(base?: string): Promise<void> {
-    return this.trackOperation('clear', () => baseStorage.clear(base));
+    return this.trackOperation('clear', () => getBaseStorage().clear(base));
   }
 
   async getMeta(key: string): Promise<any> {
-    return baseStorage.getMeta(key);
+    return getBaseStorage().getMeta(key);
   }
 
   async setMeta(key: string, value: any): Promise<void> {
-    return baseStorage.setMeta(key, value);
+    return getBaseStorage().setMeta(key, value);
   }
 
   async removeMeta(key: string): Promise<void> {
-    return baseStorage.removeMeta(key);
+    return getBaseStorage().removeMeta(key);
   }
 
   async getItemRaw(key: string): Promise<any> {
-    return this.trackOperation('get', () => baseStorage.getItemRaw(key));
+    return this.trackOperation('get', () => getBaseStorage().getItemRaw(key));
   }
 
   async setItemRaw(key: string, value: any): Promise<void> {
-    return this.trackOperation('set', () => baseStorage.setItemRaw(key, value));
+    return this.trackOperation('set', () =>
+      getBaseStorage().setItemRaw(key, value)
+    );
   }
 
   mount(base: string, driver: any) {
-    return baseStorage.mount(base, driver);
+    return getBaseStorage().mount(base, driver);
   }
 
   async unmount(base: string, dispose?: boolean): Promise<void> {
-    return baseStorage.unmount(base, dispose);
+    return getBaseStorage().unmount(base, dispose);
   }
 
   async dispose(): Promise<void> {
-    return baseStorage.dispose();
+    return getBaseStorage().dispose();
   }
 
   watch(callback: (event: any, key: string) => void): Promise<() => void> {
-    return baseStorage.watch(callback);
+    return getBaseStorage().watch(callback);
   }
 
   async unwatch(): Promise<void> {
-    return baseStorage.unwatch();
+    return getBaseStorage().unwatch();
   }
 
   // Additional methods used by rate limiter and other parts of the app
   async increment(key: string): Promise<number> {
     return this.trackOperation('incr', async () => {
       // unstorage doesn't have increment, so we implement it
-      const current = (await baseStorage.getItem<number>(key)) || 0;
+      const storage = getBaseStorage();
+      const current = (await storage.getItem<number>(key)) || 0;
       const newValue = current + 1;
-      await baseStorage.setItem(key, newValue);
+      await storage.setItem(key, newValue);
       return newValue;
     });
   }
@@ -128,7 +141,7 @@ class TrackedStorage {
   async setTTL(key: string, ttl: number): Promise<void> {
     return this.trackOperation('expire', async () => {
       // unstorage handles TTL via driver options, we'll use setMeta
-      await baseStorage.setMeta(key, { ttl });
+      await getBaseStorage().setMeta(key, { ttl });
     });
   }
 }
