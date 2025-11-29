@@ -15,15 +15,6 @@
     faction=faction
 }}
 
-{{#if faction.description}}
-<!-- Faction Description -->
-<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 20px; margin-bottom: 20px;">
-  <p style="color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
-    {{faction.description}}
-  </p>
-</div>
-{{/if}}
-
 <!-- Most Valuable Kills -->
 {{#if mostValuableKills}}
 {{> partials/mostvaluable mostValuableKills=mostValuableKills timeRange=mostValuableTimeRange}}

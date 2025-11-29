@@ -30,10 +30,17 @@
 
       <!-- Faction Info Grid -->
       <div class="system-hero__info">
-        <!-- Kill Stats (prominent) -->
+        <!-- Description & Kill Stats (prominent) -->
         <div class="system-hero__stat-card system-hero__stat-card--prominent">
-          <div class="system-hero__stat-header">Statistics</div>
+          <div class="system-hero__stat-header">About</div>
           <div class="system-hero__stat-content">
+            {{#if faction.description}}
+            <div class="system-hero__stat-row system-hero__stat-row--description">
+              <p style="color: var(--color-text-secondary); line-height: 1.6; margin: 0; font-size: 11px;">
+                {{faction.description}}
+              </p>
+            </div>
+            {{/if}}
             <div class="system-hero__stat-row">
               <span class="system-hero__stat-label">Kills:</span>
               <span class="system-hero__stat-value color-green">{{formatNumber kills}}</span>
@@ -207,6 +214,15 @@
 
 .system-hero__stat-row:hover {
   background: rgba(74, 158, 255, 0.15);
+}
+
+.system-hero__stat-row--description {
+  display: block;
+  padding: 12px;
+}
+
+.system-hero__stat-row--description:hover {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .system-hero__stat-label {
