@@ -8,20 +8,27 @@ const REDIS_HOST = env.REDIS_HOST;
 const REDIS_PORT = env.REDIS_PORT;
 
 export function createRedisClient() {
-  return new Redis({
+  const config: any = {
     host: REDIS_HOST,
     port: REDIS_PORT,
-    password: env.REDIS_PASSWORD || 'redis_password',
     db: 0,
-  });
+  };
+  if (env.REDIS_PASSWORD) {
+    config.password = env.REDIS_PASSWORD;
+  }
+  return new Redis(config);
+}
+
+const storageConfig: any = {
+  host: REDIS_HOST,
+  port: REDIS_PORT,
+};
+if (env.REDIS_PASSWORD) {
+  storageConfig.password = env.REDIS_PASSWORD;
 }
 
 const baseStorage = createStorage({
-  driver: redisDriver({
-    host: REDIS_HOST,
-    port: REDIS_PORT,
-    password: env.REDIS_PASSWORD || 'redis_password',
-  }),
+  driver: redisDriver(storageConfig),
 });
 
 /**
@@ -29,9 +36,14 @@ const baseStorage = createStorage({
  * Automatically tracks Redis operations for performance monitoring
  */
 class TrackedStorage {
-  private trackOperation<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+  private trackOperation<T>(
+    operation: string,
+    fn: () => Promise<T>
+  ): Promise<T> {
     const performance = requestContext.getStore()?.performance;
-    const spanId = performance?.startSpan(`redis:${operation}`, 'cache', { operation });
+    const spanId = performance?.startSpan(`redis:${operation}`, 'cache', {
+      operation,
+    });
 
     return fn().finally(() => {
       if (spanId) performance?.endSpan(spanId);

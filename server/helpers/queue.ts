@@ -29,12 +29,14 @@ export interface QueueJobData {
 /**
  * Redis connection config
  */
-const REDIS_CONFIG = {
+const REDIS_CONFIG: any = {
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
-  password: env.REDIS_PASSWORD,
   db: 0,
 };
+if (env.REDIS_PASSWORD) {
+  REDIS_CONFIG.password = env.REDIS_PASSWORD;
+}
 
 /**
  * Queue instances cache

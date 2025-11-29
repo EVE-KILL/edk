@@ -11,3 +11,6 @@ data/*
 .DS_Store
 *.log
 Thessia/
+
+# Helm chart
+chart/values.yaml

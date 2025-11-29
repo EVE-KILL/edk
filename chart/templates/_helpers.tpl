@@ -64,9 +64,9 @@ Database connection URL from CloudNativePG secret
 */}}
 {{- define "edk.databaseURL" -}}
 {{- if .Values.database.pooler.enabled }}
-{{- printf "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@%s-pooler:5432/$(POSTGRES_DB)?sslmode=require" (include "edk.fullname" .) }}
+{{- printf "postgresql://%s:%s@%s-pooler:5432/%s?sslmode=disable" .Values.database.owner .Values.database.password (include "edk.fullname" .) .Values.database.database }}
 {{- else }}
-{{- printf "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=require" }}
+{{- printf "postgresql://%s:%s@%s-rw:5432/%s?sslmode=disable" .Values.database.owner .Values.database.password .Values.database.clusterName .Values.database.database }}
 {{- end }}
 {{- end }}
 

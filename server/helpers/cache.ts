@@ -1,12 +1,16 @@
 import Redis from 'ioredis';
 import { env } from './env';
 
-const redis = new Redis({
+const redisConfig: any = {
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
-  password: env.REDIS_PASSWORD || 'redis_password',
   maxRetriesPerRequest: null,
-});
+};
+if (env.REDIS_PASSWORD) {
+  redisConfig.password = env.REDIS_PASSWORD;
+}
+
+const redis = new Redis(redisConfig);
 
 export const cache = {
   async get(key: string): Promise<string | null> {
