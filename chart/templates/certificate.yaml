@@ -1,0 +1,18 @@
+{{- if and .Values.gateway.enabled .Values.gateway.certificate.enabled }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "edk.fullname" . }}-tls
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+spec:
+  secretName: {{ .Values.gateway.httpRoute.tls.certificateRef.name }}
+  issuerRef:
+    name: {{ .Values.gateway.certificate.issuerRef.name }}
+    kind: {{ .Values.gateway.certificate.issuerRef.kind }}
+  dnsNames:
+  {{- range .Values.gateway.certificate.dnsNames }}
+  - {{ . | quote }}
+  {{- end }}
+{{- end }}

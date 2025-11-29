@@ -1,0 +1,30 @@
+{{- if .Values.database.pooler.enabled }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: {{ include "edk.fullname" . }}-pooler
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+spec:
+  cluster:
+    name: {{ .Values.database.clusterName }}
+  
+  instances: {{ .Values.database.pooler.instances }}
+  type: rw  # Read-write pool
+  
+  pgbouncer:
+    poolMode: {{ .Values.database.pooler.poolMode }}
+    parameters:
+      {{- range $key, $value := .Values.database.pooler.parameters }}
+      {{ $key }}: {{ $value | quote }}
+      {{- end }}
+    
+    # PgBouncer pod configuration
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+{{- end }}

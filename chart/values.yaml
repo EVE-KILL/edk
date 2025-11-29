@@ -1,0 +1,259 @@
+# Default values for edk
+global:
+  image:
+    registry: ghcr.io
+    repository: eve-kill/edk
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  # Environment variables shared across all services
+  env:
+    NODE_ENV: production
+    EDK_CONTAINER: "true"
+    REDIS_HOST: edk-redis-master
+    REDIS_PORT: "6379"
+    
+    # Sensitive values (should be overridden or use secrets)
+    sensitive:
+      DATABASE_URL: ""  # Will be set from CloudNativePG secret
+      REDIS_PASSWORD: ""
+
+# Frontend web application
+web:
+  enabled: true
+  replicaCount: 3
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  service:
+    type: ClusterIP
+    port: 3000
+  
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Queue workers - individual pods per queue type
+queue:
+  enabled: true
+  
+  # Each queue type runs as a separate deployment
+  workers:
+    alliance:
+      enabled: true
+      replicaCount: 1
+      concurrency: 5
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+    
+    auth:
+      enabled: true
+      replicaCount: 1
+      concurrency: 10
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+    
+    character:
+      enabled: true
+      replicaCount: 2
+      concurrency: 10
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+    
+    corporation:
+      enabled: true
+      replicaCount: 1
+      concurrency: 5
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+    
+    killmail:
+      enabled: true
+      replicaCount: 3
+      concurrency: 20
+      resources:
+        requests:
+          cpu: 200m
+          memory: 256Mi
+        limits:
+          cpu: 1000m
+          memory: 512Mi
+    
+    price:
+      enabled: true
+      replicaCount: 1
+      concurrency: 5
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 300m
+          memory: 256Mi
+
+# Cronjob workers
+cronjobs:
+  enabled: true
+  replicaCount: 1
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+# WebSocket listener
+websocket:
+  enabled: true
+  replicaCount: 1
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+
+# Redis (Bitnami chart dependency)
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: ""  # Will be auto-generated if empty
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+# Gateway API configuration (using Cilium)
+gateway:
+  enabled: true
+  gatewayClassName: cilium
+  
+  # HTTPRoute configuration
+  httpRoute:
+    hostnames:
+      - eve-kill.com
+    
+    # TLS configuration via cert-manager
+    tls:
+      enabled: true
+      certificateRef:
+        name: edk-tls
+        kind: Secret
+  
+  # Certificate via cert-manager
+  certificate:
+    enabled: true
+    issuerRef:
+      name: letsencrypt-prod
+      kind: ClusterIssuer
+    dnsNames:
+      - eve-kill.com
+
+# CloudNativePG Database Connection
+database:
+  # Reference to existing CloudNativePG cluster
+  clusterName: postgres  # Name of the Cluster resource in eve-kill namespace
+  
+  # Secret name created by CloudNativePG operator (custom name configured in cluster)
+  secretName: postgres-app-credentials
+  
+  # Connection pooling via PgBouncer (CNPG Pooler)
+  pooler:
+    enabled: true
+    instances: 3
+    poolMode: transaction  # transaction or session
+    parameters:
+      max_client_conn: "1000"
+      default_pool_size: "25"
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Security context for containers
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false  # Nitro needs to write to .output/cache
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

@@ -1,0 +1,55 @@
+🎮 EVE-KILL EDK has been deployed!
+
+{{- if .Values.web.enabled }}
+
+📊 Web Service:
+  Replicas: {{ .Values.web.replicaCount }}
+  {{- if .Values.web.autoscaling.enabled }}
+  Autoscaling: {{ .Values.web.autoscaling.minReplicas }}-{{ .Values.web.autoscaling.maxReplicas }} replicas
+  {{- end }}
+
+{{- end }}
+
+{{- if .Values.queue.enabled }}
+
+⚙️  Queue Workers:
+{{- range $name, $config := .Values.queue.workers }}
+{{- if $config.enabled }}
+  - {{ $name }}: {{ $config.replicaCount }} replica(s), concurrency {{ $config.concurrency }}
+{{- end }}
+{{- end }}
+
+{{- end }}
+
+{{- if .Values.gateway.enabled }}
+
+🌐 Gateway API:
+  Hostnames:
+{{- range .Values.gateway.httpRoute.hostnames }}
+    - {{ . }}
+{{- end }}
+  {{- if .Values.gateway.certificate.enabled }}
+  TLS: Enabled (cert-manager)
+  {{- end }}
+
+{{- end }}
+
+📝 Database:
+  CloudNativePG Cluster: {{ .Values.database.clusterName }}
+  Secret: {{ .Values.database.secretName }}
+
+🔍 To check the status:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+📊 To view logs:
+  Web:       kubectl logs -l app.kubernetes.io/component=web -n {{ .Release.Namespace }}
+  Queues:    kubectl logs -l app.kubernetes.io/component=queue -n {{ .Release.Namespace }}
+  Cronjobs:  kubectl logs -l app.kubernetes.io/component=cronjobs -n {{ .Release.Namespace }}
+  WebSocket: kubectl logs -l app.kubernetes.io/component=websocket -n {{ .Release.Namespace }}
+
+🚀 Application should be available at:
+{{- range .Values.gateway.httpRoute.hostnames }}
+  https://{{ . }}
+{{- end }}
+
+💡 For more information, see the chart README.md

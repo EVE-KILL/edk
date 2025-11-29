@@ -14,7 +14,6 @@ services:
     depends_on:
       - postgres
       - redis
-      - typesense
     networks:
       - edk-network
     command: ['bun', '--bun', 'run', '.output/server/index.mjs']
@@ -105,28 +104,9 @@ services:
       timeout: 5s
       retries: 5
 
-  # Typesense
-  typesense:
-    image: typesense/typesense:27.1
-    container_name: edk-typesense
-    restart: unless-stopped
-    environment:
-      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-xyz}
-      TYPESENSE_DATA_DIR: /data
-    volumes:
-      - typesense-data:/data
-    networks:
-      - edk-network
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8108/health']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
 volumes:
   postgres-data:
   redis-data:
-  typesense-data:
 
 networks:
   edk-network:
