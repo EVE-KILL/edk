@@ -2,10 +2,14 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "edk.fullname" . }}-deploy
+  name: {{ include "edk.fullname" . }}-deploy-{{ .Release.Revision }}
   labels:
     app.kubernetes.io/name: {{ include "edk.name" . }}
     app.kubernetes.io/component: deploy-job
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   template:
     metadata:
@@ -16,7 +20,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: edk-deploy
-          image: "{{ .Values.deployJob.image.repository }}:{{ .Values.deployJob.image.tag }}"
+          image: "{{ .Values.global.image.registry }}/{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           command: ["/bin/sh", "-c"]
           args:
@@ -29,14 +33,13 @@ spec:
               echo "Refreshing DB materialized views"
               bun cli db:refresh
           env:
-            - name: DATABASE_URL
-              value: {{ .Values.global.env.sensitive.DATABASE_URL | default "" | quote }}
-            - name: REDIS_HOST
-              value: {{ .Values.global.env.REDIS_HOST | quote }}
-            - name: REDIS_PORT
-              value: {{ .Values.global.env.REDIS_PORT | quote }}
-            - name: REDIS_PASSWORD
-              value: {{ .Values.global.env.sensitive.REDIS_PASSWORD | default "" | quote }}
+            {{- include "edk.commonEnv" . | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /app/.data
+      volumes:
+        - name: data
+          emptyDir: {}
       backoffLimit: 1
   ttlSecondsAfterFinished: 3600
 {{- end }}
