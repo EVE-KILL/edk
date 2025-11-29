@@ -6,13 +6,14 @@ import { render, normalizeKillRow } from '../../../helpers/templates';
 import { getRegion } from '../../../models/regions';
 import {
   getFilteredKillsWithNames,
-  estimateFilteredKills, estimateFilteredKills,
+  estimateFilteredKills,
+  estimateFilteredKills,
 } from '../../../models/killlist';
 import {
   parseKilllistFilters,
   CAPSULE_TYPE_IDS,
 } from '../../../helpers/killlist-filters';
-import { getMostValuableKillsByPeriod } from '../../../models/mostValuableKills';
+import { getMostValuableKillsByRegion } from '../../../models/mostValuableKills';
 import {
   getTopCharactersFiltered,
   getTopCorporationsFiltered,
@@ -67,7 +68,7 @@ export default defineEventHandler(async (event: H3Event) => {
     ] = await Promise.all([
       getFilteredKillsWithNames({ regionId, ...userFilters }, page, perPage),
       estimateFilteredKills({ regionId, ...userFilters }),
-      getMostValuableKillsByPeriod('week', 6),
+      getMostValuableKillsByRegion(regionId, 'week', 6),
       getTopCharactersFiltered({ regionId }, 10),
       getTopCorporationsFiltered({ regionId }, 10),
       getTopAlliancesFiltered({ regionId }, 10),

@@ -5,15 +5,17 @@ import type { H3Event } from 'h3';
 import { render, normalizeKillRow } from '../../../helpers/templates';
 import { getConstellation } from '../../../models/constellations';
 import { getRegion } from '../../../models/regions';
+import { getSolarSystemsByConstellation } from '../../../models/solarSystems';
+import { FactionQueries } from '../../../models/factions';
 import {
   getFilteredKillsWithNames,
-  estimateFilteredKills, estimateFilteredKills,
+  estimateFilteredKills,
 } from '../../../models/killlist';
 import {
   parseKilllistFilters,
   CAPSULE_TYPE_IDS,
 } from '../../../helpers/killlist-filters';
-import { getMostValuableKillsByPeriod } from '../../../models/mostValuableKills';
+import { getMostValuableKillsByConstellation } from '../../../models/mostValuableKills';
 import {
   getTopCharactersFiltered,
   getTopCorporationsFiltered,
@@ -44,8 +46,14 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
-    // Fetch region info
-    const region = await getRegion(constellation.regionId);
+    // Fetch region, faction, and systems info
+    const [region, faction, systems] = await Promise.all([
+      getRegion(constellation.regionId),
+      constellation.factionId
+        ? FactionQueries.getFaction(constellation.factionId)
+        : null,
+      getSolarSystemsByConstellation(constellationId),
+    ]);
 
     // Get pagination parameters
     const query = getQuery(event);
@@ -75,7 +83,7 @@ export default defineEventHandler(async (event: H3Event) => {
         perPage
       ),
       estimateFilteredKills({ constellationId, ...userFilters }),
-      getMostValuableKillsByPeriod('week', 6),
+      getMostValuableKillsByConstellation(constellationId, 'week', 6),
       getTopCharactersFiltered({ constellationId }, 10),
       getTopCorporationsFiltered({ constellationId }, 10),
       getTopAlliancesFiltered({ constellationId }, 10),
@@ -87,16 +95,44 @@ export default defineEventHandler(async (event: H3Event) => {
     // Normalize killmail data
     const killmails = killmailsData.map(normalizeKillRow);
 
-    // Simple stats from killmail count
-    const stats = {
-      kills: totalKillmails,
-      losses: 0,
-      iskDestroyed: 0,
-      iskLost: 0,
-      efficiency: 0,
-      iskEfficiency: 0,
-      killLossRatio: 0,
+    // Build constellation properties for page header pills
+    const constellationProperties = [];
+    if (constellation.wormholeClassId) {
+      constellationProperties.push({
+        type: 'pill',
+        text: `C${constellation.wormholeClassId}`,
+        class: 'page-header__pill--danger',
+      });
+    }
+    if (faction) {
+      constellationProperties.push({
+        type: 'pill',
+        text: faction.name,
+        class: 'page-header__pill--info',
+      });
+    }
+
+    // Categorize systems by security status
+    const systemsBySecurityClass = {
+      highsec: systems.filter((s) => s.securityStatus >= 0.45),
+      lowsec: systems.filter(
+        (s) => s.securityStatus > 0 && s.securityStatus < 0.45
+      ),
+      nullsec: systems.filter((s) => s.securityStatus <= 0),
     };
+
+    // Format systems for display
+    const systemsFormatted = systems
+      .sort((a, b) => b.securityStatus - a.securityStatus)
+      .map((s) => ({
+        solarSystemId: s.solarSystemId,
+        name: s.name,
+        securityStatus: s.securityStatus,
+        securityClass: s.securityClass,
+        isHub: s.hub === 1,
+        isBorder: s.border === 1,
+        isRegional: s.regional === 1,
+      }));
 
     // Format most valuable kills
     const mostValuableKills = mostValuable.map((km) => ({
@@ -132,13 +168,24 @@ export default defineEventHandler(async (event: H3Event) => {
     }));
 
     const data = {
-      entityId: constellationId,
-      entityType: 'constellation',
+      constellationId,
+      imageUrl: faction
+        ? `https://images.evetech.net/corporations/${faction.corporationId || faction.factionId}/logo?size=256`
+        : 'https://images.evetech.net/alliances/1/logo?size=256',
       name: constellation.name,
-      type: 'constellation',
-      stats,
+      kills: totalKillmails,
       constellation,
       region,
+      faction,
+      constellationProperties,
+      // Systems data
+      systems: systemsFormatted,
+      systemCounts: {
+        total: systems.length,
+        highsec: systemsBySecurityClass.highsec.length,
+        lowsec: systemsBySecurityClass.lowsec.length,
+        nullsec: systemsBySecurityClass.nullsec.length,
+      },
       recentKillmails: killmails,
       mostValuableKills,
       top10Stats: {

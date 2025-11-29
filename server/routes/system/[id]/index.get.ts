@@ -19,7 +19,7 @@ import {
   parseKilllistFilters,
   CAPSULE_TYPE_IDS,
 } from '../../../helpers/killlist-filters';
-import { getMostValuableKillsByPeriod } from '../../../models/mostValuableKills';
+import { getMostValuableKillsBySystem } from '../../../models/mostValuableKills';
 import {
   getTopCharactersFiltered,
   getTopCorporationsFiltered,
@@ -95,7 +95,7 @@ export default defineEventHandler(async (event: H3Event) => {
         perPage
       ),
       estimateFilteredKills({ solarSystemId, ...userFilters }),
-      getMostValuableKillsByPeriod('week', 6),
+      getMostValuableKillsBySystem(solarSystemId, 'week', 6),
       getTopCharactersFiltered({ solarSystemId }, 10),
       getTopCorporationsFiltered({ solarSystemId }, 10),
       getTopAlliancesFiltered({ solarSystemId }, 10),

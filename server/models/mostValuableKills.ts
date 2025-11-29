@@ -278,3 +278,72 @@ export async function getMostValuableSoloKills(
     { hoursAgo, limit }
   );
 }
+
+/**
+ * Get most valuable kills for a specific solar system
+ */
+export async function getMostValuableKillsBySystem(
+  solarSystemId: number,
+  periodType: 'hour' | 'day' | 'week' | '14d' | 'month' | 'all',
+  limit: number = 50
+): Promise<MostValuableKill[]> {
+  const hoursAgo = getHoursAgo(periodType);
+  const selectClause = getSelectClause(periodType);
+
+  return database.find<MostValuableKill>(
+    `SELECT ${selectClause}
+     ${JOIN_CLAUSE}
+     WHERE k."solarSystemId" = :solarSystemId
+       AND k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
+       AND k."attackerCount" > 0
+     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
+     LIMIT :limit`,
+    { solarSystemId, hoursAgo, limit }
+  );
+}
+
+/**
+ * Get most valuable kills for a specific constellation
+ */
+export async function getMostValuableKillsByConstellation(
+  constellationId: number,
+  periodType: 'hour' | 'day' | 'week' | '14d' | 'month' | 'all',
+  limit: number = 50
+): Promise<MostValuableKill[]> {
+  const hoursAgo = getHoursAgo(periodType);
+  const selectClause = getSelectClause(periodType);
+
+  return database.find<MostValuableKill>(
+    `SELECT ${selectClause}
+     ${JOIN_CLAUSE}
+     WHERE ss."constellationId" = :constellationId
+       AND k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
+       AND k."attackerCount" > 0
+     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
+     LIMIT :limit`,
+    { constellationId, hoursAgo, limit }
+  );
+}
+
+/**
+ * Get most valuable kills for a specific region
+ */
+export async function getMostValuableKillsByRegion(
+  regionId: number,
+  periodType: 'hour' | 'day' | 'week' | '14d' | 'month' | 'all',
+  limit: number = 50
+): Promise<MostValuableKill[]> {
+  const hoursAgo = getHoursAgo(periodType);
+  const selectClause = getSelectClause(periodType);
+
+  return database.find<MostValuableKill>(
+    `SELECT ${selectClause}
+     ${JOIN_CLAUSE}
+     WHERE ss."regionId" = :regionId
+       AND k."killmailTime" >= NOW() - (:hoursAgo || ' hours')::interval
+       AND k."attackerCount" > 0
+     ORDER BY k."totalValue" DESC, k."killmailTime" DESC, k."killmailId"
+     LIMIT :limit`,
+    { regionId, hoursAgo, limit }
+  );
+}

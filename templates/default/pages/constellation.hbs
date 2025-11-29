@@ -6,17 +6,46 @@
         (obj label=data.region.name url=(concat "/region/" data.region.regionId))
         (obj label=data.constellation.name url=(concat "/constellation/" data.constellation.constellationId))
     )
+    meta=data.constellationProperties
 }}
 
 <!-- Constellation Stats Header -->
-{{> partials/entity-stats}}
+{{> components/constellation-stats}}
 
-<!-- Constellation Info -->
-{{#if data.region}}
-<div style="margin-bottom: 20px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 16px;">
-    <div style="display: grid; grid-template-columns: auto 1fr; gap: 12px; max-width: 600px;">
-        <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Region:</span>
-        <span><a href="/region/{{data.region.regionId}}" style="color: var(--color-accent-blue-bright); text-decoration: none;">{{data.region.name}}</a></span>
+<!-- Solar Systems Section -->
+{{#if data.systems}}
+<div style="margin-bottom: 20px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); overflow: hidden;">
+    <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+        <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Solar Systems ({{data.systemCounts.total}})
+        </div>
+    </div>
+
+    <div style="padding: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            {{#each data.systems}}
+            <div style="padding: 6px 8px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-xs); display: flex; align-items: center; gap: 6px;">
+                <div style="flex: 1; min-width: 0;">
+                    <a href="/system/{{this.solarSystemId}}"
+                       style="color: var(--color-accent-blue-bright); text-decoration: none; font-size: 10px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        {{this.name}}
+                    </a>
+                    <div style="color: var(--color-text-secondary); font-size: 8px; display: flex; align-items: center; gap: 6px;">
+                        <span>Sec: {{formatNumber this.securityStatus decimals=2}}</span>
+                        {{#if this.isHub}}
+                        <span style="color: #4a9eff;">· Hub</span>
+                        {{/if}}
+                        {{#if this.isRegional}}
+                        <span style="color: #4ade80;">· Regional</span>
+                        {{/if}}
+                        {{#if this.isBorder}}
+                        <span style="color: #fbbf24;">· Border</span>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+            {{/each}}
+        </div>
     </div>
 </div>
 {{/if}}
@@ -31,19 +60,17 @@
   <!-- Top 10 Sidebar -->
   <aside style="min-width: 0; overflow: hidden;">
     {{#if data.top10Stats}}
-      {{> components/top-10-stats stats=data.top10Stats timeRange="Last 7 Days"}}
+      {{> components/top-10-stats stats=data.top10Stats timeRange="Last 7 Days" characterTitle="Characters" corporationTitle="Corporations" allianceTitle="Alliances" systemTitle="Systems"}}
     {{/if}}
   </aside>
 
   <!-- Recent Killmails -->
   <section style="min-width: 0; overflow: hidden;">
-      {{> partials/killmail-list killmails=data.recentKillmails wsFilter=data.wsFilter}}
-  </section>
-</div>
-
-<!-- Pagination -->
-{{#if data.pagination}}
+    <!-- Filters -->
     {{#if data.filterDefaults}}
       {{> partials/killlist-filters baseUrl=data.baseUrl filterDefaults=data.filterDefaults pagination=data.pagination filterQueryString=data.filterQueryString}}
     {{/if}}
-{{/if}}
+    
+    {{> partials/killmail-list killmails=data.recentKillmails wsFilter=data.wsFilter}}
+  </section>
+</div>
