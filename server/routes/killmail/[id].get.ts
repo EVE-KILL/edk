@@ -443,8 +443,9 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // Use the stored totalValue from the database (calculated when killmail was stored)
     // This ensures consistency across all pages
-    const totalKillValue = killmail.totalValue || 0;
-    const shipValue = killmail.victimShipValue || 0;
+    // Convert to Number to handle potential type issues from database
+    const totalKillValue = Number(killmail.totalValue) || 0;
+    const shipValue = Number(killmail.victimShipValue) || 0;
     const itemsValue = totalKillValue - shipValue;
     const killmailTimeIso = ensureUtcString(killmail.killmailTime);
 
@@ -491,7 +492,19 @@ export default defineEventHandler(async (event: H3Event) => {
     // Format data for template
     const victimName = killmail.victimCharacterName || 'Unknown';
     const shipName = killmail.victimShipName || 'Unknown';
-    const valueBillion = (totalKillValue / 1_000_000_000).toFixed(2);
+
+    // Smart ISK formatting for title - use millions for < 1B, billions for >= 1B
+    let valueFormatted: string;
+    if (totalKillValue >= 1_000_000_000) {
+      valueFormatted = `${(totalKillValue / 1_000_000_000).toFixed(2)}B`;
+    } else if (totalKillValue >= 1_000_000) {
+      valueFormatted = `${(totalKillValue / 1_000_000).toFixed(1)}M`;
+    } else if (totalKillValue >= 1_000) {
+      valueFormatted = `${(totalKillValue / 1_000).toFixed(1)}K`;
+    } else {
+      valueFormatted = `${totalKillValue.toFixed(0)}`;
+    }
+
     const solarSystemName = killmail.solarSystemName || 'Unknown System';
     const regionName = killmail.regionName || 'Unknown Region';
 
@@ -770,7 +783,7 @@ export default defineEventHandler(async (event: H3Event) => {
     return render(
       'pages/killmail',
       {
-        title: `${victimName} (${shipName}) - ${valueBillion}B ISK`,
+        title: `${victimName} (${shipName}) - ${valueFormatted} ISK`,
         description,
         keywords,
         url: `/killmail/${id}`,
