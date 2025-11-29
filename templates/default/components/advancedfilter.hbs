@@ -867,51 +867,51 @@ async function performEntitySearch(query) {
     ];
     const allAddedLocations = [...locationFilters];
     const allAddedItems = [...itemFilters];
-    
+
     // Render grouped results
     let html = '';
     for (const type in grouped) {
       const filteredResults = grouped[type].filter(result => {
         // Check locations
         if (['system', 'constellation', 'region'].includes(result.type)) {
-          return !allAddedLocations.some(added => 
-            Number(added.id) === Number(result.id) && 
+          return !allAddedLocations.some(added =>
+            Number(added.id) === Number(result.id) &&
             String(added.type) === String(result.type)
           );
         }
-        
+
         // Check items
         if (result.type === 'item') {
-          return !allAddedItems.some(added => 
+          return !allAddedItems.some(added =>
             Number(added.id) === Number(result.id)
           );
         }
-        
+
         // Check entities (character, corporation, alliance)
-        return !allAddedEntities.some(added => 
-          Number(added.id) === Number(result.id) && 
+        return !allAddedEntities.some(added =>
+          Number(added.id) === Number(result.id) &&
           String(added.type) === String(result.type)
         );
       });
-      
+
       // Skip empty groups
       if (filteredResults.length === 0) continue;
-      
+
       html += `<div class="advanced-filters__search-group">`;
       html += `<div class="advanced-filters__search-group-title">${type}s</div>`;
       filteredResults.forEach(result => {
         const showTicker = (result.type === 'corporation' || result.type === 'alliance') && result.ticker;
         const ticker = showTicker ? ` &lt;${escapeHtml(result.ticker)}&gt;` : '';
         const displayName = escapeHtml(result.name) + ticker;
-        
+
         // Determine which handler to use based on type
         const isLocation = ['system', 'constellation', 'region'].includes(result.type);
         const isItem = result.type === 'item';
         const handler = isLocation ? 'addLocationFilter' : isItem ? 'addItemFilter' : 'showEntityRoleSelector';
-        const params = isLocation || isItem 
+        const params = isLocation || isItem
           ? `${result.id}, '${escapeHtml(result.name)}', '${result.type}'`
           : `${result.id}, '${escapeHtml(result.name)}', '${result.type}', '${escapeHtml(result.ticker || '')}'`;
-        
+
         html += `<div class="advanced-filters__search-item" onclick="${handler}(${params})">`;
         html += `<span class="advanced-filters__search-item-name">${displayName}</span>`;
         html += `<span class="advanced-filters__search-item-type">${result.type}</span>`;
@@ -919,7 +919,7 @@ async function performEntitySearch(query) {
       });
       html += `</div>`;
     }
-    
+
     // Show "no results" if all were filtered out
     if (!html) {
       html = '<div class="advanced-filters__search-item" style="cursor: default; padding: 12px;">All matching entities already added</div>';
@@ -976,7 +976,7 @@ window.addLocationFilter = function(locationId, locationName, locationType) {
     name: locationName,
     type: locationType
   };
-  
+
   // Check if already exists
   const exists = locationFilters.some(l =>
     Number(l.id) === Number(locationId) && String(l.type) === String(locationType)
@@ -984,10 +984,10 @@ window.addLocationFilter = function(locationId, locationName, locationType) {
   if (exists) {
     return;
   }
-  
+
   locationFilters.push(location);
   renderLocationList();
-  
+
   // Clear search
   document.getElementById('entity-search-input').value = '';
   document.getElementById('entity-search-results').style.display = 'none';
@@ -1002,12 +1002,12 @@ window.removeLocationFilter = function(locationId, locationType) {
 
 function renderLocationList() {
   const container = document.getElementById('location-filters');
-  
+
   if (locationFilters.length === 0) {
     container.innerHTML = '<div class="advanced-filters__empty-state">No locations added</div>';
     return;
   }
-  
+
   let html = '';
   locationFilters.forEach(location => {
     html += `<div class="advanced-filters__location-chip">`;
@@ -1020,7 +1020,7 @@ function renderLocationList() {
     html += `</button>`;
     html += `</div>`;
   });
-  
+
   container.innerHTML = html;
 }
 
@@ -1031,7 +1031,7 @@ window.addItemFilter = function(itemId, itemName, itemType) {
     name: itemName,
     type: itemType
   };
-  
+
   // Check if already exists
   const exists = itemFilters.some(i =>
     Number(i.id) === Number(itemId)
@@ -1039,10 +1039,10 @@ window.addItemFilter = function(itemId, itemName, itemType) {
   if (exists) {
     return;
   }
-  
+
   itemFilters.push(item);
   renderItemList();
-  
+
   // Clear search
   document.getElementById('entity-search-input').value = '';
   document.getElementById('entity-search-results').style.display = 'none';
@@ -1057,12 +1057,12 @@ window.removeItemFilter = function(itemId) {
 
 function renderItemList() {
   const container = document.getElementById('item-filters');
-  
+
   if (itemFilters.length === 0) {
     container.innerHTML = '<div class="advanced-filters__empty-state">No items added</div>';
     return;
   }
-  
+
   let html = '';
   itemFilters.forEach(item => {
     html += `<div class="advanced-filters__item-chip">`;
@@ -1072,7 +1072,7 @@ function renderItemList() {
     html += `</button>`;
     html += `</div>`;
   });
-  
+
   container.innerHTML = html;
 }
 
@@ -1318,7 +1318,7 @@ window.submitAdvancedFilters = function() {
       form.appendChild(input);
     });
   }
-  
+
   // Add location filters as hidden inputs
   locationFilters.forEach(location => {
     const input = document.createElement('input');
@@ -1328,7 +1328,7 @@ window.submitAdvancedFilters = function() {
     input.value = location.id;
     form.appendChild(input);
   });
-  
+
   // Add item filters as hidden inputs
   itemFilters.forEach(item => {
     const input = document.createElement('input');

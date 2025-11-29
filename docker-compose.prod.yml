@@ -1,43 +1,133 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  # Main web server
+  web:
+    image: ghcr.io/eve-kill/edk:latest
+    container_name: edk-web
+    restart: unless-stopped
     ports:
       - '3000:3000'
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - EDK_CONTAINER=true
     depends_on:
       - postgres
       - redis
       - typesense
+    networks:
+      - edk-network
+    command: ['bun', '--bun', 'run', '.output/server/index.mjs']
+
+  # Queue worker
+  queue:
+    image: ghcr.io/eve-kill/edk:latest
+    container_name: edk-queue
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://user:password@postgres:5432/db
-      - REDIS_URL=redis://redis:6379
-      - TYPESENSE_URL=http://typesense:8108
+      - EDK_CONTAINER=true
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - edk-network
+    command: ['bun', 'queue.ts']
 
+  # Cronjob worker
+  cronjobs:
+    image: ghcr.io/eve-kill/edk:latest
+    container_name: edk-cronjobs
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - EDK_CONTAINER=true
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - edk-network
+    command: ['bun', 'cronjobs.ts']
+
+  # WebSocket worker
+  websocket:
+    image: ghcr.io/eve-kill/edk:latest
+    container_name: edk-websocket
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - EDK_CONTAINER=true
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - edk-network
+    command: ['bun', 'ws.ts']
+
+  # PostgreSQL
   postgres:
-    image: postgres:15
+    image: postgres:16-alpine
+    container_name: edk-postgres
+    restart: unless-stopped
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=db
+      POSTGRES_DB: ${POSTGRES_DB:-edk}
+      POSTGRES_USER: ${POSTGRES_USER:-edk_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-edk_password}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - edk-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-edk_user}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # Redis
   redis:
-    image: redis:7
+    image: redis:7-alpine
+    container_name: edk-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_password}
     volumes:
-      - redis_data:/data
+      - redis-data:/data
+    networks:
+      - edk-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # Typesense
   typesense:
-    image: typesense/typesense:0.24.1
+    image: typesense/typesense:27.1
+    container_name: edk-typesense
+    restart: unless-stopped
     environment:
-      - TYPESENSE_API_KEY=xyz
-      - TYPESENSE_DATA_DIR=/data
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-xyz}
+      TYPESENSE_DATA_DIR: /data
     volumes:
-      - typesense_data:/data
+      - typesense-data:/data
+    networks:
+      - edk-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8108/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  postgres_data:
-  redis_data:
-  typesense_data:
+  postgres-data:
+  redis-data:
+  typesense-data:
+
+networks:
+  edk-network:
+    driver: bridge

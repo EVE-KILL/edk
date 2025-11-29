@@ -235,7 +235,7 @@ export async function getTopByKills(
   const query = `
     SELECT
       ${grouping.groupColumn} AS id,
-      COALESCE(${grouping.nameColumn}, 'Unknown') AS name,
+      COALESCE(MAX(${grouping.nameColumn}), 'Unknown') AS name,
       COUNT(*) AS kills,
       0 AS losses,
       SUM(k."totalValue") AS "iskDestroyed",
@@ -244,7 +244,7 @@ export async function getTopByKills(
     FROM killmails k
     ${grouping.joinClause}
     WHERE ${whereClause}
-    GROUP BY ${grouping.groupColumn}, ${grouping.nameColumn}
+    GROUP BY ${grouping.groupColumn}
     ORDER BY kills DESC
     LIMIT :limit
   `;
@@ -638,12 +638,12 @@ export async function getTopSystemsFiltered(
   const query = `
     SELECT
       k."solarSystemId" AS id,
-      COALESCE(ss.name, 'Unknown') AS name,
+      COALESCE(MAX(ss.name), 'Unknown') AS name,
       COUNT(*) AS kills
     FROM killmails k
     ${joins}
     ${whereClause}
-    GROUP BY k."solarSystemId", ss.name
+    GROUP BY k."solarSystemId"
     ORDER BY kills DESC
     LIMIT :limit
   `;
@@ -670,14 +670,14 @@ export async function getTopRegionsFiltered(
   const query = `
     SELECT
       ss."regionId" AS id,
-      COALESCE(reg.name, 'Unknown') AS name,
+      COALESCE(MAX(reg.name), 'Unknown') AS name,
       COUNT(*) AS kills
     FROM killmails k
     LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
     LEFT JOIN regions reg ON ss."regionId" = reg."regionId"
     LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
     ${whereClause}
-    GROUP BY ss."regionId", reg.name
+    GROUP BY ss."regionId"
     ORDER BY kills DESC
     LIMIT :limit
   `;
@@ -705,12 +705,12 @@ export async function getTopShipsFiltered(
   const query = `
     SELECT
       k."victimShipTypeId" AS id,
-      COALESCE(t.name, 'Unknown') AS name,
+      COALESCE(MAX(t.name), 'Unknown') AS name,
       COUNT(*) AS kills
     FROM killmails k
     LEFT JOIN types t ON k."victimShipTypeId" = t."typeId"
     ${whereClause}
-    GROUP BY k."victimShipTypeId", t.name
+    GROUP BY k."victimShipTypeId"
     ORDER BY kills DESC
     LIMIT :limit
   `;
@@ -750,12 +750,12 @@ export async function getTopCharactersFiltered(
   const query = `
     SELECT
       k."topAttackerCharacterId" AS id,
-      COALESCE(c.name, 'Unknown') AS name,
+      COALESCE(MAX(c.name), 'Unknown') AS name,
       COUNT(*) AS kills
     FROM killmails k
     ${joins}
     ${whereClause}
-    GROUP BY k."topAttackerCharacterId", c.name
+    GROUP BY k."topAttackerCharacterId"
     ORDER BY kills DESC
     LIMIT :limit
   `;
@@ -798,12 +798,12 @@ export async function getTopCorporationsFiltered(
   const query = `
     SELECT
       k."topAttackerCorporationId" AS id,
-      COALESCE(c.name, 'Unknown') AS name,
+      COALESCE(MAX(c.name), 'Unknown') AS name,
       COUNT(*) AS kills
     FROM killmails k
     ${joins}
     ${whereClause}
-    GROUP BY k."topAttackerCorporationId", c.name
+    GROUP BY k."topAttackerCorporationId"
     ORDER BY kills DESC
     LIMIT :limit
   `;
@@ -843,12 +843,12 @@ export async function getTopAlliancesFiltered(
   const query = `
     SELECT
       k."topAttackerAllianceId" AS id,
-      COALESCE(a.name, 'Unknown') AS name,
+      COALESCE(MAX(a.name), 'Unknown') AS name,
       COUNT(*) AS kills
     FROM killmails k
     ${joins}
     ${whereClause}
-    GROUP BY k."topAttackerAllianceId", a.name
+    GROUP BY k."topAttackerAllianceId"
     ORDER BY kills DESC
     LIMIT :limit
   `;
@@ -937,7 +937,7 @@ export async function getTopVictimsByAttacker(
   const query = `
     SELECT
       ${groupColumn} AS id,
-      COALESCE(${nameColumn}, 'Unknown') AS name,
+      COALESCE(MAX(${nameColumn}), 'Unknown') AS name,
       COUNT(DISTINCT k."killmailId") AS kills,
       0 AS losses,
       SUM(k."totalValue") AS "iskDestroyed",
@@ -949,7 +949,7 @@ export async function getTopVictimsByAttacker(
       AND k."killmailTime" >= :startTime
       AND k."killmailTime" < :endTime
       AND ${groupColumn} IS NOT NULL
-    GROUP BY ${groupColumn}, ${nameColumn}
+    GROUP BY ${groupColumn}
     ORDER BY kills DESC
     LIMIT :limit
   `;

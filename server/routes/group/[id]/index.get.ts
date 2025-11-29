@@ -135,12 +135,12 @@ export default defineEventHandler(async (event: H3Event) => {
       }
     );
 
-    // Get sample types from this group (for display)
+    // Get all types from this group (for display)
     const sampleTypes = await track(
       'group:sample_types',
       'database',
       async () => {
-        return await TypeQueries.getTypesByGroup(groupId, 10);
+        return await TypeQueries.getTypesByGroup(groupId);
       }
     );
 

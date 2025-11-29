@@ -13,6 +13,11 @@ export default defineNitroConfig({
   minify: true,
   sourceMap: env.NODE_ENV !== 'production',
   serveStatic: true,
+  esbuild: {
+    options: {
+      target: 'esnext',
+    },
+  },
   publicAssets: [
     {
       baseURL: '/',

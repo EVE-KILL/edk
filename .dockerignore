@@ -1,0 +1,38 @@
+# Git
+.git/
+.github/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Build outputs
+.output/
+dist/
+.nitro/
+
+# Dependencies
+node_modules/
+
+# Data
+.data/
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+*~

@@ -1,39 +1,50 @@
-# Dockerfile for EVE-KILL
+# Dockerfile for EVE-KILL EDK
+# Multi-stage build that preserves source for CLI/queue/cron/ws workers
 
-# --- 1. Builder Stage ---
-FROM oven/bun:1.0 as builder
+# Build stage
+FROM oven/bun:alpine AS builder
+WORKDIR /build
 
-WORKDIR /app
-
-# Copy package.json and bun.lockb
+# Copy package files
 COPY package.json bun.lockb ./
 
 # Install dependencies
 RUN bun install --frozen-lockfile
 
-# Copy the rest of the application code
+# Copy source files
 COPY . .
 
-# Build the application
+# Build the Nitro application
 RUN bun run build
 
-
-# --- 2. Runner Stage ---
-FROM oven/bun:1.0-slim as runner
-
+# Production stage
+FROM oven/bun:alpine
 WORKDIR /app
 
-# Copy package.json and bun.lockb
+# Copy package files and install production dependencies
 COPY package.json bun.lockb ./
-
-# Install production dependencies
 RUN bun install --frozen-lockfile --production
 
-# Copy the build output from the builder stage
-COPY --from=builder /app/.output ./.output
+# Copy built Nitro output from builder
+COPY --from=builder /build/.output /app/.output
 
-# Expose the port the application runs on
+# Copy source files needed for CLI, queue, cron, and websocket workers
+COPY cli.ts cronjobs.ts queue.ts ws.ts ./
+COPY commands ./commands
+COPY cronjobs ./cronjobs
+COPY queue ./queue
+COPY ws ./ws
+COPY db ./db
+COPY server ./server
+COPY templates ./templates
+
+# Set environment variable to indicate container environment
+ENV NODE_ENV=production
+ENV EDK_CONTAINER=true
+
+# Expose the application port
 EXPOSE 3000
 
-# Set the command to run the application
-CMD ["node", ".output/server/index.mjs"]
+# Default command runs the Nitro server
+# Can be overridden for queue/cron/ws/cli workers
+CMD ["bun", "--bun", "run", ".output/server/index.mjs"]

@@ -229,7 +229,7 @@ export default defineEventHandler(async (event: H3Event) => {
         'item:get_top_fittings',
         'database',
         async () => {
-          // Get recent killmails for this ship
+          // Get killmails from the last month for this ship
           const killmails = await database.query<{
             killmailId: number;
             killmailHash: string;
@@ -242,8 +242,8 @@ export default defineEventHandler(async (event: H3Event) => {
             k."killmailTime"
           FROM killmails k
           WHERE k."victimShipTypeId" = :typeId
+          AND k."killmailTime" >= NOW() - INTERVAL '90 days'
           ORDER BY k."killmailTime" DESC
-          LIMIT 50
         `,
             { typeId }
           );
