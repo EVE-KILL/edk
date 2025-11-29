@@ -6,7 +6,7 @@ FROM oven/bun:alpine AS builder
 WORKDIR /build
 
 # Copy package files
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 
 # Install dependencies
 RUN bun install --frozen-lockfile
@@ -22,8 +22,8 @@ FROM oven/bun:alpine
 WORKDIR /app
 
 # Copy package files and install production dependencies
-COPY package.json bun.lockb ./
-RUN bun install --frozen-lockfile --production
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Copy built Nitro output from builder
 COPY --from=builder /build/.output /app/.output
