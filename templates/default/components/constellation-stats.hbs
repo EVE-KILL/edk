@@ -60,7 +60,9 @@
             {{#if faction}}
             <div class="system-hero__stat-row">
               <span class="system-hero__stat-label">Faction:</span>
-              <span class="system-hero__stat-value">{{faction.name}}</span>
+              <span class="system-hero__stat-value">
+                <a href="/faction/{{faction.factionId}}" class="system-hero__link">{{faction.name}}</a>
+              </span>
             </div>
             {{/if}}
           </div>
