@@ -28,6 +28,44 @@ import { generatePageNumbers } from '../helpers/pagination';
 const TOP_BOX_LOOKBACK_DAYS = 7;
 const MOST_VALUABLE_LOOKBACK_DAYS = 7;
 
+/**
+ * Get a human-readable label for the time range being displayed
+ */
+function getTimeRangeLabel(
+  timeRange: string | undefined,
+  killTimeFrom: Date | undefined,
+  killTimeTo: Date | undefined,
+  defaultDays: number
+): string {
+  if (!timeRange || timeRange === '') {
+    return `Last ${defaultDays} Days`;
+  }
+
+  switch (timeRange) {
+    case 'today':
+      return 'Today';
+    case 'yesterday':
+      return 'Yesterday';
+    case 'last7days':
+      return 'Last 7 Days';
+    case 'thisweek':
+      return 'This Week';
+    case 'last30days':
+      return 'Last 30 Days';
+    case 'thismonth':
+      return 'This Month';
+    case 'custom':
+      if (killTimeFrom && killTimeTo) {
+        const from = new Date(killTimeFrom).toLocaleDateString();
+        const to = new Date(killTimeTo).toLocaleDateString();
+        return `${from} - ${to}`;
+      }
+      return 'Custom Range';
+    default:
+      return `Last ${defaultDays} Days`;
+  }
+}
+
 export default defineEventHandler(async (event: H3Event) => {
   try {
     // Get pagination parameters
@@ -58,6 +96,221 @@ export default defineEventHandler(async (event: H3Event) => {
       }
     }
 
+    // Check if any filters are active
+    const hasActiveFilters =
+      securityStatus !== undefined ||
+      techLevel !== undefined ||
+      shipClass !== undefined ||
+      filters.minTotalValue !== undefined ||
+      filters.isSolo ||
+      filters.isAwox ||
+      filters.isNpc ||
+      filters.excludeTypeIds?.some((id) => CAPSULE_TYPE_IDS.includes(id)) ||
+      query.attackerCount !== undefined ||
+      query.timeRange !== undefined ||
+      Object.keys(userFilters).length > 0;
+
+    // Fetch entity names for active filters
+    const entityFiltersWithNames = await track(
+      'filter:fetch_entity_names',
+      'application',
+      async () => {
+        const victim = [];
+        const attacker = [];
+        const both = [];
+
+        // Victim entities
+        if (filters.victimCharacterIds?.length) {
+          for (const id of filters.victimCharacterIds) {
+            const char = await getCharacter(id);
+            if (char) victim.push({ id, name: char.name, type: 'character' });
+          }
+        }
+        if (filters.victimCorporationIds?.length) {
+          for (const id of filters.victimCorporationIds) {
+            const corp = await getCorporation(id);
+            if (corp)
+              victim.push({
+                id,
+                name: corp.name,
+                type: 'corporation',
+                ticker: corp.ticker,
+              });
+          }
+        }
+        if (filters.victimAllianceIds?.length) {
+          for (const id of filters.victimAllianceIds) {
+            const alliance = await getAlliance(id);
+            if (alliance)
+              victim.push({
+                id,
+                name: alliance.name,
+                type: 'alliance',
+                ticker: alliance.ticker,
+              });
+          }
+        }
+
+        // Attacker entities
+        if (filters.attackerCharacterIds?.length) {
+          for (const id of filters.attackerCharacterIds) {
+            const char = await getCharacter(id);
+            if (char) attacker.push({ id, name: char.name, type: 'character' });
+          }
+        }
+        if (filters.attackerCorporationIds?.length) {
+          for (const id of filters.attackerCorporationIds) {
+            const corp = await getCorporation(id);
+            if (corp)
+              attacker.push({
+                id,
+                name: corp.name,
+                type: 'corporation',
+                ticker: corp.ticker,
+              });
+          }
+        }
+        if (filters.attackerAllianceIds?.length) {
+          for (const id of filters.attackerAllianceIds) {
+            const alliance = await getAlliance(id);
+            if (alliance)
+              attacker.push({
+                id,
+                name: alliance.name,
+                type: 'alliance',
+                ticker: alliance.ticker,
+              });
+          }
+        }
+
+        // Both entities
+        if (filters.bothCharacterIds?.length) {
+          for (const id of filters.bothCharacterIds) {
+            const char = await getCharacter(id);
+            if (char) both.push({ id, name: char.name, type: 'character' });
+          }
+        }
+        if (filters.bothCorporationIds?.length) {
+          for (const id of filters.bothCorporationIds) {
+            const corp = await getCorporation(id);
+            if (corp)
+              both.push({
+                id,
+                name: corp.name,
+                type: 'corporation',
+                ticker: corp.ticker,
+              });
+          }
+        }
+        if (filters.bothAllianceIds?.length) {
+          for (const id of filters.bothAllianceIds) {
+            const alliance = await getAlliance(id);
+            if (alliance)
+              both.push({
+                id,
+                name: alliance.name,
+                type: 'alliance',
+                ticker: alliance.ticker,
+              });
+          }
+        }
+
+        return { victim, attacker, both };
+      }
+    );
+
+    // Fetch location and item names for active filters
+    const locationFiltersWithNames = await track(
+      'filter:fetch_location_names',
+      'application',
+      async () => {
+        const locations = [];
+
+        // System filters (arrays)
+        if (filters.solarSystemIds && filters.solarSystemIds.length > 0) {
+          for (const id of filters.solarSystemIds) {
+            const system = await getSolarSystem(id);
+            if (system)
+              locations.push({ id, name: system.name, type: 'system' });
+          }
+        } else if (filters.solarSystemId) {
+          const system = await getSolarSystem(filters.solarSystemId);
+          if (system)
+            locations.push({
+              id: filters.solarSystemId,
+              name: system.name,
+              type: 'system',
+            });
+        }
+
+        // Constellation filters (arrays)
+        if (filters.constellationIds && filters.constellationIds.length > 0) {
+          for (const id of filters.constellationIds) {
+            const constellation = await getConstellation(id);
+            if (constellation)
+              locations.push({
+                id,
+                name: constellation.name,
+                type: 'constellation',
+              });
+          }
+        } else if (filters.constellationId) {
+          const constellation = await getConstellation(filters.constellationId);
+          if (constellation)
+            locations.push({
+              id: filters.constellationId,
+              name: constellation.name,
+              type: 'constellation',
+            });
+        }
+
+        // Region filters (arrays)
+        if (filters.regionIds && filters.regionIds.length > 0) {
+          for (const id of filters.regionIds) {
+            const region = await getRegion(id);
+            if (region)
+              locations.push({ id, name: region.name, type: 'region' });
+          }
+        } else if (filters.regionId) {
+          const region = await getRegion(filters.regionId);
+          if (region)
+            locations.push({
+              id: filters.regionId,
+              name: region.name,
+              type: 'region',
+            });
+        }
+
+        return locations;
+      }
+    );
+
+    const itemFiltersWithNames = await track(
+      'filter:fetch_item_names',
+      'application',
+      async () => {
+        const items = [];
+
+        // Item filters (arrays)
+        if (filters.victimShipTypeIds && filters.victimShipTypeIds.length > 0) {
+          for (const id of filters.victimShipTypeIds) {
+            const type = await TypeQueries.getType(id);
+            if (type) items.push({ id, name: type.name, type: 'item' });
+          }
+        } else if (filters.victimShipTypeId) {
+          const type = await TypeQueries.getType(filters.victimShipTypeId);
+          if (type)
+            items.push({
+              id: filters.victimShipTypeId,
+              name: type.name,
+              type: 'item',
+            });
+        }
+
+        return items;
+      }
+    );
+
     const filterDefaults = {
       ...filters,
       securityStatus,
@@ -70,6 +323,18 @@ export default defineEventHandler(async (event: H3Event) => {
       noCapsules:
         filters.excludeTypeIds?.some((id) => CAPSULE_TYPE_IDS.includes(id)) ||
         false,
+      hasActiveFilters,
+      // Entity filters with names for UI initialization
+      entityFilters: entityFiltersWithNames,
+      // Location filters with names for UI initialization
+      locationFilters: locationFiltersWithNames,
+      // Item filters with names for UI initialization
+      itemFilters: itemFiltersWithNames,
+      // New filters
+      attackerCount: query.attackerCount || '',
+      timeRange: query.timeRange || 'last7days',
+      killTimeFrom: query.killTimeFrom || '',
+      killTimeTo: query.killTimeTo || '',
     };
 
     // Fetch killmails and count in parallel using model functions
@@ -262,8 +527,18 @@ export default defineEventHandler(async (event: H3Event) => {
           topic: 'latest', // Subscribe to latest kills as a fallback
           mode: 'kills',
         },
-        topTimeRangeLabel: `Last ${TOP_BOX_LOOKBACK_DAYS} Days`,
-        mostValuableTimeRange: `Last ${MOST_VALUABLE_LOOKBACK_DAYS} Days`,
+        topTimeRangeLabel: getTimeRangeLabel(
+          query.timeRange as string,
+          filters.killTimeFrom,
+          filters.killTimeTo,
+          TOP_BOX_LOOKBACK_DAYS
+        ),
+        mostValuableTimeRange: getTimeRangeLabel(
+          query.timeRange as string,
+          filters.killTimeFrom,
+          filters.killTimeTo,
+          MOST_VALUABLE_LOOKBACK_DAYS
+        ),
       },
       event
     );

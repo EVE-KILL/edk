@@ -318,7 +318,13 @@ function buildFilteredWhereClause(
     conditions.push(extraCondition);
   }
 
-  if (lookbackDays && lookbackDays > 0) {
+  // Only apply lookbackDays if filters don't already have time constraints
+  if (
+    lookbackDays &&
+    lookbackDays > 0 &&
+    !filters.killTimeFrom &&
+    !filters.killTimeTo
+  ) {
     params.lookbackDays = lookbackDays;
     conditions.push(
       `${columnReference(
@@ -440,9 +446,135 @@ function buildKilllistFilterConditions(
     conditions.push(`${killmailColumn('solarSystemId')} = :solarSystemId`);
   }
 
-  if (filters.solarSystemId !== undefined) {
-    params.solarSystemId = filters.solarSystemId;
-    conditions.push(`${killmailColumn('solarSystemId')} = :solarSystemId`);
+  // Location array filters
+  if (filters.solarSystemIds && filters.solarSystemIds.length > 0) {
+    params.solarSystemIds = filters.solarSystemIds;
+    conditions.push(
+      `${killmailColumn('solarSystemId')} = ANY(:solarSystemIds)`
+    );
+  }
+
+  if (filters.constellationIds && filters.constellationIds.length > 0) {
+    params.constellationIds = filters.constellationIds;
+    conditions.push(
+      `${killmailColumn('constellationId')} = ANY(:constellationIds)`
+    );
+  }
+
+  if (filters.regionIds && filters.regionIds.length > 0) {
+    params.regionIds = filters.regionIds;
+    conditions.push(`${killmailColumn('regionId')} = ANY(:regionIds)`);
+  }
+
+  if (filters.victimShipTypeId !== undefined) {
+    params.victimShipTypeId = filters.victimShipTypeId;
+    conditions.push(
+      `${killmailColumn('victimShipTypeId')} = :victimShipTypeId`
+    );
+  }
+
+  // Item array filters
+  if (filters.victimShipTypeIds && filters.victimShipTypeIds.length > 0) {
+    params.victimShipTypeIds = filters.victimShipTypeIds;
+    conditions.push(
+      `${killmailColumn('victimShipTypeId')} = ANY(:victimShipTypeIds)`
+    );
+  }
+
+  // Entity filters - victim
+  if (filters.victimCharacterIds && filters.victimCharacterIds.length > 0) {
+    params.victimCharacterIds = filters.victimCharacterIds;
+    conditions.push(
+      `${killmailColumn('victimCharacterId')} = ANY(:victimCharacterIds)`
+    );
+  }
+
+  if (filters.victimCorporationIds && filters.victimCorporationIds.length > 0) {
+    params.victimCorporationIds = filters.victimCorporationIds;
+    conditions.push(
+      `${killmailColumn('victimCorporationId')} = ANY(:victimCorporationIds)`
+    );
+  }
+
+  if (filters.victimAllianceIds && filters.victimAllianceIds.length > 0) {
+    params.victimAllianceIds = filters.victimAllianceIds;
+    conditions.push(
+      `${killmailColumn('victimAllianceId')} = ANY(:victimAllianceIds)`
+    );
+  }
+
+  // Entity filters - attacker
+  if (filters.attackerCharacterIds && filters.attackerCharacterIds.length > 0) {
+    params.attackerCharacterIds = filters.attackerCharacterIds;
+    conditions.push(
+      `${killmailColumn('topAttackerCharacterId')} = ANY(:attackerCharacterIds)`
+    );
+  }
+
+  if (
+    filters.attackerCorporationIds &&
+    filters.attackerCorporationIds.length > 0
+  ) {
+    params.attackerCorporationIds = filters.attackerCorporationIds;
+    conditions.push(
+      `${killmailColumn('topAttackerCorporationId')} = ANY(:attackerCorporationIds)`
+    );
+  }
+
+  if (filters.attackerAllianceIds && filters.attackerAllianceIds.length > 0) {
+    params.attackerAllianceIds = filters.attackerAllianceIds;
+    conditions.push(
+      `${killmailColumn('topAttackerAllianceId')} = ANY(:attackerAllianceIds)`
+    );
+  }
+
+  // Entity filters - both (victim OR attacker)
+  if (filters.bothCharacterIds && filters.bothCharacterIds.length > 0) {
+    params.bothCharacterIds = filters.bothCharacterIds;
+    conditions.push(
+      `(${killmailColumn('victimCharacterId')} = ANY(:bothCharacterIds) OR ${killmailColumn('topAttackerCharacterId')} = ANY(:bothCharacterIds))`
+    );
+  }
+
+  if (filters.bothCorporationIds && filters.bothCorporationIds.length > 0) {
+    params.bothCorporationIds = filters.bothCorporationIds;
+    conditions.push(
+      `(${killmailColumn('victimCorporationId')} = ANY(:bothCorporationIds) OR ${killmailColumn('topAttackerCorporationId')} = ANY(:bothCorporationIds))`
+    );
+  }
+
+  if (filters.bothAllianceIds && filters.bothAllianceIds.length > 0) {
+    params.bothAllianceIds = filters.bothAllianceIds;
+    conditions.push(
+      `(${killmailColumn('victimAllianceId')} = ANY(:bothAllianceIds) OR ${killmailColumn('topAttackerAllianceId')} = ANY(:bothAllianceIds))`
+    );
+  }
+
+  // Attacker count filter
+  if (filters.attackerCountMin !== undefined) {
+    if (filters.attackerCountMax !== undefined) {
+      params.attackerCountMin = filters.attackerCountMin;
+      params.attackerCountMax = filters.attackerCountMax;
+      conditions.push(
+        `${killmailColumn('attackerCount')} BETWEEN :attackerCountMin AND :attackerCountMax`
+      );
+    } else {
+      // Fleet (51+) has no max
+      params.attackerCountMin = filters.attackerCountMin;
+      conditions.push(
+        `${killmailColumn('attackerCount')} >= :attackerCountMin`
+      );
+    }
+  }
+
+  // Time range filters
+  if (filters.killTimeFrom) {
+    params.killTimeFrom = filters.killTimeFrom.toISOString();
+    conditions.push(`${killmailColumn('killmailTime')} >= :killTimeFrom`);
+  }
+  if (filters.killTimeTo) {
+    params.killTimeTo = filters.killTimeTo.toISOString();
+    conditions.push(`${killmailColumn('killmailTime')} <= :killTimeTo`);
   }
 
   return { conditions, params };

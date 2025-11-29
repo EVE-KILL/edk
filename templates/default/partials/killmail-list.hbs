@@ -1,5 +1,6 @@
-<div class="kb-kl-list"
-     {{#if wsFilter}}data-ws-filter-type="{{wsFilter.type}}" data-ws-filter-id="{{wsFilter.id}}" data-ws-filter-mode="{{wsFilter.mode}}" data-ws-filter-topic="{{wsFilter.topic}}"{{/if}}>
+<div class="kb-kl-list" data-killmail-list
+     {{#if wsFilter}}data-ws-filter-type="{{wsFilter.type}}" data-ws-filter-id="{{wsFilter.id}}" data-ws-filter-mode="{{wsFilter.mode}}" data-ws-filter-topic="{{wsFilter.topic}}"{{/if}}
+     data-ws-updates="{{#unless wsUpdates}}false{{else}}true{{/unless}}">
     {{#if (length killmails)}}
     <div class="kb-kl-row kb-kl-row--header">
         <div class="kb-kl-col kb-kl-col--ship">Ship type</div>
@@ -364,14 +365,11 @@
 
   const killmailList = document.querySelector('.kb-kl-list');
   const killmailListContainer = document.querySelector('[data-killmail-list]');
-  
+
   // Check if WebSocket updates are disabled
   if (killmailListContainer && killmailListContainer.dataset.wsUpdates === 'false') {
     console.log('[Killlist] WebSocket updates disabled via data-ws-updates="false"');
-    return;
-  }
-  
-  if (!killmailList) {
+  } else if (!killmailList) {
     console.log('[Killlist] No killmail list found, skipping WebSocket setup');
   } else {
     const SHIP_GROUPS = {

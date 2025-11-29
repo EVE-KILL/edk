@@ -53,11 +53,52 @@ export function parseKilllistFilters(query: Record<string, any>): {
   let techLevelValue: string | undefined;
   let shipClassValue: string | undefined;
 
-  filters.victimShipTypeId = toNumber(query.victimShipTypeId);
+  // Item filters - handle arrays with max 5 limit
+  const maxItems = 5;
+  const itemIds = (toNumberArray(query.victimShipTypeId) ?? []).concat(
+    toNumberArray(query.itemId) ?? []
+  );
+  if (itemIds.length > 0) {
+    filters.victimShipTypeIds = itemIds.slice(0, maxItems);
+  } else {
+    // Fallback to singular for backwards compatibility
+    const singleItem =
+      toNumber(query.victimShipTypeId) ?? toNumber(query.itemId);
+    if (singleItem) filters.victimShipTypeId = singleItem;
+  }
   filters.victimShipGroupId = toNumber(query.victimShipGroupId);
-  filters.solarSystemId = toNumber(query.solarSystemId);
-  filters.constellationId = toNumber(query.constellationId);
-  filters.regionId = toNumber(query.regionId);
+  // Location filters - handle arrays with max 5 limit
+  const maxLocations = 5;
+  const systemIds = toNumberArray(query.solarSystemId) ?? [];
+  const constellationIds = (toNumberArray(query.constellationId) ?? []).concat(
+    toNumberArray(query.solarConstellationId) ?? []
+  );
+  const regionIds = (toNumberArray(query.regionId) ?? []).concat(
+    toNumberArray(query.solarRegionId) ?? []
+  );
+
+  if (systemIds.length > 0) {
+    filters.solarSystemIds = systemIds.slice(0, maxLocations);
+  } else {
+    const singleSystem = toNumber(query.solarSystemId);
+    if (singleSystem) filters.solarSystemId = singleSystem;
+  }
+
+  if (constellationIds.length > 0) {
+    filters.constellationIds = constellationIds.slice(0, maxLocations);
+  } else {
+    const singleConstellation =
+      toNumber(query.constellationId) ?? toNumber(query.solarConstellationId);
+    if (singleConstellation) filters.constellationId = singleConstellation;
+  }
+
+  if (regionIds.length > 0) {
+    filters.regionIds = regionIds.slice(0, maxLocations);
+  } else {
+    const singleRegion =
+      toNumber(query.regionId) ?? toNumber(query.solarRegionId);
+    if (singleRegion) filters.regionId = singleRegion;
+  }
 
   filters.minTotalValue =
     toNumber(query.minTotalValue) ?? toNumber(query.minValue);
@@ -120,6 +161,109 @@ export function parseKilllistFilters(query: Record<string, any>): {
 
   filters.excludeTypeIds = toNumberArray(query.excludeTypeId);
 
+  // Handle attacker count filter
+  const attackerCount = query.attackerCount;
+  if (attackerCount) {
+    switch (attackerCount) {
+      case 'solo':
+        filters.attackerCountMin = 1;
+        filters.attackerCountMax = 1;
+        break;
+      case 'small':
+        filters.attackerCountMin = 2;
+        filters.attackerCountMax = 5;
+        break;
+      case 'medium':
+        filters.attackerCountMin = 6;
+        filters.attackerCountMax = 15;
+        break;
+      case 'large':
+        filters.attackerCountMin = 16;
+        filters.attackerCountMax = 50;
+        break;
+      case 'fleet':
+        filters.attackerCountMin = 51;
+        // No max for fleet
+        break;
+    }
+  }
+
+  // Handle time range filters
+  // Default to last7days only if timeRange is not explicitly provided
+  const timeRange =
+    query.timeRange !== undefined ? query.timeRange : 'last7days';
+  if (timeRange && timeRange !== '' && timeRange !== 'custom') {
+    const now = new Date();
+    let startDate: Date;
+
+    switch (timeRange) {
+      case 'today':
+        // Today from midnight
+        startDate = new Date(now);
+        startDate.setHours(0, 0, 0, 0);
+        filters.killTimeFrom = startDate;
+        filters.killTimeTo = now;
+        break;
+      case 'yesterday': {
+        // Yesterday 00:00 to yesterday 23:59:59
+        const yesterdayEnd = new Date(now);
+        yesterdayEnd.setHours(0, 0, 0, 0);
+        yesterdayEnd.setMilliseconds(-1); // End of yesterday
+        startDate = new Date(yesterdayEnd);
+        startDate.setDate(startDate.getDate() - 1);
+        startDate.setHours(0, 0, 0, 0);
+        filters.killTimeFrom = startDate;
+        filters.killTimeTo = yesterdayEnd;
+        break;
+      }
+      case 'last7days':
+        startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 7);
+        filters.killTimeFrom = startDate;
+        filters.killTimeTo = now;
+        break;
+      case 'thisweek': {
+        // This week from Monday 00:00
+        startDate = new Date(now);
+        const dayOfWeek = startDate.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday is 0
+        startDate.setDate(startDate.getDate() - daysToMonday);
+        startDate.setHours(0, 0, 0, 0);
+        filters.killTimeFrom = startDate;
+        filters.killTimeTo = now;
+        break;
+      }
+      case 'last30days':
+        startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 30);
+        filters.killTimeFrom = startDate;
+        filters.killTimeTo = now;
+        break;
+      case 'thismonth':
+        // This month from 1st 00:00
+        startDate = new Date(now);
+        startDate.setDate(1);
+        startDate.setHours(0, 0, 0, 0);
+        filters.killTimeFrom = startDate;
+        filters.killTimeTo = now;
+        break;
+    }
+  } else if (timeRange === 'custom') {
+    // Handle custom date range
+    if (query.killTimeFrom) {
+      const fromDate = new Date(query.killTimeFrom as string);
+      if (!isNaN(fromDate.getTime())) {
+        filters.killTimeFrom = fromDate;
+      }
+    }
+    if (query.killTimeTo) {
+      const toDate = new Date(query.killTimeTo as string);
+      if (!isNaN(toDate.getTime())) {
+        filters.killTimeTo = toDate;
+      }
+    }
+  }
+
   // Handle ship class filter
   // Ship group IDs for different classes
   const SHIP_CLASS_GROUPS = {
@@ -179,12 +323,54 @@ export function parseKilllistFilters(query: Record<string, any>): {
     filters.metaGroupIds = toNumberArray(query.metaGroupId);
   }
 
-  filters.attackerCharacterId = toNumber(query.attackerCharacterId);
-  filters.attackerCorporationId = toNumber(query.attackerCorporationId);
-  filters.attackerAllianceId = toNumber(query.attackerAllianceId);
-  filters.victimCharacterId = toNumber(query.victimCharacterId);
-  filters.victimCorporationId = toNumber(query.victimCorporationId);
-  filters.victimAllianceId = toNumber(query.victimAllianceId);
+  // Entity filters - handle both singular and array formats (max 15 per category)
+  const maxEntities = 15;
+  const victimCharIds = (toNumberArray(query.victimCharacterId) ?? []).slice(
+    0,
+    maxEntities
+  );
+  const victimCorpIds = (toNumberArray(query.victimCorporationId) ?? []).slice(
+    0,
+    maxEntities
+  );
+  const victimAllyIds = (toNumberArray(query.victimAllianceId) ?? []).slice(
+    0,
+    maxEntities
+  );
+  const attackerCharIds = (
+    toNumberArray(query.attackerCharacterId) ?? []
+  ).slice(0, maxEntities);
+  const attackerCorpIds = (
+    toNumberArray(query.attackerCorporationId) ?? []
+  ).slice(0, maxEntities);
+  const attackerAllyIds = (toNumberArray(query.attackerAllianceId) ?? []).slice(
+    0,
+    maxEntities
+  );
+  const bothCharIds = (toNumberArray(query.bothCharacterId) ?? []).slice(
+    0,
+    maxEntities
+  );
+  const bothCorpIds = (toNumberArray(query.bothCorporationId) ?? []).slice(
+    0,
+    maxEntities
+  );
+  const bothAllyIds = (toNumberArray(query.bothAllianceId) ?? []).slice(
+    0,
+    maxEntities
+  );
+
+  if (victimCharIds.length > 0) filters.victimCharacterIds = victimCharIds;
+  if (victimCorpIds.length > 0) filters.victimCorporationIds = victimCorpIds;
+  if (victimAllyIds.length > 0) filters.victimAllianceIds = victimAllyIds;
+  if (attackerCharIds.length > 0)
+    filters.attackerCharacterIds = attackerCharIds;
+  if (attackerCorpIds.length > 0)
+    filters.attackerCorporationIds = attackerCorpIds;
+  if (attackerAllyIds.length > 0) filters.attackerAllianceIds = attackerAllyIds;
+  if (bothCharIds.length > 0) filters.bothCharacterIds = bothCharIds;
+  if (bothCorpIds.length > 0) filters.bothCorporationIds = bothCorpIds;
+  if (bothAllyIds.length > 0) filters.bothAllianceIds = bothAllyIds;
 
   // Handle capsule filtering
   const noCapsules =
@@ -200,7 +386,7 @@ export function parseKilllistFilters(query: Record<string, any>): {
     }
   }
 
-  // Build query string preserving the parsed values (repeat arrays).
+  // Build query string preserving the original parameter names and values
   const params = new URLSearchParams();
   const addParam = (key: string, value: any) => {
     if (value === undefined || value === null) return;
@@ -211,11 +397,28 @@ export function parseKilllistFilters(query: Record<string, any>): {
     }
   };
 
-  addParam('victimShipTypeId', filters.victimShipTypeId);
-  addParam('victimShipGroupId', filters.victimShipGroupId);
-  addParam('solarSystemId', filters.solarSystemId);
-  addParam('constellationId', filters.constellationId);
-  addParam('regionId', filters.regionId);
+  // Preserve original query parameter names for items
+  if (query.itemId) {
+    addParam('itemId', query.itemId);
+  } else if (query.victimShipTypeId) {
+    addParam('victimShipTypeId', query.victimShipTypeId);
+  }
+  addParam('victimShipGroupId', query.victimShipGroupId);
+
+  // Preserve original query parameter names for locations
+  if (query.solarSystemId) {
+    addParam('solarSystemId', query.solarSystemId);
+  }
+  if (query.solarConstellationId) {
+    addParam('solarConstellationId', query.solarConstellationId);
+  } else if (query.constellationId) {
+    addParam('constellationId', query.constellationId);
+  }
+  if (query.solarRegionId) {
+    addParam('solarRegionId', query.solarRegionId);
+  } else if (query.regionId) {
+    addParam('regionId', query.regionId);
+  }
   addParam('minTotalValue', filters.minTotalValue);
   addParam('maxTotalValue', filters.maxTotalValue);
   if (query.securityStatus) {
@@ -224,31 +427,75 @@ export function parseKilllistFilters(query: Record<string, any>): {
     addParam('minSecurityStatus', filters.minSecurityStatus);
     addParam('maxSecurityStatus', filters.maxSecurityStatus);
   }
-  addParam('solo', filters.isSolo);
-  addParam('npc', filters.isNpc);
-  addParam('awox', filters.isAwox);
-  addParam('big', filters.isBig);
-  addParam('shipGroupId', filters.shipGroupIds);
-  addParam('excludeTypeId', filters.excludeTypeIds);
-  addParam('attackerCharacterId', filters.attackerCharacterId);
-  addParam('attackerCorporationId', filters.attackerCorporationId);
-  addParam('attackerAllianceId', filters.attackerAllianceId);
-  addParam('victimCharacterId', filters.victimCharacterId);
-  addParam('victimCorporationId', filters.victimCorporationId);
-  addParam('victimAllianceId', filters.victimAllianceId);
-  addParam('regionIdMin', filters.regionIdMin);
-  addParam('regionIdMax', filters.regionIdMax);
+  addParam('solo', query.solo);
+  addParam('npc', query.npc);
+  addParam('awox', query.awox);
+  addParam('big', query.big);
+  if (query.shipGroupId) {
+    addParam('shipGroupId', query.shipGroupId);
+  }
+  if (query.excludeTypeId) {
+    addParam('excludeTypeId', query.excludeTypeId);
+  }
+  if (query.victimCharacterId) {
+    addParam('victimCharacterId', query.victimCharacterId);
+  }
+  if (query.victimCorporationId) {
+    addParam('victimCorporationId', query.victimCorporationId);
+  }
+  if (query.victimAllianceId) {
+    addParam('victimAllianceId', query.victimAllianceId);
+  }
+  if (query.attackerCharacterId) {
+    addParam('attackerCharacterId', query.attackerCharacterId);
+  }
+  if (query.attackerCorporationId) {
+    addParam('attackerCorporationId', query.attackerCorporationId);
+  }
+  if (query.attackerAllianceId) {
+    addParam('attackerAllianceId', query.attackerAllianceId);
+  }
+  if (query.bothCharacterId) {
+    addParam('bothCharacterId', query.bothCharacterId);
+  }
+  if (query.bothCorporationId) {
+    addParam('bothCorporationId', query.bothCorporationId);
+  }
+  if (query.bothAllianceId) {
+    addParam('bothAllianceId', query.bothAllianceId);
+  }
+  if (query.regionIdMin) {
+    addParam('regionIdMin', query.regionIdMin);
+  }
+  if (query.regionIdMax) {
+    addParam('regionIdMax', query.regionIdMax);
+  }
   if (query.techLevel) {
     addParam('techLevel', query.techLevel);
-  } else {
-    addParam('metaGroupId', filters.metaGroupIds);
+  }
+  if (query.metaGroupId) {
+    addParam('metaGroupId', query.metaGroupId);
   }
   if (query.shipClass) {
     addParam('shipClass', query.shipClass);
-  } else {
-    addParam('shipGroupId', filters.shipGroupIds);
   }
-  if (filters.noCapsules) addParam('noCapsules', '1');
+  if (query.noCapsules || query.skipCapsules) {
+    addParam('noCapsules', '1');
+  }
+  if (query.attackerCount) {
+    addParam('attackerCount', query.attackerCount);
+  }
+  if (query.timeRange) {
+    addParam('timeRange', query.timeRange);
+  }
+  if (query.timeRange === 'custom') {
+    if (query.killTimeFrom) {
+      addParam('killTimeFrom', query.killTimeFrom);
+    }
+    if (query.killTimeTo) {
+      addParam('killTimeTo', query.killTimeTo);
+    }
+  }
 
   return {
     filters,

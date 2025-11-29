@@ -204,6 +204,23 @@ export function buildKilllistConditions(
     );
   }
 
+  // Location array filters
+  if (filters.solarSystemIds && filters.solarSystemIds.length > 0) {
+    conditions.push(
+      database.sql`${k}."solarSystemId" = ANY(${filters.solarSystemIds})`
+    );
+  }
+
+  if (filters.constellationIds && filters.constellationIds.length > 0) {
+    conditions.push(
+      database.sql`${k}."constellationId" = ANY(${filters.constellationIds})`
+    );
+  }
+
+  if (filters.regionIds && filters.regionIds.length > 0) {
+    conditions.push(database.sql`${regionColumn} = ANY(${filters.regionIds})`);
+  }
+
   if (filters.typeId !== undefined) {
     conditions.push(database.sql`${k}."victimShipTypeId" = ${filters.typeId}`);
   }
@@ -211,6 +228,13 @@ export function buildKilllistConditions(
   if (filters.victimShipTypeId !== undefined) {
     conditions.push(
       database.sql`${k}."victimShipTypeId" = ${filters.victimShipTypeId}`
+    );
+  }
+
+  // Item array filters
+  if (filters.victimShipTypeIds && filters.victimShipTypeIds.length > 0) {
+    conditions.push(
+      database.sql`${k}."victimShipTypeId" = ANY(${filters.victimShipTypeIds})`
     );
   }
 
@@ -260,6 +284,66 @@ export function buildKilllistConditions(
     );
   }
 
+  // Entity array filters - victim
+  if (filters.victimCharacterIds && filters.victimCharacterIds.length > 0) {
+    conditions.push(
+      database.sql`${k}."victimCharacterId" = ANY(${filters.victimCharacterIds})`
+    );
+  }
+
+  if (filters.victimCorporationIds && filters.victimCorporationIds.length > 0) {
+    conditions.push(
+      database.sql`${k}."victimCorporationId" = ANY(${filters.victimCorporationIds})`
+    );
+  }
+
+  if (filters.victimAllianceIds && filters.victimAllianceIds.length > 0) {
+    conditions.push(
+      database.sql`${k}."victimAllianceId" = ANY(${filters.victimAllianceIds})`
+    );
+  }
+
+  // Entity array filters - attacker
+  if (filters.attackerCharacterIds && filters.attackerCharacterIds.length > 0) {
+    conditions.push(
+      database.sql`${k}."topAttackerCharacterId" = ANY(${filters.attackerCharacterIds})`
+    );
+  }
+
+  if (
+    filters.attackerCorporationIds &&
+    filters.attackerCorporationIds.length > 0
+  ) {
+    conditions.push(
+      database.sql`${k}."topAttackerCorporationId" = ANY(${filters.attackerCorporationIds})`
+    );
+  }
+
+  if (filters.attackerAllianceIds && filters.attackerAllianceIds.length > 0) {
+    conditions.push(
+      database.sql`${k}."topAttackerAllianceId" = ANY(${filters.attackerAllianceIds})`
+    );
+  }
+
+  // Entity array filters - both (victim OR attacker)
+  if (filters.bothCharacterIds && filters.bothCharacterIds.length > 0) {
+    conditions.push(
+      database.sql`(${k}."victimCharacterId" = ANY(${filters.bothCharacterIds}) OR ${k}."topAttackerCharacterId" = ANY(${filters.bothCharacterIds}))`
+    );
+  }
+
+  if (filters.bothCorporationIds && filters.bothCorporationIds.length > 0) {
+    conditions.push(
+      database.sql`(${k}."victimCorporationId" = ANY(${filters.bothCorporationIds}) OR ${k}."topAttackerCorporationId" = ANY(${filters.bothCorporationIds}))`
+    );
+  }
+
+  if (filters.bothAllianceIds && filters.bothAllianceIds.length > 0) {
+    conditions.push(
+      database.sql`(${k}."victimAllianceId" = ANY(${filters.bothAllianceIds}) OR ${k}."topAttackerAllianceId" = ANY(${filters.bothAllianceIds}))`
+    );
+  }
+
   if (filters.excludeTypeIds && filters.excludeTypeIds.length > 0) {
     conditions.push(
       database.sql`${k}."victimShipTypeId" != ALL(${filters.excludeTypeIds})`
@@ -268,6 +352,32 @@ export function buildKilllistConditions(
 
   if (filters.noCapsules) {
     conditions.push(database.sql`${groupColumn} != ALL(${CAPSULE_GROUP_IDS})`);
+  }
+
+  // Attacker count filter
+  if (filters.attackerCountMin !== undefined) {
+    if (filters.attackerCountMax !== undefined) {
+      conditions.push(
+        database.sql`${k}."attackerCount" BETWEEN ${filters.attackerCountMin} AND ${filters.attackerCountMax}`
+      );
+    } else {
+      // Fleet (51+) has no max
+      conditions.push(
+        database.sql`${k}."attackerCount" >= ${filters.attackerCountMin}`
+      );
+    }
+  }
+
+  // Time range filters
+  if (filters.killTimeFrom) {
+    conditions.push(
+      database.sql`${k}."killmailTime" >= ${filters.killTimeFrom.toISOString()}`
+    );
+  }
+  if (filters.killTimeTo) {
+    conditions.push(
+      database.sql`${k}."killmailTime" <= ${filters.killTimeTo.toISOString()}`
+    );
   }
 
   if (filters.metaGroupIds && filters.metaGroupIds.length > 0) {
@@ -655,10 +765,16 @@ export interface KilllistFilters {
   regionIdMax?: number;
   constellationId?: number;
   solarSystemId?: number;
+  // Location array filters (max 5 each)
+  regionIds?: number[];
+  constellationIds?: number[];
+  solarSystemIds?: number[];
   typeId?: number; // legacy alias for victimShipTypeId
   groupId?: number; // legacy alias for victimShipGroupId
   victimShipTypeId?: number;
   victimShipGroupId?: number;
+  // Item array filters (max 5)
+  victimShipTypeIds?: number[];
   metaGroupIds?: number[]; // Filter by meta group (T1, T2, Faction, Officer)
   attackerCharacterId?: number;
   attackerCorporationId?: number;
@@ -666,8 +782,24 @@ export interface KilllistFilters {
   victimCharacterId?: number;
   victimCorporationId?: number;
   victimAllianceId?: number;
+  // Entity array filters
+  victimCharacterIds?: number[];
+  victimCorporationIds?: number[];
+  victimAllianceIds?: number[];
+  attackerCharacterIds?: number[];
+  attackerCorporationIds?: number[];
+  attackerAllianceIds?: number[];
+  bothCharacterIds?: number[];
+  bothCorporationIds?: number[];
+  bothAllianceIds?: number[];
   excludeTypeIds?: number[];
   noCapsules?: boolean; // Filter out capsules
+  // Attacker count filter
+  attackerCountMin?: number;
+  attackerCountMax?: number;
+  // Time range filters
+  killTimeFrom?: Date;
+  killTimeTo?: Date;
 }
 
 /**
@@ -765,16 +897,12 @@ export async function estimateFilteredKills(
 export async function getFilteredKillsWithNames(
   filters: KilllistFilters,
   page: number = 1,
-  perPage: number = 50,
-  lookbackDays?: number
+  perPage: number = 50
 ): Promise<EntityKillmail[]> {
   const offset = (page - 1) * perPage;
   const clause = buildKilllistConditions(filters, 'k', {
     groupColumn: database.sql`k."victimShipGroupId"`,
   });
-  const timeClause = lookbackDays
-    ? database.sql`AND k."killmailTime" >= NOW() - (${lookbackDays} || ' days')::interval`
-    : database.sql``;
 
   return await database.sql<EntityKillmail[]>`
     SELECT
@@ -829,7 +957,7 @@ export async function getFilteredKillsWithNames(
     LEFT JOIN npccorporations anpc_corp ON k."topAttackerCorporationId" = anpc_corp."corporationId"
     LEFT JOIN alliances aalliance ON k."topAttackerAllianceId" = aalliance."allianceId"
 
-    WHERE ${clause} ${timeClause}
+    WHERE ${clause}
     ORDER BY k."killmailTime" DESC
     LIMIT ${perPage} OFFSET ${offset}
   `;
@@ -846,7 +974,11 @@ export async function getMostValuableKillsFiltered(
   const clause = buildKilllistConditions(filters, 'k', {
     groupColumn: database.sql`k."victimShipGroupId"`,
   });
-  const timeClause = database.sql`AND k."killmailTime" >= NOW() - (${lookbackDays} || ' days')::interval`;
+  // Only apply lookbackDays if filters don't already have time constraints
+  const timeClause =
+    !filters.killTimeFrom && !filters.killTimeTo
+      ? database.sql`AND k."killmailTime" >= NOW() - (${lookbackDays} || ' days')::interval`
+      : database.sql``;
 
   return await database.sql<EntityKillmail[]>`
     SELECT

@@ -2,6 +2,9 @@
 {{> components/page-header title=data.pageHeaderLight.title breadcrumbs=data.pageHeaderLight.breadcrumbs info=data.pageHeaderLight.info}}
 {{/if}}
 
+<!-- Advanced Filters Section -->
+{{> components/advancedfilter baseUrl=data.baseUrl filterDefaults=data.filterDefaults pagination=data.pagination filterQueryString=data.filterQueryString}}
+
 {{#if data.recentKillmails}}
 <!-- Kills for Followed Entities or Global Feed -->
 
@@ -26,13 +29,59 @@
 
   <!-- Main Content Area (Right 80%) -->
   <div class="killlist-main">
-    {{#if data.filterDefaults}}
-      {{> partials/killlist-filters baseUrl=data.baseUrl filterDefaults=data.filterDefaults pagination=data.pagination filterQueryString=data.filterQueryString}}
+    <!-- Pagination Controls -->
+    {{#if data.pagination}}
+    <div class="killlist-pagination-controls">
+      <div class="killlist-limit">
+        <span class="killlist-limit-label">Show</span>
+        <select name="limit" class="killlist-limit-select" onchange="changeLimit(this.value)">
+          <option value="5" {{#ifEquals data.pagination.limit 5}}selected{{/ifEquals}}>5</option>
+          <option value="10" {{#ifEquals data.pagination.limit 10}}selected{{/ifEquals}}>10</option>
+          <option value="25" {{#ifEquals data.pagination.limit 25}}selected{{/ifEquals}}>25</option>
+          <option value="50" {{#ifEquals data.pagination.limit 50}}selected{{/ifEquals}}>50</option>
+          <option value="100" {{#ifEquals data.pagination.limit 100}}selected{{/ifEquals}}>100</option>
+        </select>
+      </div>
+
+      <div class="killlist-pagination">
+        {{#if data.pagination.hasPrev}}
+        <a href="{{data.baseUrl}}{{#if data.filterQueryString}}?{{data.filterQueryString}}&page={{data.pagination.prevPage}}&limit={{data.pagination.limit}}{{else}}?page={{data.pagination.prevPage}}&limit={{data.pagination.limit}}{{/if}}" class="killlist-page-btn">Previous</a>
+        {{else}}
+        <span class="killlist-page-btn disabled">Previous</span>
+        {{/if}}
+
+        <div class="killlist-pages">
+          {{#if data.pagination.showFirst}}
+          <a href="{{data.baseUrl}}{{#if data.filterQueryString}}?{{data.filterQueryString}}&limit={{data.pagination.limit}}{{else}}?limit={{data.pagination.limit}}{{/if}}" class="killlist-page">1</a>
+          <span class="killlist-ellipsis">...</span>
+          {{/if}}
+
+          {{#each data.pagination.pages}}
+          {{#if (eq this ../data.pagination.currentPage)}}
+          <span class="killlist-page active">{{this}}</span>
+          {{else}}
+          <a href="{{../data.baseUrl}}{{#if ../data.filterQueryString}}?{{../data.filterQueryString}}&page={{this}}&limit={{../data.pagination.limit}}{{else}}?page={{this}}&limit={{../data.pagination.limit}}{{/if}}" class="killlist-page">{{this}}</a>
+          {{/if}}
+          {{/each}}
+
+          {{#if data.pagination.showLast}}
+          <span class="killlist-ellipsis">...</span>
+          <a href="{{data.baseUrl}}{{#if data.filterQueryString}}?{{data.filterQueryString}}&page={{data.pagination.totalPages}}&limit={{data.pagination.limit}}{{else}}?page={{data.pagination.totalPages}}&limit={{data.pagination.limit}}{{/if}}" class="killlist-page">{{data.pagination.totalPages}}</a>
+          {{/if}}
+        </div>
+
+        {{#if data.pagination.hasNext}}
+        <a href="{{data.baseUrl}}{{#if data.filterQueryString}}?{{data.filterQueryString}}&page={{data.pagination.nextPage}}&limit={{data.pagination.limit}}{{else}}?page={{data.pagination.nextPage}}&limit={{data.pagination.limit}}{{/if}}" class="killlist-page-btn">Next</a>
+        {{else}}
+        <span class="killlist-page-btn disabled">Next</span>
+        {{/if}}
+      </div>
+    </div>
     {{/if}}
 
     <!-- Killmails List -->
     <section class="killlist-content">
-    {{> partials/killmail-list killmails=data.recentKillmails wsFilter=data.wsFilter limit=data.pagination.limit}}
+    {{> partials/killmail-list killmails=data.recentKillmails wsFilter=data.wsFilter limit=data.pagination.limit wsUpdates=false}}
     </section>
   </div>
 </div>
@@ -70,6 +119,128 @@
   margin: 0;
 }
 
+/* Pagination controls above killlist */
+.killlist-pagination-controls {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.killlist-limit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.killlist-limit-select {
+  background-color: var(--color-bg-tertiary) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  border: 1px solid var(--color-border-dark);
+  color: var(--color-text-secondary) !important;
+  padding: 5px 6px;
+  padding-right: 22px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  min-width: 70px;
+}
+
+.killlist-limit-select option {
+  background-color: var(--color-bg-tertiary) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.killlist-limit-select:hover {
+  border-color: var(--color-accent-blue);
+  background-color: rgba(74, 158, 255, 0.05) !important;
+  color: var(--color-text-white) !important;
+}
+
+.killlist-limit-select:focus {
+  outline: none;
+  border-color: var(--color-accent-blue);
+  background-color: var(--color-bg-tertiary) !important;
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.1);
+  color: var(--color-text-white) !important;
+}
+
+.killlist-pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.killlist-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.killlist-page-btn {
+  padding: 6px 12px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.killlist-page-btn:hover:not(.disabled) {
+  border-color: var(--color-accent-blue);
+  color: var(--color-accent-blue);
+  background: rgba(74, 158, 255, 0.05);
+}
+
+.killlist-page-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.killlist-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.killlist-page:hover {
+  color: var(--color-text-white);
+  background: var(--color-bg-tertiary);
+}
+
+.killlist-page.active {
+  background: var(--color-accent-blue);
+  color: var(--color-text-white);
+  font-weight: bold;
+}
+
+.killlist-ellipsis {
+  color: var(--color-text-tertiary);
+  padding: 0 4px;
+}
+
 /* Responsive: stack on smaller screens */
 @media (max-width: 1200px) {
   .killlist-wrapper {
@@ -88,8 +259,27 @@
     width: 100%;
     min-width: auto;
   }
+
+  .killlist-pagination-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .killlist-pagination {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 </style>
+
+<script>
+function changeLimit(limit) {
+  const url = new URL(window.location);
+  url.searchParams.set('limit', limit);
+  url.searchParams.set('page', '1'); // Reset to page 1 when changing limit
+  window.location.href = url.toString();
+}
+</script>
 
 {{else}}
 <!-- No killmails found for this filter -->
