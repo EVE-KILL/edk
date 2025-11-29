@@ -1,25 +1,9 @@
 import { defineEventHandler } from 'h3';
 import { database } from '../helpers/database';
 import { cache } from '../helpers/cache';
-import { promisify } from 'util';
-import { exec } from 'child_process';
 import { statfs, readFile } from 'fs/promises';
 import { Queue } from 'bullmq';
 import { env } from '../helpers/env';
-
-const execAsync = promisify(exec);
-
-async function getGitCommitHash() {
-  try {
-    const { stdout } = await execAsync('git rev-parse --short HEAD');
-    return stdout.trim();
-  } catch (error) {
-    logger.error('Error getting git commit hash:', {
-      error: (error as Error).message,
-    });
-    return 'unknown';
-  }
-}
 
 async function getDbStatus() {
   const startTime = Date.now();
@@ -127,15 +111,13 @@ async function getDiskSpace() {
 }
 
 export default defineEventHandler(async () => {
-  const [dbStatus, redisStatus, queues, memory, disk, commitHash] =
-    await Promise.all([
-      getDbStatus(),
-      getRedisStatus(),
-      getQueueStatus(),
-      getMemoryUsage(),
-      getDiskSpace(),
-      getGitCommitHash(),
-    ]);
+  const [dbStatus, redisStatus, queues, memory, disk] = await Promise.all([
+    getDbStatus(),
+    getRedisStatus(),
+    getQueueStatus(),
+    getMemoryUsage(),
+    getDiskSpace(),
+  ]);
 
   const overallStatus =
     dbStatus.status === 'ok' && redisStatus.status === 'ok'
@@ -148,7 +130,8 @@ export default defineEventHandler(async () => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     version: packageJson.version || 'unknown',
-    git_commit: commitHash,
+    // Grab the package version from package.json
+    git_commit: packageJson.version || 'unknown',
     checks: {
       database: dbStatus,
       redis: redisStatus,
