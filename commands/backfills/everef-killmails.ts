@@ -162,7 +162,7 @@ export default {
           totalStats.killmailsSkipped += stats.skipped;
 
           logger.info(`Completed ${date}`, stats);
-        } catch {
+        } catch (error) {
           logger.error(`Failed to process ${date}`, {
             error: error instanceof Error ? error.message : String(error),
           });
@@ -182,7 +182,7 @@ export default {
       });
 
       process.exit(0);
-    } catch {
+    } catch (error) {
       logger.error('Import failed', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
@@ -365,7 +365,7 @@ async function processDate(
     await execAsync(`rm -rf ${extractDir}`);
 
     return { processed, stored, skipped };
-  } catch {
+  } catch (error) {
     // Cleanup on error
     await unlink(archivePath).catch(() => {});
     await execAsync(`rm -rf ${extractDir}`).catch(() => {});

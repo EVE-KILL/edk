@@ -424,8 +424,8 @@ class StatsDashboard {
       tablesToCheck.map(async (tableName) => {
         // Use approximate count from pg_class.reltuples (MUCH faster)
         const countResult = await database.findOne<{ count: number }>(
-          `SELECT COALESCE(reltuples::bigint, 0) as count 
-           FROM pg_class 
+          `SELECT COALESCE(reltuples::bigint, 0) as count
+           FROM pg_class
            WHERE relname = :tableName`,
           { tableName }
         );
@@ -433,8 +433,8 @@ class StatsDashboard {
         // Get size including all partitions
         const sizeResult = await database.findOne<{ size: string }>(
           `SELECT pg_size_pretty(SUM(pg_total_relation_size(quote_ident(tablename)))) as size
-           FROM pg_tables 
-           WHERE schemaname = 'public' 
+           FROM pg_tables
+           WHERE schemaname = 'public'
            AND (tablename = '${tableName}' OR tablename LIKE '${tableName}\\_%')`
         );
 
@@ -467,8 +467,8 @@ class StatsDashboard {
     // Get combined killmails related tables size (including all partitions)
     const kmRelatedSize = await database.findOne<{ size: string }>(
       `SELECT pg_size_pretty(SUM(pg_total_relation_size(quote_ident(tablename)))) as size
-       FROM pg_tables 
-       WHERE schemaname = 'public' 
+       FROM pg_tables
+       WHERE schemaname = 'public'
        AND (tablename LIKE 'killmails%' OR tablename LIKE 'attackers%' OR tablename LIKE 'items%')`
     );
 
@@ -525,7 +525,7 @@ class StatsDashboard {
 
       // Close all queue connections
       await Promise.all(queues.map((q) => q.close()));
-    } catch {
+    } catch (error) {
       // Clean up any open queues
       await Promise.all(queues.map((q) => q.close().catch(() => {})));
       logger.error('Failed to fetch queue stats', { error });

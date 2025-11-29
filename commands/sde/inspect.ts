@@ -61,7 +61,7 @@ export default {
 
       // Display results
       displayInspectionResults(result);
-    } catch {
+    } catch (error) {
       logger.error('Error inspecting table:', { error: String(error) });
       process.exit(1);
     }

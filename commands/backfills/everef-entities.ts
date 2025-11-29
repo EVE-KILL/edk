@@ -149,7 +149,7 @@ export default {
             { priority: JobPriority.LOW, delay: 60000 }
           );
         }
-      } catch {
+      } catch (error) {
         logger.warn('Failed to process characters', {
           error: error instanceof Error ? error.message : String(error),
         });
@@ -209,7 +209,7 @@ export default {
             { priority: JobPriority.LOW, delay: 60000 }
           );
         }
-      } catch {
+      } catch (error) {
         logger.warn('Failed to process corporations', {
           error: error instanceof Error ? error.message : String(error),
         });
@@ -263,7 +263,7 @@ export default {
             { priority: JobPriority.LOW, delay: 60000 }
           );
         }
-      } catch {
+      } catch (error) {
         logger.warn('Failed to process alliances', {
           error: error instanceof Error ? error.message : String(error),
         });
@@ -285,7 +285,7 @@ export default {
       });
 
       process.exit(0);
-    } catch {
+    } catch (error) {
       logger.error('Import failed', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
