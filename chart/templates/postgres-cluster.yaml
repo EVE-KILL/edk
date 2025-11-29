@@ -10,6 +10,10 @@ type: kubernetes.io/basic-auth
 stringData:
   username: {{ .Values.database.owner }}
   password: {{ .Values.database.password | quote }}
+  # CloudNativePG requires these additional keys for bootstrap
+  dbname: {{ .Values.database.database }}
+  host: {{ .Values.database.clusterName }}-rw
+  port: "5432"
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster

@@ -64,7 +64,7 @@ Database connection URL from CloudNativePG secret
 */}}
 {{- define "edk.databaseURL" -}}
 {{- if .Values.database.pooler.enabled }}
-{{- printf "postgresql://$(PGUSER):$(PGPASSWORD)@%s-pooler-rw:5432/$(PGDATABASE)?sslmode=require" (include "edk.fullname" .) }}
+{{- printf "postgresql://$(PGUSER):$(PGPASSWORD)@%s-pooler:5432/$(PGDATABASE)?sslmode=require" (include "edk.fullname" .) }}
 {{- else }}
 {{- printf "postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)?sslmode=require" }}
 {{- end }}
@@ -110,14 +110,8 @@ Common environment variables
       key: password
 - name: DATABASE_URL
   value: {{ include "edk.databaseURL" . | quote }}
-# Redis password from Bitnami Redis chart
-{{- if .Values.redis.enabled }}
-- name: REDIS_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "edk.fullname" . }}-redis
-      key: redis-password
-{{- else if .Values.global.env.sensitive.REDIS_PASSWORD }}
+# Redis password (if configured)
+{{- if .Values.global.env.sensitive.REDIS_PASSWORD }}
 - name: REDIS_PASSWORD
   valueFrom:
     secretKeyRef:

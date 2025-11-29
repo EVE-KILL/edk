@@ -5,14 +5,9 @@ type: application
 version: 0.1.0
 appVersion: "0.1.0"
 keywords:
-  - eve-online
-  - killboard
-  - gaming
+- eve-online
+- killboard
+- gaming
 maintainers:
-  - name: EVE-KILL Team
-    email: admin@eve-kill.com
-dependencies:
-  - name: redis
-    version: "24.0.0"
-    repository: https://charts.bitnami.com/bitnami
-    condition: redis.enabled
+- name: EVE-KILL Team
+  email: admin@eve-kill.com

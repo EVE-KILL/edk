@@ -5,24 +5,24 @@ global:
     repository: eve-kill/edk
     tag: latest
     pullPolicy: IfNotPresent
-  
+
   # Environment variables shared across all services
   env:
     NODE_ENV: production
     EDK_CONTAINER: "true"
-    REDIS_HOST: edk-redis-master
+    REDIS_HOST: redis
     REDIS_PORT: "6379"
-    
+
     # Sensitive values (should be overridden or use secrets)
     sensitive:
-      DATABASE_URL: ""  # Will be set from CloudNativePG secret
+      DATABASE_URL: "" # Will be set from CloudNativePG secret
       REDIS_PASSWORD: ""
 
 # Frontend web application
 web:
   enabled: true
   replicaCount: 3
-  
+
   resources:
     requests:
       cpu: 100m
@@ -30,18 +30,18 @@ web:
     limits:
       cpu: 1000m
       memory: 512Mi
-  
+
   autoscaling:
     enabled: true
     minReplicas: 3
     maxReplicas: 10
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
-  
+
   service:
     type: ClusterIP
     port: 3000
-  
+
   livenessProbe:
     httpGet:
       path: /health
@@ -50,7 +50,7 @@ web:
     periodSeconds: 10
     timeoutSeconds: 5
     failureThreshold: 3
-  
+
   readinessProbe:
     httpGet:
       path: /health
@@ -63,7 +63,7 @@ web:
 # Queue workers - individual pods per queue type
 queue:
   enabled: true
-  
+
   # Each queue type runs as a separate deployment
   workers:
     alliance:
@@ -77,7 +77,7 @@ queue:
         limits:
           cpu: 500m
           memory: 256Mi
-    
+
     auth:
       enabled: true
       replicaCount: 1
@@ -89,7 +89,7 @@ queue:
         limits:
           cpu: 500m
           memory: 256Mi
-    
+
     character:
       enabled: true
       replicaCount: 2
@@ -101,7 +101,7 @@ queue:
         limits:
           cpu: 500m
           memory: 256Mi
-    
+
     corporation:
       enabled: true
       replicaCount: 1
@@ -113,7 +113,7 @@ queue:
         limits:
           cpu: 500m
           memory: 256Mi
-    
+
     killmail:
       enabled: true
       replicaCount: 3
@@ -125,7 +125,7 @@ queue:
         limits:
           cpu: 1000m
           memory: 512Mi
-    
+
     price:
       enabled: true
       replicaCount: 1
@@ -142,7 +142,7 @@ queue:
 cronjobs:
   enabled: true
   replicaCount: 1
-  
+
   resources:
     requests:
       cpu: 50m
@@ -155,7 +155,7 @@ cronjobs:
 websocket:
   enabled: true
   replicaCount: 1
-  
+
   resources:
     requests:
       cpu: 100m
@@ -164,64 +164,64 @@ websocket:
       cpu: 1000m
       memory: 512Mi
 
-# Redis (Bitnami chart dependency)
+# Redis (simple container)
 redis:
   enabled: true
-  architecture: standalone
-  auth:
-    enabled: true
-    password: ""  # Will be auto-generated if empty
-  master:
-    persistence:
-      enabled: true
-      size: 8Gi
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  persistence:
+    enabled: false  # Ephemeral, no persistence needed
 
 # Ingress configuration (using Nginx Ingress)
 ingress:
   enabled: true
   className: nginx
-  
+
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-  
+
   hosts:
-    - host: eve-kill.com
-      paths:
-        - path: /
-          pathType: Prefix
-  
+  - host: eve-kill.com
+    paths:
+    - path: /
+      pathType: Prefix
+
   tls:
-    - secretName: edk-tls
-      hosts:
-        - eve-kill.com
+  - secretName: edk-tls
+    hosts:
+    - eve-kill.com
 
 # CloudNativePG Database
 database:
   # Create the PostgreSQL cluster as part of this chart
   createCluster: true
-  
+
   # Cluster configuration
   clusterName: postgres
   imageName: ghcr.io/cloudnative-pg/postgresql:17.2
   instances: 3
-  
+
   # Database and user
   database: evekill
   owner: evekill
-  
+
   # Secret for credentials (will be created by chart)
   secretName: postgres-app-credentials
-  password: "changeme-evekill-password"  # CHANGE THIS IN PRODUCTION
-  
+  password: "changeme-evekill-password" # CHANGE THIS IN PRODUCTION
+
   # PostgreSQL parameters (high-performance tuning)
   parameters:
     max_connections: "300"
@@ -238,16 +238,16 @@ database:
     work_mem: "27MB"
     min_wal_size: "2GB"
     max_wal_size: "8GB"
-  
+
   # Storage configuration
   storage:
     storageClass: longhorn
     size: 200Gi
-  
+
   walStorage:
     storageClass: longhorn
     size: 20Gi
-  
+
   # Resources
   resources:
     requests:
@@ -256,29 +256,29 @@ database:
     limits:
       memory: "32Gi"
       cpu: "14000m"
-  
+
   # Monitoring
   monitoring:
     enablePodMonitor: true
-  
+
   # High availability
   affinity:
     enablePodAntiAffinity: true
     podAntiAffinityType: "preferred"
-  
+
   # Update strategy
   primaryUpdateStrategy: unsupervised
-  
+
   # Keel annotations for auto-updates
   annotations:
     keel.sh/policy: major
     keel.sh/trigger: poll
-  
+
   # Connection pooling via PgBouncer (CNPG Pooler)
   pooler:
     enabled: true
     instances: 3
-    poolMode: transaction  # transaction or session
+    poolMode: transaction # transaction or session
     parameters:
       max_client_conn: "1000"
       default_pool_size: "25"
@@ -295,8 +295,8 @@ podAnnotations: {}
 # Pod security context
 podSecurityContext:
   fsGroup: 1000
-  runAsNonRoot: true
-  runAsUser: 1000
+  runAsNonRoot: false  # Allow running as root for now (app writes to /app/.data)
+  # runAsUser: 1000
 
 # Security context for containers
 securityContext:
@@ -304,7 +304,7 @@ securityContext:
   capabilities:
     drop:
       - ALL
-  readOnlyRootFilesystem: false  # Nitro needs to write to .output/cache
+  readOnlyRootFilesystem: false  # Nitro needs to write to .output/cache and .data/
 
 # Node selector
 nodeSelector: {}

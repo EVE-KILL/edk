@@ -50,6 +50,12 @@ spec:
           {{- include "edk.commonEnv" . | nindent 10 }}
         resources:
           {{- toYaml .Values.web.resources | nindent 12 }}
+        volumeMounts:
+        - name: data
+          mountPath: /app/.data
+      volumes:
+      - name: data
+        emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

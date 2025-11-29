@@ -8,17 +8,17 @@ metadata:
 spec:
   cluster:
     name: {{ .Values.database.clusterName }}
-  
+
   instances: {{ .Values.database.pooler.instances }}
   type: rw  # Read-write pool
-  
+
   pgbouncer:
     poolMode: {{ .Values.database.pooler.poolMode }}
     parameters:
       {{- range $key, $value := .Values.database.pooler.parameters }}
       {{ $key }}: {{ $value | quote }}
       {{- end }}
-    
+
     # PgBouncer pod configuration
     resources:
       requests:
