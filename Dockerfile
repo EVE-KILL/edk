@@ -4,6 +4,9 @@
 FROM oven/bun:alpine
 WORKDIR /app
 
+# Install git for version info in health checks
+RUN apk add --no-cache git
+
 # Copy entire application 1:1
 COPY . .
 
