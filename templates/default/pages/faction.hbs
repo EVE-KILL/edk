@@ -12,6 +12,7 @@
     name=name
     imageUrl=imageUrl
     kills=kills
+    factionStats=factionStats
     faction=faction
 }}
 
@@ -25,14 +26,14 @@
   <!-- Top 10 Sidebar -->
   <aside style="min-width: 0; overflow: hidden;">
     {{#if top10Stats}}
-      {{> components/top-10-stats 
-          stats=top10Stats 
-          characterTitle="Characters" 
-          corporationTitle="Corporations" 
-          allianceTitle="Alliances" 
-          systemTitle="Systems" 
-          regionTitle="Regions" 
-          shipTitle="Ships" 
+      {{> components/top-10-stats
+          stats=top10Stats
+          characterTitle="Characters"
+          corporationTitle="Corporations"
+          allianceTitle="Alliances"
+          systemTitle="Systems"
+          regionTitle="Regions"
+          shipTitle="Ships"
           timeRange=topTimeRangeLabel
       }}
     {{/if}}

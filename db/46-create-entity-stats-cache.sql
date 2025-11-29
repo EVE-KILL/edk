@@ -16,8 +16,8 @@ SET client_min_messages TO NOTICE;
 
 CREATE TABLE IF NOT EXISTS entity_stats_cache (
   "entityId" BIGINT NOT NULL,
-  "entityType" TEXT NOT NULL, -- 'character', 'corporation', 'alliance'
-  
+  "entityType" TEXT NOT NULL, -- 'character', 'corporation', 'alliance', 'faction', 'group', 'type'
+
   -- All-time stats
   "killsAll" BIGINT DEFAULT 0,
   "lossesAll" BIGINT DEFAULT 0,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS entity_stats_cache (
   "soloLossesAll" BIGINT DEFAULT 0,
   "npcKillsAll" BIGINT DEFAULT 0,
   "npcLossesAll" BIGINT DEFAULT 0,
-  
+
   -- 90-day stats
   "kills90d" BIGINT DEFAULT 0,
   "losses90d" BIGINT DEFAULT 0,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS entity_stats_cache (
   "soloLosses90d" BIGINT DEFAULT 0,
   "npcKills90d" BIGINT DEFAULT 0,
   "npcLosses90d" BIGINT DEFAULT 0,
-  
+
   -- 30-day stats
   "kills30d" BIGINT DEFAULT 0,
   "losses30d" BIGINT DEFAULT 0,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS entity_stats_cache (
   "soloLosses30d" BIGINT DEFAULT 0,
   "npcKills30d" BIGINT DEFAULT 0,
   "npcLosses30d" BIGINT DEFAULT 0,
-  
+
   -- 14-day stats
   "kills14d" BIGINT DEFAULT 0,
   "losses14d" BIGINT DEFAULT 0,
@@ -57,14 +57,14 @@ CREATE TABLE IF NOT EXISTS entity_stats_cache (
   "soloLosses14d" BIGINT DEFAULT 0,
   "npcKills14d" BIGINT DEFAULT 0,
   "npcLosses14d" BIGINT DEFAULT 0,
-  
+
   -- Activity timestamps
   "lastKillTime" TIMESTAMP,
   "lastLossTime" TIMESTAMP,
-  
+
   -- Maintenance
   "updatedAt" TIMESTAMP DEFAULT NOW(),
-  
+
   PRIMARY KEY ("entityId", "entityType")
 );
 
@@ -99,15 +99,15 @@ BEGIN
   IF p_entity_id IS NULL THEN
     RETURN;
   END IF;
-  
+
   -- Calculate killmail age in days
   v_age_days := EXTRACT(EPOCH FROM (NOW() - p_killmail_time)) / 86400.0;
-  
+
   -- Determine which time buckets this killmail falls into
   v_in_90d := v_age_days <= 90;
   v_in_30d := v_age_days <= 30;
   v_in_14d := v_age_days <= 14;
-  
+
   -- Upsert stats
   INSERT INTO entity_stats_cache (
     "entityId",
@@ -195,7 +195,7 @@ BEGIN
     "soloLossesAll" = entity_stats_cache."soloLossesAll" + CASE WHEN NOT p_is_kill AND p_is_solo THEN 1 ELSE 0 END,
     "npcKillsAll" = entity_stats_cache."npcKillsAll" + CASE WHEN p_is_kill AND p_is_npc THEN 1 ELSE 0 END,
     "npcLossesAll" = entity_stats_cache."npcLossesAll" + CASE WHEN NOT p_is_kill AND p_is_npc THEN 1 ELSE 0 END,
-    
+
     "kills90d" = entity_stats_cache."kills90d" + CASE WHEN p_is_kill AND v_in_90d THEN 1 ELSE 0 END,
     "losses90d" = entity_stats_cache."losses90d" + CASE WHEN NOT p_is_kill AND v_in_90d THEN 1 ELSE 0 END,
     "iskDestroyed90d" = entity_stats_cache."iskDestroyed90d" + CASE WHEN p_is_kill AND v_in_90d THEN p_total_value ELSE 0 END,
@@ -204,7 +204,7 @@ BEGIN
     "soloLosses90d" = entity_stats_cache."soloLosses90d" + CASE WHEN NOT p_is_kill AND p_is_solo AND v_in_90d THEN 1 ELSE 0 END,
     "npcKills90d" = entity_stats_cache."npcKills90d" + CASE WHEN p_is_kill AND p_is_npc AND v_in_90d THEN 1 ELSE 0 END,
     "npcLosses90d" = entity_stats_cache."npcLosses90d" + CASE WHEN NOT p_is_kill AND p_is_npc AND v_in_90d THEN 1 ELSE 0 END,
-    
+
     "kills30d" = entity_stats_cache."kills30d" + CASE WHEN p_is_kill AND v_in_30d THEN 1 ELSE 0 END,
     "losses30d" = entity_stats_cache."losses30d" + CASE WHEN NOT p_is_kill AND v_in_30d THEN 1 ELSE 0 END,
     "iskDestroyed30d" = entity_stats_cache."iskDestroyed30d" + CASE WHEN p_is_kill AND v_in_30d THEN p_total_value ELSE 0 END,
@@ -213,7 +213,7 @@ BEGIN
     "soloLosses30d" = entity_stats_cache."soloLosses30d" + CASE WHEN NOT p_is_kill AND p_is_solo AND v_in_30d THEN 1 ELSE 0 END,
     "npcKills30d" = entity_stats_cache."npcKills30d" + CASE WHEN p_is_kill AND p_is_npc AND v_in_30d THEN 1 ELSE 0 END,
     "npcLosses30d" = entity_stats_cache."npcLosses30d" + CASE WHEN NOT p_is_kill AND p_is_npc AND v_in_30d THEN 1 ELSE 0 END,
-    
+
     "kills14d" = entity_stats_cache."kills14d" + CASE WHEN p_is_kill AND v_in_14d THEN 1 ELSE 0 END,
     "losses14d" = entity_stats_cache."losses14d" + CASE WHEN NOT p_is_kill AND v_in_14d THEN 1 ELSE 0 END,
     "iskDestroyed14d" = entity_stats_cache."iskDestroyed14d" + CASE WHEN p_is_kill AND v_in_14d THEN p_total_value ELSE 0 END,
@@ -222,7 +222,7 @@ BEGIN
     "soloLosses14d" = entity_stats_cache."soloLosses14d" + CASE WHEN NOT p_is_kill AND p_is_solo AND v_in_14d THEN 1 ELSE 0 END,
     "npcKills14d" = entity_stats_cache."npcKills14d" + CASE WHEN p_is_kill AND p_is_npc AND v_in_14d THEN 1 ELSE 0 END,
     "npcLosses14d" = entity_stats_cache."npcLosses14d" + CASE WHEN NOT p_is_kill AND p_is_npc AND v_in_14d THEN 1 ELSE 0 END,
-    
+
     "lastKillTime" = CASE WHEN p_is_kill THEN GREATEST(entity_stats_cache."lastKillTime", p_killmail_time) ELSE entity_stats_cache."lastKillTime" END,
     "lastLossTime" = CASE WHEN NOT p_is_kill THEN GREATEST(entity_stats_cache."lastLossTime", p_killmail_time) ELSE entity_stats_cache."lastLossTime" END,
     "updatedAt" = NOW();
@@ -246,7 +246,7 @@ BEGIN
     NEW.solo,
     NEW.npc
   );
-  
+
   -- Update attacker corporation stats (kills)
   PERFORM upsert_entity_stats(
     NEW."topAttackerCorporationId",
@@ -257,7 +257,7 @@ BEGIN
     NEW.solo,
     NEW.npc
   );
-  
+
   -- Update attacker alliance stats (kills)
   PERFORM upsert_entity_stats(
     NEW."topAttackerAllianceId",
@@ -268,7 +268,7 @@ BEGIN
     NEW.solo,
     NEW.npc
   );
-  
+
   -- Update victim character stats (losses)
   PERFORM upsert_entity_stats(
     NEW."victimCharacterId",
@@ -279,7 +279,7 @@ BEGIN
     NEW.solo,
     NEW.npc
   );
-  
+
   -- Update victim corporation stats (losses)
   PERFORM upsert_entity_stats(
     NEW."victimCorporationId",
@@ -290,7 +290,7 @@ BEGIN
     NEW.solo,
     NEW.npc
   );
-  
+
   -- Update victim alliance stats (losses)
   PERFORM upsert_entity_stats(
     NEW."victimAllianceId",
@@ -301,7 +301,73 @@ BEGIN
     NEW.solo,
     NEW.npc
   );
-  
+
+  -- Update attacker faction stats (kills)
+  PERFORM upsert_entity_stats(
+    NEW."topAttackerFactionId",
+    'faction',
+    NEW."killmailTime",
+    NEW."totalValue",
+    TRUE,  -- is_kill
+    NEW.solo,
+    NEW.npc
+  );
+
+  -- Update victim faction stats (losses)
+  PERFORM upsert_entity_stats(
+    NEW."victimFactionId",
+    'faction',
+    NEW."killmailTime",
+    NEW."totalValue",
+    FALSE,  -- is_loss
+    NEW.solo,
+    NEW.npc
+  );
+
+  -- Update attacker ship group stats (kills)
+  PERFORM upsert_entity_stats(
+    NEW."topAttackerShipGroupId",
+    'group',
+    NEW."killmailTime",
+    NEW."totalValue",
+    TRUE,  -- is_kill
+    NEW.solo,
+    NEW.npc
+  );
+
+  -- Update victim ship group stats (losses)
+  PERFORM upsert_entity_stats(
+    NEW."victimShipGroupId",
+    'group',
+    NEW."killmailTime",
+    NEW."totalValue",
+    FALSE,  -- is_loss
+    NEW.solo,
+    NEW.npc
+  );
+
+  -- Update attacker ship type stats (kills)
+  PERFORM upsert_entity_stats(
+    NEW."topAttackerShipTypeId",
+    'type',
+    NEW."killmailTime",
+    NEW."totalValue",
+    TRUE,  -- is_kill
+    NEW.solo,
+    NEW.npc
+  );
+
+  -- Update victim ship type stats (losses)
+  PERFORM upsert_entity_stats(
+    NEW."victimShipTypeId",
+    'type',
+    NEW."killmailTime",
+    NEW."totalValue",
+    FALSE,  -- is_loss
+    NEW.solo,
+    NEW.npc
+  );
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -343,7 +409,7 @@ USAGE:
 ------
 
 -- Get character stats (all time periods available)
-SELECT * FROM entity_stats_cache 
+SELECT * FROM entity_stats_cache
 WHERE "entityId" = 123456 AND "entityType" = 'character';
 
 -- Get top 100 characters by kills (last 30 days)
@@ -356,7 +422,7 @@ MAINTENANCE:
 ------------
 
 -- Check cache size
-SELECT 
+SELECT
   "entityType",
   COUNT(*) as entities,
   pg_size_pretty(pg_total_relation_size('entity_stats_cache')) as size

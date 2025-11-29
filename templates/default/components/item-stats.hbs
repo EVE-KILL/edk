@@ -1,0 +1,336 @@
+{{!--
+  Item Stats Header Component
+  Header for item/type pages showing stats and item info
+
+  Usage:
+  {{> components/item-stats
+      typeId=typeId
+      name=name
+      itemStats=itemStats
+      item=item
+      group=group
+      category=category
+  }}
+
+  Props:
+  - typeId: number (type ID)
+  - name: string (item name)
+  - itemStats: object (item statistics)
+  - item: object (item data)
+  - group: object (group data)
+  - category: object (category data)
+--}}
+<div class="entity-hero">
+  <div class="entity-hero__container">
+    <div class="entity-hero__content">
+      <!-- Item Image -->
+      <div class="entity-hero__image-section">
+        <div class="entity-hero__image-wrapper">
+          <img src="https://images.evetech.net/types/{{typeId}}/icon?size=256" alt="{{name}}" class="entity-hero__image" loading="lazy" />
+        </div>
+      </div>
+
+      <div class="entity-hero__info-wrapper">
+        <!-- Statistics (full width) -->
+        <div class="entity-stats entity-stats--full">
+          <div class="entity-stats__header">Statistics</div>
+          <div class="entity-stats__content">
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Kills:</span>
+              <span class="entity-stats__value color-green">{{formatNumber itemStats.kills}}</span>
+            </div>
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Losses:</span>
+              <span class="entity-stats__value color-red">{{formatNumber itemStats.losses}}</span>
+            </div>
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Kill/Loss Ratio:</span>
+              <span class="entity-stats__value color-gold">{{formatNumber itemStats.killLossRatio}}</span>
+            </div>
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Efficiency:</span>
+              <span class="entity-stats__value color-gold">{{formatNumber itemStats.efficiency}}%</span>
+            </div>
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">ISK Destroyed:</span>
+              <span class="entity-stats__value color-green">{{formatISK itemStats.iskDestroyed}}</span>
+            </div>
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">ISK Lost:</span>
+              <span class="entity-stats__value color-red">{{formatISK itemStats.iskLost}}</span>
+            </div>
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">ISK Efficiency:</span>
+              <span class="entity-stats__value color-gold">{{formatNumber itemStats.iskEfficiency}}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item Details (full width) -->
+        <div class="entity-stats entity-stats--full">
+          <div class="entity-stats__header">Item Details</div>
+          <div class="entity-stats__content">
+            {{#if group}}
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Group:</span>
+              <span class="entity-stats__value">
+                <a href="/group/{{group.groupId}}" class="entity-link">{{group.name}}</a>
+              </span>
+            </div>
+            {{/if}}
+            {{#if category}}
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Category:</span>
+              <span class="entity-stats__value">
+                <a href="/category/{{category.categoryId}}" class="entity-link">{{category.name}}</a>
+              </span>
+            </div>
+            {{/if}}
+            {{#if item.mass}}
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Mass:</span>
+              <span class="entity-stats__value">{{formatNumber item.mass}} kg</span>
+            </div>
+            {{/if}}
+            {{#if item.volume}}
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Volume:</span>
+              <span class="entity-stats__value">{{formatNumber item.volume}} m³</span>
+            </div>
+            {{/if}}
+            {{#if item.capacity}}
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Capacity:</span>
+              <span class="entity-stats__value">{{formatNumber item.capacity}} m³</span>
+            </div>
+            {{/if}}
+          </div>
+        </div>
+
+        <!-- Description (full width if present) -->
+        {{#if item.description}}
+        <div class="entity-stats entity-stats--full">
+          <div class="entity-stats__header">Description</div>
+          <div class="entity-stats__content">
+            <div class="entity-stats__row entity-stats__row--description">
+              <p style="color: var(--color-text-secondary); line-height: 1.6; margin: 0; font-size: 11px;">
+                {{item.description}}
+              </p>
+            </div>
+          </div>
+        </div>
+        {{/if}}
+      </div><!-- .entity-hero__info-wrapper -->
+    </div><!-- .entity-hero__content -->
+  </div><!-- .entity-hero__container -->
+</div><!-- .entity-hero -->
+
+<!-- Dogma Attributes Section (collapsible) -->
+{{#if dogmaAttributes}}
+{{#if dogmaAttributes.length}}
+<details style="margin-top: 16px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm);">
+  <summary style="padding: 16px; font-size: 11px; color: var(--color-text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; user-select: none;">
+    <span>Ship Attributes</span>
+    <svg style="width: 16px; height: 16px; transition: transform 0.2s ease; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </summary>
+
+  <div style="padding: 0 16px 16px 16px; border-top: 1px solid var(--color-border-dark);">
+    {{#each dogmaAttributes}}
+    <div style="margin-bottom: 16px; margin-top: 16px;">
+      <h4 style="margin: 0 0 8px 0; font-size: 10px; color: var(--color-accent-gold); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 4px; border-bottom: 1px solid var(--color-border-dark);">{{this.categoryName}}</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-top: 8px;">
+        {{#each this.attributes}}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm);">
+          <span style="color: var(--color-text-secondary); font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; line-height: 1.3;">{{this.displayName}}</span>
+          <span style="font-weight: 700; font-size: 10px; color: var(--color-text); white-space: nowrap; margin-left: 8px;">{{formatNumber this.value}}</span>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/each}}
+  </div>
+</details>
+
+<style>
+details[open] summary svg {
+  transform: rotate(180deg);
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+summary:hover {
+  background: rgba(74, 158, 255, 0.1);
+}
+</style>
+{{/if}}
+{{/if}}
+
+<style>
+.entity-hero {
+  margin-bottom: var(--spacing-lg);
+  width: 100%;
+}
+
+.entity-hero__container {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: 100%;
+}
+
+.entity-hero__content {
+  display: flex;
+  gap: 16px;
+  align-items: start;
+  padding: 16px;
+}
+
+.entity-hero__image-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.entity-hero__image-wrapper {
+  width: 256px;
+  height: 256px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+}
+
+.entity-hero__image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.entity-hero__info-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.entity-stats {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.entity-stats--full {
+  width: 100%;
+  flex: none;
+}
+
+.entity-stats__header {
+  background: transparent;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.entity-stats__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.entity-stats__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--color-border-dark);
+  transition: background-color 0.2s ease;
+  gap: 12px;
+}
+
+.entity-stats__row:last-child {
+  border-bottom: none;
+}
+
+.entity-stats__row:hover {
+  background: rgba(74, 158, 255, 0.15);
+}
+
+.entity-stats__row--description {
+  display: block;
+  padding: 12px 16px;
+}
+
+.entity-stats__row--description:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.entity-stats__label {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.entity-stats__value {
+  font-weight: 700;
+  font-size: 11px;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.entity-link {
+  color: var(--color-accent-blue-bright);
+  text-decoration: none;
+  transition: color var(--transition-normal);
+}
+
+.entity-link:hover {
+  color: var(--color-accent-gold);
+  text-decoration: underline;
+}
+
+.color-green {
+  color: #4ade80;
+}
+
+.color-red {
+  color: #ef4444;
+}
+
+.color-gold {
+  color: #fbbf24;
+}
+
+@media (max-width: 768px) {
+  .entity-hero__content {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .entity-hero__image-section {
+    margin: 0 auto;
+  }
+}
+</style>

@@ -1,23 +1,40 @@
-<!-- Group Detail - EDK Style -->
+<!-- Group Page -->
 
 {{> components/page-header
-    title=data.group.name
-    breadcrumbs=(array
-        (obj label=data.category.name url="#")
-        (obj label=data.group.name url=(concat "/group/" data.group.groupId))
-    )
+  title=pageHeader.title
+  breadcrumbs=pageHeader.breadcrumbs
+  properties=groupProperties
 }}
 
 <!-- Group Stats Header -->
-{{> partials/entity-stats}}
+{{> components/group-stats
+    groupId=groupId
+    name=name
+    groupStats=groupStats
+    group=group
+    category=category
+    totalTypes=totalTypes
+}}
 
-<!-- Group Info -->
-{{#if data.group}}
-<div style="margin-bottom: 20px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 16px;">
-    <div style="display: grid; grid-template-columns: auto 1fr; gap: 12px; max-width: 600px;">
-        {{#if data.category}}
-        <span style="color: var(--color-text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Category:</span>
-        <span>{{data.category.name}}</span>
+<!-- Sample Types in Group -->
+{{#if sampleTypes}}
+<div style="margin-bottom: 20px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); overflow: hidden;">
+    <div style="background: rgba(0, 0, 0, 0.2); padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
+        <h3 style="margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text-secondary);">Types in this Group</h3>
+    </div>
+    <div style="padding: 16px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+            {{#each sampleTypes}}
+            <a href="/item/{{this.typeId}}" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); text-decoration: none; transition: all 0.2s ease;">
+                <img src="https://images.evetech.net/types/{{this.typeId}}/icon?size=64" alt="{{this.name}}" style="width: 32px; height: 32px;" loading="lazy" />
+                <span style="font-size: 10px; color: var(--color-text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{this.name}}</span>
+            </a>
+            {{/each}}
+        </div>
+        {{#if (gt totalTypes sampleTypes.length)}}
+        <div style="margin-top: 12px; text-align: center;">
+            <span style="font-size: 10px; color: var(--color-text-secondary);">Showing {{sampleTypes.length}} of {{formatNumber totalTypes}} types</span>
+        </div>
         {{/if}}
     </div>
 </div>

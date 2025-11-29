@@ -1,0 +1,69 @@
+<!-- Groups Listing Page -->
+
+{{> components/page-header
+  title=pageHeader.title
+  breadcrumbs=pageHeader.breadcrumbs
+  meta=pageHeader.meta
+}}
+
+<!-- Categories with Groups -->
+{{#each categories}}
+<div style="margin-bottom: 16px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); overflow: hidden;">
+  <details>
+    <summary style="padding: 12px 16px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h2 style="font-size: 13px; font-weight: 600; color: var(--color-text-primary); margin: 0;">
+          <a href="/category/{{this.categoryId}}" style="color: var(--color-accent-blue-bright); text-decoration: none; transition: color 0.2s ease;" onclick="event.stopPropagation();">
+            {{this.categoryName}}
+          </a>
+        </h2>
+        <span style="font-size: 10px; color: var(--color-text-secondary); font-weight: 400;">({{this.groups.length}} groups)</span>
+      </div>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-text-secondary); transition: transform 0.2s ease;" class="chevron">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </summary>
+    <div style="padding: 12px 16px; border-top: 1px solid var(--color-border-dark);">
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
+    {{#each this.groups}}
+    <a href="/group/{{this.groupId}}" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); text-decoration: none; transition: all 0.2s ease;">
+      <div style="flex-shrink: 0; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm);">
+        {{#if this.iconId}}
+          <img src="https://images.evetech.net/types/{{this.iconId}}/icon?size=64" alt="{{this.groupName}}" style="width: 40px; height: 40px; object-fit: contain;" loading="lazy" />
+        {{else}}
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-text-secondary);">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          </svg>
+        {{/if}}
+      </div>
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-size: 11px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          {{this.groupName}}
+        </div>
+        <div style="font-size: 9px; color: var(--color-text-secondary);">
+          {{formatNumber this.typeCount}} types
+        </div>
+      </div>
+    </a>
+    {{/each}}
+      </div>
+    </div>
+  </details>
+</div>
+{{/each}}
+
+<style>
+a[href^="/group/"]:hover,
+a[href^="/category/"]:hover {
+  background: rgba(74, 158, 255, 0.15) !important;
+  border-color: var(--color-accent-blue) !important;
+}
+
+details[open] .chevron {
+  transform: rotate(180deg);
+}
+
+summary:hover {
+  background: rgba(74, 158, 255, 0.05);
+}
+</style>

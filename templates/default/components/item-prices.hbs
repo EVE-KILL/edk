@@ -1,0 +1,194 @@
+{{#if priceHistory}}
+<section class="item-prices">
+  <h3>30-Day Price History (The Forge)</h3>
+  <div class="price-table-wrapper">
+    <table class="price-table sortable">
+      <thead>
+        <tr>
+          <th data-sort="date">Date</th>
+          <th data-sort="number">Min Price</th>
+          <th data-sort="number">Avg Price</th>
+          <th data-sort="number">Max Price</th>
+          <th data-sort="number">Volume</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each priceHistory}}
+        <tr>
+          <td data-value="{{priceDate}}">{{formatDate priceDate "MMM D, YYYY"}}</td>
+          <td data-value="{{lowestPrice}}">{{formatISK lowestPrice}}</td>
+          <td data-value="{{averagePrice}}">{{formatISK averagePrice}}</td>
+          <td data-value="{{highestPrice}}">{{formatISK highestPrice}}</td>
+          <td data-value="{{volume}}">{{formatNumber volume}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<style>
+.item-prices {
+  margin-top: 30px;
+}
+
+.item-prices h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #f0f0f0;
+}
+
+.price-table-wrapper {
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.price-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.price-table thead {
+  background: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.price-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.price-table th:hover {
+  color: #daa520;
+}
+
+.price-table th::after {
+  content: '⇅';
+  position: absolute;
+  right: 8px;
+  opacity: 0.3;
+  font-size: 10px;
+}
+
+.price-table th.sort-asc::after {
+  content: '↑';
+  opacity: 1;
+  color: #daa520;
+}
+
+.price-table th.sort-desc::after {
+  content: '↓';
+  opacity: 1;
+  color: #daa520;
+}
+
+.price-table tbody tr {
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.price-table tbody tr:hover {
+  background: #0f0f0f;
+}
+
+.price-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.price-table td {
+  padding: 8px 12px;
+  color: #d0d0d0;
+}
+
+.price-table td:first-child {
+  color: #888;
+  font-weight: 500;
+}
+
+.price-table td:nth-child(2),
+.price-table td:nth-child(3),
+.price-table td:nth-child(4),
+.price-table td:nth-child(5) {
+  font-family: 'Courier New', Courier, monospace;
+  color: #b0b0b0;
+}
+
+@media (max-width: 768px) {
+  .price-table {
+    font-size: 11px;
+  }
+
+  .price-table th,
+  .price-table td {
+    padding: 6px 8px;
+  }
+
+  .price-table th:nth-child(4),
+  .price-table td:nth-child(4) {
+    display: none;
+  }
+}
+</style>
+
+<script>
+(function() {
+  const tables = document.querySelectorAll('.price-table.sortable');
+
+  tables.forEach(table => {
+    const headers = table.querySelectorAll('th[data-sort]');
+
+    headers.forEach(header => {
+      header.addEventListener('click', () => {
+        const sortType = header.getAttribute('data-sort');
+        const columnIndex = Array.from(header.parentElement.children).indexOf(header);
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        // Determine sort direction
+        const isAsc = header.classList.contains('sort-asc');
+
+        // Remove sort classes from all headers
+        headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+
+        // Add appropriate class
+        header.classList.add(isAsc ? 'sort-desc' : 'sort-asc');
+
+        // Sort rows
+        rows.sort((a, b) => {
+          const aCell = a.children[columnIndex];
+          const bCell = b.children[columnIndex];
+          const aValue = aCell.getAttribute('data-value') || aCell.textContent;
+          const bValue = bCell.getAttribute('data-value') || bCell.textContent;
+
+          let comparison = 0;
+          if (sortType === 'number') {
+            comparison = parseFloat(aValue) - parseFloat(bValue);
+          } else if (sortType === 'date') {
+            comparison = new Date(aValue) - new Date(bValue);
+          } else {
+            comparison = aValue.localeCompare(bValue);
+          }
+
+          return isAsc ? -comparison : comparison;
+        });
+
+        // Reorder DOM
+        rows.forEach(row => tbody.appendChild(row));
+      });
+    });
+  });
+})();
+</script>
+{{/if}}

@@ -625,6 +625,13 @@ function registerHelpers() {
     }
   );
 
+  // Lookup type name by typeId
+  Handlebars.registerHelper('lookupTypeName', function (typeId: number) {
+    // This is a synchronous helper, so we'll need to handle async lookups differently
+    // For now, return the typeId as a fallback
+    return `Type ${typeId}`;
+  });
+
   // Round up to nearest valid EVE image size
   Handlebars.registerHelper(
     'roundImageSize',

@@ -8,6 +8,7 @@ SET client_min_messages TO WARNING;
 DROP VIEW IF EXISTS character_stats CASCADE;
 DROP VIEW IF EXISTS corporation_stats CASCADE;
 DROP VIEW IF EXISTS alliance_stats CASCADE;
+DROP VIEW IF EXISTS faction_stats CASCADE;
 DROP VIEW IF EXISTS entity_stats_unified CASCADE;
 
 SET client_min_messages TO NOTICE;
@@ -188,6 +189,64 @@ FULL OUTER JOIN alliance_losses losses ON kills."allianceId" = losses."allianceI
 COMMENT ON VIEW alliance_stats IS 'Alliance statistics aggregated from killmails. Query planner will optimize when filtered by allianceId.';
 
 -- ============================================================================
+-- FACTION STATS VIEW
+-- Aggregates all statistics for factions across all time
+-- ============================================================================
+CREATE VIEW faction_stats AS
+WITH faction_kills AS (
+  SELECT
+    k."topAttackerFactionId" AS "factionId",
+    COUNT(*) AS kills,
+    SUM(k."totalValue") AS "iskDestroyed",
+    SUM(CASE WHEN k.solo THEN 1 ELSE 0 END) AS "soloKills",
+    SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcKills",
+    MAX(k."killmailTime") AS "lastKillTime"
+  FROM killmails k
+  WHERE k."topAttackerFactionId" IS NOT NULL
+  GROUP BY k."topAttackerFactionId"
+),
+faction_losses AS (
+  SELECT
+    k."victimFactionId" AS "factionId",
+    COUNT(*) AS losses,
+    SUM(k."totalValue") AS "iskLost",
+    SUM(CASE WHEN k.solo THEN 1 ELSE 0 END) AS "soloLosses",
+    SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcLosses",
+    MAX(k."killmailTime") AS "lastLossTime"
+  FROM killmails k
+  WHERE k."victimFactionId" IS NOT NULL
+  GROUP BY k."victimFactionId"
+)
+SELECT
+  COALESCE(kills."factionId", losses."factionId") AS "factionId",
+  'faction'::text AS "entityType",
+  COALESCE(kills.kills, 0) AS kills,
+  COALESCE(losses.losses, 0) AS losses,
+  COALESCE(kills."iskDestroyed", 0) AS "iskDestroyed",
+  COALESCE(losses."iskLost", 0) AS "iskLost",
+  CASE
+    WHEN COALESCE(kills."iskDestroyed", 0) + COALESCE(losses."iskLost", 0) > 0
+    THEN (COALESCE(kills."iskDestroyed", 0) / (COALESCE(kills."iskDestroyed", 0) + COALESCE(losses."iskLost", 0))) * 100
+    ELSE 0
+  END AS efficiency,
+  CASE
+    WHEN COALESCE(losses.losses, 0) > 0
+    THEN COALESCE(kills.kills, 0)::numeric / losses.losses
+    ELSE COALESCE(kills.kills, 0)
+  END AS "killLossRatio",
+  COALESCE(kills."soloKills", 0) AS "soloKills",
+  COALESCE(losses."soloLosses", 0) AS "soloLosses",
+  COALESCE(kills."npcKills", 0) AS "npcKills",
+  COALESCE(losses."npcLosses", 0) AS "npcLosses",
+  kills."lastKillTime",
+  losses."lastLossTime",
+  GREATEST(kills."lastKillTime", losses."lastLossTime") AS "lastActivityTime"
+FROM faction_kills kills
+FULL OUTER JOIN faction_losses losses ON kills."factionId" = losses."factionId";
+
+COMMENT ON VIEW faction_stats IS 'Faction statistics aggregated from killmails. Query planner will optimize when filtered by factionId.';
+
+-- ============================================================================
 -- USAGE EXAMPLES AND PERFORMANCE NOTES
 -- ============================================================================
 /*
@@ -204,8 +263,11 @@ SELECT * FROM corporation_stats WHERE "corporationId" = 98765;
 -- Get stats for a specific alliance:
 SELECT * FROM alliance_stats WHERE "allianceId" = 99001234;
 
+-- Get stats for a specific faction:
+SELECT * FROM faction_stats WHERE "factionId" = 500001;
+
 -- Top 10 characters by kills:
-SELECT c.name, cs.* 
+SELECT c.name, cs.*
 FROM character_stats cs
 JOIN characters c ON cs."characterId" = c."characterId"
 ORDER BY cs.kills DESC
@@ -237,7 +299,7 @@ PERFORMANCE NOTES:
    ```
 
 5. Consider adding partial indexes for time-based queries:
-   CREATE INDEX idx_killmails_recent_char_kills 
+   CREATE INDEX idx_killmails_recent_char_kills
      ON killmails("topAttackerCharacterId", "totalValue")
      WHERE "killmailTime" >= NOW() - INTERVAL '90 days';
 

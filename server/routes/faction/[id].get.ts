@@ -86,6 +86,89 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
+    // Fetch faction statistics from cache or view
+    const factionStats = await track('faction:stats', 'database', async () => {
+      // Try cache first (fast)
+      const cached = await database.findOne<{
+        killsAll: number;
+        lossesAll: number;
+        iskDestroyedAll: number;
+        iskLostAll: number;
+      }>(
+        `SELECT "killsAll", "lossesAll", "iskDestroyedAll", "iskLostAll"
+         FROM entity_stats_cache
+         WHERE "entityId" = :factionId AND "entityType" = 'faction'`,
+        { factionId }
+      );
+
+      if (cached) {
+        const kills = Number(cached.killsAll);
+        const losses = Number(cached.lossesAll);
+        const iskDestroyed = Number(cached.iskDestroyedAll);
+        const iskLost = Number(cached.iskLostAll);
+
+        return {
+          kills,
+          losses,
+          iskDestroyed,
+          iskLost,
+          killLossRatio: losses > 0 ? kills / losses : kills,
+          efficiency:
+            iskDestroyed + iskLost > 0
+              ? (iskDestroyed / (iskDestroyed + iskLost)) * 100
+              : 0,
+          iskEfficiency:
+            iskDestroyed + iskLost > 0
+              ? (iskDestroyed / (iskDestroyed + iskLost)) * 100
+              : 0,
+        };
+      }
+
+      // Fallback to view (slower but always accurate)
+      const viewStats = await database.findOne<{
+        kills: number;
+        losses: number;
+        iskDestroyed: number;
+        iskLost: number;
+        efficiency: number;
+      }>(
+        `SELECT kills, losses, "iskDestroyed", "iskLost", efficiency
+         FROM faction_stats
+         WHERE "factionId" = :factionId`,
+        { factionId }
+      );
+
+      if (viewStats) {
+        return {
+          kills: viewStats.kills,
+          losses: viewStats.losses,
+          iskDestroyed: viewStats.iskDestroyed,
+          iskLost: viewStats.iskLost,
+          killLossRatio:
+            viewStats.losses > 0
+              ? viewStats.kills / viewStats.losses
+              : viewStats.kills,
+          efficiency: viewStats.efficiency,
+          iskEfficiency:
+            viewStats.iskDestroyed + viewStats.iskLost > 0
+              ? (viewStats.iskDestroyed /
+                  (viewStats.iskDestroyed + viewStats.iskLost)) *
+                100
+              : 0,
+        };
+      }
+
+      return {
+        kills: 0,
+        losses: 0,
+        iskDestroyed: 0,
+        iskLost: 0,
+        killLossRatio: 0,
+        efficiency: 0,
+        iskEfficiency: 0,
+      };
+    });
+
     // Get legendary war for this faction
     const legendaryWar = await getLegendaryWarForFaction(factionId);
     const activeWars = legendaryWar
@@ -321,6 +404,7 @@ export default defineEventHandler(async (event: H3Event) => {
         name: faction.name,
         imageUrl,
         kills: totalKillmails,
+        factionStats,
         faction: {
           description: faction.description,
           homeSystem: faction.solarSystemId

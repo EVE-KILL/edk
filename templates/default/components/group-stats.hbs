@@ -1,30 +1,40 @@
 {{!--
-  Faction Stats Header Component
-  Custom header for faction pages showing image, kill count, and faction info
+  Group Stats Header Component
+  Header for group (ship group) pages showing stats and group info
 
   Usage:
-  {{> components/faction-stats
-      factionId=factionId
+  {{> components/group-stats
+      groupId=groupId
       name=name
-      imageUrl=imageUrl
-      kills=kills
-      faction=faction
+      groupStats=groupStats
+      group=group
+      category=category
+      totalTypes=totalTypes
   }}
 
   Props:
-  - factionId: number (faction ID)
-  - name: string (faction name)
-  - imageUrl: string (faction logo)
-  - kills: number (total kills for faction)
-  - faction: object (faction data with homeSystem, corporation, etc.)
+  - groupId: number (group ID)
+  - name: string (group name)
+  - groupStats: object (group statistics)
+  - group: object (group data)
+  - category: object (category data)
+  - totalTypes: number (number of types in this group)
 --}}
 <div class="entity-hero">
   <div class="entity-hero__container">
     <div class="entity-hero__content">
-      <!-- Faction Logo -->
+      <!-- Group Icon (if available) -->
       <div class="entity-hero__image-section">
-        <div class="entity-hero__image-wrapper">
-          <img src="{{imageUrl}}" alt="{{name}}" class="entity-hero__image" />
+        <div class="entity-hero__image-wrapper" style="display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm);">
+          {{#if group.iconId}}
+            <img src="https://images.evetech.net/types/{{group.iconId}}/icon?size=256" alt="{{name}}" class="entity-hero__image" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+          {{else}}
+            <div style="color: var(--color-text-secondary); font-size: 64px; font-weight: 700; text-align: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              </svg>
+            </div>
+          {{/if}}
         </div>
       </div>
 
@@ -35,97 +45,59 @@
           <div class="entity-stats__content">
             <div class="entity-stats__row">
               <span class="entity-stats__label">Kills:</span>
-              <span class="entity-stats__value color-green">{{formatNumber factionStats.kills}}</span>
+              <span class="entity-stats__value color-green">{{formatNumber groupStats.kills}}</span>
             </div>
             <div class="entity-stats__row">
               <span class="entity-stats__label">Losses:</span>
-              <span class="entity-stats__value color-red">{{formatNumber factionStats.losses}}</span>
+              <span class="entity-stats__value color-red">{{formatNumber groupStats.losses}}</span>
             </div>
             <div class="entity-stats__row">
               <span class="entity-stats__label">Kill/Loss Ratio:</span>
-              <span class="entity-stats__value color-gold">{{formatNumber factionStats.killLossRatio}}</span>
+              <span class="entity-stats__value color-gold">{{formatNumber groupStats.killLossRatio}}</span>
             </div>
             <div class="entity-stats__row">
               <span class="entity-stats__label">Efficiency:</span>
-              <span class="entity-stats__value color-gold">{{formatNumber factionStats.efficiency}}%</span>
+              <span class="entity-stats__value color-gold">{{formatNumber groupStats.efficiency}}%</span>
             </div>
             <div class="entity-stats__row">
               <span class="entity-stats__label">ISK Destroyed:</span>
-              <span class="entity-stats__value color-green">{{formatISK factionStats.iskDestroyed}}</span>
+              <span class="entity-stats__value color-green">{{formatISK groupStats.iskDestroyed}}</span>
             </div>
             <div class="entity-stats__row">
               <span class="entity-stats__label">ISK Lost:</span>
-              <span class="entity-stats__value color-red">{{formatISK factionStats.iskLost}}</span>
+              <span class="entity-stats__value color-red">{{formatISK groupStats.iskLost}}</span>
             </div>
             <div class="entity-stats__row">
               <span class="entity-stats__label">ISK Efficiency:</span>
-              <span class="entity-stats__value color-gold">{{formatNumber factionStats.iskEfficiency}}%</span>
+              <span class="entity-stats__value color-gold">{{formatNumber groupStats.iskEfficiency}}%</span>
             </div>
           </div>
         </div>
 
-        <!-- About (Description) - full width -->
-        {{#if faction.description}}
+        <!-- Group Details (full width) -->
         <div class="entity-stats entity-stats--full">
-          <div class="entity-stats__header">About</div>
+          <div class="entity-stats__header">Group Details</div>
           <div class="entity-stats__content">
-            <div class="entity-stats__row entity-stats__row--description">
-              <p style="color: var(--color-text-secondary); line-height: 1.6; margin: 0; font-size: 11px;">
-                {{faction.description}}
-              </p>
+            {{#if category}}
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Category:</span>
+              <span class="entity-stats__value">
+                <a href="/category/{{category.categoryId}}" class="entity-link">{{category.name}}</a>
+              </span>
             </div>
+            {{/if}}
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Total Types:</span>
+              <span class="entity-stats__value">{{formatNumber totalTypes}}</span>
+            </div>
+            {{#if group.published}}
+            <div class="entity-stats__row">
+              <span class="entity-stats__label">Published:</span>
+              <span class="entity-stats__value color-green">Yes</span>
+            </div>
+            {{/if}}
           </div>
         </div>
-        {{/if}}
-
-        <!-- Grid section for Home System and Corporation -->
-        <div class="entity-hero__stats-grid">
-          <!-- Home System -->
-          {{#if faction.homeSystem}}
-          <div class="entity-stats">
-            <div class="entity-stats__header">Home System</div>
-            <div class="entity-stats__content">
-              <div class="entity-stats__row">
-                <span class="entity-stats__label">System:</span>
-                <span class="entity-stats__value">
-                  <a href="/system/{{faction.homeSystem.solarSystemId}}" class="entity-link">{{faction.homeSystem.name}}</a>
-                </span>
-              </div>
-              {{#if faction.homeSystem.regionName}}
-              <div class="entity-stats__row">
-                <span class="entity-stats__label">Region:</span>
-                <span class="entity-stats__value">
-                  <a href="/region/{{faction.homeSystem.regionId}}" class="entity-link">{{faction.homeSystem.regionName}}</a>
-                </span>
-              </div>
-              {{/if}}
-            </div>
-          </div>
-          {{/if}}
-
-          <!-- Corporation Info -->
-          {{#if faction.corporation}}
-          <div class="entity-stats">
-            <div class="entity-stats__header">Corporation</div>
-            <div class="entity-stats__content">
-              <div class="entity-stats__row">
-                <span class="entity-stats__label">Main Corp:</span>
-                <span class="entity-stats__value">
-                  <a href="/corporation/{{faction.corporation.corporationId}}" class="entity-link">{{faction.corporation.name}}</a>
-                </span>
-              </div>
-              {{#if faction.militiaCorporation}}
-              <div class="entity-stats__row">
-                <span class="entity-stats__label">Militia:</span>
-                <span class="entity-stats__value">
-                  {{faction.militiaCorporation.name}}
-                </span>
-              </div>
-              {{/if}}
-            </div>
-          </div>
-          {{/if}}
-        </div><!-- .entity-hero__stats-grid -->
       </div><!-- .entity-hero__info-wrapper -->
     </div><!-- .entity-hero__content -->
   </div><!-- .entity-hero__container -->
@@ -179,12 +151,6 @@
   min-width: 0;
 }
 
-.entity-hero__stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-}
-
 .entity-stats {
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--color-border-dark);
@@ -233,15 +199,6 @@
 
 .entity-stats__row:hover {
   background: rgba(74, 158, 255, 0.15);
-}
-
-.entity-stats__row--description {
-  display: block;
-  padding: 12px 16px;
-}
-
-.entity-stats__row--description:hover {
-  background: rgba(0, 0, 0, 0.2);
 }
 
 .entity-stats__label {

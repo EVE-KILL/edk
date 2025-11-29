@@ -1,0 +1,147 @@
+{{#if topFittings}}
+<section class="item-fittings">
+  <h3>Top 10 Most Common Fittings</h3>
+  <div class="fittings-grid">
+    {{#each topFittings}}
+    <div class="fitting-card">
+      <a href="/killmail/{{killmailId}}" class="fitting-link">
+        <div class="fitting-header">
+          <div class="fitting-meta">
+            <span class="fitting-date">{{formatDate killmailTime "MMM D, YYYY"}}</span>
+            <span class="fitting-occurrences">×{{occurrences}} seen</span>
+          </div>
+          <span class="fitting-cost">{{abbreviateISK totalCost}}</span>
+        </div>
+        {{#if items}}
+        <div class="fitting-modules">
+          {{#each items}}
+            <div class="module-item">
+              {{> partials/eve-image type="type" id=this.itemTypeId size=32}}
+            </div>
+          {{/each}}
+        </div>
+        {{/if}}
+        <div class="fitting-footer">
+          <span class="view-killmail">{{moduleCount}} modules • View Killmail →</span>
+        </div>
+      </a>
+    </div>
+    {{/each}}
+  </div>
+</section>
+
+<style>
+.item-fittings {
+  margin-top: 30px;
+}
+
+.item-fittings h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #f0f0f0;
+}
+
+.fittings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+}
+
+.fitting-card {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.fitting-card:hover {
+  border-color: #3a3a3a;
+  transform: translateY(-2px);
+}
+
+.fitting-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 12px;
+}
+
+.fitting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.fitting-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fitting-date {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fitting-occurrences {
+  font-size: 10px;
+  color: #666;
+  font-weight: 500;
+}
+
+.fitting-cost {
+  font-size: 13px;
+  color: #daa520;
+  font-weight: 600;
+}
+
+.fitting-modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+  gap: 4px;
+  margin-bottom: 10px;
+  min-height: 70px;
+}
+
+.module-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.module-item img {
+  width: 32px;
+  height: 32px;
+  border-radius: 3px;
+  background: #0a0a0a;
+}
+
+.fitting-footer {
+  text-align: center;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.view-killmail {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+}
+
+.fitting-card:hover .view-killmail {
+  color: #daa520;
+}
+
+@media (max-width: 768px) {
+  .fittings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+{{/if}}

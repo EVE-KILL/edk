@@ -296,3 +296,4 @@ curl -X POST localhost:3000/api/ai/price-fitting \
 # Important things to keep in mind
 
 1. Do not start the dev server, ever - assume that it is running. If not, ask for it
+2. To run queries against the database, please use `bun cli db:test --query <query>`
