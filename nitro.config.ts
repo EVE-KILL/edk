@@ -8,6 +8,7 @@ const __dirname = dirname(__filename);
 
 // https://nitro.build/config
 export default defineNitroConfig({
+  preset: 'bun',
   compatibilityDate: 'latest',
   srcDir: 'server',
   minify: true,
