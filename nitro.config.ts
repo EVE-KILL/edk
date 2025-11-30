@@ -37,10 +37,8 @@ export default defineNitroConfig({
   experimental: {
     websocket: true,
     asyncContext: true,
-    wasm: true,
     openAPI: true,
   },
-  timing: true,
   openAPI: {
     route: '/docs/openapi.json',
     meta: {
@@ -48,6 +46,7 @@ export default defineNitroConfig({
       description: 'EVE Online Killboard API documentation.',
       version: '1.0.0',
     },
+    production: 'runtime',
     ui: {
       swagger: {
         route: '/swagger',
