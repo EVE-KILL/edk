@@ -685,10 +685,6 @@
         const newKillmailTime = new Date(killmail.killmailTime);
 
         if (newKillmailTime <= mostRecentTime) {
-          console.log('⏰ Killmail is not newer than most recent, skipping', {
-            new: killmail.killmailTime,
-            mostRecent: firstKillmailRow.dataset.killmailTime
-          });
           return;
         }
       }
@@ -806,8 +802,6 @@
 
       // Update relative time display for new/affected rows
       refreshTimes();
-
-      console.log('✅ Added killmail to list:', killmail.killmailId);
     }
 
     function matchesKillTypeFilter(killmail, topic) {
