@@ -2,6 +2,7 @@ import { fetchESI } from '../helpers/esi';
 import {
   storeAlliance as storeAllianceInDB,
   getAlliance,
+  getFreshAlliance,
 } from '../models/alliances';
 import { logger } from '../helpers/logger';
 
@@ -22,11 +23,28 @@ export interface ESIAlliance {
 /**
  * Fetch alliance data from ESI
  * Stores only ESI-compatible fields in the database
+ * Checks database cache first - only fetches from ESI if data is older than 14 days
  */
 export async function fetchAndStoreAlliance(
   allianceId: number
 ): Promise<ESIAlliance | null> {
   try {
+    // Check if we have fresh data in the database (< 14 days old)
+    const cachedAlliance = await getFreshAlliance(allianceId, 14);
+    if (cachedAlliance) {
+      // Return cached data without hitting ESI
+      return {
+        creator_corporation_id: cachedAlliance.creatorCorporationId,
+        creator_id: cachedAlliance.creatorId,
+        date_founded: cachedAlliance.dateFounded,
+        executor_corporation_id: cachedAlliance.executorCorporationId,
+        faction_id: cachedAlliance.factionId,
+        name: cachedAlliance.name,
+        ticker: cachedAlliance.ticker,
+      };
+    }
+
+    // Data is stale or doesn't exist, fetch from ESI
     const allianceData = await fetchFromESI(allianceId);
 
     if (!allianceData) {

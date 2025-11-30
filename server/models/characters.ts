@@ -557,6 +557,7 @@ export interface Character {
   raceId: number;
   securityStatus: number;
   title: string | null;
+  updatedAt?: Date;
 }
 
 /**
@@ -569,6 +570,23 @@ export async function getCharacter(
     'SELECT * FROM characters WHERE "characterId" = :characterId',
     { characterId }
   );
+}
+
+/**
+ * Check if character exists and is fresh (updated within maxAgeDays)
+ * @returns The character if fresh, null if doesn't exist or is stale
+ */
+export async function getFreshCharacter(
+  characterId: number,
+  maxAgeDays: number = 14
+): Promise<Character | null> {
+  const character = await database.findOne<Character>(
+    `SELECT * FROM characters 
+     WHERE "characterId" = :characterId 
+     AND "updatedAt" > NOW() - INTERVAL '${maxAgeDays} days'`,
+    { characterId }
+  );
+  return character;
 }
 
 /**

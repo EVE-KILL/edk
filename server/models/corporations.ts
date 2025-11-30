@@ -22,6 +22,7 @@ export interface Corporation {
   ticker: string;
   url: string;
   warEligible: boolean | null;
+  updatedAt?: Date;
 }
 
 /**
@@ -34,6 +35,23 @@ export async function getCorporation(
     'SELECT * FROM corporations WHERE "corporationId" = :corporationId',
     { corporationId }
   );
+}
+
+/**
+ * Check if corporation exists and is fresh (updated within maxAgeDays)
+ * @returns The corporation if fresh, null if doesn't exist or is stale
+ */
+export async function getFreshCorporation(
+  corporationId: number,
+  maxAgeDays: number = 14
+): Promise<Corporation | null> {
+  const corporation = await database.findOne<Corporation>(
+    `SELECT * FROM corporations 
+     WHERE "corporationId" = :corporationId 
+     AND "updatedAt" > NOW() - INTERVAL '${maxAgeDays} days'`,
+    { corporationId }
+  );
+  return corporation;
 }
 
 /**

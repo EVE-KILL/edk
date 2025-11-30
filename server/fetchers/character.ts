@@ -2,6 +2,7 @@ import { fetchESI } from '../helpers/esi';
 import {
   storeCharacter as storeCharacterInDB,
   getCharacter,
+  getFreshCharacter,
 } from '../models/characters';
 import { logger } from '../helpers/logger';
 
@@ -26,11 +27,32 @@ export interface ESICharacter {
 /**
  * Fetch character data from ESI
  * Stores only ESI-compatible fields in the database
+ * Checks database cache first - only fetches from ESI if data is older than 14 days
  */
 export async function fetchAndStoreCharacter(
   characterId: number
 ): Promise<ESICharacter | null> {
   try {
+    // Check if we have fresh data in the database (< 14 days old)
+    const cachedCharacter = await getFreshCharacter(characterId, 14);
+    if (cachedCharacter) {
+      // Return cached data without hitting ESI
+      return {
+        alliance_id: cachedCharacter.allianceId,
+        birthday: cachedCharacter.birthday,
+        bloodline_id: cachedCharacter.bloodlineId,
+        corporation_id: cachedCharacter.corporationId,
+        description: cachedCharacter.description,
+        faction_id: cachedCharacter.factionId,
+        gender: cachedCharacter.gender,
+        name: cachedCharacter.name,
+        race_id: cachedCharacter.raceId,
+        security_status: cachedCharacter.securityStatus,
+        title: cachedCharacter.title,
+      };
+    }
+
+    // Data is stale or doesn't exist, fetch from ESI
     const characterData = await fetchFromESI(characterId);
 
     if (!characterData) {

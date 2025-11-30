@@ -2,6 +2,7 @@ import { fetchESI } from '../helpers/esi';
 import {
   storeCorporation as storeCorporationInDB,
   getCorporation,
+  getFreshCorporation,
 } from '../models/corporations';
 import { getNPCCorporation } from '../models/npcCorporations';
 import { logger } from '../helpers/logger';
@@ -31,11 +32,35 @@ export interface ESICorporation {
  * Fetch corporation data from ESI or SDE
  * For NPC corporations (ID < 2000000), check SDE first
  * Stores only ESI-compatible fields in the database
+ * Checks database cache first - only fetches from ESI if data is older than 14 days
  */
 export async function fetchAndStoreCorporation(
   corporationId: number
 ): Promise<ESICorporation | null> {
   try {
+    // Check if we have fresh data in the database (< 14 days old)
+    const cachedCorporation = await getFreshCorporation(corporationId, 14);
+    if (cachedCorporation) {
+      // Return cached data without hitting ESI
+      return {
+        alliance_id: cachedCorporation.allianceId,
+        ceo_id: cachedCorporation.ceoId,
+        creator_id: cachedCorporation.creatorId,
+        date_founded: cachedCorporation.dateFounded,
+        description: cachedCorporation.description,
+        faction_id: cachedCorporation.factionId,
+        home_station_id: cachedCorporation.homeStationId,
+        member_count: cachedCorporation.memberCount,
+        name: cachedCorporation.name,
+        shares: cachedCorporation.shares,
+        tax_rate: cachedCorporation.taxRate,
+        ticker: cachedCorporation.ticker,
+        url: cachedCorporation.url,
+        war_eligible: cachedCorporation.warEligible,
+      };
+    }
+
+    // Data is stale or doesn't exist, fetch from ESI/SDE
     // Check if this is an NPC corporation (ID range: 1,000,000 - 1,999,999)
     // See: https://developers.eveonline.com/docs/guides/id-ranges/
     if (corporationId >= 1000000 && corporationId <= 1999999) {

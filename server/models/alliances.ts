@@ -16,6 +16,7 @@ export interface Alliance {
   factionId: number | null;
   name: string;
   ticker: string;
+  updatedAt?: Date;
 }
 
 /**
@@ -28,6 +29,23 @@ export async function getAlliance(
     'SELECT * FROM alliances WHERE "allianceId" = :allianceId',
     { allianceId }
   );
+}
+
+/**
+ * Check if alliance exists and is fresh (updated within maxAgeDays)
+ * @returns The alliance if fresh, null if doesn't exist or is stale
+ */
+export async function getFreshAlliance(
+  allianceId: number,
+  maxAgeDays: number = 14
+): Promise<Alliance | null> {
+  const alliance = await database.findOne<Alliance>(
+    `SELECT * FROM alliances 
+     WHERE "allianceId" = :allianceId 
+     AND "updatedAt" > NOW() - INTERVAL '${maxAgeDays} days'`,
+    { allianceId }
+  );
+  return alliance;
 }
 
 /**
