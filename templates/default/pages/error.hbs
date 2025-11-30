@@ -6,31 +6,72 @@
         <thead>
             <tr class="kb-table-header">
                 <th class="kb-table-header">
-                    <span style="font-size: 14px;">⚠️ Something went wrong</span>
+                    <span style="font-size: 14px;">
+                        {{#if (eq statusCode 404)}}
+                            🔍 Page Not Found
+                        {{else if (eq statusCode 500)}}
+                            ⚠️ Server Error
+                        {{else if (eq statusCode 403)}}
+                            🚫 Forbidden
+                        {{else if (eq statusCode 401)}}
+                            🔒 Unauthorized
+                        {{else}}
+                            ⚠️ Something went wrong
+                        {{/if}}
+                    </span>
                 </th>
             </tr>
         </thead>
         <tbody>
             <tr class="kb-table-row-even">
                 <td class="kb-table-cell text-center p-lg">
-                    <p class="error-page__message">
+                    <p class="error-page__message" style="font-size: 18px; font-weight: bold;">
                         {{#if message}}
                             {{message}}
+                        {{else if (eq statusCode 404)}}
+                            Page Not Found
+                        {{else if (eq statusCode 500)}}
+                            Internal Server Error
+                        {{else if (eq statusCode 403)}}
+                            Forbidden
+                        {{else if (eq statusCode 401)}}
+                            Unauthorized
                         {{else}}
                             An unexpected error occurred.
                         {{/if}}
                     </p>
                     {{#if description}}
-                    <p class="error-page__description mt-md">
+                    <p class="error-page__description mt-md" style="color: #999;">
                         {{description}}
+                    </p>
+                    {{else if (eq statusCode 404)}}
+                    <p class="error-page__description mt-md" style="color: #999;">
+                        The page you're looking for doesn't exist or has been moved.
+                    </p>
+                    {{else if (eq statusCode 500)}}
+                    <p class="error-page__description mt-md" style="color: #999;">
+                        Something went wrong on our end. Please try again later.
+                    </p>
+                    {{else if (eq statusCode 403)}}
+                    <p class="error-page__description mt-md" style="color: #999;">
+                        You don't have permission to access this resource.
+                    </p>
+                    {{else if (eq statusCode 401)}}
+                    <p class="error-page__description mt-md" style="color: #999;">
+                        You need to log in to access this page.
+                    </p>
+                    {{/if}}
+                    {{#if path}}
+                    <p class="error-page__path mt-sm" style="font-family: monospace; color: #666; font-size: 12px;">
+                        Path: {{path}}
                     </p>
                     {{/if}}
                 </td>
             </tr>
             <tr class="kb-table-row-odd">
                 <td class="kb-table-cell text-center p-md">
-                    <a href="/" class="error-page__btn error-page__btn--primary">🏠 Home</a>
-                    <a href="javascript:history.back()" class="error-page__btn error-page__btn--secondary">← Go Back</a>
+                    <a href="/" class="error-page__btn error-page__btn--primary" style="display: inline-block; padding: 8px 16px; margin: 0 8px; background: #4a90e2; color: #fff; text-decoration: none; border-radius: 4px;">🏠 Home</a>
+                    <a href="javascript:history.back()" class="error-page__btn error-page__btn--secondary" style="display: inline-block; padding: 8px 16px; margin: 0 8px; background: #666; color: #fff; text-decoration: none; border-radius: 4px;">← Go Back</a>
                 </td>
             </tr>
         </tbody>
