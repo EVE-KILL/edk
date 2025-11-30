@@ -7,7 +7,7 @@ import { TypeQueries } from '../../../models/types';
 import { getGroup } from '../../../models/groups';
 import { getCategory } from '../../../models/categories';
 import { track } from '../../../utils/performance-decorators';
-import { handleError } from '../../../utils/error';
+import { handleError, renderErrorPage } from '../../../utils/error';
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event: H3Event) => {
       return await TypeQueries.getType(typeId);
     });
 
-    if (!itemDetails) {
+    if (!item) {
       return renderErrorPage(
         event,
         404,
