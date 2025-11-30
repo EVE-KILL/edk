@@ -1,6 +1,6 @@
 <div class="kb-kl-list" data-killmail-list
      {{#if wsFilter}}data-ws-filter-type="{{wsFilter.type}}" data-ws-filter-id="{{wsFilter.id}}" data-ws-filter-mode="{{wsFilter.mode}}" data-ws-filter-topic="{{wsFilter.topic}}"{{/if}}
-     data-ws-updates="{{#unless wsUpdates}}false{{else}}true{{/unless}}">
+     data-ws-updates="{{#if (eq wsUpdates false)}}false{{else}}true{{/if}}">
     {{#if (length killmails)}}
     <div class="kb-kl-row kb-kl-row--header">
         <div class="kb-kl-col kb-kl-col--ship">Ship type</div>
