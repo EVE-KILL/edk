@@ -678,6 +678,7 @@ export async function storeKillmailsBulk(
   if (esiDataArray.length === 0) return { inserted: 0, skippedExisting: 0 };
 
   try {
+    // Deduplicate within the batch only
     const uniqueKillmails: Array<{ esi: ESIKillmail; hash?: string }> = [];
     const seenIds = new Set<number>();
     for (const entry of esiDataArray) {
@@ -688,44 +689,27 @@ export async function storeKillmailsBulk(
     }
     const duplicateInBatch = esiDataArray.length - uniqueKillmails.length;
 
-    const existingRows =
-      uniqueKillmails.length === 0
-        ? []
-        : await database.find<{ killmailId: number }>(
-            'SELECT "killmailId" FROM killmails WHERE "killmailId" = ANY(:ids)',
-            { ids: Array.from(seenIds) }
-          );
-    const existingIds = new Set(existingRows.map((row) => row.killmailId));
-
-    const newKillmails = uniqueKillmails.filter(
-      ({ esi }) => !existingIds.has(esi.killmail_id)
-    );
-    const skippedExisting =
-      uniqueKillmails.length - newKillmails.length + duplicateInBatch;
-
-    if (newKillmails.length === 0) {
-      logger.info(
-        `[Killmail] Skipping batch; ${skippedExisting} killmails already present`
-      );
-      return { inserted: 0, skippedExisting };
+    if (uniqueKillmails.length === 0) {
+      logger.info(`[Killmail] Skipping batch; all duplicates within batch`);
+      return { inserted: 0, skippedExisting: duplicateInBatch };
     }
 
     const valueBreakdowns = await resolveKillmailValueBreakdowns(
-      newKillmails,
+      uniqueKillmails,
       valueOverrides
     );
 
     // Fetch region/constellation/security for all unique solar systems
     const uniqueSolarSystemIds = Array.from(
-      new Set(newKillmails.map(({ esi }) => esi.solar_system_id))
+      new Set(uniqueKillmails.map(({ esi }) => esi.solar_system_id))
     );
     const solarSystemData = await fetchSolarSystemData(uniqueSolarSystemIds);
 
     // Fetch ship group IDs for all unique victim and attacker ship types
     const uniqueShipTypeIds = Array.from(
       new Set([
-        ...newKillmails.map(({ esi }) => esi.victim.ship_type_id),
-        ...newKillmails.flatMap(({ esi }) =>
+        ...uniqueKillmails.map(({ esi }) => esi.victim.ship_type_id),
+        ...uniqueKillmails.flatMap(({ esi }) =>
           esi.attackers
             .filter((a) => a.ship_type_id)
             .map((a) => a.ship_type_id!)
@@ -743,7 +727,7 @@ export async function storeKillmailsBulk(
     );
 
     // Prepare all killmail records
-    const killmailRecords = newKillmails.map(({ esi, hash }, index) => {
+    const killmailRecords = uniqueKillmails.map(({ esi, hash }, index) => {
       const victim = esi.victim;
       const killmailHash = hash || calculateKillmailHash(esi);
       const valueBreakdown = valueBreakdowns[index];
@@ -804,19 +788,26 @@ export async function storeKillmailsBulk(
       };
     });
 
-    // Insert all killmails at once (DO NOTHING on conflict to handle duplicates)
-    await database.bulkUpsert(
-      'killmails',
-      killmailRecords,
-      ['killmailId', 'killmailTime'],
-      [] // Empty update list = DO NOTHING on conflict
-    );
-    logger.info(
-      `[Killmail] Stored ${killmailRecords.length} new killmails (skipped ${skippedExisting} existing)`
-    );
+    // Insert killmails in chunks to avoid parameter limit (65534)
+    // Each killmail has ~28 columns, so max ~2000 killmails per batch safely
+    const KILLMAIL_CHUNK_SIZE = 2000;
+    if (killmailRecords.length > 0) {
+      for (let i = 0; i < killmailRecords.length; i += KILLMAIL_CHUNK_SIZE) {
+        const chunk = killmailRecords.slice(i, i + KILLMAIL_CHUNK_SIZE);
+        await database.bulkUpsert(
+          'killmails',
+          chunk,
+          ['killmailId', 'killmailTime'],
+          [] // Empty update list = DO NOTHING on conflict
+        );
+      }
+      logger.info(
+        `[Killmail] Attempted ${killmailRecords.length} killmail inserts (${duplicateInBatch} duplicates in batch)`
+      );
+    }
 
     // Prepare all attacker records
-    const allAttackerRecords = newKillmails.flatMap(({ esi }) =>
+    const allAttackerRecords = uniqueKillmails.flatMap(({ esi }) =>
       esi.attackers.map((attacker) => ({
         killmailId: esi.killmail_id ?? 0,
         killmailTime: esi.killmail_time ?? new Date().toISOString(),
@@ -851,7 +842,7 @@ export async function storeKillmailsBulk(
     const sql = database.sql;
     let totalItemsInserted = 0;
 
-    for (const { esi } of newKillmails) {
+    for (const { esi } of uniqueKillmails) {
       const victim = esi.victim;
       if (!victim.items || victim.items.length === 0) continue;
 
@@ -919,9 +910,15 @@ export async function storeKillmailsBulk(
     }
 
     // Update lastActive timestamps for all involved entities
-    await updateEntityLastActive(newKillmails);
+    await updateEntityLastActive(uniqueKillmails);
 
-    return { inserted: killmailRecords.length, skippedExisting };
+    // Note: We can't accurately track skippedExisting without querying first
+    // PostgreSQL ON CONFLICT DO NOTHING doesn't return affected rows
+    // So we report attempt count and let caller handle stats
+    return {
+      inserted: killmailRecords.length,
+      skippedExisting: duplicateInBatch,
+    };
   } catch (error) {
     logger.error(`[Killmail] Error storing killmails in bulk:`, { error });
     throw error;

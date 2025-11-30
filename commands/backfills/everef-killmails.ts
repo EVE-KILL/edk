@@ -36,8 +36,8 @@ export default {
     },
     {
       flags: '--batch-size <number>',
-      description: 'Batch size for database inserts (default: 1000)',
-      defaultValue: '1000',
+      description: 'Batch size for database inserts (default: 10000)',
+      defaultValue: '10000',
     },
     {
       flags: '--delay <ms>',
@@ -45,8 +45,10 @@ export default {
       defaultValue: '1000',
     },
     {
-      flags: '--enqueue-entities',
-      description: 'Enqueue background jobs to fetch entity details',
+      flags: '--skip-entities',
+      description:
+        'Skip entity queuing during backfill (default: true, use --no-skip-entities to enable)',
+      defaultValue: true,
     },
     {
       flags: '--reverse',
@@ -59,7 +61,7 @@ export default {
     tempDir?: string;
     batchSize?: string;
     delay?: string;
-    enqueueEntities?: boolean;
+    skipEntities?: boolean;
     reverse?: boolean;
   }) => {
     const defaultStartDate = '2007-12-05';
@@ -68,9 +70,9 @@ export default {
     const tempDir = options.tempDir || '/tmp/everef-killmails';
     const batchSize = options.batchSize
       ? Number.parseInt(options.batchSize)
-      : 1000;
+      : 10000;
     const delayMs = options.delay ? Number.parseInt(options.delay) : 1000;
-    const enqueueEntities = options.enqueueEntities || false;
+    const enqueueEntities = !(options.skipEntities ?? true);
     const reverse = options.reverse || false;
 
     // When running in reverse without an explicit end date, treat the provided
