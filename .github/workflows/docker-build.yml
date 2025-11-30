@@ -63,6 +63,47 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  deploy:
+    name: Deploy application
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Set up kubectl
+        run: |
+          tailscale configure kubeconfig tailscale-operator
+
+      - name: Deploy with kubectl rollout restart
+        run: |
+          kubectl rollout restart deployment -n eve-kill -l app.kubernetes.io/name=edk
+          kubectl rollout status deployment -n eve-kill -l app.kubernetes.io/name=edk --timeout=5m
+
+  purge-cloudflare-cache:
+    name: Purge Cloudflare Cache
+    needs: deploy
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Purge Cloudflare Cache
+        uses: jakejarvis/cloudflare-purge-action@v0.3.0
+        env:
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_PURGE_TOKEN }}
+
   scan:
     name: Vulnerability Scanning
     needs: build
