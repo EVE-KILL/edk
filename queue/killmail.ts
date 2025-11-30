@@ -36,6 +36,15 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
   logger.info(`[killmail] Processing killmail ${killmailId}...`);
 
   try {
+    // Step 0: Check if killmail already exists in database
+    const { killmailExists } = await import('../server/models/killmails');
+    if (await killmailExists(killmailId)) {
+      logger.info(
+        `[killmail] ${killmailId}: Already exists in database, skipping`
+      );
+      return;
+    }
+
     // Step 1: Fetch killmail from ESI
     const response = await fetchESI<ESIKillmail>(
       `/killmails/${killmailId}/${hash}/`
@@ -130,13 +139,11 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
     try {
       await storeKillmail(killmail, hash, warId);
     } catch (storeError: any) {
-      // Handle duplicate key errors gracefully (code 23505)
-      // Killmails can be received from multiple sources (WebSocket, RedisQ, backfill)
+      // Handle duplicate key errors as safety net (should be rare due to early check)
       if (storeError?.code === '23505') {
         logger.info(
-          `[killmail] ${killmailId}: Already exists in database (duplicate)`
+          `[killmail] ${killmailId}: Duplicate detected during storage (race condition)`
         );
-        // Don't publish to WebSocket for duplicates
         return;
       }
       // Re-throw other storage errors
