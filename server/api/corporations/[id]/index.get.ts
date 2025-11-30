@@ -16,12 +16,58 @@ import { validate } from '~/utils/validation';
  *         description: The corporation ID
  *         schema:
  *           type: integer
- *           example: 123456
+ *           example: 98356193
  *     responses:
  *       '200':
  *         description: Corporation details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 corporationId:
+ *                   type: integer
+ *                 name:
+ *                   type: string
+ *                 ticker:
+ *                   type: string
+ *                   nullable: true
+ *                 memberCount:
+ *                   type: integer
+ *                   nullable: true
+ *                 allianceId:
+ *                   type: integer
+ *                   nullable: true
+ *                 ceoId:
+ *                   type: integer
+ *                   nullable: true
+ *                 dateFounded:
+ *                   type: string
+ *                   format: date-time
+ *                   nullable: true
+ *                 factionId:
+ *                   type: integer
+ *                   nullable: true
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *             example:
+ *               corporationId: 98356193
+ *               name: "Synthetic Systems"
+ *               ticker: "SYNTH"
+ *               memberCount: 42
+ *               allianceId: 933731581
+ *               ceoId: 95465499
+ *               dateFounded: "2015-03-15T00:00:00.000Z"
+ *               factionId: null
+ *               updatedAt: "2025-12-01T10:30:45.000Z"
  *       '404':
  *         description: Corporation not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               statusCode: 404
+ *               statusMessage: "Corporation not found"
  */
 export default defineEventHandler(async (event) => {
   const { params } = await validate(event, {

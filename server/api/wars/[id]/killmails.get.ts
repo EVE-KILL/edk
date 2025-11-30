@@ -34,6 +34,38 @@ import { getFilteredKills, type KilllistFilters } from '~/models/killlist';
  *     responses:
  *       '200':
  *         description: List of killmails
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 killmails:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 page:
+ *                   type: integer
+ *                 perPage:
+ *                   type: integer
+ *             example:
+ *               killmails:
+ *                 - killmailId: 123456789
+ *                   killmailTime: "2025-11-16T15:30:22.000Z"
+ *                   solarSystemId: 30000142
+ *                   solarSystemName: "Jita"
+ *                   victimCharacterName: "Victim Name"
+ *                   victimShipTypeName: "Capsule"
+ *                   totalValue: 125000000.00
+ *                   warId: 615476
+ *               page: 1
+ *               perPage: 50
+ *       '404':
+ *         description: War not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               statusCode: 404
+ *               statusMessage: "War not found"
  */
 export default defineEventHandler(async (event) => {
   const { params, query } = await validate(event, {

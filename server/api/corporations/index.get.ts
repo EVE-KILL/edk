@@ -31,6 +31,35 @@ import { validate } from '~/utils/validation';
  *     responses:
  *       '200':
  *         description: List of corporations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 page:
+ *                   type: integer
+ *                 perPage:
+ *                   type: integer
+ *                 total:
+ *                   type: integer
+ *             example:
+ *               items:
+ *                 - corporationId: 98356193
+ *                   corporationName: "Example Corporation"
+ *                   ticker: "EXMPL"
+ *                   allianceId: 99000001
+ *                   allianceName: "Example Alliance"
+ *                   factionId: null
+ *                   dateFounded: "2010-05-15T12:00:00.000Z"
+ *                   ceoId: 2116199184
+ *                   updatedAt: "2025-12-01T10:30:45.000Z"
+ *               page: 1
+ *               perPage: 50
+ *               total: 234567
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

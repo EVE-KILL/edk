@@ -31,6 +31,37 @@ import { validate } from '~/utils/validation';
  *     responses:
  *       '200':
  *         description: List of alliances
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 alliances:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       allianceId:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                       ticker:
+ *                         type: string
+ *                       dateFounded:
+ *                         type: string
+ *                         format: date-time
+ *                 page:
+ *                   type: integer
+ *                 perPage:
+ *                   type: integer
+ *             example:
+ *               alliances:
+ *                 - allianceId: 2085230220
+ *                   name: "First Church Of The Goo"
+ *                   ticker: "F-GOO"
+ *                   dateFounded: "2009-12-28T00:00:00.000Z"
+ *               page: 1
+ *               perPage: 50
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

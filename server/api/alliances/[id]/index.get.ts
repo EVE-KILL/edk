@@ -16,12 +16,50 @@ import { validate } from '~/utils/validation';
  *         description: The alliance ID
  *         schema:
  *           type: integer
- *           example: 123456
+ *           example: 933731581
  *     responses:
  *       '200':
  *         description: Alliance details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 allianceId:
+ *                   type: integer
+ *                 name:
+ *                   type: string
+ *                 ticker:
+ *                   type: string
+ *                   nullable: true
+ *                 executorCorporationId:
+ *                   type: integer
+ *                   nullable: true
+ *                 dateFounded:
+ *                   type: string
+ *                   format: date-time
+ *                   nullable: true
+ *                 factionId:
+ *                   type: integer
+ *                   nullable: true
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *             example:
+ *               allianceId: 933731581
+ *               name: "Northern Coalition."
+ *               ticker: "NC."
+ *               executorCorporationId: 98356193
+ *               dateFounded: "2008-05-15T00:00:00.000Z"
+ *               factionId: null
+ *               updatedAt: "2025-12-01T10:30:45.000Z"
  *       '404':
  *         description: Alliance not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               statusCode: 404
+ *               statusMessage: "Alliance not found"
  */
 export default defineEventHandler(async (event) => {
   const { params } = await validate(event, {

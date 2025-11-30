@@ -34,8 +34,40 @@ import { validate } from '~/utils/validation';
  *     responses:
  *       '200':
  *         description: Exported data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 collection:
+ *                   type: string
+ *                 count:
+ *                   type: integer
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *             example:
+ *               collection: "characters"
+ *               count: 1000
+ *               data:
+ *                 - characterId: 95465499
+ *                   name: "Karbowiak"
+ *                   corporationId: 98356193
+ *                   allianceId: 933731581
+ *                   updatedAt: "2025-12-01T10:30:45.000Z"
+ *                 - characterId: 1234567890
+ *                   name: "Test Pilot"
+ *                   corporationId: 98000001
+ *                   allianceId: null
+ *                   updatedAt: "2025-11-30T15:20:10.000Z"
  *       '400':
  *         description: Invalid collection
+ *         content:
+ *           application/json:
+ *             example:
+ *               statusCode: 400
+ *               statusMessage: "Invalid collection"
  */
 export default defineEventHandler(async (event) => {
   const { params, query } = await validate(event, {

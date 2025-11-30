@@ -31,6 +31,35 @@ import { validate } from '~/utils/validation';
  *     responses:
  *       '200':
  *         description: List of characters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 page:
+ *                   type: integer
+ *                 perPage:
+ *                   type: integer
+ *                 total:
+ *                   type: integer
+ *             example:
+ *               items:
+ *                 - characterId: 2116199184
+ *                   characterName: "Example Character"
+ *                   corporationId: 98356193
+ *                   corporationName: "Example Corp"
+ *                   allianceId: 99000001
+ *                   allianceName: "Example Alliance"
+ *                   factionId: null
+ *                   securityStatus: -5.2
+ *                   updatedAt: "2025-12-01T10:30:45.000Z"
+ *               page: 1
+ *               perPage: 50
+ *               total: 850234
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

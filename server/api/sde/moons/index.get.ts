@@ -34,12 +34,45 @@ import type { Moon } from '~/models/moons';
  *               properties:
  *                 items:
  *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       moonId:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                         nullable: true
+ *                       solarSystemId:
+ *                         type: integer
+ *                       typeId:
+ *                         type: integer
+ *                       celestialIndex:
+ *                         type: integer
+ *                       positionX:
+ *                         type: number
+ *                       positionY:
+ *                         type: number
+ *                       positionZ:
+ *                         type: number
  *                 page:
  *                   type: integer
  *                 perPage:
  *                   type: integer
  *                 total:
  *                   type: integer
+ *             example:
+ *               items:
+ *                 - moonId: 40000025
+ *                   name: null
+ *                   solarSystemId: 30000002
+ *                   typeId: 14
+ *                   celestialIndex: 1
+ *                   positionX: -71539852816
+ *                   positionY: -4314537310
+ *                   positionZ: 13504425940
+ *               page: 1
+ *               perPage: 100
+ *               total: 342170
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

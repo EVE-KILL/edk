@@ -9,8 +9,35 @@
  *     responses:
  *       '200':
  *         description: Available export options
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 collections:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 formats:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 note:
+ *                   type: string
+ *             example:
+ *               collections:
+ *                 - "killmails"
+ *                 - "characters"
+ *                 - "corporations"
+ *                 - "alliances"
+ *                 - "types"
+ *                 - "prices"
+ *               formats:
+ *                 - "json"
+ *                 - "csv"
+ *               note: "Use /api/export/{collection} to export a specific collection"
  */
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (_event) => {
   return {
     collections: [
       'killmails',

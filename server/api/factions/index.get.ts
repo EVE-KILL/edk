@@ -26,6 +26,29 @@ import { validate } from '~/utils/validation';
  *     responses:
  *       '200':
  *         description: List of factions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 factions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       factionId:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *             example:
+ *               factions:
+ *                 - factionId: 500001
+ *                   name: "Caldari State"
+ *                   description: "The Caldari State is ruled by several mega-corporations..."
+ *               page: 1
+ *               perPage: 50
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

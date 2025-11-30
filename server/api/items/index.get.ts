@@ -31,6 +31,39 @@ import { validate } from '~/utils/validation';
  *     responses:
  *       '200':
  *         description: List of items/types
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       typeId:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                       groupId:
+ *                         type: integer
+ *                       volume:
+ *                         type: number
+ *                       published:
+ *                         type: boolean
+ *                 page:
+ *                   type: integer
+ *                 perPage:
+ *                   type: integer
+ *             example:
+ *               items:
+ *                 - typeId: 18
+ *                   name: "Plagioclase"
+ *                   groupId: 458
+ *                   volume: 0.35
+ *                   published: true
+ *               page: 1
+ *               perPage: 50
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

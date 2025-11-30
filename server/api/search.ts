@@ -43,8 +43,35 @@
  *                         type: string
  *                       type:
  *                         type: string
+ *             example:
+ *               results:
+ *                 - id: "95465499"
+ *                   name: "Karbowiak"
+ *                   type: "character"
+ *                   corporationId: 98356193
+ *                   allianceId: 933731581
+ *                 - id: "98356193"
+ *                   name: "Synthetic Systems"
+ *                   type: "corporation"
+ *                   ticker: "SYNTH"
+ *                   allianceId: 933731581
+ *                 - id: "638"
+ *                   name: "Drake"
+ *                   type: "item"
+ *                   groupId: 25
+ *                   categoryId: 6
+ *                 - id: "30000142"
+ *                   name: "Jita"
+ *                   type: "solarsystem"
+ *                   regionId: 10000002
+ *                   security: 0.946
  *       '500':
  *         description: Internal server error if the search operation fails.
+ *         content:
+ *           application/json:
+ *             example:
+ *               statusCode: 500
+ *               statusMessage: "Search failed"
  */
 import { defineEventHandler, getQuery } from 'h3';
 import { searchEntities } from '~/models/search';
