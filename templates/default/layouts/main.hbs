@@ -18,7 +18,7 @@
     <meta property="og:url" content="{{#if page.url}}{{config.siteUrl}}{{page.url}}{{else}}{{config.siteUrl}}{{/if}}" />
     <meta property="og:title" content="{{#if page.title}}{{page.title}}{{else if title}}{{title}}{{else}}EVE-KILL - Real-time EVE Online Killboard{{/if}}{{#unless page.skipSiteName}} - {{#if config.title}}{{config.title}}{{else}}EVE-KILL{{/if}}{{/unless}}" />
     <meta property="og:description" content="{{#if page.description}}{{page.description}}{{else if description}}{{description}}{{else}}EVE-KILL - Real-time EVE Online killmail tracking and analytics. View detailed killmails, ship fittings, combat statistics, and live killboard updates.{{/if}}" />
-    <meta property="og:image" content="{{#if page.image}}{{page.image}}{{else}}{{config.siteUrl}}/og-default.png{{/if}}" />
+    <meta property="og:image" content="{{#if page.image}}{{page.image}}{{else}}{{config.siteUrl}}/icon.png{{/if}}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="EVE-KILL - EVE Online Killboard" />
@@ -30,7 +30,7 @@
     <meta name="twitter:url" content="{{#if page.url}}{{config.siteUrl}}{{page.url}}{{else}}{{config.siteUrl}}{{/if}}" />
     <meta name="twitter:title" content="{{#if page.title}}{{page.title}}{{else if title}}{{title}}{{else}}EVE-KILL - Real-time EVE Online Killboard{{/if}}{{#unless page.skipSiteName}} - {{#if config.title}}{{config.title}}{{else}}EVE-KILL{{/if}}{{/unless}}" />
     <meta name="twitter:description" content="{{#if page.description}}{{page.description}}{{else if description}}{{description}}{{else}}EVE-KILL - Real-time EVE Online killmail tracking and analytics. View detailed killmails, ship fittings, combat statistics, and live killboard updates.{{/if}}" />
-    <meta name="twitter:image" content="{{#if page.image}}{{page.image}}{{else}}{{config.siteUrl}}/og-default.png{{/if}}" />
+    <meta name="twitter:image" content="{{#if page.image}}{{page.image}}{{else}}{{config.siteUrl}}/icon.png{{/if}}" />
     <meta name="twitter:image:alt" content="EVE-KILL - EVE Online Killboard" />
     {{#if config.twitterHandle}}
     <meta name="twitter:site" content="{{config.twitterHandle}}" />
@@ -43,9 +43,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <!-- Favicons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" href="/icon.ico">
+    <link rel="apple-touch-icon" href="/icon.png">
     <link rel="manifest" href="/site.webmanifest">
 
     {{#if page.structuredData}}
