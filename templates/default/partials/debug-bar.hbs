@@ -820,22 +820,22 @@ window.debugWS = {
   setWorkerState(state) {
     this.stats.workerState = state;
     this.stats.portCount = state?.portCount || 0;
-    
+
     // Update connection status from worker state
     if (state?.connected !== undefined) {
       this.setConnected(state.connected, state.url);
     }
-    
+
     // Update topics from worker state
     if (state?.topics) {
       this.setTopics(state.topics);
     }
-    
+
     // Update reconnect count
     if (state?.reconnectAttempts !== undefined) {
       this.setReconnectCount(state.reconnectAttempts);
     }
-    
+
     this.updateUI();
   },
 
@@ -999,7 +999,7 @@ window.debugWS = {
         if (st.topics && st.topics.length > 0) lines.push(`Topics: ${st.topics.join(', ')}`);
         if (st.lastError) lines.push(`Last error: ${st.lastError.error || st.lastError}`);
         if (st.lastClose) lines.push(`Last close: ${st.lastClose.code} ${st.lastClose.reason || ''}`);
-        
+
         workerInfoEl.innerHTML = lines.map(line =>
           `<div style="padding: 2px 0;">${line}</div>`
         ).join('');
@@ -1050,13 +1050,13 @@ setInterval(() => {
 // SEO Tab functionality
 window.debugSEO = {
   analyzed: false,
-  
+
   getMeta(name, property = false) {
     const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
     const el = document.querySelector(selector);
     return el ? el.getAttribute('content') : null;
   },
-  
+
   getStructuredData() {
     const scripts = document.querySelectorAll('script[type="application/ld+json"]');
     const data = [];
@@ -1069,65 +1069,65 @@ window.debugSEO = {
     });
     return data;
   },
-  
+
   analyze() {
     if (this.analyzed) return;
     this.analyzed = true;
-    
+
     const loading = document.getElementById('seo-loading');
     const content = document.getElementById('seo-content');
-    
+
     // Get all meta data
     const title = document.title;
     const description = this.getMeta('description');
     const keywords = this.getMeta('keywords');
     const canonical = document.querySelector('link[rel="canonical"]')?.href || '-';
-    
+
     const ogType = this.getMeta('og:type', true);
     const ogTitle = this.getMeta('og:title', true);
     const ogDescription = this.getMeta('og:description', true);
     const ogImage = this.getMeta('og:image', true);
     const ogUrl = this.getMeta('og:url', true);
-    
+
     const twitterCard = this.getMeta('twitter:card');
     const twitterTitle = this.getMeta('twitter:title');
     const twitterDescription = this.getMeta('twitter:description');
     const twitterImage = this.getMeta('twitter:image');
-    
+
     const structuredData = this.getStructuredData();
-    
+
     // Update UI
     document.getElementById('seo-title').textContent = title || '-';
     document.getElementById('seo-title-length').textContent = `Length: ${title.length} chars ${this.getLengthStatus(title.length, 60)}`;
     document.getElementById('seo-title-length').style.color = this.getLengthColor(title.length, 60);
-    
+
     document.getElementById('seo-description').textContent = description || '-';
     if (description) {
       document.getElementById('seo-description-length').textContent = `Length: ${description.length} chars ${this.getLengthStatus(description.length, 160)}`;
       document.getElementById('seo-description-length').style.color = this.getLengthColor(description.length, 160);
     }
-    
+
     document.getElementById('seo-keywords').textContent = keywords || '-';
     document.getElementById('seo-canonical').textContent = canonical;
-    
+
     document.getElementById('seo-og-type').textContent = ogType || '-';
     document.getElementById('seo-og-title').textContent = ogTitle || '-';
     document.getElementById('seo-og-description').textContent = ogDescription || '-';
     document.getElementById('seo-og-image').textContent = ogImage || '-';
     document.getElementById('seo-og-url').textContent = ogUrl || '-';
-    
+
     document.getElementById('seo-twitter-card').textContent = twitterCard || '-';
     document.getElementById('seo-twitter-title').textContent = twitterTitle || '-';
     document.getElementById('seo-twitter-description').textContent = twitterDescription || '-';
     document.getElementById('seo-twitter-image').textContent = twitterImage || '-';
-    
+
     if (structuredData.length > 0) {
       document.getElementById('seo-structured-data').textContent = JSON.stringify(structuredData, null, 2);
     } else {
       document.getElementById('seo-structured-data').textContent = 'No structured data found';
       document.getElementById('seo-structured-data').style.color = 'var(--color-text-tertiary)';
     }
-    
+
     // Calculate SEO score
     this.calculateScore({
       title, description, keywords, canonical,
@@ -1135,30 +1135,30 @@ window.debugSEO = {
       twitterCard, twitterTitle, twitterDescription, twitterImage,
       structuredData
     });
-    
+
     // Show content
     if (loading) loading.style.display = 'none';
     if (content) content.style.display = 'block';
   },
-  
+
   getLengthStatus(length, optimal) {
     if (length === 0) return '⚠️ Missing';
     if (length > optimal + 20) return '⚠️ Too long';
     if (length < optimal - 20) return '⚠️ Too short';
     return '✅ Good';
   },
-  
+
   getLengthColor(length, optimal) {
     if (length === 0) return '#f44336';
     if (length > optimal + 20 || length < optimal - 20) return '#FF9800';
     return '#4CAF50';
   },
-  
+
   calculateScore(data) {
     let score = 0;
     let maxScore = 0;
     const issues = [];
-    
+
     // Title (20 points)
     maxScore += 20;
     if (data.title && data.title.length > 0) {
@@ -1171,7 +1171,7 @@ window.debugSEO = {
     } else {
       issues.push('Missing page title');
     }
-    
+
     // Description (20 points)
     maxScore += 20;
     if (data.description && data.description.length > 0) {
@@ -1184,7 +1184,7 @@ window.debugSEO = {
     } else {
       issues.push('Missing meta description');
     }
-    
+
     // Keywords (10 points)
     maxScore += 10;
     if (data.keywords) {
@@ -1192,7 +1192,7 @@ window.debugSEO = {
     } else {
       issues.push('Missing keywords');
     }
-    
+
     // Canonical (10 points)
     maxScore += 10;
     if (data.canonical && data.canonical !== '-') {
@@ -1200,7 +1200,7 @@ window.debugSEO = {
     } else {
       issues.push('Missing canonical URL');
     }
-    
+
     // Open Graph (20 points)
     maxScore += 20;
     let ogScore = 0;
@@ -1210,7 +1210,7 @@ window.debugSEO = {
     if (data.ogUrl) ogScore += 5;
     score += ogScore;
     if (ogScore < 20) issues.push(`Open Graph incomplete (${ogScore}/20)`);
-    
+
     // Twitter Card (10 points)
     maxScore += 10;
     let twitterScore = 0;
@@ -1220,7 +1220,7 @@ window.debugSEO = {
     if (data.twitterImage) twitterScore += 2;
     score += twitterScore;
     if (twitterScore < 10) issues.push(`Twitter Card incomplete (${twitterScore}/10)`);
-    
+
     // Structured Data (10 points)
     maxScore += 10;
     if (data.structuredData && data.structuredData.length > 0) {
@@ -1228,13 +1228,13 @@ window.debugSEO = {
     } else {
       issues.push('Missing structured data (JSON-LD)');
     }
-    
+
     const percentage = Math.round((score / maxScore) * 100);
     const scoreEl = document.getElementById('seo-score');
     const issuesEl = document.getElementById('seo-issues');
-    
+
     scoreEl.textContent = `${percentage}% (${score}/${maxScore})`;
-    
+
     if (percentage >= 90) {
       scoreEl.style.color = '#4CAF50';
     } else if (percentage >= 70) {
@@ -1242,7 +1242,7 @@ window.debugSEO = {
     } else {
       scoreEl.style.color = '#f44336';
     }
-    
+
     if (issues.length > 0) {
       issuesEl.innerHTML = '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">' +
         '<strong>Issues:</strong><br>' +
