@@ -50,6 +50,15 @@ spec:
     pvcTemplate:
       accessModes:
       - ReadWriteOnce
+      {{- with .Values.database.storage.annotations }}
+      metadata:
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- with $.Values.database.storage.pvcLabels }}
+        labels:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- end }}
       resources:
         requests:
           storage: {{ .Values.database.storage.size }}
@@ -62,6 +71,15 @@ spec:
     pvcTemplate:
       accessModes:
       - ReadWriteOnce
+      {{- with .Values.database.walStorage.annotations }}
+      metadata:
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- with $.Values.database.walStorage.pvcLabels }}
+        labels:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- end }}
       resources:
         requests:
           storage: {{ .Values.database.walStorage.size }}
