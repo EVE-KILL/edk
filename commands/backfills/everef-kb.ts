@@ -415,10 +415,6 @@ async function insertKillmailsBatch(
         topAttackerShipGroupId: 0,
         attackerCount,
         totalValue: 0, // Skip value calculation for speed
-        fittedValue: 0,
-        destroyedValue: 0,
-        droppedValue: 0,
-        pointsAwarded: victim.damage_taken, // Simple approximation
         solo,
         npc,
         awox,
