@@ -84,6 +84,7 @@ export default defineNitroConfig({
       cache: { maxAge: 3600, staleMaxAge: -1, base: 'redis' },
     },
     '/region/**': { cache: { maxAge: 3600, staleMaxAge: -1, base: 'redis' } },
+    '/filter': { cache: { maxAge: 5, staleMaxAge: -1, base: 'redis' } },
     '/status': { cache: false },
     '/docs': { cache: { maxAge: 3600, staleMaxAge: 7200, base: 'redis' } },
     '/about': { cache: { maxAge: 3600, staleMaxAge: 7200, base: 'redis' } },
