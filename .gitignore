@@ -17,3 +17,6 @@ chart/values.yaml
 
 # Generated/minified assets
 templates/default/public/edk.optimized.css
+
+# OpenAPI
+docs/openapi.json

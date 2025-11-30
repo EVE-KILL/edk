@@ -33,11 +33,10 @@ export default defineEventHandler(async (event) => {
     let finalMessage = '';
 
     // Lazy-load dependencies
-    const { getAllToolDefinitions, executeTool } = await import(
-      '../../../ai/tool-loader'
-    );
-    const { database } = await import('../../../helpers/database');
-    const { render } = await import('../../../helpers/templates');
+    const { getAllToolDefinitions, executeTool } =
+      await import('../../ai/tool-loader');
+    const { database } = await import('../../helpers/database');
+    const { render } = await import('../../helpers/templates');
 
     const tools = getAllToolDefinitions();
 

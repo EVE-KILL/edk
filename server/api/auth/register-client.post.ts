@@ -1,5 +1,5 @@
 import { createError, readBody, setResponseHeaders } from 'h3';
-import { createRedisClient } from '../../../helpers/redis';
+import { createRedisClient } from '../../helpers/redis';
 
 const ONE_WEEK_SECONDS = 7 * 24 * 60 * 60;
 
@@ -9,7 +9,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
   }
 
-  const body = await readBody<{ clientId?: string; userAgent?: string; lastSeen?: number }>(event);
+  const body = await readBody<{
+    clientId?: string;
+    userAgent?: string;
+    lastSeen?: number;
+  }>(event);
   const clientId = body?.clientId?.trim();
 
   if (!clientId) {
@@ -17,9 +21,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const ua = (body?.userAgent || '').slice(0, 180) || 'Unknown';
-  const lastSeen = body?.lastSeen && Number.isFinite(body.lastSeen)
-    ? body.lastSeen
-    : Date.now();
+  const lastSeen =
+    body?.lastSeen && Number.isFinite(body.lastSeen)
+      ? body.lastSeen
+      : Date.now();
 
   const redis = createRedisClient();
 

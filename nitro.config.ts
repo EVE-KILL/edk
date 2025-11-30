@@ -37,11 +37,13 @@ export default defineNitroConfig({
     websocket: true,
     asyncContext: true,
     wasm: true,
+    openAPI: true,
   },
   future: {
     nativeSWR: true,
   },
   openAPI: {
+    route: '/docs/openapi.json',
     meta: {
       title: 'EDK API',
       description: 'EVE Online Killboard API documentation.',
@@ -49,7 +51,7 @@ export default defineNitroConfig({
     },
     ui: {
       scalar: {
-        route: '/api/docs',
+        route: '/scalar',
       },
     },
   },

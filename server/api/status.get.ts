@@ -1,5 +1,5 @@
-import { collectStatusSnapshot } from '../../helpers/status';
-import { handleError } from '../../utils/error';
+import { collectStatusSnapshot } from '../helpers/status';
+import { handleError } from '../utils/error';
 
 export default defineEventHandler(async (event) => {
   try {

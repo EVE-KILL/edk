@@ -86,7 +86,7 @@ async function getNextKillmail(
     // If we have a position, get killmails NEWER than that position
     const killmail = afterKillmailId
       ? await sql`
-          SELECT 
+          SELECT
             k.*,
             json_agg(
               json_build_object(
@@ -119,7 +119,7 @@ async function getNextKillmail(
           LIMIT 1
         `
       : await sql`
-          SELECT 
+          SELECT
             k.*,
             json_agg(
               json_build_object(
@@ -230,9 +230,9 @@ async function formatRedisQResponse(killmail: any) {
 async function getLocationId(solarSystemId: number): Promise<number> {
   const sql = database.sql;
   const result = await sql`
-    SELECT "itemId" 
-    FROM celestials 
-    WHERE "solarSystemId" = ${solarSystemId} 
+    SELECT "itemId"
+    FROM celestials
+    WHERE "solarSystemId" = ${solarSystemId}
     LIMIT 1
   `;
 

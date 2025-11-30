@@ -5,10 +5,10 @@
  * the tracking system with real operations.
  */
 
-import { storage } from '../../helpers/redis';
-import { fetchESI } from '../../helpers/esi';
-import { updateSearchEntity } from '../../helpers/typesense';
-import { trackBlock } from '../../utils/performance-decorators';
+import { storage } from '../helpers/redis';
+import { fetchESI } from '../helpers/esi';
+import { updateSearchEntity } from '../helpers/typesense';
+import { trackBlock } from '../utils/performance-decorators';
 
 export default defineEventHandler(async (event) => {
   const perf = event.context.performance;
@@ -35,24 +35,26 @@ export default defineEventHandler(async (event) => {
     // 4. Typesense search operation (tracked automatically)
     if (killmails.length > 0) {
       perf?.startTimer('search_ops');
-      await updateSearchEntity(
-        12345,
-        'Test Character',
-        'character'
-      ).catch(() => {}); // Ignore errors for demo
+      await updateSearchEntity(12345, 'Test Character', 'character').catch(
+        () => {}
+      ); // Ignore errors for demo
       perf?.endTimer('search_ops');
     }
 
     // 5. Application code with trackBlock (manual tracking)
-    const processedData = await trackBlock('process_results', 'application', async () => {
-      // Simulate some processing
-      await new Promise(resolve => setTimeout(resolve, 10));
-      return {
-        killmailCount: killmails.length,
-        cacheHit: !!cachedData,
-        system: systemInfo.data?.name || 'Unknown',
-      };
-    });
+    const processedData = await trackBlock(
+      'process_results',
+      'application',
+      async () => {
+        // Simulate some processing
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return {
+          killmailCount: killmails.length,
+          cacheHit: !!cachedData,
+          system: systemInfo.data?.name || 'Unknown',
+        };
+      }
+    );
 
     // Return results with performance summary
     const summary = perf?.getSummary();

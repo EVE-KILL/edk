@@ -3,14 +3,14 @@
  * Returns comprehensive system information including celestials
  */
 import type { H3Event } from 'h3';
-import { getSolarSystem } from '../../../../models/solarSystems';
-import { getRegion } from '../../../../models/regions';
-import { getConstellation } from '../../../../models/constellations';
-import { getPlanetsBySystem } from '../../../../models/planets';
-import { getMoonsBySystem } from '../../../../models/moons';
-import { getStargatesBySystem } from '../../../../models/stargates';
-import { getStarBySystem } from '../../../../models/stars';
-import { getAsteroidBeltsBySystem } from '../../../../models/asteroidBelts';
+import { getSolarSystem } from '../../../models/solarSystems';
+import { getRegion } from '../../../models/regions';
+import { getConstellation } from '../../../models/constellations';
+import { getPlanetsBySystem } from '../../../models/planets';
+import { getMoonsBySystem } from '../../../models/moons';
+import { getStargatesBySystem } from '../../../models/stargates';
+import { getStarBySystem } from '../../../models/stars';
+import { getAsteroidBeltsBySystem } from '../../../models/asteroidBelts';
 
 export default defineCachedEventHandler(
   async (event: H3Event) => {

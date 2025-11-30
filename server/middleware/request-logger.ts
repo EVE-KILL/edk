@@ -1,8 +1,7 @@
-import { defineEventHandler, getMethod, getRequestURL } from 'h3';
 import chalk from 'chalk';
 import { logger } from '../helpers/logger';
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const startTime = Date.now();
 
   // Extract request information
@@ -13,11 +12,9 @@ export default defineEventHandler((event) => {
     event.node.req.socket.remoteAddress ||
     '-';
   const userAgent = event.node.req.headers['user-agent'] || '-';
-  const referer = event.node.req.headers['referer'] || '-';
 
-  // Handle response
-  const originalSend = event.node.res.end;
-  event.node.res.end = function (...args: any[]) {
+  // Wait for response using onAfterResponse hook
+  event.node.res.on('finish', () => {
     const statusCode = event.node.res.statusCode;
     const duration = Date.now() - startTime;
     const responseSize = event.node.res.getHeader('content-length') || '0';
@@ -48,7 +45,5 @@ export default defineEventHandler((event) => {
     const log = `${chalk.gray(timestamp)} ${methodColor} ${url} ${coloredStatus} ${chalk.gray(`${duration}ms`)} ${chalk.gray(`${responseSize}B`)} ${chalk.gray(ip)} ${chalk.magenta(userAgent)}`;
 
     logger.info(log);
-
-    return originalSend.apply(this, args as Parameters<typeof originalSend>);
-  };
+  });
 });

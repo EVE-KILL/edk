@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "bun run build:css && nitro build",
+    "build": "bun run build:css && bun run build:openapi && nitro build",
     "build:css": "lightningcss --minify --bundle templates/default/public/edk.css -o templates/default/public/edk.optimized.css && purgecss --config purgecss.config.js && csso templates/default/public/edk.optimized.css --output templates/default/public/edk.optimized.css",
+    "build:openapi": "bun cli.ts build:openapi",
     "dev": "bun --bun nitro dev",
     "preview": "node .output/server/index.mjs",
     "type-check": "bunx nitro prepare && bun tsc --noEmit",
@@ -64,6 +65,7 @@
     "typesense": "^2.1.0",
     "unbzip2-stream": "^1.4.3",
     "unstorage": "^1.17.3",
+    "yaml": "^2.8.2",
     "zod": "^4.1.13"
   },
   "lint-staged": {
