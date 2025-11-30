@@ -1383,10 +1383,4 @@ async function updateEntityLastActive(
         AND ("lastActive" IS NULL OR "lastActive" < ${latestKillmailTime})
     `;
   }
-
-  logger.debug('Updated lastActive for entities', {
-    characters: characterIds.size,
-    corporations: corporationIds.size,
-    alliances: allianceIds.size,
-  });
 }
