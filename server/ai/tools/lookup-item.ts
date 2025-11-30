@@ -138,7 +138,7 @@ export async function execute(
 }
 
 function renderItemCard(item: any, group: any, category: any): string {
-  const imageUrl = `https://images.evetech.net/types/${item.typeId}/icon?size=128`;
+  const imageUrl = `https://images.eve-kill.com/types/${item.typeId}/icon?size=128`;
 
   return `
     <div style="
@@ -152,8 +152,8 @@ function renderItemCard(item: any, group: any, category: any): string {
       <div style="display: flex; gap: 20px; align-items: start;">
         <!-- Item Image -->
         <div style="flex-shrink: 0;">
-          <img 
-            src="${imageUrl}" 
+          <img
+            src="${imageUrl}"
             alt="${item.name}"
             style="
               width: 128px;
@@ -327,8 +327,8 @@ function _renderItemList(items: any[], query?: string): string {
             padding: 12px;
             transition: background 0.2s;
           " onmouseover="this.style.background='#222'" onmouseout="this.style.background='#1a1a1a'">
-            <img 
-              src="https://images.evetech.net/types/${item.typeId}/icon?size=64" 
+            <img
+              src="https://images.eve-kill.com/types/${item.typeId}/icon?size=64"
               alt="${item.name}"
               style="
                 width: 48px;

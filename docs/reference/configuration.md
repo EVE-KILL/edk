@@ -41,7 +41,7 @@ THEME=default
 
 ```bash
 # EVE image server URL
-IMAGE_SERVER_URL=https://images.evetech.net
+IMAGE_SERVER_URL=https://images.eve-kill.com
 
 # ESI server URL
 ESI_SERVER_URL=https://esi.evetech.net

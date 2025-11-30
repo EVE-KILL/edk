@@ -75,7 +75,7 @@ export function generateKillmailOGImage(params: {
   victimShipTypeId: number;
 }): string {
   const { victimShipTypeId } = params;
-  return `${env.IMAGE_SERVER_URL}/types/${victimShipTypeId}/render?size=1024`;
+  return `${env.IMAGE_SERVER_URL}/types/${victimShipTypeId}/overlayrender?size=1024`;
 }
 
 /**

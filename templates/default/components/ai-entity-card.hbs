@@ -1,23 +1,23 @@
 <div style="background: #1a1a1a; border-radius: 8px; padding: 16px; margin: 16px 0; max-width: 800px;">
   <div style="display: flex; align-items: center; gap: 16px;">
-    <img 
-      src="{{#if (eq type 'character')}}https://images.evetech.net/characters/{{entity.id}}/portrait?size=128{{/if}}{{#if (eq type 'corporation')}}https://images.evetech.net/corporations/{{entity.id}}/logo?size=128{{/if}}{{#if (eq type 'alliance')}}https://images.evetech.net/alliances/{{entity.id}}/logo?size=128{{/if}}" 
+    <img
+      src="{{#if (eq type 'character')}}https://images.eve-kill.com/characters/{{entity.id}}/portrait?size=128{{/if}}{{#if (eq type 'corporation')}}https://images.eve-kill.com/corporations/{{entity.id}}/logo?size=128{{/if}}{{#if (eq type 'alliance')}}https://images.eve-kill.com/alliances/{{entity.id}}/logo?size=128{{/if}}"
       alt="{{entity.name}}"
       style="width: 64px; height: 64px; border-radius: 8px; flex-shrink: 0;"
     />
-    
+
     <div style="flex: 1; min-width: 0;">
       <h3 style="color: #fff; margin: 0 0 8px 0;">{{entity.name}}</h3>
       <div style="color: #888; text-transform: capitalize;">{{type}}</div>
     </div>
   </div>
-  
+
   {{#if entity.description}}
   <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #2a2a2a; color: #ccc; max-height: 200px; overflow-y: auto; line-height: 1.6;">
     {{{entity.description}}}
   </div>
   {{/if}}
-  
+
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #2a2a2a;">
     <div>
       <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Kills</div>

@@ -186,7 +186,7 @@ function renderFittingCard(priced: any): string {
           <strong style="font-size: 20px; color: #0f0;">${formatter.format(priced.totalValue)} ISK</strong>
         </div>
         <div style="font-size: 12px; color: #666;">
-          ${priced.itemsFound} items priced, ${priced.itemsNotFound} not found • 
+          ${priced.itemsFound} items priced, ${priced.itemsNotFound} not found •
           Region: ${priced.regionId === 10000002 ? 'The Forge (Jita)' : priced.regionId}
         </div>
       </div>
@@ -204,7 +204,7 @@ function renderItemCard(priced: any): string {
   const statusText = priced.found ? 'Price found' : 'Price not available';
   const statusColor = priced.found ? '#0f0' : '#666';
   const imageUrl = priced.typeId
-    ? `https://images.evetech.net/types/${priced.typeId}/icon?size=128`
+    ? `https://images.eve-kill.com/types/${priced.typeId}/icon?size=128`
     : '';
 
   return `
@@ -220,8 +220,8 @@ function renderItemCard(priced: any): string {
         ${
           imageUrl
             ? `
-          <img 
-            src="${imageUrl}" 
+          <img
+            src="${imageUrl}"
             alt="${escapeHtml(priced.name)}"
             style="
               width: 96px;

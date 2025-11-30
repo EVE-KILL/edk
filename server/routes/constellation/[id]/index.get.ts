@@ -173,8 +173,8 @@ export default defineEventHandler(async (event: H3Event) => {
     const data = {
       constellationId,
       imageUrl: faction
-        ? `https://images.evetech.net/corporations/${faction.corporationId || faction.factionId}/logo?size=256`
-        : 'https://images.evetech.net/alliances/1/logo?size=256',
+        ? `https://images.eve-kill.com/corporations/${faction.corporationId || faction.factionId}/logo?size=256`
+        : 'https://images.eve-kill.com/alliances/1/logo?size=256',
       name: constellation.name,
       kills: totalKillmails,
       constellation,

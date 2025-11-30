@@ -16,7 +16,7 @@ const envSchema = z.object({
   SITE_TITLE: z.string().default('EVE-KILL'),
   SITE_SUBTITLE: z.string().default('Real-time Killmail Tracking'),
   SITE_URL: z.string().url().default('https://eve-kill.com'),
-  IMAGE_SERVER_URL: z.string().url().default('https://images.evetech.net'),
+  IMAGE_SERVER_URL: z.string().url().default('https://images.eve-kill.com'),
   TWITTER_HANDLE: z.string().optional(),
   ESI_SERVER_URL: z.string().url().default('https://esi.evetech.net'),
   EVE_CLIENT_ID: z.string().optional(),

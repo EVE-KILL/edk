@@ -228,7 +228,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const data = {
       solarSystemId,
-      imageUrl: `https://images.evetech.net/types/${star?.typeId || 3802}/render?size=256`,
+      imageUrl: `https://images.eve-kill.com/types/${star?.typeId || 3802}/overlayrender?size=256`,
       name: system.name,
       kills: totalKillmails,
       system,

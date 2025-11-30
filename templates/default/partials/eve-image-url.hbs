@@ -14,7 +14,7 @@
     type
   }}
 {{~else if (eq type 'ship')~}}
-  {{@root.config.imageServerUrl}}/types/{{id}}/render?size={{roundImageSize
+  {{@root.config.imageServerUrl}}/types/{{id}}/overlayrender?size={{roundImageSize
     (fallback size 64)
     type
   }}

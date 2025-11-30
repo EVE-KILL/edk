@@ -110,7 +110,7 @@ export async function execute(
 
   if (entityType === 'character') {
     [entity] = await sql`
-      SELECT 
+      SELECT
         "characterId",
         name,
         "corporationId",
@@ -126,7 +126,7 @@ export async function execute(
     `;
 
     killStats = await sql`
-      SELECT 
+      SELECT
         COUNT(*) FILTER (WHERE a."finalBlow" = true) as kills,
         COUNT(*) as total_kills,
         COUNT(DISTINCT k."killmailId") FILTER (WHERE k."victimCharacterId" = ${id}) as losses
@@ -136,7 +136,7 @@ export async function execute(
     `;
   } else if (entityType === 'corporation') {
     [entity] = await sql`
-      SELECT 
+      SELECT
         "corporationId",
         name,
         "allianceId",
@@ -151,7 +151,7 @@ export async function execute(
     `;
 
     killStats = await sql`
-      SELECT 
+      SELECT
         COUNT(DISTINCT k."killmailId") FILTER (WHERE a."corporationId" = ${id}) as kills,
         COUNT(DISTINCT k."killmailId") FILTER (WHERE k."victimCorporationId" = ${id}) as losses
       FROM killmails k
@@ -160,7 +160,7 @@ export async function execute(
     `;
   } else {
     [entity] = await sql`
-      SELECT 
+      SELECT
         "allianceId",
         name,
         ticker,
@@ -171,7 +171,7 @@ export async function execute(
     `;
 
     killStats = await sql`
-      SELECT 
+      SELECT
         COUNT(DISTINCT k."killmailId") FILTER (WHERE a."allianceId" = ${id}) as kills,
         COUNT(DISTINCT k."killmailId") FILTER (WHERE k."victimAllianceId" = ${id}) as losses
       FROM killmails k
@@ -194,11 +194,11 @@ export async function execute(
   let imageUrl = '';
   const imageSize = 128;
   if (entityType === 'character') {
-    imageUrl = `https://images.evetech.net/characters/${id}/portrait?size=${imageSize}`;
+    imageUrl = `https://images.eve-kill.com/characters/${id}/portrait?size=${imageSize}`;
   } else if (entityType === 'corporation') {
-    imageUrl = `https://images.evetech.net/corporations/${id}/logo?size=${imageSize}`;
+    imageUrl = `https://images.eve-kill.com/corporations/${id}/logo?size=${imageSize}`;
   } else {
-    imageUrl = `https://images.evetech.net/alliances/${id}/logo?size=${imageSize}`;
+    imageUrl = `https://images.eve-kill.com/alliances/${id}/logo?size=${imageSize}`;
   }
 
   // Additional info based on type

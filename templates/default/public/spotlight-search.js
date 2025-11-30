@@ -220,7 +220,7 @@
     };
 
     let html = '';
-    const imageServerUrl = window.__EDK_IMAGE_URL || 'https://images.evetech.net';
+    const imageServerUrl = window.__EDK_IMAGE_URL || 'https://images.eve-kill.com';
 
     Object.keys(typeConfig).forEach(type => {
       if (grouped[type] && grouped[type].length > 0) {
@@ -275,7 +275,7 @@
               subtext = 'Region';
               break;
             case 'killmail':
-              image = `<img src="${imageServerUrl}/types/${result.shipTypeId}/render?size=128" alt="${escapeHtml(result.name)}" class="spotlight-card__image" loading="lazy" onerror="this.style.display='none'">`;
+              image = `<img src="${imageServerUrl}/types/${result.shipTypeId}/overlayrender?size=128" alt="${escapeHtml(result.name)}" class="spotlight-card__image" loading="lazy" onerror="this.style.display='none'">`;
               subtext = `Victim: ${result.victimName || 'N/A'}`;
               valueText = `<div class="spotlight-card__value">${result.value ? `${(result.value / 1e9).toFixed(2)}B ISK` : 'Value N/A'}</div>`;
               break;

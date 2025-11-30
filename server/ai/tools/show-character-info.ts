@@ -90,12 +90,12 @@ function renderCharacterCard(
   corporation: any,
   alliance: any
 ): string {
-  const portraitUrl = `https://images.evetech.net/characters/${character.characterId}/portrait?size=256`;
+  const portraitUrl = `https://images.eve-kill.com/characters/${character.characterId}/portrait?size=256`;
   const corpLogoUrl = corporation
-    ? `https://images.evetech.net/corporations/${corporation.corporationId}/logo?size=128`
+    ? `https://images.eve-kill.com/corporations/${corporation.corporationId}/logo?size=128`
     : null;
   const allianceLogoUrl = alliance
-    ? `https://images.evetech.net/alliances/${alliance.allianceId}/logo?size=128`
+    ? `https://images.eve-kill.com/alliances/${alliance.allianceId}/logo?size=128`
     : null;
 
   const description = character.description
@@ -117,8 +117,8 @@ function renderCharacterCard(
       <div style="display: flex; gap: 24px; align-items: start;">
         <!-- Character Portrait -->
         <div style="flex-shrink: 0;">
-          <img 
-            src="${portraitUrl}" 
+          <img
+            src="${portraitUrl}"
             alt="${character.name}"
             style="
               width: 180px;
@@ -152,8 +152,8 @@ function renderCharacterCard(
                 ${
                   corpLogoUrl
                     ? `
-                  <img 
-                    src="${corpLogoUrl}" 
+                  <img
+                    src="${corpLogoUrl}"
                     alt="${corporation.name}"
                     style="
                       width: 48px;
@@ -176,7 +176,7 @@ function renderCharacterCard(
             `
                 : ''
             }
-            
+
             ${
               alliance
                 ? `
@@ -184,8 +184,8 @@ function renderCharacterCard(
                 ${
                   allianceLogoUrl
                     ? `
-                  <img 
-                    src="${allianceLogoUrl}" 
+                  <img
+                    src="${allianceLogoUrl}"
                     alt="${alliance.name}"
                     style="
                       width: 48px;
@@ -260,7 +260,7 @@ function renderCharacterCard(
             `
                 : ''
             }
-            
+
             ${
               character.birthday
                 ? `

@@ -179,8 +179,8 @@
 
           // Get entity image
           let imageHtml = '';
-          const imageServerUrl = 'https://images.evetech.net';
-          
+          const imageServerUrl = 'https://images.eve-kill.com';
+
           if (type === 'character') {
             imageHtml = `<img src="${imageServerUrl}/characters/${entityId}/portrait?size=64" alt="${escapeHtml(result.name)}" class="search-item-image" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--color-border-dark); object-fit: cover;" loading="lazy" onerror="this.style.display='none'" />`;
           } else if (type === 'corporation') {

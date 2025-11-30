@@ -386,7 +386,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Format faction logo URL
-    const imageUrl = `https://images.evetech.net/corporations/${factionId}/logo?size=256`;
+    const imageUrl = `https://images.eve-kill.com/corporations/${factionId}/logo?size=256`;
 
     return await render(
       'pages/faction',
