@@ -19,6 +19,9 @@ const envSchema = z.object({
   IMAGE_SERVER_URL: z.string().url().default('https://images.eve-kill.com'),
   TWITTER_HANDLE: z.string().optional(),
   ESI_SERVER_URL: z.string().url().default('https://esi.evetech.net'),
+  USER_AGENT: z
+    .string()
+    .default('EVE-KILL/1.0 (https://eve-kill.com; contact@eve-kill.com)'),
   EVE_CLIENT_ID: z.string().optional(),
   EVE_CLIENT_SECRET: z.string().optional(),
   EVE_CLIENT_REDIRECT: z.string().optional(),

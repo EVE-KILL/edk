@@ -6,6 +6,7 @@
  */
 
 import { requestContext } from '../utils/request-context';
+import { env } from './env';
 
 export interface FetcherOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -25,7 +26,6 @@ export interface FetcherResponse<T = any> {
 
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
 const DEFAULT_RETRIES = 1;
-const DEFAULT_USER_AGENT = 'EDK/0.1 (+https://eve-kill.com)';
 
 /**
  * Sleep utility for retry delays
@@ -82,7 +82,7 @@ async function _fetcherImpl<T = any>(
   } = options;
 
   const standardHeaders: Record<string, string> = {
-    'User-Agent': DEFAULT_USER_AGENT,
+    'User-Agent': env.USER_AGENT,
     Accept: 'application/json',
     'Accept-Encoding': 'gzip, deflate',
     ...headers,
