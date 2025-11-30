@@ -49,14 +49,15 @@ export async function upsertEntityStats(
   totalValue: number,
   isKill: boolean,
   isSolo: boolean,
-  isNpc: boolean
+  isNpc: boolean,
+  sqlInstance?: any // Optional transaction sql instance
 ): Promise<void> {
   // Skip NULL entity IDs
   if (!entityId) return;
 
   const { in90d, in30d, in14d } = calculateTimeBuckets(killmailTime);
 
-  const sql = database.sql;
+  const sql = sqlInstance ?? database.sql;
 
   // Build the increment values based on conditions
   const killsAll = isKill ? 1 : 0;
@@ -241,7 +242,7 @@ export async function batchUpsertEntityStats(
   try {
     // Process all entities in a single transaction
     const sql = database.sql;
-    await sql.begin(async (_sql) => {
+    await sql.begin(async (txn) => {
       for (const entity of entities) {
         if (!entity.entityId) continue;
 
@@ -252,7 +253,8 @@ export async function batchUpsertEntityStats(
           totalValue,
           entity.isKill,
           isSolo,
-          isNpc
+          isNpc,
+          txn // Pass the transaction instance
         );
       }
     });
