@@ -1,0 +1,13 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: edk-latest
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: edk
+  policy:
+    alphabetical:
+      order: asc
+  filterTags:
+    pattern: '^latest$'
