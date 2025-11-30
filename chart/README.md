@@ -90,7 +90,7 @@ gateway:
       - eve-kill.com
   certificate:
     issuerRef:
-      name: letsencrypt-prod
+      name: letsencrypt
       kind: ClusterIssuer
     dnsNames:
       - eve-kill.com
