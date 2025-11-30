@@ -7,6 +7,8 @@ import {
   getCustomPrice,
 } from './prices';
 import { getSolarSystem } from './solarSystems';
+import { enqueueJob, QueueType, JobPriority } from '../helpers/queue';
+import type { EntityStatsUpdate } from './entityStatsUpdate';
 
 /**
  * Killmails Model
@@ -443,6 +445,119 @@ function flattenItems(items: ESIKillmailItem[]): FlattenedItem[] {
   return result;
 }
 
+/**
+ * Extract all entities from a killmail for stats processing
+ * Returns all 12 entity types (character, corporation, alliance, faction, group, type)
+ * for both attackers (kills) and victim (losses)
+ */
+async function extractEntitiesForStats(
+  esiData: ESIKillmail,
+  victimShipGroupId: number | null,
+  topAttackerShipGroupId: number | null
+): Promise<EntityStatsUpdate[]> {
+  const entities: EntityStatsUpdate[] = [];
+  const victim = esiData.victim;
+
+  // Find top attacker (final blow or highest damage)
+  const finalBlowAttacker = esiData.attackers.find((a) => a.final_blow);
+  const topAttacker =
+    finalBlowAttacker ||
+    esiData.attackers.reduce(
+      (max, a) => (a.damage_done > max.damage_done ? a : max),
+      esiData.attackers[0]
+    );
+
+  // Attacker entities (kills)
+  if (topAttacker?.character_id) {
+    entities.push({
+      entityId: topAttacker.character_id,
+      entityType: 'character',
+      isKill: true,
+    });
+  }
+  if (topAttacker?.corporation_id) {
+    entities.push({
+      entityId: topAttacker.corporation_id,
+      entityType: 'corporation',
+      isKill: true,
+    });
+  }
+  if (topAttacker?.alliance_id) {
+    entities.push({
+      entityId: topAttacker.alliance_id,
+      entityType: 'alliance',
+      isKill: true,
+    });
+  }
+  if (topAttacker?.faction_id) {
+    entities.push({
+      entityId: topAttacker.faction_id,
+      entityType: 'faction',
+      isKill: true,
+    });
+  }
+  if (topAttackerShipGroupId) {
+    entities.push({
+      entityId: topAttackerShipGroupId,
+      entityType: 'group',
+      isKill: true,
+    });
+  }
+  if (topAttacker?.ship_type_id) {
+    entities.push({
+      entityId: topAttacker.ship_type_id,
+      entityType: 'type',
+      isKill: true,
+    });
+  }
+
+  // Victim entities (losses)
+  if (victim?.character_id) {
+    entities.push({
+      entityId: victim.character_id,
+      entityType: 'character',
+      isKill: false,
+    });
+  }
+  if (victim?.corporation_id) {
+    entities.push({
+      entityId: victim.corporation_id,
+      entityType: 'corporation',
+      isKill: false,
+    });
+  }
+  if (victim?.alliance_id) {
+    entities.push({
+      entityId: victim.alliance_id,
+      entityType: 'alliance',
+      isKill: false,
+    });
+  }
+  if (victim?.faction_id) {
+    entities.push({
+      entityId: victim.faction_id,
+      entityType: 'faction',
+      isKill: false,
+    });
+  }
+  if (victimShipGroupId) {
+    entities.push({
+      entityId: victimShipGroupId,
+      entityType: 'group',
+      isKill: false,
+    });
+  }
+  if (victim?.ship_type_id) {
+    entities.push({
+      entityId: victim.ship_type_id,
+      entityType: 'type',
+      isKill: false,
+    });
+  }
+
+  return entities;
+}
+
 export async function storeKillmail(
   esiData: ESIKillmail,
   hash?: string,
@@ -462,6 +577,7 @@ export async function storeKillmail(
       'SELECT "groupId" FROM types WHERE "typeId" = :typeId',
       { typeId: victim?.ship_type_id }
     );
+    const victimShipGroupId = victimShipType?.groupId ?? null;
 
     // Find top attacker (final blow or highest damage)
     const finalBlowAttacker = esiData.attackers.find((a) => a.final_blow);
@@ -471,6 +587,16 @@ export async function storeKillmail(
         (max, a) => (a.damage_done > max.damage_done ? a : max),
         esiData.attackers[0]
       );
+
+    // Get top attacker ship group
+    const topAttackerShipGroupId = topAttacker?.ship_type_id
+      ? ((
+          await database.findOne<{ groupId: number }>(
+            'SELECT "groupId" FROM types WHERE "typeId" = :typeId',
+            { typeId: topAttacker.ship_type_id }
+          )
+        )?.groupId ?? null)
+      : null;
 
     // Calculate flags
     const attackerCount = esiData.attackers.length;
@@ -499,7 +625,7 @@ export async function storeKillmail(
       victimFactionId: victim?.faction_id ?? null,
       victimDamageTaken: victim?.damage_taken ?? 0,
       victimShipTypeId: victim?.ship_type_id ?? 0,
-      victimShipGroupId: victimShipType?.groupId ?? null,
+      victimShipGroupId: victimShipGroupId,
 
       // Victim position
       positionX: victim?.position?.x ?? null,
@@ -515,14 +641,7 @@ export async function storeKillmail(
       topAttackerAllianceId: topAttacker?.alliance_id ?? null,
       topAttackerFactionId: topAttacker?.faction_id ?? null,
       topAttackerShipTypeId: topAttacker?.ship_type_id ?? null,
-      topAttackerShipGroupId: topAttacker?.ship_type_id
-        ? ((
-            await database.findOne<{ groupId: number }>(
-              'SELECT "groupId" FROM types WHERE "typeId" = :typeId',
-              { typeId: topAttacker.ship_type_id }
-            )
-          )?.groupId ?? null)
-        : null,
+      topAttackerShipGroupId: topAttackerShipGroupId,
 
       // Aggregate stats
       totalValue: valueBreakdown?.totalValue ?? 0,
@@ -621,6 +740,30 @@ export async function storeKillmail(
 
     // Update lastActive timestamps for involved entities
     await updateEntityLastActive([{ esi: esiData, hash }]);
+
+    // Enqueue entity stats update job (replaces database trigger)
+    const entities = await extractEntitiesForStats(
+      esiData,
+      victimShipGroupId,
+      topAttackerShipGroupId
+    );
+
+    await enqueueJob(
+      QueueType.ENTITY_STATS,
+      {
+        killmailId: esiData.killmail_id,
+        killmailTime: killmailIso,
+        entities,
+        totalValue: valueBreakdown.totalValue,
+        isSolo: solo,
+        isNpc: npc,
+      },
+      { priority: JobPriority.HIGH }
+    );
+
+    logger.info(
+      `[Killmail] Enqueued entity stats update for killmail ${esiData.killmail_id}`
+    );
   } catch (error) {
     logger.error(`[Killmail] Error storing killmail:`, { error });
     throw error;
@@ -911,6 +1054,40 @@ export async function storeKillmailsBulk(
 
     // Update lastActive timestamps for all involved entities
     await updateEntityLastActive(uniqueKillmails);
+
+    // Enqueue entity stats updates for all killmails (replaces database trigger)
+    const statsJobs = await Promise.all(
+      uniqueKillmails.map(async ({ esi }, index) => {
+        const killmailRecord = killmailRecords[index];
+        const entities = await extractEntitiesForStats(
+          esi,
+          killmailRecord.victimShipGroupId,
+          killmailRecord.topAttackerShipGroupId
+        );
+
+        return {
+          killmailId: esi.killmail_id,
+          killmailTime: esi.killmail_time,
+          entities,
+          totalValue: killmailRecord.totalValue,
+          isSolo: killmailRecord.solo,
+          isNpc: killmailRecord.npc,
+        };
+      })
+    );
+
+    // Batch enqueue all stats jobs
+    await Promise.all(
+      statsJobs.map((jobData) =>
+        enqueueJob(QueueType.ENTITY_STATS, jobData, {
+          priority: JobPriority.NORMAL,
+        })
+      )
+    );
+
+    logger.info(
+      `[Killmail] Enqueued ${statsJobs.length} entity stats update jobs`
+    );
 
     // Note: We can't accurately track skippedExisting without querying first
     // PostgreSQL ON CONFLICT DO NOTHING doesn't return affected rows

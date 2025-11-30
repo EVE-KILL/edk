@@ -372,14 +372,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger on killmails table
--- Note: This will fire for ALL partitions automatically
-CREATE TRIGGER trigger_update_entity_stats_on_insert
-  AFTER INSERT ON killmails
-  FOR EACH ROW
-  EXECUTE FUNCTION update_entity_stats_on_insert();
+-- Trigger creation disabled - entity stats are now updated via queue-based processing
+-- See queue/entity-stats.ts for the queue processor that handles entity stats updates
+-- This eliminates deadlocks caused by concurrent killmail inserts
 
-COMMENT ON FUNCTION update_entity_stats_on_insert() IS 'Trigger function to update entity_stats_cache when killmails are inserted';
+-- CREATE TRIGGER trigger_update_entity_stats_on_insert
+--   AFTER INSERT ON killmails
+--   FOR EACH ROW
+--   EXECUTE FUNCTION update_entity_stats_on_insert();
+
+COMMENT ON FUNCTION update_entity_stats_on_insert() IS 'Trigger function to update entity_stats_cache when killmails are inserted (currently disabled, replaced by queue-based processing)';
 
 -- ============================================================================
 -- NOTES

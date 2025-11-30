@@ -47,44 +47,38 @@ spec:
   storage:
     storageClass: {{ .Values.database.storage.storageClass }}
     size: {{ .Values.database.storage.size }}
+    {{- if or .Values.database.storage.annotations .Values.database.storage.pvcLabels }}
     pvcTemplate:
-      accessModes:
-      - ReadWriteOnce
       {{- with .Values.database.storage.annotations }}
       metadata:
         annotations:
           {{- toYaml . | nindent 10 }}
-        {{- with $.Values.database.storage.pvcLabels }}
-        labels:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
       {{- end }}
+      accessModes:
+      - ReadWriteOnce
       resources:
         requests:
           storage: {{ .Values.database.storage.size }}
       storageClassName: {{ .Values.database.storage.storageClass }}
-      volumeMode: Filesystem
+    {{- end }}
 
   walStorage:
     storageClass: {{ .Values.database.walStorage.storageClass }}
     size: {{ .Values.database.walStorage.size }}
+    {{- if or .Values.database.walStorage.annotations .Values.database.walStorage.pvcLabels }}
     pvcTemplate:
-      accessModes:
-      - ReadWriteOnce
       {{- with .Values.database.walStorage.annotations }}
       metadata:
         annotations:
           {{- toYaml . | nindent 10 }}
-        {{- with $.Values.database.walStorage.pvcLabels }}
-        labels:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
       {{- end }}
+      accessModes:
+      - ReadWriteOnce
       resources:
         requests:
           storage: {{ .Values.database.walStorage.size }}
       storageClassName: {{ .Values.database.walStorage.storageClass }}
-      volumeMode: Filesystem
+    {{- end }}
 
   monitoring:
     enablePodMonitor: {{ .Values.database.monitoring.enablePodMonitor }}

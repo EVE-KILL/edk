@@ -12,6 +12,7 @@ export enum QueueType {
   ALLIANCE = 'alliance',
   PRICE = 'price',
   AUTH = 'auth',
+  ENTITY_STATS = 'entity_stats',
 }
 
 /**
@@ -24,6 +25,24 @@ export interface QueueJobData {
   [QueueType.ALLIANCE]: { id: number };
   [QueueType.PRICE]: { typeId: number; date?: number };
   [QueueType.AUTH]: { userId: number };
+  [QueueType.ENTITY_STATS]: {
+    killmailId: number;
+    killmailTime: string;
+    entities: Array<{
+      entityId: number;
+      entityType:
+        | 'character'
+        | 'corporation'
+        | 'alliance'
+        | 'faction'
+        | 'group'
+        | 'type';
+      isKill: boolean;
+    }>;
+    totalValue: number;
+    isSolo: boolean;
+    isNpc: boolean;
+  };
 }
 
 /**
