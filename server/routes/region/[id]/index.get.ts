@@ -173,14 +173,14 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const topSystemsFormatted = topSystems.map((s) => ({
       ...s,
+      imageType: 'system',
+      imageId: s.id,
       link: `/system/${s.id}`,
     }));
 
     const data = {
       regionId,
-      imageUrl: faction
-        ? `https://images.eve-kill.com/corporations/${faction.corporationId || faction.factionId}/logo?size=256`
-        : 'https://images.eve-kill.com/alliances/1/logo?size=256',
+      imageUrl: `${env.IMAGE_SERVER_URL}/regions/${regionId}?size=128`,
       name: region.name,
       kills: totalKillmails,
       region,

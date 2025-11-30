@@ -636,6 +636,15 @@ function registerHelpers() {
   Handlebars.registerHelper(
     'roundImageSize',
     function (requestedSize: number, type: string) {
+      // System, region, constellation images support smaller sizes
+      if (type === 'system' || type === 'region' || type === 'constellation') {
+        const validSizes = [32, 64, 128];
+        for (const size of validSizes) {
+          if (size >= requestedSize) return size;
+        }
+        return validSizes[validSizes.length - 1];
+      }
+
       const validSizes =
         type === 'type' || type === 'item' || type === 'ship'
           ? [32, 64, 128, 256, 512]

@@ -581,8 +581,8 @@ export async function getFreshCharacter(
   maxAgeDays: number = 14
 ): Promise<Character | null> {
   const character = await database.findOne<Character>(
-    `SELECT * FROM characters 
-     WHERE "characterId" = :characterId 
+    `SELECT * FROM characters
+     WHERE "characterId" = :characterId
      AND "updatedAt" > NOW() - INTERVAL '${maxAgeDays} days'`,
     { characterId }
   );

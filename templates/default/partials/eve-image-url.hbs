@@ -41,6 +41,21 @@
     (fallback size 64)
     type
   }}
+{{~else if (eq type 'system')~}}
+  {{@root.config.imageServerUrl}}/systems/{{id}}?size={{roundImageSize
+    (fallback size 64)
+    type
+  }}
+{{~else if (eq type 'region')~}}
+  {{@root.config.imageServerUrl}}/regions/{{id}}?size={{roundImageSize
+    (fallback size 64)
+    type
+  }}
+{{~else if (eq type 'constellation')~}}
+  {{@root.config.imageServerUrl}}/constellations/{{id}}?size={{roundImageSize
+    (fallback size 64)
+    type
+  }}
 {{~else~}}
   {{@root.config.imageServerUrl}}/types/{{id}}/icon?size={{roundImageSize
     (fallback size 64)

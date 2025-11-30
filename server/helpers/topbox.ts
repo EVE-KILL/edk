@@ -14,6 +14,7 @@ export interface TopBoxItemHelper {
     | 'alliance'
     | 'system'
     | 'region'
+    | 'constellation'
     | 'type';
 }
 
@@ -45,6 +46,7 @@ export function formatTopBoxesHelper(stats: TopBoxStatsHelper): {
     alliance: '/alliance',
     system: '/system',
     region: '/region',
+    constellation: '/constellation',
   };
 
   const formatted: any = {};

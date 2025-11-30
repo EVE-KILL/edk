@@ -46,8 +46,8 @@ export async function getFreshCorporation(
   maxAgeDays: number = 14
 ): Promise<Corporation | null> {
   const corporation = await database.findOne<Corporation>(
-    `SELECT * FROM corporations 
-     WHERE "corporationId" = :corporationId 
+    `SELECT * FROM corporations
+     WHERE "corporationId" = :corporationId
      AND "updatedAt" > NOW() - INTERVAL '${maxAgeDays} days'`,
     { corporationId }
   );

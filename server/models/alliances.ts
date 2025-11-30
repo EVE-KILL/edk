@@ -40,8 +40,8 @@ export async function getFreshAlliance(
   maxAgeDays: number = 14
 ): Promise<Alliance | null> {
   const alliance = await database.findOne<Alliance>(
-    `SELECT * FROM alliances 
-     WHERE "allianceId" = :allianceId 
+    `SELECT * FROM alliances
+     WHERE "allianceId" = :allianceId
      AND "updatedAt" > NOW() - INTERVAL '${maxAgeDays} days'`,
     { allianceId }
   );
