@@ -974,8 +974,9 @@ export async function render(
     if (performance) {
       const summary = performance.getSummary();
       context.performance = summary;
-      // Show debug bar in development mode
-      context.debug = env.NODE_ENV !== 'production';
+      // Always show debug bar, but collapsed by default in production
+      context.debug = true;
+      context.isProd = env.NODE_ENV === 'production';
     }
 
     // Render content

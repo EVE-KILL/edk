@@ -1,9 +1,18 @@
 <script>
   (function primeDebugCollapsed() {
     try {
-      if (localStorage.getItem('edk.debug.collapsed') === '1') {
+      const stored = localStorage.getItem('edk.debug.collapsed');
+      {{#if isProd}}
+      // In production, default to collapsed unless explicitly opened
+      if (stored !== '0') {
         document.documentElement.classList.add('debug-bar-collapsed');
       }
+      {{else}}
+      // In development, default to open unless explicitly collapsed
+      if (stored === '1') {
+        document.documentElement.classList.add('debug-bar-collapsed');
+      }
+      {{/if}}
     } catch (err) {
       // ignore storage errors
     }
