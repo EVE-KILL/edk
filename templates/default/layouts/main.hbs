@@ -48,6 +48,14 @@
     <link rel="apple-touch-icon" href="/icon.png">
     <link rel="manifest" href="/site.webmanifest">
 
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="{{config.siteUrl}}" crossorigin>
+    <link rel="dns-prefetch" href="{{config.siteUrl}}">
+    {{#if env.WS_URL}}
+    <link rel="preconnect" href="{{env.WS_URL}}" crossorigin>
+    <link rel="dns-prefetch" href="{{env.WS_URL}}">
+    {{/if}}
+
     {{#if page.structuredData}}
     <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -55,7 +63,18 @@
     </script>
     {{/if}}
 
+    {{#if isProd}}
+    <link rel="stylesheet" type="text/css" href="/edk.optimized.css" />
+    <link rel="preload" href="/edk.optimized.css" as="style" />
+    {{else}}
     <link rel="stylesheet" type="text/css" href="/edk.css" />
+    <link rel="preload" href="/edk.css" as="style" />
+    {{/if}}
+
+    <!-- Preload Critical JavaScript -->
+    <link rel="preload" href="/ws-ident.js" as="script" />
+    <link rel="preload" href="/site-ws.js" as="script" />
+    <link rel="preload" href="/auth-state.js" as="script" />
 
     {{#if additionalCSS}}
     {{#each additionalCSS}}

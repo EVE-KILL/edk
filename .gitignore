@@ -14,3 +14,6 @@ Thessia/
 
 # Helm chart
 chart/values.yaml
+
+# Generated/minified assets
+templates/default/public/edk.optimized.css
