@@ -327,6 +327,53 @@ async function processFile(
 }
 
 /**
+ * Recursively flatten items, including those inside containers
+ * Tracks parent-child relationships via parentIndex
+ */
+interface FlattenedItem {
+  flag: number;
+  item_type_id: number;
+  quantity_dropped?: number;
+  quantity_destroyed?: number;
+  singleton: number;
+  parentIndex?: number;
+}
+
+function flattenItems(
+  items: Array<{
+    flag: number;
+    item_type_id: number;
+    quantity_dropped?: number;
+    quantity_destroyed?: number;
+    singleton: number;
+    items?: any[];
+  }>
+): FlattenedItem[] {
+  const result: FlattenedItem[] = [];
+
+  function flatten(items: any[], parentIndex?: number): void {
+    for (const item of items) {
+      const currentIndex = result.length;
+      result.push({
+        flag: item.flag,
+        item_type_id: item.item_type_id,
+        quantity_dropped: item.quantity_dropped,
+        quantity_destroyed: item.quantity_destroyed,
+        singleton: item.singleton,
+        parentIndex,
+      });
+
+      if (item.items && item.items.length > 0) {
+        flatten(item.items, currentIndex);
+      }
+    }
+  }
+
+  flatten(items);
+  return result;
+}
+
+/**
  * ULTRA-FAST batch insert - minimal processing, maximum speed
  * Inserts killmails, attackers, and items in three bulk operations
  * Values are set to 0 (can be recalculated later)
@@ -368,7 +415,17 @@ async function insertKillmailsBatch(
     // Prepare killmail records (minimal data, no value calculation)
     const killmailRecords: any[] = [];
     const attackerRecords: any[] = [];
-    const itemRecords: any[] = [];
+    const itemRecords: Array<{
+      killmailId: number;
+      killmailTime: string;
+      itemTypeId: number;
+      quantityDropped: number | null;
+      quantityDestroyed: number | null;
+      singleton: number;
+      flag: number;
+      parentItemId: number | null;
+      parentIndex?: number;
+    }> = [];
 
     for (const esi of newKillmails) {
       const victim = esi.victim;
@@ -425,12 +482,12 @@ async function insertKillmailsBatch(
       for (const attacker of esi.attackers) {
         attackerRecords.push({
           killmailId,
+          killmailTime,
           characterId: attacker.character_id || null,
           corporationId: attacker.corporation_id || 0,
           allianceId: attacker.alliance_id || null,
           factionId: attacker.faction_id || null,
           shipTypeId: attacker.ship_type_id || null,
-          shipGroupId: 0,
           weaponTypeId: attacker.weapon_type_id || null,
           damageDone: attacker.damage_done,
           securityStatus: attacker.security_status || 0,
@@ -438,30 +495,73 @@ async function insertKillmailsBatch(
         });
       }
 
-      // Items
-      if (victim.items) {
-        for (const item of victim.items) {
+      // Items - flatten nested structure and track parents
+      if (victim.items && victim.items.length > 0) {
+        const flatItems = flattenItems(victim.items);
+        for (const item of flatItems) {
           itemRecords.push({
             killmailId,
+            killmailTime,
             itemTypeId: item.item_type_id,
             quantityDropped: item.quantity_dropped || null,
             quantityDestroyed: item.quantity_destroyed || null,
             singleton: item.singleton || 0,
             flag: item.flag,
+            parentItemId: null, // Will be set after initial insert
+            parentIndex: item.parentIndex, // Track parent relationship
           });
         }
       }
     }
 
-    // Bulk insert all three tables
+    // Bulk insert killmails and attackers first
     await database.bulkInsert('killmails', killmailRecords);
 
     if (attackerRecords.length > 0) {
       await database.bulkInsert('attackers', attackerRecords);
     }
 
+    // Insert items in two passes to handle parent relationships
     if (itemRecords.length > 0) {
-      await database.bulkInsert('items', itemRecords);
+      const sql = database.sql;
+
+      // First pass: insert all items without parentItemId and get their IDs
+      const itemsToInsert = itemRecords.map((item) => ({
+        killmailId: item.killmailId,
+        killmailTime: item.killmailTime,
+        itemTypeId: item.itemTypeId,
+        quantityDropped: item.quantityDropped,
+        quantityDestroyed: item.quantityDestroyed,
+        singleton: item.singleton,
+        flag: item.flag,
+        parentItemId: null,
+      }));
+
+      const insertedItems = await sql`
+        INSERT INTO items ${sql(itemsToInsert)}
+        RETURNING id
+      `;
+
+      // Second pass: update parentItemId for nested items
+      const updates: Array<{ id: number; parentItemId: number }> = [];
+
+      for (let i = 0; i < itemRecords.length; i++) {
+        const item = itemRecords[i];
+        if (item.parentIndex !== undefined) {
+          updates.push({
+            id: insertedItems[i].id,
+            parentItemId: insertedItems[item.parentIndex].id,
+          });
+        }
+      }
+
+      if (updates.length > 0) {
+        await sql`
+          UPDATE items SET "parentItemId" = update_data."parentItemId"::bigint
+          FROM (VALUES ${sql(updates.map((u) => [u.id, u.parentItemId]))}) AS update_data(id, "parentItemId")
+          WHERE items.id = update_data.id::bigint
+        `;
+      }
     }
 
     return {
