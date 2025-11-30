@@ -83,7 +83,7 @@ jobs:
 
       - name: Set up kubectl
         run: |
-          tailscale configure kubeconfig tailscale-operator
+          tailscale configure kubeconfig tailscale-operator-1
 
       - name: Deploy with kubectl rollout restart
         run: |
