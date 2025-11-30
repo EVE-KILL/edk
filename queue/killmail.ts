@@ -4,8 +4,6 @@ import { storeKillmail, type ESIKillmail } from '../server/models/killmails';
 import { fetchAndStoreCharacter } from '../server/fetchers/character';
 import { fetchAndStoreCorporation } from '../server/fetchers/corporation';
 import { fetchAndStoreAlliance } from '../server/fetchers/alliance';
-import { fetchPrices } from '../server/fetchers/price';
-import { storePrices } from '../server/models/prices';
 import { createRedisClient } from '../server/helpers/redis';
 import { database } from '../server/helpers/database';
 import { logger } from '../server/helpers/logger';
@@ -120,29 +118,10 @@ export async function processor(job: Job<KillmailJobData>): Promise<void> {
       ),
     ]);
 
-    // Step 4: Fetch price data for all type IDs
-    const killmailDate = new Date(killmail.killmail_time);
-    const unixTimestamp = Math.floor(killmailDate.getTime() / 1000);
-    logger.info(
-      `[killmail] ${killmailId}: Fetching prices for ${typeIds.size} types...`
-    );
-
-    // Fetch prices for each type
-    for (const typeId of typeIds) {
-      try {
-        const prices = await fetchPrices(typeId, 14, unixTimestamp);
-        if (prices.length > 0) {
-          await storePrices(prices);
-        }
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : String(err);
-        logger.warn(
-          `⚠️  [killmail] ${killmailId}: Failed to fetch prices for type ${typeId}:`,
-          { error: errorMsg }
-        );
-        // Continue with other types
-      }
-    }
+    // Step 4: Price data is NOT fetched here
+    // Prices are maintained by a separate cron job (update-prices.ts)
+    // The killmail value calculation will use whatever prices exist in the database
+    // If a price doesn't exist, the item's value will be 0 until prices are updated
 
     // Step 5: Store the killmail
     // At this point, all entity and price data should be in the database
