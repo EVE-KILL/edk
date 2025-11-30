@@ -1,0 +1,21 @@
+{{- if and .Values.imageserver.enabled .Values.imageserver.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "edk.fullname" . }}-imageserver
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+    app.kubernetes.io/component: imageserver
+spec:
+  accessModes:
+    {{- range .Values.imageserver.persistence.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  {{- if .Values.imageserver.persistence.storageClassName }}
+  storageClassName: {{ .Values.imageserver.persistence.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.imageserver.persistence.size }}
+{{- end }}

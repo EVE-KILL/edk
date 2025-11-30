@@ -1,0 +1,59 @@
+{{- if .Values.imageserver.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "edk.fullname" . }}-imageserver
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+    app.kubernetes.io/component: imageserver
+spec:
+  replicas: {{ .Values.imageserver.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "edk.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: imageserver
+  template:
+    metadata:
+      labels:
+        {{- include "edk.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: imageserver
+    spec:
+      serviceAccountName: {{ include "edk.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.imageserver.securityContext | nindent 8 }}
+      containers:
+        - name: imageserver
+          image: "{{ .Values.imageserver.image.repository }}:{{ .Values.imageserver.image.tag }}"
+          imagePullPolicy: {{ .Values.imageserver.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.imageserver.service.targetPort }}
+              name: http
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /_healthcheck
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /_healthcheck
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.imageserver.resources | nindent 12 }}
+          volumeMounts:
+            - name: imageserver-storage
+              mountPath: {{ .Values.imageserver.persistence.mountPath }}
+      volumes:
+        - name: imageserver-storage
+          persistentVolumeClaim:
+            claimName: {{ include "edk.fullname" . }}-imageserver
+{{- end }}
