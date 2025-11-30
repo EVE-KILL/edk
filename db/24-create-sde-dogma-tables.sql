@@ -55,3 +55,18 @@ CREATE TABLE IF NOT EXISTS typeDogma (
 
 CREATE INDEX IF NOT EXISTS idx_typedogma_typeid ON typeDogma("typeId");
 CREATE INDEX IF NOT EXISTS idx_typedogma_attributeid ON typeDogma("attributeId");
+
+-- Dogma Units table (attribute units like m, %, etc.)
+CREATE TABLE IF NOT EXISTS dogmaunits (
+    "unitId" INTEGER PRIMARY KEY,
+    "name" VARCHAR(255),
+    "description" TEXT,
+    "displayName" VARCHAR(255)
+);
+
+-- Dogma Attribute Categories table
+CREATE TABLE IF NOT EXISTS dogmaattributecategories (
+    "categoryId" INTEGER PRIMARY KEY,
+    "name" VARCHAR(255),
+    "description" TEXT
+);

@@ -39,9 +39,7 @@ export default defineNitroConfig({
     wasm: true,
     openAPI: true,
   },
-  future: {
-    nativeSWR: true,
-  },
+  timing: true,
   openAPI: {
     route: '/docs/openapi.json',
     meta: {

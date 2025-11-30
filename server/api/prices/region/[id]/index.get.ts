@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
   const prices = await sql`
     SELECT * FROM prices
     WHERE "regionId" = ${id}
-    ORDER BY "typeId"
+    ORDER BY "priceDate"
     LIMIT ${perPage} OFFSET ${offset}
   `;
 

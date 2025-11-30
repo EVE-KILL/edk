@@ -50,13 +50,13 @@ export default defineEventHandler(async (event) => {
     prices = await sql`
       SELECT * FROM prices
       WHERE "regionId" = ${regionId}
-      ORDER BY "typeId"
+      ORDER BY "priceDate"
       LIMIT ${perPage} OFFSET ${offset}
     `;
   } else {
     prices = await sql`
       SELECT * FROM prices
-      ORDER BY "regionId", "typeId"
+      ORDER BY "regionId", "priceDate"
       LIMIT ${perPage} OFFSET ${offset}
     `;
   }

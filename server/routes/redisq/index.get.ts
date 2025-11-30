@@ -80,76 +80,93 @@ async function getNextKillmail(
   afterKillmailId: number | null
 ): Promise<any | null> {
   try {
-    const sql = database.sql;
+    const query = afterKillmailId
+      ? `
+        WITH next_killmail AS (
+          SELECT *
+          FROM killmails
+          WHERE "killmailId" > :afterKillmailId
+          ORDER BY "killmailId" ASC
+          LIMIT 1
+        )
+        SELECT
+          k.*,
+          (
+            SELECT json_agg(
+              json_build_object(
+                'allianceId', a."allianceId",
+                'corporationId', a."corporationId",
+                'characterId', a."characterId",
+                'damageDone', a."damageDone",
+                'finalBlow', a."finalBlow",
+                'securityStatus', a."securityStatus",
+                'shipTypeId', a."shipTypeId",
+                'weaponTypeId', a."weaponTypeId",
+                'factionId', a."factionId"
+              ) ORDER BY a."finalBlow" DESC, a."damageDone" DESC
+            )
+            FROM attackers a
+            WHERE a."killmailId" = k."killmailId"
+          ) as attackers,
+          (
+            SELECT json_agg(
+              json_build_object(
+                'itemTypeId', i."itemTypeId",
+                'flag', i.flag,
+                'quantityDropped', i."quantityDropped",
+                'quantityDestroyed', i."quantityDestroyed",
+                'singleton', i.singleton
+              ) ORDER BY i.id
+            )
+            FROM items i
+            WHERE i."killmailId" = k."killmailId"
+          ) as items
+        FROM next_killmail k
+      `
+      : `
+        WITH next_killmail AS (
+          SELECT *
+          FROM killmails
+          ORDER BY "killmailId" DESC
+          LIMIT 1
+        )
+        SELECT
+          k.*,
+          (
+            SELECT json_agg(
+              json_build_object(
+                'allianceId', a."allianceId",
+                'corporationId', a."corporationId",
+                'characterId', a."characterId",
+                'damageDone', a."damageDone",
+                'finalBlow', a."finalBlow",
+                'securityStatus', a."securityStatus",
+                'shipTypeId', a."shipTypeId",
+                'weaponTypeId', a."weaponTypeId",
+                'factionId', a."factionId"
+              ) ORDER BY a."finalBlow" DESC, a."damageDone" DESC
+            )
+            FROM attackers a
+            WHERE a."killmailId" = k."killmailId"
+          ) as attackers,
+          (
+            SELECT json_agg(
+              json_build_object(
+                'itemTypeId', i."itemTypeId",
+                'flag', i.flag,
+                'quantityDropped', i."quantityDropped",
+                'quantityDestroyed', i."quantityDestroyed",
+                'singleton', i.singleton
+              ) ORDER BY i.id
+            )
+            FROM items i
+            WHERE i."killmailId" = k."killmailId"
+          ) as items
+        FROM next_killmail k
+      `;
 
-    // If no position, get the newest killmail as starting point
-    // If we have a position, get killmails NEWER than that position
-    const killmail = afterKillmailId
-      ? await sql`
-          SELECT
-            k.*,
-            json_agg(
-              json_build_object(
-                'allianceId', a."allianceId",
-                'corporationId', a."corporationId",
-                'characterId', a."characterId",
-                'damageDone', a."damageDone",
-                'finalBlow', a."finalBlow",
-                'securityStatus', a."securityStatus",
-                'shipTypeId', a."shipTypeId",
-                'weaponTypeId', a."weaponTypeId",
-                'factionId', a."factionId"
-              ) ORDER BY a."finalBlow" DESC, a."damageDone" DESC
-            ) FILTER (WHERE a.id IS NOT NULL) as attackers,
-            json_agg(
-              json_build_object(
-                'itemTypeId', i."itemTypeId",
-                'flag', i.flag,
-                'quantityDropped', i."quantityDropped",
-                'quantityDestroyed', i."quantityDestroyed",
-                'singleton', i.singleton
-              ) ORDER BY i.id
-            ) FILTER (WHERE i.id IS NOT NULL) as items
-          FROM killmails k
-          LEFT JOIN attackers a ON k."killmailId" = a."killmailId"
-          LEFT JOIN items i ON k."killmailId" = i."killmailId"
-          WHERE k."killmailId" > ${afterKillmailId}
-          GROUP BY k."killmailId"
-          ORDER BY k."killmailId" ASC
-          LIMIT 1
-        `
-      : await sql`
-          SELECT
-            k.*,
-            json_agg(
-              json_build_object(
-                'allianceId', a."allianceId",
-                'corporationId', a."corporationId",
-                'characterId', a."characterId",
-                'damageDone', a."damageDone",
-                'finalBlow', a."finalBlow",
-                'securityStatus', a."securityStatus",
-                'shipTypeId', a."shipTypeId",
-                'weaponTypeId', a."weaponTypeId",
-                'factionId', a."factionId"
-              ) ORDER BY a."finalBlow" DESC, a."damageDone" DESC
-            ) FILTER (WHERE a.id IS NOT NULL) as attackers,
-            json_agg(
-              json_build_object(
-                'itemTypeId', i."itemTypeId",
-                'flag', i.flag,
-                'quantityDropped', i."quantityDropped",
-                'quantityDestroyed', i."quantityDestroyed",
-                'singleton', i.singleton
-              ) ORDER BY i.id
-            ) FILTER (WHERE i.id IS NOT NULL) as items
-          FROM killmails k
-          LEFT JOIN attackers a ON k."killmailId" = a."killmailId"
-          LEFT JOIN items i ON k."killmailId" = i."killmailId"
-          GROUP BY k."killmailId"
-          ORDER BY k."killmailId" DESC
-          LIMIT 1
-        `;
+    const params = afterKillmailId ? { afterKillmailId } : {};
+    const killmail = await database.query(query, params);
 
     return killmail[0] || null;
   } catch (error) {
@@ -228,13 +245,17 @@ async function formatRedisQResponse(killmail: any) {
  * Returns the first celestial's item_id or 0
  */
 async function getLocationId(solarSystemId: number): Promise<number> {
-  const sql = database.sql;
-  const result = await sql`
-    SELECT "itemId"
-    FROM celestials
-    WHERE "solarSystemId" = ${solarSystemId}
-    LIMIT 1
-  `;
+  const result = await database.query<{
+    itemId: number;
+  }>(
+    `
+      SELECT "itemId"
+      FROM celestials
+      WHERE "solarSystemId" = :solarSystemId
+      LIMIT 1
+    `,
+    { solarSystemId }
+  );
 
   return result[0]?.itemId || 0;
 }

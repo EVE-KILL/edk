@@ -26,6 +26,24 @@ import {
   skinsConfig,
   dogmaAttributesConfig,
   dogmaEffectsConfig,
+  dogmaUnitsConfig,
+  dogmaAttributeCategoriesConfig,
+  typeBonusesConfig,
+  certificatesConfig,
+  masteriesConfig,
+  graphicsConfig,
+  iconsConfig,
+  skinLicensesConfig,
+  skinMaterialsConfig,
+  agentTypesConfig,
+  agentsInSpaceConfig,
+  contrabandTypesConfig,
+  controlTowerResourcesConfig,
+  dynamicItemAttributesConfig,
+  freelanceJobSchemasConfig,
+  planetResourcesConfig,
+  sovereigntyUpgradesConfig,
+  translationLanguagesConfig,
 } from '../../server/helpers/sde/configs';
 
 /**
@@ -133,11 +151,41 @@ export default {
       await defaultSdeFetcher.importConfiguredTable(marketGroupsConfig);
       await defaultSdeFetcher.importConfiguredTable(metaGroupsConfig);
       await defaultSdeFetcher.importConfiguredTable(skinsConfig);
+      await defaultSdeFetcher.importConfiguredTable(skinMaterialsConfig);
+      await defaultSdeFetcher.importConfiguredTable(skinLicensesConfig);
+
+      // Visual/Graphics tables
+      await defaultSdeFetcher.importConfiguredTable(graphicsConfig);
+      await defaultSdeFetcher.importConfiguredTable(iconsConfig);
 
       // Dogma tables
       await defaultSdeFetcher.importConfiguredTable(dogmaAttributesConfig);
       await defaultSdeFetcher.importConfiguredTable(dogmaEffectsConfig);
+      await defaultSdeFetcher.importConfiguredTable(dogmaUnitsConfig);
+      await defaultSdeFetcher.importConfiguredTable(
+        dogmaAttributeCategoriesConfig
+      );
       await defaultSdeFetcher.importTypeDogma();
+
+      // Bonus/Skill tables
+      await defaultSdeFetcher.importConfiguredTable(typeBonusesConfig);
+      await defaultSdeFetcher.importConfiguredTable(certificatesConfig);
+      await defaultSdeFetcher.importConfiguredTable(masteriesConfig);
+
+      // Miscellaneous tables
+      await defaultSdeFetcher.importConfiguredTable(agentTypesConfig);
+      await defaultSdeFetcher.importConfiguredTable(agentsInSpaceConfig);
+      await defaultSdeFetcher.importConfiguredTable(contrabandTypesConfig);
+      await defaultSdeFetcher.importConfiguredTable(
+        controlTowerResourcesConfig
+      );
+      await defaultSdeFetcher.importConfiguredTable(
+        dynamicItemAttributesConfig
+      );
+      await defaultSdeFetcher.importConfiguredTable(freelanceJobSchemasConfig);
+      await defaultSdeFetcher.importConfiguredTable(planetResourcesConfig);
+      await defaultSdeFetcher.importConfiguredTable(sovereigntyUpgradesConfig);
+      await defaultSdeFetcher.importConfiguredTable(translationLanguagesConfig);
 
       // Optimize materialized views
       await defaultSdeFetcher.optimizeViews();

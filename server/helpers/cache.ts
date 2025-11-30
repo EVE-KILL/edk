@@ -31,8 +31,14 @@ export const cache = {
     return getRedisClient().get(key);
   },
 
-  async set(key: string, value: string, ttlSeconds: number): Promise<void> {
-    await getRedisClient().set(key, value, 'EX', ttlSeconds);
+  async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
+    // Support optional TTL; if not provided, perform a plain SET
+    if (typeof ttlSeconds === 'number') {
+      await getRedisClient().set(key, value, 'EX', ttlSeconds);
+      return;
+    }
+
+    await getRedisClient().set(key, value);
   },
 
   async del(key: string): Promise<void> {

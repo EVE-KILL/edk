@@ -123,3 +123,11 @@ CREATE TABLE IF NOT EXISTS asteroidBelts (
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS "idx_solarsystems_system_region" ON solarSystems ("solarSystemId", "regionId");
+
+-- Planet Resources table (planetary interaction)
+CREATE TABLE IF NOT EXISTS planetresources (
+    "planetId" INTEGER PRIMARY KEY,
+    "power" DOUBLE PRECISION
+);
+
+CREATE INDEX IF NOT EXISTS idx_planetresources_power ON planetresources ("power");

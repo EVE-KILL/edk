@@ -728,6 +728,17 @@ export const mapConstellationsConfig: TableConfig = {
   ],
 };
 
+export const typeBonusesConfig: TableConfig = {
+  name: 'typeBonuses',
+  sourceName: 'typeBonus',
+  primaryKey: 'typeId',
+  mappings: [
+    { source: '_key', target: 'typeId', type: 'number', required: true },
+    { source: 'roleBonuses', target: 'roleBonuses', type: 'json' },
+    { source: 'types', target: 'types', type: 'json' },
+  ],
+};
+
 export const certificatesConfig: TableConfig = {
   name: 'certificates',
   primaryKey: 'certificateId',
@@ -745,15 +756,88 @@ export const certificatesConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
-    { source: 'categoryID', target: 'categoryId', type: 'number' },
-    { source: 'classID', target: 'classId', type: 'number' },
     { source: 'groupID', target: 'groupId', type: 'number' },
-    { source: 'iconID', target: 'iconId', type: 'number' },
+    { source: 'recommendedFor', target: 'recommendedFor', type: 'json' },
+    { source: 'skillTypes', target: 'skillTypes', type: 'json' },
+  ],
+};
+
+export const masteriesConfig: TableConfig = {
+  name: 'masteries',
+  primaryKey: 'typeId',
+  mappings: [
+    { source: '_key', target: 'typeId', type: 'number', required: true },
+    { source: 'masteryLevels', target: 'masteryLevels', type: 'json' },
+  ],
+};
+
+export const dogmaUnitsConfig: TableConfig = {
+  name: 'dogmaUnits',
+  sourceName: 'dogmaUnits',
+  primaryKey: 'unitId',
+  mappings: [
+    { source: '_key', target: 'unitId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string' },
+    {
+      source: 'displayName',
+      target: 'displayName',
+      type: 'string',
+      transform: (v) => extractLanguageField(v, 'en'),
+    },
+    {
+      source: 'description',
+      target: 'description',
+      type: 'string',
+      transform: (v) => extractLanguageField(v, 'en'),
+    },
+  ],
+};
+
+export const dogmaAttributeCategoriesConfig: TableConfig = {
+  name: 'dogmaAttributeCategories',
+  sourceName: 'dogmaAttributeCategories',
+  primaryKey: 'categoryId',
+  mappings: [
+    { source: '_key', target: 'categoryId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string' },
+    { source: 'description', target: 'description', type: 'string' },
+  ],
+};
+
+export const graphicsConfig: TableConfig = {
+  name: 'graphics',
+  primaryKey: 'graphicId',
+  mappings: [
+    { source: '_key', target: 'graphicId', type: 'number', required: true },
+    { source: 'graphicFile', target: 'graphicFile', type: 'string' },
+    { source: 'description', target: 'description', type: 'string' },
+  ],
+};
+
+export const iconsConfig: TableConfig = {
+  name: 'icons',
+  primaryKey: 'iconId',
+  mappings: [
+    { source: '_key', target: 'iconId', type: 'number', required: true },
+    { source: 'iconFile', target: 'iconFile', type: 'string' },
+    { source: 'description', target: 'description', type: 'string' },
+  ],
+};
+
+export const skinLicensesConfig: TableConfig = {
+  name: 'skinLicenses',
+  sourceName: 'skinLicenses',
+  primaryKey: 'licenseId',
+  mappings: [
+    { source: '_key', target: 'licenseId', type: 'number', required: true },
+    { source: 'duration', target: 'duration', type: 'number' },
+    { source: 'skinID', target: 'skinId', type: 'number' },
   ],
 };
 
 export const skinMaterialsConfig: TableConfig = {
   name: 'skinMaterials',
+  sourceName: 'skinMaterials',
   primaryKey: 'skinMaterialId',
   mappings: [
     {
@@ -763,10 +847,9 @@ export const skinMaterialsConfig: TableConfig = {
       required: true,
     },
     {
-      source: 'displayName',
+      source: 'displayNameID.en',
       target: 'displayName',
       type: 'string',
-      transform: (v) => extractLanguageField(v, 'en'),
     },
     { source: 'materialSetID', target: 'materialSetId', type: 'number' },
   ],
@@ -802,26 +885,6 @@ export const stationServicesConfig: TableConfig = {
   ],
 };
 
-export const dogmaUnitsConfig: TableConfig = {
-  name: 'dogmaUnits',
-  primaryKey: 'unitId',
-  mappings: [
-    { source: '_key', target: 'unitId', type: 'number', required: true },
-    {
-      source: 'displayName',
-      target: 'displayName',
-      type: 'string',
-      transform: (v) => extractLanguageField(v, 'en'),
-    },
-    {
-      source: 'description',
-      target: 'description',
-      type: 'string',
-      transform: (v) => extractLanguageField(v, 'en'),
-    },
-  ],
-};
-
 export const characterAttributesConfig: TableConfig = {
   name: 'characterAttributes',
   primaryKey: 'attributeId',
@@ -851,6 +914,120 @@ export const corporationActivitiesConfig: TableConfig = {
       type: 'string',
       transform: (v) => extractLanguageField(v, 'en'),
     },
+  ],
+};
+
+export const agentTypesConfig: TableConfig = {
+  name: 'agenttypes',
+  sourceName: 'agentTypes',
+  primaryKey: 'agentTypeId',
+  mappings: [
+    { source: '_key', target: 'agentTypeId', type: 'number', required: true },
+    { source: 'name', target: 'name', type: 'string' },
+  ],
+};
+
+export const agentsInSpaceConfig: TableConfig = {
+  name: 'agentsinspace',
+  sourceName: 'agentsInSpace',
+  primaryKey: 'agentId',
+  mappings: [
+    { source: '_key', target: 'agentId', type: 'number', required: true },
+    { source: 'dungeonID', target: 'dungeonId', type: 'number' },
+    { source: 'solarSystemID', target: 'solarSystemId', type: 'number' },
+    { source: 'spawnPointID', target: 'spawnPointId', type: 'number' },
+    { source: 'typeID', target: 'typeId', type: 'number' },
+  ],
+};
+
+export const contrabandTypesConfig: TableConfig = {
+  name: 'contrabandtypes',
+  sourceName: 'contrabandTypes',
+  primaryKey: 'typeId',
+  mappings: [
+    { source: '_key', target: 'typeId', type: 'number', required: true },
+    { source: 'factions', target: 'factions', type: 'jsonb' },
+  ],
+};
+
+export const controlTowerResourcesConfig: TableConfig = {
+  name: 'controltowerresources',
+  sourceName: 'controlTowerResources',
+  primaryKey: 'controlTowerTypeId',
+  mappings: [
+    {
+      source: '_key',
+      target: 'controlTowerTypeId',
+      type: 'number',
+      required: true,
+    },
+    { source: 'resources', target: 'resources', type: 'jsonb' },
+  ],
+};
+
+export const dynamicItemAttributesConfig: TableConfig = {
+  name: 'dynamicitemattributes',
+  sourceName: 'dynamicItemAttributes',
+  primaryKey: 'typeId',
+  mappings: [
+    { source: '_key', target: 'typeId', type: 'number', required: true },
+    { source: 'attributeIDs', target: 'attributeIds', type: 'array' },
+    {
+      source: 'inputOutputMapping',
+      target: 'inputOutputMapping',
+      type: 'jsonb',
+    },
+  ],
+};
+
+export const freelanceJobSchemasConfig: TableConfig = {
+  name: 'freelancejobschemas',
+  sourceName: 'freelanceJobSchemas',
+  primaryKey: 'schemaId',
+  mappings: [
+    { source: '_key', target: 'schemaId', type: 'number', required: true },
+    { source: 'schemaData', target: 'schemaData', type: 'jsonb' },
+  ],
+};
+
+export const planetResourcesConfig: TableConfig = {
+  name: 'planetresources',
+  sourceName: 'planetResources',
+  primaryKey: 'planetId',
+  mappings: [
+    { source: '_key', target: 'planetId', type: 'number', required: true },
+    { source: 'power', target: 'power', type: 'number' },
+  ],
+};
+
+export const sovereigntyUpgradesConfig: TableConfig = {
+  name: 'sovereigntyupgrades',
+  sourceName: 'sovereigntyUpgrades',
+  primaryKey: 'upgradeId',
+  mappings: [
+    { source: '_key', target: 'upgradeId', type: 'number', required: true },
+    { source: 'fuel', target: 'fuel', type: 'jsonb' },
+    {
+      source: 'mutuallyExclusiveGroup',
+      target: 'mutuallyExclusiveGroup',
+      type: 'number',
+    },
+    { source: 'powerAllocation', target: 'powerAllocation', type: 'number' },
+    {
+      source: 'workforceAllocation',
+      target: 'workforceAllocation',
+      type: 'number',
+    },
+  ],
+};
+
+export const translationLanguagesConfig: TableConfig = {
+  name: 'translationlanguages',
+  sourceName: 'translationLanguages',
+  primaryKey: 'languageId',
+  mappings: [
+    { source: '_key', target: 'languageId', type: 'string', required: true },
+    { source: 'name', target: 'name', type: 'string' },
   ],
 };
 
@@ -910,14 +1087,32 @@ export const ALL_TABLE_CONFIGS = [
   metaGroupsConfig,
   skinsConfig,
   skinMaterialsConfig,
+  skinLicensesConfig,
+  // Visual/Graphics
+  graphicsConfig,
+  iconsConfig,
   // Dogma tables
   dogmaAttributesConfig,
   dogmaEffectsConfig,
   dogmaUnitsConfig,
-  // Other tables
+  dogmaAttributeCategoriesConfig,
+  // Bonus/Skill tables
+  typeBonusesConfig,
   certificatesConfig,
+  masteriesConfig,
+  // Other tables
   planetSchematicsConfig,
   landmarksConfig,
   dbuffCollectionsConfig,
   corporationActivitiesConfig,
+  // Final SDE tables
+  agentTypesConfig,
+  agentsInSpaceConfig,
+  contrabandTypesConfig,
+  controlTowerResourcesConfig,
+  dynamicItemAttributesConfig,
+  freelanceJobSchemasConfig,
+  planetResourcesConfig,
+  sovereigntyUpgradesConfig,
+  translationLanguagesConfig,
 ];
