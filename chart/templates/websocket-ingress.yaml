@@ -1,0 +1,35 @@
+{{- if and .Values.websocket.enabled .Values.websocket.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "edk.fullname" . }}-websocket
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/websocket-services: {{ include "edk.fullname" . }}-websocket
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    {{- with .Values.websocket.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.websocket.ingress.className | default "nginx" }}
+  tls:
+  - secretName: {{ .Values.websocket.ingress.tlsSecretName | default "edk-ws-tls" }}
+    hosts:
+    - {{ .Values.websocket.ingress.host }}
+  rules:
+  - host: {{ .Values.websocket.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "edk.fullname" . }}-websocket
+            port:
+              number: {{ .Values.global.env.WS_PORT }}
+{{- end }}

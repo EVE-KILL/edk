@@ -1,0 +1,19 @@
+{{- if .Values.websocket.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "edk.fullname" . }}-websocket
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+    app.kubernetes.io/component: websocket
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.global.env.WS_PORT }}
+      targetPort: {{ .Values.global.env.WS_PORT }}
+      protocol: TCP
+      name: websocket
+  selector:
+    {{- include "edk.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: websocket
+{{- end }}
