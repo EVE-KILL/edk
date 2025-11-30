@@ -100,6 +100,8 @@ Common environment variables
   value: {{ .Values.global.env.WS_PING_TIMEOUT | quote }}
 - name: WS_CLEANUP_INTERVAL
   value: {{ .Values.global.env.WS_CLEANUP_INTERVAL | quote }}
+- name: WS_URL
+  value: {{ .Values.global.env.WS_URL | quote }}
 # Followed entities
 - name: FOLLOWED_CHARACTER_IDS
   value: {{ .Values.global.env.FOLLOWED_CHARACTER_IDS | quote }}

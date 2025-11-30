@@ -2,7 +2,7 @@
   let ws;
 
   function startWS(clientId) {
-    const wsUrl = (window.__EDK_WS_URL || 'ws://localhost:3002/ws') + `?cid=${clientId}`;
+    const wsUrl = (window.__EDK_WS_URL || 'wss://ws.eve-kill.com/ws') + `?cid=${clientId}`;
     try {
       ws = new WebSocket(wsUrl);
       ws.onopen = () => {};
