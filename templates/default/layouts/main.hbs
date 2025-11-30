@@ -994,7 +994,9 @@
         </footer>
     </div>
 
+    {{#if showDebugBar}}
     {{> partials/debug-bar}}
+    {{/if}}
 
     <!-- Scripts -->
     <script type="text/javascript">
@@ -1043,6 +1045,8 @@
     <!-- Dev Hot Reload -->
     <script type="text/javascript" src="/dev-reload.js"></script>
     {{/if}}
+
+    {{!-- Debug bar is always available (controlled by showDebugBar) but dev-reload only in debug mode --}}
 
     <!-- Fitting Wheel Script -->
     <script type="text/javascript" src="/fitting-wheel.js"></script>

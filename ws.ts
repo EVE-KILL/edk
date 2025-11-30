@@ -204,6 +204,11 @@ function handleMessage(ws: KillmailSocket, message: string): void {
 
       case 'pong':
         clientData.lastPong = new Date();
+        logger.debug('Received pong from client', {
+          clientId: clientData.clientId,
+          lastPing: clientData.lastPing?.toISOString(),
+          lastPong: clientData.lastPong.toISOString(),
+        });
         break;
 
       case 'subscribe':
