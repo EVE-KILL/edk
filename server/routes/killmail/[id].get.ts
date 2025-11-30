@@ -6,6 +6,7 @@
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../helpers/time';
 import { render } from '../../helpers/templates';
+import { renderErrorPage } from '../../utils/error';
 import {
   getKillmailDetails,
   getKillmailItems,
@@ -81,10 +82,12 @@ export default defineEventHandler(async (event: H3Event) => {
     const killmailId = getRouterParam(event, 'id');
 
     if (!killmailId) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Killmail not found',
-      });
+      return renderErrorPage(
+        event,
+        404,
+        'Killmail Not Found',
+        'No killmail ID provided.'
+      );
     }
 
     const id = parseInt(killmailId, 10);
@@ -104,10 +107,12 @@ export default defineEventHandler(async (event: H3Event) => {
     );
 
     if (!killmail) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: `Killmail #${id} not found`,
-      });
+      return renderErrorPage(
+        event,
+        404,
+        'Killmail Not Found',
+        `Killmail #${id} not found in the database.`
+      );
     }
 
     // Flag name lookup map

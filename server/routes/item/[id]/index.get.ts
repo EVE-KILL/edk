@@ -25,11 +25,13 @@ export default defineEventHandler(async (event: H3Event) => {
       return await TypeQueries.getType(typeId);
     });
 
-    if (!item) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Item not found',
-      });
+    if (!itemDetails) {
+      return renderErrorPage(
+        event,
+        404,
+        'Item Not Found',
+        `Item type #${typeId} not found in the database.`
+      );
     }
 
     // Fetch group and category info

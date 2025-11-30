@@ -80,7 +80,12 @@ export default defineEventHandler(async (event: H3Event) => {
     });
 
     if (!war) {
-      throw createError({ statusCode: 404, statusMessage: 'War not found' });
+      return renderErrorPage(
+        event,
+        404,
+        'War Not Found',
+        `War #${warId} not found in the database.`
+      );
     }
 
     const [

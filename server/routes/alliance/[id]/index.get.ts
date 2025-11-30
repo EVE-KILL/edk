@@ -4,7 +4,8 @@
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
-import { getAlliance } from '../../../models/alliances';
+import { renderErrorPage } from '../../../utils/error';
+import { getAllianceDetails } from '../../../models/alliances';
 import {
   getEntityKillmails,
   estimateEntityKillmails,
@@ -43,10 +44,12 @@ export default defineEventHandler(async (event: H3Event) => {
     );
 
     if (!allianceData) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Alliance not found',
-      });
+      return renderErrorPage(
+        event,
+        404,
+        'Alliance Not Found',
+        `Alliance #${allianceId} not found in the database.`
+      );
     }
 
     // Fetch all entity data in parallel

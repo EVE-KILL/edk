@@ -4,6 +4,7 @@
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
+import { renderErrorPage } from '../../../utils/error';
 import { getCharacterWithCorporationAndAlliance } from '../../../models/characters';
 import {
   getEntityKillmails,
@@ -27,10 +28,12 @@ export default defineEventHandler(async (event: H3Event) => {
     const characterId = Number.parseInt(getRouterParam(event, 'id') || '0');
 
     if (!characterId) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Invalid character ID',
-      });
+      return renderErrorPage(
+        event,
+        400,
+        'Invalid Character ID',
+        'The character ID provided is not valid.'
+      );
     }
 
     // Fetch character basic info using model
@@ -43,10 +46,12 @@ export default defineEventHandler(async (event: H3Event) => {
     );
 
     if (!characterData) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Character not found',
-      });
+      return renderErrorPage(
+        event,
+        404,
+        'Character Not Found',
+        `Character #${characterId} not found in the database.`
+      );
     }
 
     // Fetch all entity data in parallel

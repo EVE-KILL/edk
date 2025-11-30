@@ -2,7 +2,7 @@ import type { H3Event } from 'h3';
 import { getRouterParam, createError, getQuery } from 'h3';
 import { render, normalizeKillRow } from '../../helpers/templates';
 import { database } from '../../helpers/database';
-import { handleError } from '../../utils/error';
+import { handleError, renderErrorPage } from '../../utils/error';
 import { track } from '../../utils/performance-decorators';
 import { generateBreadcrumbStructuredData } from '../../helpers/seo';
 import {
@@ -80,10 +80,12 @@ export default defineEventHandler(async (event: H3Event) => {
     });
 
     if (!faction) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Faction not found',
-      });
+      return renderErrorPage(
+        event,
+        404,
+        'Faction Not Found',
+        `Faction #${factionId} not found in the database.`
+      );
     }
 
     // Fetch faction statistics from cache or view

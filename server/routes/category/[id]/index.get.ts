@@ -3,6 +3,7 @@
  */
 import type { H3Event } from 'h3';
 import { render } from '../../../helpers/templates';
+import { renderErrorPage } from '../../../utils/error';
 import { getCategory } from '../../../models/categories';
 import { database } from '../../../helpers/database';
 import { handleError } from '../../../utils/error';
@@ -22,10 +23,12 @@ export default defineEventHandler(async (event: H3Event) => {
     const categoryId = Number.parseInt(getRouterParam(event, 'id') || '0');
 
     if (!categoryId) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Invalid category ID',
-      });
+      return renderErrorPage(
+        event,
+        400,
+        'Invalid Category ID',
+        'The category ID provided is not valid.'
+      );
     }
 
     // Fetch category info
@@ -34,10 +37,12 @@ export default defineEventHandler(async (event: H3Event) => {
     });
 
     if (!category) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Category not found',
-      });
+      return renderErrorPage(
+        event,
+        404,
+        'Category Not Found',
+        `Category #${categoryId} not found in the database.`
+      );
     }
 
     // Fetch groups in this category with type counts

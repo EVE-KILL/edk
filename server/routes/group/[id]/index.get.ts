@@ -3,6 +3,7 @@
  */
 import type { H3Event } from 'h3';
 import { render } from '../../../helpers/templates';
+import { renderErrorPage } from '../../../utils/error';
 import { getGroup } from '../../../models/groups';
 import { getCategory } from '../../../models/categories';
 import { TypeQueries } from '../../../models/types';
@@ -16,10 +17,12 @@ export default defineEventHandler(async (event: H3Event) => {
     const groupId = Number.parseInt(getRouterParam(event, 'id') || '0');
 
     if (!groupId) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Invalid group ID',
-      });
+      return renderErrorPage(
+        event,
+        400,
+        'Invalid Group ID',
+        'The group ID provided is not valid.'
+      );
     }
 
     // Fetch group basic info
@@ -28,10 +31,12 @@ export default defineEventHandler(async (event: H3Event) => {
     });
 
     if (!group) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Group not found',
-      });
+      return renderErrorPage(
+        event,
+        404,
+        'Group Not Found',
+        `Group #${groupId} not found in the database.`
+      );
     }
 
     // Fetch category info

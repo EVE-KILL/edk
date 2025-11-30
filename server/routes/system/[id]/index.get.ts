@@ -3,6 +3,7 @@
  */
 import type { H3Event } from 'h3';
 import { render, normalizeKillRow } from '../../../helpers/templates';
+import { renderErrorPage } from '../../../utils/error';
 import { getSolarSystem } from '../../../models/solarSystems';
 import { getRegion } from '../../../models/regions';
 import { getConstellation } from '../../../models/constellations';
@@ -43,10 +44,12 @@ export default defineEventHandler(async (event: H3Event) => {
     const system = await getSolarSystem(solarSystemId);
 
     if (!system) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'System not found',
-      });
+      return renderErrorPage(
+        event,
+        404,
+        'Solar System Not Found',
+        `Solar system #${systemId} not found in the database.`
+      );
     }
 
     // Fetch celestial data

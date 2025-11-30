@@ -3,6 +3,7 @@
  */
 import type { H3Event } from 'h3';
 import { render, normalizeKillRow } from '../../../helpers/templates';
+import { renderErrorPage } from '../../../utils/error';
 import { getConstellation } from '../../../models/constellations';
 import { getRegion } from '../../../models/regions';
 import { getSolarSystemsByConstellation } from '../../../models/solarSystems';
@@ -40,10 +41,12 @@ export default defineEventHandler(async (event: H3Event) => {
     const constellation = await getConstellation(constellationId);
 
     if (!constellation) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Constellation not found',
-      });
+      return renderErrorPage(
+        event,
+        404,
+        'Constellation Not Found',
+        `Constellation #${constellationId} not found in the database.`
+      );
     }
 
     // Fetch region, faction, and systems info

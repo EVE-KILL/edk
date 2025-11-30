@@ -4,6 +4,7 @@
 import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
+import { renderErrorPage } from '../../../utils/error';
 import { getCorporationWithAlliance } from '../../../models/corporations';
 import {
   getEntityKillmails,
@@ -43,10 +44,12 @@ export default defineEventHandler(async (event: H3Event) => {
     );
 
     if (!corporationData) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Corporation not found',
-      });
+      return renderErrorPage(
+        event,
+        404,
+        'Corporation Not Found',
+        `Corporation #${corporationId} not found in the database.`
+      );
     }
 
     // Fetch all entity data in parallel
