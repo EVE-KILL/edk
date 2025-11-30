@@ -12,6 +12,8 @@ export default defineEventHandler((event) => {
     (event.node.req.headers['x-forwarded-for'] as string) ||
     event.node.req.socket.remoteAddress ||
     '-';
+  const userAgent = event.node.req.headers['user-agent'] || '-';
+  const referer = event.node.req.headers['referer'] || '-';
 
   // Handle response
   const originalSend = event.node.res.end;
@@ -43,9 +45,18 @@ export default defineEventHandler((event) => {
     });
 
     const methodColor = chalk.blue(method);
-    const log = `${chalk.gray(timestamp)} ${methodColor} ${url} ${coloredStatus} ${chalk.gray(`${duration}ms`)} ${chalk.gray(`${responseSize}B`)} ${chalk.gray(ip)}`;
+    const log = `${chalk.gray(timestamp)} ${methodColor} ${url} ${coloredStatus} ${chalk.gray(`${duration}ms`)} ${chalk.gray(`${responseSize}B`)} ${chalk.gray(ip)} ${chalk.magenta(userAgent)}`;
 
-    logger.info(log);
+    logger.info(log, {
+      method,
+      url,
+      statusCode,
+      duration,
+      responseSize,
+      ip,
+      userAgent,
+      referer,
+    });
 
     return originalSend.apply(this, args as Parameters<typeof originalSend>);
   };
