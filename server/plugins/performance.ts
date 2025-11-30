@@ -3,13 +3,6 @@ import { PerformanceTracker } from '../helpers/performance';
 import { env } from '../helpers/env';
 
 export default defineNitroPlugin((nitroApp) => {
-  const isProduction = env.NODE_ENV === 'production';
-
-  // Skip all performance tracking in production
-  if (isProduction) {
-    return;
-  }
-
   // Initialize performance tracker at the very start of the request
   // The tracker is stored in event.context and later propagated to AsyncLocalStorage by middleware
   nitroApp.hooks.hook('request', (event) => {

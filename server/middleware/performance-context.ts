@@ -1,5 +1,4 @@
 import { requestContext } from '../utils/request-context';
-import { env } from '../helpers/env';
 
 /**
  * Performance Context Middleware
@@ -13,11 +12,6 @@ import { env } from '../helpers/env';
  * have access to the performance tracker.
  */
 export default defineEventHandler((event) => {
-  // Skip in production
-  if (env.NODE_ENV === 'production') {
-    return;
-  }
-
   const performance = event.context.performance;
 
   if (performance) {

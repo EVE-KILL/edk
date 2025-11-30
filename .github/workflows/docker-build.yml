@@ -87,8 +87,8 @@ jobs:
 
       - name: Deploy with kubectl rollout restart
         run: |
-          kubectl rollout restart deployment -n eve-kill -l app.kubernetes.io/name=edk
-          kubectl rollout status deployment -n eve-kill -l app.kubernetes.io/name=edk --timeout=5m
+          kubectl rollout restart deployment -n eve-kill -l app.kubernetes.io/name=edk,app.kubernetes.io/component!=redis
+          kubectl rollout status deployment -n eve-kill -l app.kubernetes.io/name=edk,app.kubernetes.io/component!=redis --timeout=5m
 
   purge-cloudflare-cache:
     name: Purge Cloudflare Cache
