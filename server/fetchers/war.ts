@@ -1,9 +1,6 @@
 import { fetchESI } from '../helpers/esi';
 import { logger } from '../helpers/logger';
 import { enqueueJobMany, JobPriority, QueueType } from '../helpers/queue';
-import { database } from '../helpers/database';
-import { fetchAndStoreAlliance } from './alliance';
-import { fetchAndStoreCorporation } from './corporation';
 import {
   ESIWar,
   ESIWarAlly,
@@ -70,7 +67,7 @@ async function fetchWarKillmailPage(
   return response.data ?? [];
 }
 
-async function ensureWarEntities(
+async function queueWarEntities(
   war: ESIWar,
   allies: ESIWarAlly[]
 ): Promise<void> {
@@ -89,77 +86,27 @@ async function ensureWarEntities(
     if (ally.corporation_id) corporationIds.add(ally.corporation_id);
   }
 
-  await Promise.all([
-    ...Array.from(allianceIds).map((id) => fetchAndStoreAlliance(id)),
-    ...Array.from(corporationIds).map((id) => fetchAndStoreCorporation(id)),
-  ]);
-}
-
-export async function syncWarKillmailsList(
-  warId: number,
-  killmails: WarKillmail[]
-): Promise<{ queued: number; updated: number }> {
-  if (killmails.length === 0) {
-    return { queued: 0, updated: 0 };
-  }
-
-  const killmailIds = killmails.map((k) => k.killmail_id);
-  const existing = await database.find<{
-    killmailId: number;
-    warId: number | null;
-  }>(
-    'SELECT "killmailId", "warId" FROM killmails WHERE "killmailId" = ANY(:ids)',
-    { ids: killmailIds }
-  );
-
-  const existingMap = new Map<number, number | null>();
-  for (const row of existing) {
-    existingMap.set(row.killmailId, row.warId ?? null);
-  }
-
-  const missing: WarKillmail[] = [];
-  const needsUpdate: number[] = [];
-
-  for (const killmail of killmails) {
-    const current = existingMap.get(killmail.killmail_id);
-    if (current === undefined) {
-      missing.push(killmail);
-    } else if (current === null) {
-      needsUpdate.push(killmail.killmail_id);
-    }
-  }
-
-  let updated = 0;
-  if (needsUpdate.length > 0) {
-    await database.execute(
-      'UPDATE killmails SET "warId" = :warId WHERE "killmailId" = ANY(:ids) AND "warId" IS NULL',
-      { warId, ids: needsUpdate }
-    );
-    updated = needsUpdate.length;
-  }
-
-  if (missing.length > 0) {
+  // Queue entities for background processing
+  if (allianceIds.size > 0) {
     await enqueueJobMany(
-      QueueType.KILLMAIL,
-      missing.map((km) => ({
-        killmailId: km.killmail_id,
-        hash: km.killmail_hash,
-        warId,
-      })),
-      { priority: JobPriority.NORMAL }
+      QueueType.ALLIANCE,
+      Array.from(allianceIds).map((id) => ({ id })),
+      { priority: JobPriority.LOW }
     );
   }
 
-  return { queued: missing.length, updated };
+  if (corporationIds.size > 0) {
+    await enqueueJobMany(
+      QueueType.CORPORATION,
+      Array.from(corporationIds).map((id) => ({ id })),
+      { priority: JobPriority.LOW }
+    );
+  }
 }
 
-async function syncWarKillmails(warId: number): Promise<{
-  queued: number;
-  updated: number;
-}> {
+async function queueWarKillmails(warId: number): Promise<number> {
   let page = 1;
-  let queued = 0;
-  let updated = 0;
+  let totalKillmails = 0;
 
   while (true) {
     const killmails = await fetchWarKillmailPage(warId, page);
@@ -167,37 +114,48 @@ async function syncWarKillmails(warId: number): Promise<{
       break;
     }
 
-    const result = await syncWarKillmailsList(warId, killmails);
-    queued += result.queued;
-    updated += result.updated;
+    // Queue all killmails without checking if they exist
+    // The killmail processor will handle duplicates
+    await enqueueJobMany(
+      QueueType.KILLMAIL,
+      killmails.map((km) => ({
+        killmailId: km.killmail_id,
+        hash: km.killmail_hash,
+        warId,
+      })),
+      { priority: JobPriority.NORMAL }
+    );
 
+    totalKillmails += killmails.length;
     page++;
   }
 
-  return { queued, updated };
+  return totalKillmails;
 }
 
 export async function ingestWar(warId: number): Promise<{
   queuedKillmails: number;
-  updatedKillmails: number;
   alliesCount: number;
 }> {
   const war = await fetchWarDetails(warId);
 
   if (!war) {
-    return { queuedKillmails: 0, updatedKillmails: 0, alliesCount: 0 };
+    return { queuedKillmails: 0, alliesCount: 0 };
   }
 
   const allies = war.allies ?? [];
 
-  await ensureWarEntities(war, allies);
+  // Insert war data immediately
   await upsertWar(warId, war);
 
-  const { queued, updated } = await syncWarKillmails(warId);
+  // Queue entities and killmails for background processing in parallel
+  const [, killmailCount] = await Promise.all([
+    queueWarEntities(war, allies),
+    queueWarKillmails(warId),
+  ]);
 
   return {
-    queuedKillmails: queued,
-    updatedKillmails: updated,
+    queuedKillmails: killmailCount,
     alliesCount: allies.length,
   };
 }
@@ -223,7 +181,7 @@ export async function ingestLatestWarsFirstPage(): Promise<void> {
     try {
       const result = await ingestWar(warId);
       logger.success(
-        `[war] added ${warId} (allies ${result.alliesCount}, queued ${result.queuedKillmails}, updated ${result.updatedKillmails})`
+        `[war] added ${warId} (allies ${result.alliesCount}, queued ${result.queuedKillmails})`
       );
     } catch (error) {
       logger.error(`[war] Failed to ingest war ${warId}`, {

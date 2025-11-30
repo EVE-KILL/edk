@@ -58,6 +58,7 @@ export default {
 
     let processed = 0;
     let page = Math.max(1, startPage);
+    const concurrency = 5; // Process 5 wars in parallel
 
     while (processed < limit) {
       const warIds = await fetchWarIds(page);
@@ -68,24 +69,35 @@ export default {
 
       logger.info(`Processing page ${page} (${warIds.length} wars)`);
 
-      for (const warId of warIds) {
-        if (processed >= limit) break;
+      // Process wars in batches with concurrency
+      const warsToProcess = warIds.slice(
+        0,
+        Math.min(warIds.length, limit - processed)
+      );
 
-        try {
-          const result = await ingestWar(warId);
-          processed++;
-          logger.success(
-            `${chalk.green('➕')} added war ${chalk.cyan(
-              warId
-            )} (${chalk.yellow('allies')} ${result.alliesCount}, ${chalk.yellow(
-              'km'
-            )} +${result.queuedKillmails}, updated ${result.updatedKillmails})`
-          );
-        } catch (error) {
-          logger.error(`[war] Failed to ingest war ${warId}`, {
-            error: String(error),
-          });
-        }
+      // Split into chunks for parallel processing
+      for (let i = 0; i < warsToProcess.length; i += concurrency) {
+        const batch = warsToProcess.slice(i, i + concurrency);
+
+        await Promise.all(
+          batch.map(async (warId) => {
+            try {
+              const result = await ingestWar(warId);
+              processed++;
+              logger.success(
+                `${chalk.green('➕')} added war ${chalk.cyan(
+                  warId
+                )} (${chalk.yellow('allies')} ${result.alliesCount}, ${chalk.yellow(
+                  'km'
+                )} +${result.queuedKillmails})`
+              );
+            } catch (error) {
+              logger.error(`[war] Failed to ingest war ${warId}`, {
+                error: String(error),
+              });
+            }
+          })
+        );
       }
 
       await setConfig(CONFIG_KEY, String(page));

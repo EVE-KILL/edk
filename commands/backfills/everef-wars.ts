@@ -2,7 +2,12 @@ import { mkdir, writeFile, rm } from 'fs/promises';
 import { dirname, join } from 'path';
 import { logger } from '../../server/helpers/logger';
 import { upsertWar, clearWars, type ESIWar } from '../../server/models/wars';
-import { WarKillmail, syncWarKillmailsList } from '../../server/fetchers/war';
+import { WarKillmail } from '../../server/fetchers/war';
+import {
+  enqueueJobMany,
+  JobPriority,
+  QueueType,
+} from '../../server/helpers/queue';
 import chalk from 'chalk';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -295,7 +300,7 @@ async function processArchive(
 
   let warsProcessed = 0;
   let killmailsQueued = 0;
-  let killmailsUpdated = 0;
+  const killmailsUpdated = 0;
 
   const warRecords: any[] = [];
   const killmailMap = new Map<number, Map<number, string>>(); // warId -> (killmailId -> hash)
@@ -386,9 +391,16 @@ async function processArchive(
       : [];
 
     if (!skipKillmails && killmailList.length > 0) {
-      const res = await syncWarKillmailsList(Number(warId), killmailList);
-      killmailsQueued += res.queued;
-      killmailsUpdated += res.updated;
+      await enqueueJobMany(
+        QueueType.KILLMAIL,
+        killmailList.map((km) => ({
+          killmailId: km.killmail_id,
+          hash: km.killmail_hash,
+          warId: Number(warId),
+        })),
+        { priority: JobPriority.NORMAL }
+      );
+      killmailsQueued += killmailList.length;
     }
 
     if (logEvery > 0 && warsProcessed % logEvery === 0) {
