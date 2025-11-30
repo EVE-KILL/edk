@@ -24,16 +24,7 @@ spec:
           imagePullPolicy: {{ .Values.global.image.pullPolicy }}
           command: ["bun", "cli", "redisq"]
           env:
-            - name: REDISQ_ID
-              value: {{ .Values.global.env.sensitive.REDISQ_ID | quote }}
-            - name: DATABASE_URL
-              value: {{ .Values.global.env.sensitive.DATABASE_URL | default "" | quote }}
-            - name: REDIS_HOST
-              value: {{ .Values.global.env.REDIS_HOST | quote }}
-            - name: REDIS_PORT
-              value: {{ .Values.global.env.REDIS_PORT | quote }}
-            - name: REDIS_PASSWORD
-              value: {{ .Values.global.env.sensitive.REDIS_PASSWORD | default "" | quote }}
+            {{- include "edk.commonEnv" . | nindent 12 }}
           resources:
             {{- toYaml .Values.redisq.resources | nindent 12 }}
       restartPolicy: Always
