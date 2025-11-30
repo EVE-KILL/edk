@@ -50,6 +50,9 @@ export default defineNitroConfig({
       version: '1.0.0',
     },
     ui: {
+      swagger: {
+        route: '/swagger',
+      },
       scalar: {
         route: '/scalar',
       },
