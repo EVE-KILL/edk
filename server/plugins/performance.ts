@@ -21,18 +21,23 @@ export default defineNitroPlugin((nitroApp) => {
     }
   });
 
-  // Log performance metrics after response is sent
+  // Log performance metrics after response is sent (only when DEBUG is enabled)
   nitroApp.hooks.hook('afterResponse', (event) => {
+    const isDebug = env.DEBUG === '1' || env.DEBUG === 'true';
+    if (!isDebug) {
+      return;
+    }
+
     const performance = event.context?.performance;
     if (performance) {
       const summary = performance.getSummary();
       logger.info(
-        `[Request Performance] URL: ${event.path} | Total: ${summary.totalTime}ms | DB: ${summary.dbTime}ms (${summary.queryCount} queries)`
+        `${event.path} | ${summary.totalTime}ms | ${summary.queryCount} queries (${summary.dbTime}ms avg)`
       );
 
       if (summary.queries.length > 0) {
         for (const q of summary.queries) {
-          logger.debug(`  [DB Query] ${q.query} | ${q.duration}ms`);
+          logger.debug(`  ${q.query} | ${q.duration}ms`);
         }
       }
     }
