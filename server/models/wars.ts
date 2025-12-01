@@ -281,9 +281,7 @@ export async function getActiveWarsForAlliance(
 /**
  * Get the legendary faction war for a faction
  */
-export async function getLegendaryWarForFaction(
-  factionId: number
-): Promise<{
+export async function getLegendaryWarForFaction(factionId: number): Promise<{
   warId: number;
   opponentFactionId: number;
   opponentFactionName: string;
@@ -311,4 +309,51 @@ export async function getLegendaryWarForFaction(
     opponentFactionId: war.opponent,
     opponentFactionName: opponentFaction.name,
   };
+}
+
+/**
+ * Get wars that need updating
+ * - Active wars (finished IS NULL)
+ * - Recently finished wars (finished within last N days)
+ * - Not updated in last hour (respects ESI cache)
+ */
+export async function getWarsToUpdate(
+  recentlyFinishedDays = 3,
+  minUpdateIntervalMinutes = 60
+): Promise<number[]> {
+  const sql = database.sql;
+
+  const cutoffFinished = new Date();
+  cutoffFinished.setDate(cutoffFinished.getDate() - recentlyFinishedDays);
+
+  const cutoffUpdated = new Date();
+  cutoffUpdated.setMinutes(
+    cutoffUpdated.getMinutes() - minUpdateIntervalMinutes
+  );
+
+  const rows = await database.find<{ warId: number }>(
+    sql`
+      SELECT "warId"
+      FROM wars
+      WHERE (
+        -- Active wars
+        finished IS NULL
+        OR
+        -- Recently finished wars
+        finished > ${cutoffFinished}
+      )
+      AND (
+        -- Not updated recently (or never updated)
+        "lastUpdated" IS NULL
+        OR "lastUpdated" < ${cutoffUpdated}
+      )
+      ORDER BY
+        -- Prioritize active wars
+        CASE WHEN finished IS NULL THEN 0 ELSE 1 END,
+        -- Then by last update time (oldest first)
+        "lastUpdated" ASC NULLS FIRST
+    `
+  );
+
+  return rows.map((row) => row.warId);
 }

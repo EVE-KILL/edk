@@ -60,6 +60,11 @@ export function getRateLimitGroup(path: string): string {
   if (path.match(/^\/corporations\/\d+\/killmails\/recent\/?$/i))
     return 'corp-killmail';
 
+  // Wars
+  if (path.match(/^\/wars\/\d+\/killmails/)) return 'killmail';
+  if (path.match(/^\/wars\/\d+\/?$/)) return 'killmail';
+  if (path.match(/^\/wars\//)) return 'killmail';
+
   // Characters
   if (path.match(/^\/characters\/\d+\/contracts/)) return 'char-contract';
   if (path.match(/^\/characters\/\d+\/(portrait|roles|titles|medals)/))

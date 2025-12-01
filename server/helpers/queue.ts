@@ -13,6 +13,7 @@ export enum QueueType {
   PRICE = 'price',
   AUTH = 'auth',
   ENTITY_STATS = 'entity_stats',
+  WAR = 'war',
 }
 
 /**
@@ -25,6 +26,7 @@ export interface QueueJobData {
   [QueueType.ALLIANCE]: { id: number };
   [QueueType.PRICE]: { typeId: number; date?: number };
   [QueueType.AUTH]: { userId: number };
+  [QueueType.WAR]: { warId: number };
   [QueueType.ENTITY_STATS]: {
     killmailId: number;
     killmailTime: string;
