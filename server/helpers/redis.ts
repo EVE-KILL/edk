@@ -147,8 +147,29 @@ class TrackedStorage {
 
   async setTTL(key: string, ttl: number): Promise<void> {
     return this.trackOperation('expire', async () => {
-      // unstorage handles TTL via driver options, we'll use setMeta
-      await getBaseStorage().setMeta(key, { ttl });
+      // Use raw Redis client for TTL since unstorage doesn't support EXPIRE properly
+      const redis = createRedisClient();
+      try {
+        await redis.connect();
+        // TTL is in milliseconds, Redis EXPIRE expects seconds
+        await redis.expire(key, Math.ceil(ttl / 1000));
+      } finally {
+        await redis.quit();
+      }
+    });
+  }
+
+  // Set item with TTL in one operation (more efficient)
+  async setItemWithTTL(key: string, value: any, ttlMs: number): Promise<void> {
+    return this.trackOperation('setex', async () => {
+      const redis = createRedisClient();
+      try {
+        await redis.connect();
+        // Redis SETEX expects seconds
+        await redis.setex(key, Math.ceil(ttlMs / 1000), JSON.stringify(value));
+      } finally {
+        await redis.quit();
+      }
     });
   }
 }

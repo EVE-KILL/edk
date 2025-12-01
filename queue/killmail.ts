@@ -334,6 +334,9 @@ async function publishKillmailToWebSocket(killmailId: number): Promise<void> {
 /**
  * Create worker instance
  * Used by main queue.ts runner
+ *
+ * Note: Concurrency is kept low to respect ESI rate limits.
+ * The ESI rate limiter will automatically throttle requests when approaching limits.
  */
 export function createWorker(
   connection: any,
@@ -341,9 +344,12 @@ export function createWorker(
 ) {
   return new Worker(name, processor, {
     connection,
-    concurrency: options?.concurrency ?? 3, // Process 3 killmails concurrently by default
+    // Lower concurrency to be more conservative with ESI rate limits
+    // Each killmail fetches: 1 killmail + N characters + M corporations + K alliances
+    // The ESI rate limiter will add delays as needed
+    concurrency: options?.concurrency ?? 2,
     limiter: {
-      max: 10, // Max 10 jobs
+      max: 5, // Max 5 jobs per duration (more conservative)
       duration: 1000, // Per second
     },
   });

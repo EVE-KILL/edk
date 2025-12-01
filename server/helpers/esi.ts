@@ -9,6 +9,12 @@ import { fetcher, FetcherOptions, FetcherResponse } from './fetcher';
 import { requestContext } from '../utils/request-context';
 import { env } from './env';
 import { als } from './als';
+import {
+  esiRateLimiter,
+  getRateLimitGroup,
+  getTokenCost,
+} from './esi-rate-limiter';
+import { logger } from './logger';
 
 const ESI_SERVER = env.ESI_SERVER_URL;
 let errorLimitRemain = 100;
@@ -61,6 +67,20 @@ export function fetchESI<T = any>(
 
   const promise = new Promise<FetcherResponse<T>>((resolve, reject) => {
     const executeRequest = async () => {
+      // Determine rate limit group for this path
+      const rateLimitGroup = getRateLimitGroup(path);
+
+      // Calculate delay based on token bucket state
+      const delay = await esiRateLimiter.calculateDelay(rateLimitGroup, 2);
+      if (delay > 0) {
+        logger.debug(
+          `[ESI] Delaying request to ${path} by ${Math.ceil(delay / 1000)}s (group: ${rateLimitGroup})`
+        );
+        setTimeout(() => executeRequest(), delay);
+        return;
+      }
+
+      // Check legacy error limit
       if (!canMakeRequest()) {
         setTimeout(() => executeRequest(), errorLimitReset * 1000);
         return;
@@ -76,6 +96,7 @@ export function fetchESI<T = any>(
       try {
         const response = await fetcher<T>(url, { ...options, headers });
 
+        // Update legacy error limit tracking
         const remain = response.headers.get('x-esi-error-limit-remain');
         const reset = response.headers.get('x-esi-error-limit-reset');
 
@@ -86,12 +107,31 @@ export function fetchESI<T = any>(
           errorLimitReset = parseInt(reset, 10);
         }
 
+        // Calculate token cost based on response status
+        const tokenCost = getTokenCost(response.status);
+
+        // Handle 429 rate limit
         if (response.status === 429) {
           errorsLastMinute++;
-          const retryAfter = response.headers.get('retry-after') || '10';
-          setTimeout(() => executeRequest(), parseInt(retryAfter, 10) * 1000);
+          const retryAfter = parseInt(
+            response.headers.get('retry-after') || '60',
+            10
+          );
+
+          // Update rate limiter state
+          await esiRateLimiter.handleRateLimit(rateLimitGroup, retryAfter);
+
+          // Retry after delay
+          setTimeout(() => executeRequest(), retryAfter * 1000);
           return;
         }
+
+        // Consume tokens for successful request
+        await esiRateLimiter.consumeTokens(
+          rateLimitGroup,
+          tokenCost,
+          response.headers
+        );
 
         if (spanId) performance?.endSpan(spanId);
         resolve(response);
