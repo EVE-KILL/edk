@@ -25,8 +25,7 @@
   - stats: object (entity statistics)
 --}}
 <div class="entity-hero">
-  <!-- Single container box for entire entity header -->
-  <div class="entity-hero__container">
+{{#> components/collapsible-section id=(concat "entity-info-" entityId) title=name compact=true}}
     <!-- Bottom: Big entity image on left, stats taking up rest of width on right -->
     <div class="entity-hero__content">
       <!-- Entity Image -->
@@ -104,7 +103,7 @@
       </div>
       {{/if}}
     </div>
-  </div>
+{{/components/collapsible-section}}
 </div>
 
 <style>
@@ -113,11 +112,7 @@
   width: 100%;
 }
 
-.entity-hero__container {
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border-dark);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+.entity-hero > div {
   width: 100%;
 }
 
@@ -303,7 +298,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
+  padding: 6px 16px;
   background: rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid var(--color-border-dark);
   transition: background-color 0.2s ease;

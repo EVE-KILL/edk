@@ -1,0 +1,86 @@
+{{!--
+  Collapsible Section Component
+
+  Parameters:
+  - id: Unique identifier for this collapsible section (required)
+  - title: The title text to display in the header (required)
+  - defaultCollapsed: Boolean, whether to start collapsed (optional, default: false)
+  - compact: Boolean, whether to use minimal header (optional, default: false)
+  - headerRight: HTML content to show on the right side of header (optional)
+  - content: The content block to show/hide (passed via block helper)
+
+  Usage:
+  {{#> components/collapsible-section id="my-section" title="My Section Title" defaultCollapsed=false}}
+    <!-- Your content here -->
+  {{/components/collapsible-section}}
+
+  Or with right header content:
+  {{#> components/collapsible-section id="my-section" title="My Section Title"}}
+    {{#*inline "headerRight"}}
+      <button>Action</button>
+    {{/inline}}
+    <!-- Your content here -->
+  {{/components/collapsible-section}}
+--}}
+<div id="{{id}}-container" style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 20px; overflow: visible; position: relative;">
+    <div style="padding: {{#if compact}}4px 8px{{else}}12px 16px{{/if}}; border-bottom: 1px solid var(--color-border-dark); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <button onclick="toggleCollapsible('{{id}}')" id="{{id}}-toggle" style="background: none; border: none; color: var(--color-text-secondary); cursor: pointer; padding: 0; display: flex; align-items: center; transition: transform 0.2s;" title="Collapse/Expand">
+                <svg width="{{#if compact}}14{{else}}16{{/if}}" height="{{#if compact}}14{{else}}16{{/if}}" viewBox="0 0 16 16" fill="currentColor" style="transition: transform 0.2s;">
+                    <path d="M4 6l4 4 4-4H4z"/>
+                </svg>
+            </button>
+            {{#unless compact}}
+            <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                {{{title}}}
+            </div>
+            {{/unless}}
+        </div>
+        <div>
+            {{#if headerRight}}
+                {{{headerRight}}}
+            {{/if}}
+        </div>
+    </div>
+
+    <div id="{{id}}-content">
+        {{> @partial-block}}
+    </div>
+</div>
+
+<script>
+(function() {
+    const storageKey = 'collapsible_{{id}}';
+    const defaultCollapsed = {{#if defaultCollapsed}}true{{else}}false{{/if}};
+    const isCollapsed = localStorage.getItem(storageKey) === 'true' || (localStorage.getItem(storageKey) === null && defaultCollapsed);
+
+    if (isCollapsed) {
+        const content = document.getElementById('{{id}}-content');
+        const toggle = document.getElementById('{{id}}-toggle');
+        if (content) content.style.display = 'none';
+        if (toggle) {
+            const svg = toggle.querySelector('svg');
+            if (svg) svg.style.transform = 'rotate(-90deg)';
+        }
+    }
+})();
+
+window.toggleCollapsible = window.toggleCollapsible || function(id) {
+    const content = document.getElementById(id + '-content');
+    const toggle = document.getElementById(id + '-toggle');
+    const svg = toggle.querySelector('svg');
+    const storageKey = 'collapsible_' + id;
+
+    if (content.style.display === 'none') {
+        // Expand
+        content.style.display = 'block';
+        svg.style.transform = 'rotate(0deg)';
+        localStorage.setItem(storageKey, 'false');
+    } else {
+        // Collapse
+        content.style.display = 'none';
+        svg.style.transform = 'rotate(-90deg)';
+        localStorage.setItem(storageKey, 'true');
+    }
+};
+</script>

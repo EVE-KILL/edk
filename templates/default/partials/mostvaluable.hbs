@@ -1,11 +1,5 @@
 {{#if mostValuableKills}}
-<div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); margin-bottom: 20px; overflow: visible; position: relative;">
-    <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-dark);">
-        <div style="color: var(--color-text-white); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-            Most Valuable Kills {{#if timeRange}}({{timeRange}}){{else}}(All Time){{/if}}
-        </div>
-    </div>
-
+{{#> components/collapsible-section id="most-valuable-kills" title=(concat "Most Valuable Kills " (fallback (concat "(" timeRange ")") "(All Time)"))}}
     {{#if mostValuableKills.length}}
     <div style="padding: 8px 12px;">
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; width: 100%;">
@@ -61,5 +55,5 @@
         No valuable kills found.
     </div>
     {{/if}}
-</div>
+{{/components/collapsible-section}}
 {{/if}}
