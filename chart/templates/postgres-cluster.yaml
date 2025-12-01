@@ -21,15 +21,29 @@ metadata:
   name: {{ .Values.database.clusterName }}
   labels:
     {{- include "edk.labels" . | nindent 4 }}
-  {{- with .Values.database.annotations }}
   annotations:
+    {{- if eq .Values.database.storage.pvcRetainPolicy "retain" }}
+    # Prevent Helm from deleting PVCs on chart uninstall
+    "helm.sh/resource-policy": keep
+    {{- end }}
+    {{- with .Values.database.annotations }}
     {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- end }}
 spec:
   instances: {{ .Values.database.instances }}
   imageName: {{ .Values.database.imageName }}
 
   primaryUpdateStrategy: {{ .Values.database.primaryUpdateStrategy }}
+
+  # Managed resources configuration
+  managed:
+    roles:
+    - name: {{ .Values.database.owner }}
+      ensure: present
+      inherit: true
+      login: true
+    services:
+      disabledDefaultServices: []
 
   postgresql:
     parameters:
@@ -47,38 +61,12 @@ spec:
   storage:
     storageClass: {{ .Values.database.storage.storageClass }}
     size: {{ .Values.database.storage.size }}
-    {{- if or .Values.database.storage.annotations .Values.database.storage.pvcLabels }}
-    pvcTemplate:
-      {{- with .Values.database.storage.annotations }}
-      metadata:
-        annotations:
-          {{- toYaml . | nindent 10 }}
-      {{- end }}
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: {{ .Values.database.storage.size }}
-      storageClassName: {{ .Values.database.storage.storageClass }}
-    {{- end }}
+    resizeInUseVolumes: true
 
   walStorage:
     storageClass: {{ .Values.database.walStorage.storageClass }}
     size: {{ .Values.database.walStorage.size }}
-    {{- if or .Values.database.walStorage.annotations .Values.database.walStorage.pvcLabels }}
-    pvcTemplate:
-      {{- with .Values.database.walStorage.annotations }}
-      metadata:
-        annotations:
-          {{- toYaml . | nindent 10 }}
-      {{- end }}
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: {{ .Values.database.walStorage.size }}
-      storageClassName: {{ .Values.database.walStorage.storageClass }}
-    {{- end }}
+    resizeInUseVolumes: true
 
   monitoring:
     enablePodMonitor: {{ .Values.database.monitoring.enablePodMonitor }}

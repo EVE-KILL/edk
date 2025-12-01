@@ -7,6 +7,9 @@ metadata:
   labels:
     {{- include "edk.labels" . | nindent 4 }}
     app.kubernetes.io/component: imageserver
+  annotations:
+    # Prevent Helm from deleting PVC on chart uninstall
+    "helm.sh/resource-policy": keep
 spec:
   accessModes:
     {{- range .Values.imageserver.persistence.accessModes }}

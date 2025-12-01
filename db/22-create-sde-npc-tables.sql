@@ -40,6 +40,11 @@ CREATE TABLE IF NOT EXISTS npcCharacters (
     "name" VARCHAR(255),
     "factionId" INTEGER,
     "corporationId" INTEGER,
+    "allianceId" INTEGER,
+    "bloodlineId" INTEGER,
+    "ancestryId" INTEGER,
+    "gender" INTEGER,
+    "raceId" INTEGER,
     "solarSystemId" INTEGER
 );
 
