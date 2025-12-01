@@ -48,6 +48,13 @@ CREATE TABLE IF NOT EXISTS npcCharacters (
     "solarSystemId" INTEGER
 );
 
+-- Fix: Add missing columns to existing lowercase table (for prod compatibility)
+ALTER TABLE npccharacters ADD COLUMN IF NOT EXISTS "allianceId" INTEGER;
+ALTER TABLE npccharacters ADD COLUMN IF NOT EXISTS "bloodlineId" INTEGER;
+ALTER TABLE npccharacters ADD COLUMN IF NOT EXISTS "ancestryId" INTEGER;
+ALTER TABLE npccharacters ADD COLUMN IF NOT EXISTS "gender" INTEGER;
+ALTER TABLE npccharacters ADD COLUMN IF NOT EXISTS "raceId" INTEGER;
+
 -- Agent Types table
 CREATE TABLE IF NOT EXISTS agenttypes (
     "agentTypeId" INTEGER PRIMARY KEY,
