@@ -7,6 +7,13 @@ export default defineEventHandler(async (event) => {
   // Extract request information
   const method = getMethod(event);
   const url = getRequestURL(event).pathname;
+
+  // Skip logging for health check and other monitoring endpoints
+  const ignoredPaths = ['/health', '/metrics', '/status'];
+  if (ignoredPaths.includes(url)) {
+    return;
+  }
+
   const ip =
     (event.node.req.headers['x-forwarded-for'] as string) ||
     event.node.req.socket.remoteAddress ||
