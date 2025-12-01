@@ -84,7 +84,7 @@ async function fetchDatabaseStats(): Promise<DatabaseStats> {
         size_pretty: string;
       }>
     >`
-      SELECT 
+      SELECT
         t.tablename,
         COALESCE(c.reltuples::bigint, 0)::text as row_count,
         pg_total_relation_size(quote_ident(t.schemaname)||'.'||quote_ident(t.tablename))::text as size_bytes,
@@ -219,8 +219,8 @@ async function fetchDatabaseStats(): Promise<DatabaseStats> {
         ),
         database.findOne<{ size: string }>(
           `SELECT pg_size_pretty(SUM(pg_total_relation_size(quote_ident(tablename)))) as size
-           FROM pg_tables 
-           WHERE schemaname = 'public' 
+           FROM pg_tables
+           WHERE schemaname = 'public'
              AND (tablename LIKE 'killmails%' OR tablename LIKE 'attackers%' OR tablename LIKE 'items%')`
         ),
       ]);

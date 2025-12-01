@@ -562,17 +562,17 @@
   const renderDatabaseTable = (snapshot) => {
     const tbody = document.querySelector('[data-table-rows]');
     if (!tbody) return;
-    
+
     const groupedTables = snapshot.database?.groupedTables || [];
     if (groupedTables.length === 0) {
       tbody.innerHTML = '<tr><td colspan="3">No data</td></tr>';
       return;
     }
-    
+
     const rows = groupedTables.map((table) => {
       let html = `<tr class="table-row-base ${table.isPartitioned ? 'has-partitions' : ''}" data-table="${table.name}">
         <td>`;
-      
+
       if (table.isPartitioned) {
         html += `<button class="partition-toggle" data-target="${table.name}-partitions" aria-expanded="false">
           <svg class="partition-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -584,18 +584,18 @@
       } else {
         html += table.name;
       }
-      
+
       html += `</td>
         <td class="numeric">${formatNumber(table.count)}</td>
         <td class="numeric">${table.size}</td>
       </tr>`;
-      
+
       if (table.isPartitioned && table.partitions) {
         html += `<tr class="partition-rows-container" id="${table.name}-partitions" style="display: none;">
           <td colspan="3" style="padding: 0;">
             <table class="partition-table">
               <tbody>`;
-        
+
         table.partitions.forEach((partition) => {
           html += `<tr class="partition-row">
             <td class="partition-name">↳ ${partition.name}</td>
@@ -603,18 +603,18 @@
             <td class="numeric">${partition.size}</td>
           </tr>`;
         });
-        
+
         html += `</tbody>
             </table>
           </td>
         </tr>`;
       }
-      
+
       return html;
     }).join('');
-    
+
     tbody.innerHTML = rows;
-    
+
     // Reinitialize partition toggles after rendering
     initPartitionToggles();
   };
@@ -694,7 +694,7 @@
         const targetId = toggle.dataset.target;
         const targetRow = document.getElementById(targetId);
         const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-        
+
         if (targetRow) {
           if (isExpanded) {
             targetRow.style.display = 'none';

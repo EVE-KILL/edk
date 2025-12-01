@@ -10,10 +10,10 @@ export async function action() {
     logger.info('Starting database analysis...');
 
     // Get all tables from database dynamically
-    const tablesResult = await sql<Array<{ tablename: string }>>` 
-      SELECT tablename 
-      FROM pg_tables 
-      WHERE schemaname = 'public' 
+    const tablesResult = await sql<Array<{ tablename: string }>>`
+      SELECT tablename
+      FROM pg_tables
+      WHERE schemaname = 'public'
       ORDER BY tablename
     `;
 
@@ -38,10 +38,10 @@ export async function action() {
     // Show updated statistics
     logger.info('Updated statistics:');
     const stats = await sql`
-      SELECT 
+      SELECT
         relname as table_name,
         n_live_tup as rows
-      FROM pg_stat_user_tables 
+      FROM pg_stat_user_tables
       WHERE relname = ANY(${sql.array(tables)})
       ORDER BY n_live_tup DESC
     `;
