@@ -7,6 +7,9 @@ WORKDIR /app
 # Copy entire application 1:1
 COPY . .
 
+# Install packages
+RUN apk add --no-cache curl
+
 # Install dependencies
 RUN bun install --frozen-lockfile
 
