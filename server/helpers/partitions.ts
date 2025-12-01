@@ -183,33 +183,103 @@ async function ensurePreWindowPartition(
   }
 
   const existingPrePartitions = await listPreWindowPartitions(tableName, year);
+
+  // If the exact target partition exists, we're done
   if (existingPrePartitions.includes(targetName)) {
     return { name: targetName, created: 0, conflict: false };
   }
 
-  // Rebuild pre-window partition to match the new boundary; move data from old pre-window partitions if any.
-  const sql = (database as any).sql;
-  await sql.begin(async (tx: any) => {
-    for (const pre of existingPrePartitions) {
-      await tx.unsafe(`ALTER TABLE "${tableName}" DETACH PARTITION "${pre}"`);
-    }
+  // Check if any monthly partitions exist in the pre-window range
+  // If they do, we can't create the pre-window yet (they need to be rolled up first)
+  const monthsToCheck = collectMonths(
+    new Date(Date.UTC(year, 0, 1)),
+    monthlyStart
+  );
 
-    await tx.unsafe(`
-      CREATE TABLE "${targetName}"
-      PARTITION OF "${tableName}"
-      FOR VALUES FROM ('${year}-01-01') TO ('${dateLiteral(monthlyStart)}')
-      WITH (fillfactor = 100)
-    `);
-
-    for (const pre of existingPrePartitions) {
-      await tx.unsafe(
-        `INSERT INTO "${targetName}" SELECT * FROM "${pre}" ON CONFLICT DO NOTHING`
+  for (const checkMonth of monthsToCheck) {
+    const monthlyName = monthlyPartitionName(
+      tableName,
+      checkMonth.year,
+      checkMonth.month
+    );
+    if (await partitionExists(monthlyName)) {
+      // Monthly partition exists in pre-window range, can't create pre-window yet
+      // Return null name to prevent rollup from using old partition with wrong bounds
+      logger.debug(
+        `Monthly partition ${monthlyName} exists in pre-window range for ${tableName}, skipping pre-window creation`
       );
-      await tx.unsafe(`DROP TABLE IF EXISTS "${pre}"`);
+      return { name: null, created: 0, conflict: false };
     }
-  });
+  }
 
-  return { name: targetName, created: 1, conflict: false };
+  // Check if there are any existing pre-window partitions with different bounds
+  if (existingPrePartitions.length > 0) {
+    // Detach old pre-windows, create new one with updated bounds, and migrate data
+    const sql = (database as any).sql;
+
+    logger.debug(
+      `Rebuilding pre-window for ${tableName}: target=${targetName}, existing=${existingPrePartitions.join(', ')}, bounds=${year}-01-01 to ${dateLiteral(monthlyStart)}`
+    );
+
+    try {
+      await sql.begin(async (tx: any) => {
+        // First, detach ALL existing pre-window partitions
+        for (const pre of existingPrePartitions) {
+          logger.debug(`Detaching partition: ${pre}`);
+          await tx.unsafe(
+            `ALTER TABLE "${tableName}" DETACH PARTITION "${pre}"`
+          );
+        }
+
+        // Now create the new pre-window partition (no overlap since we detached the old ones)
+        logger.debug(`Creating new pre-window partition: ${targetName}`);
+        await tx.unsafe(`
+          CREATE TABLE IF NOT EXISTS "${targetName}"
+          PARTITION OF "${tableName}"
+          FOR VALUES FROM ('${year}-01-01') TO ('${dateLiteral(monthlyStart)}')
+          WITH (fillfactor = 100)
+        `);
+
+        // Migrate data from old pre-window partitions
+        // Only move data that falls within the new partition's bounds
+        for (const pre of existingPrePartitions) {
+          logger.debug(`Migrating data from ${pre} to ${targetName}`);
+          await tx.unsafe(
+            `INSERT INTO "${targetName}" 
+             SELECT * FROM "${pre}" 
+             WHERE "killmailTime" >= '${year}-01-01' 
+               AND "killmailTime" < '${dateLiteral(monthlyStart)}'
+             ON CONFLICT DO NOTHING`
+          );
+          await tx.unsafe(`DROP TABLE IF EXISTS "${pre}"`);
+        }
+      });
+
+      logger.debug(
+        `Rebuilt pre-window partition ${targetName} from ${existingPrePartitions.join(', ')}`
+      );
+      return { name: targetName, created: 1, conflict: false };
+    } catch (error) {
+      logger.error(`Failed to rebuild pre-window partition for ${tableName}`, {
+        error,
+        targetName,
+        existingPrePartitions,
+        year,
+        monthlyStart: dateLiteral(monthlyStart),
+      });
+      throw error;
+    }
+  }
+
+  // No existing pre-window partitions, create new one
+  const wasCreated = await createRangePartition(
+    tableName,
+    targetName,
+    `${year}-01-01`,
+    dateLiteral(monthlyStart)
+  );
+
+  return { name: targetName, created: wasCreated ? 1 : 0, conflict: false };
 }
 
 async function ensureMonthlyPartitions(

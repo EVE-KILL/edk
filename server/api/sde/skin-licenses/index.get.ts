@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
 
   const [items, totalResult] = await Promise.all([
     database.query<SkinLicense>(
-      `SELECT * FROM skinlicenses ORDER BY "licenseTypeId" LIMIT :limit OFFSET :offset`,
+      `SELECT * FROM skinlicenses ORDER BY "licenseId" LIMIT :limit OFFSET :offset`,
       { limit: perPage, offset }
     ),
     database.findOne<{ count: number }>(
