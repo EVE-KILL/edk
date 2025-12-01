@@ -73,9 +73,6 @@ export function fetchESI<T = any>(
       // Calculate delay based on token bucket state
       const delay = await esiRateLimiter.calculateDelay(rateLimitGroup, 2);
       if (delay > 0) {
-        logger.debug(
-          `[ESI] Delaying request to ${path} by ${Math.ceil(delay / 1000)}s (group: ${rateLimitGroup})`
-        );
         setTimeout(() => executeRequest(), delay);
         return;
       }

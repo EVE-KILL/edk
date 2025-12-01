@@ -131,19 +131,77 @@ interface TokenBucketState {
  */
 export class ESIRateLimiter {
   private redisKeyPrefix = 'esi-rate-limit';
+  private outboundIP: string | null = null;
+  private ipDetectionPromise: Promise<string> | null = null;
+
+  /**
+   * Detect outbound IPv4 address using curl
+   * Cached for the lifetime of the process
+   * Forces IPv4 (-4 flag) to match ESI rate limiting behavior
+   */
+  private async detectOutboundIP(): Promise<string> {
+    if (this.outboundIP) {
+      return this.outboundIP;
+    }
+
+    // Prevent multiple simultaneous IP detection calls
+    if (this.ipDetectionPromise) {
+      return this.ipDetectionPromise;
+    }
+
+    this.ipDetectionPromise = (async () => {
+      try {
+        // Use curl with -4 to force IPv4
+        const { exec } = await import('node:child_process');
+        const { promisify } = await import('node:util');
+        const execAsync = promisify(exec);
+
+        const { stdout, stderr } = await execAsync(
+          'curl -4 -s -m 5 https://api.ipify.org',
+          { timeout: 5000 }
+        );
+
+        if (stderr) {
+          throw new Error(stderr);
+        }
+
+        const ip = stdout.trim();
+        if (!ip || !ip.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)) {
+          throw new Error('Invalid IPv4 address returned');
+        }
+
+        this.outboundIP = ip;
+        logger.info(`[ESI Rate Limiter] Detected outbound IPv4: ${ip}`);
+        return ip;
+      } catch (error: any) {
+        logger.warn(
+          `[ESI Rate Limiter] Failed to detect outbound IP: ${error.message}`
+        );
+        // Fallback to 'unknown' if detection fails
+        this.outboundIP = 'unknown';
+        return 'unknown';
+      } finally {
+        this.ipDetectionPromise = null;
+      }
+    })();
+
+    return this.ipDetectionPromise;
+  }
 
   /**
    * Get Redis key for a rate limit group
+   * Now includes IP address to track per-IP buckets
    */
-  private getRedisKey(group: string): string {
-    return `${this.redisKeyPrefix}:${group}`;
+  private async getRedisKey(group: string): Promise<string> {
+    const ip = await this.detectOutboundIP();
+    return `${this.redisKeyPrefix}:${ip}:${group}`;
   }
 
   /**
    * Get current state for a rate limit group
    */
   async getState(group: string): Promise<TokenBucketState | null> {
-    const key = this.getRedisKey(group);
+    const key = await this.getRedisKey(group);
     const data = await storage.getItemRaw(key); // Use getItemRaw to get the string directly
     if (!data) return null;
 
@@ -166,7 +224,7 @@ export class ESIRateLimiter {
     group: string,
     state: TokenBucketState
   ): Promise<void> {
-    const key = this.getRedisKey(group);
+    const key = await this.getRedisKey(group);
     const config = RATE_LIMIT_GROUPS[group] || RATE_LIMIT_GROUPS.default;
 
     // Store the state with TTL in one operation
