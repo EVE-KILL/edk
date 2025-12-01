@@ -64,7 +64,7 @@ export function createWorker(
 ) {
   return new Worker(name, processor, {
     connection,
-    concurrency: options?.concurrency ?? 5,
+    concurrency: 1, // Must be 1 to prevent deadlocks on entity_stats_cache
     lockDuration: 30000,
     lockRenewTime: 15000,
     maxStalledCount: 2,
