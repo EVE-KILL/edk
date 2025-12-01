@@ -2101,6 +2101,25 @@ textarea.killmail {
   color: var(--color-text-secondary);
 }
 
+/* Security Status Colors for System Names */
+.security {
+  font-weight: bold;
+  font-size: 9px;
+}
+
+.sec-10 { color: #2FEFEF; } /* 1.0 - Bright Cyan */
+.sec-09 { color: #48F0C0; } /* 0.9 - Light Cyan-Green */
+.sec-08 { color: #00EF47; } /* 0.8 - Bright Green */
+.sec-07 { color: #00F000; } /* 0.7 - Green */
+.sec-06 { color: #8FEF2F; } /* 0.6 - Yellow-Green */
+.sec-05 { color: #EFEF00; } /* 0.5 - Yellow */
+.sec-04 { color: #D77700; } /* 0.4 - Orange */
+.sec-03 { color: #F06000; } /* 0.3 - Dark Orange */
+.sec-02 { color: #F04800; } /* 0.2 - Orange-Red */
+.sec-01 { color: #D73000; } /* 0.1 - Red */
+.sec-00 { color: #F00000; } /* 0.0 - Bright Red */
+.sec-null { color: #F00000; } /* Null - Red */
+
 /* ========================================
    Killmail Navigation Bar
    ======================================== */

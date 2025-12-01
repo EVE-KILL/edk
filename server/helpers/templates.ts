@@ -248,6 +248,7 @@ export function normalizeKillRow(km: any): NormalizedKillmail {
       id: km.solarSystemId ?? km.solar_system_id ?? 0,
       name: km.solarSystemName ?? km.solar_system_name ?? 'Unknown System',
       region: km.regionName ?? km.region_name ?? 'Unknown Region',
+      security: km.security ?? km.securityStatus ?? km.security_status ?? 0,
     },
     shipValue: km.shipValue ?? km.ship_value ?? 0,
     totalValue: km.totalValue ?? km.total_value ?? 0,
@@ -342,6 +343,27 @@ function registerHelpers() {
   Handlebars.registerHelper('formatNumber', function (value: number) {
     if (!value && value !== 0) return '0';
     return value.toLocaleString();
+  });
+
+  // Get security color class based on security status
+  Handlebars.registerHelper('securityColor', function (security: number) {
+    if (security >= 1.0) return 'sec-10';
+    if (security >= 0.9) return 'sec-09';
+    if (security >= 0.8) return 'sec-08';
+    if (security >= 0.7) return 'sec-07';
+    if (security >= 0.6) return 'sec-06';
+    if (security >= 0.5) return 'sec-05';
+    if (security >= 0.4) return 'sec-04';
+    if (security >= 0.3) return 'sec-03';
+    if (security >= 0.2) return 'sec-02';
+    if (security >= 0.1) return 'sec-01';
+    if (security >= 0.0) return 'sec-00';
+    return 'sec-null';
+  });
+
+  // Format security status with one decimal place
+  Handlebars.registerHelper('formatSecurity', function (security: number) {
+    return security.toFixed(1);
   });
 
   // URL encode helper for Handlebars block content
