@@ -48,25 +48,25 @@
                     <path d="M4 8 L12 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                 </svg>
                 {{> partials/eve-image type="item" id=this.typeId size=20 alt=this.name singleton=this.singleton}}
-                <span class="item-name" style="font-size: 0.9em; opacity: 0.85;">{{this.name}}</span>
+                <span class="item-name" style="opacity: 0.85;">{{this.name}}</span>
             </div>
         </td>
-        <td class="kb-table-cell" style="text-align: center; padding: 2px 8px; font-size: 0.9em;">{{this.quantity}}</td>
-        <td class="kb-table-cell" style="text-align: right; padding: 2px 8px; font-size: 0.9em;">
+        <td class="kb-table-cell" style="text-align: center; padding: 2px 8px;">{{this.quantity}}</td>
+        <td class="kb-table-cell" style="text-align: right; padding: 2px 8px;">
             {{#if this.price}}
                 <span>{{formatISK this.price}}</span>
             {{else}}
                 <span style="color: var(--color-text-secondary);">N/A</span>
             {{/if}}
         </td>
-        <td class="kb-table-cell" style="text-align: right; padding: 2px 8px; font-size: 0.9em;">
+        <td class="kb-table-cell" style="text-align: right; padding: 2px 8px;">
             {{#if this.totalValue}}
                 <span class="isk-value">{{formatISK this.totalValue}}</span>
             {{else}}
                 <span style="color: var(--color-text-secondary);">N/A</span>
             {{/if}}
         </td>
-        <td class="kb-table-cell" style="text-align: center; padding: 2px 8px; font-size: 0.85em;">
+        <td class="kb-table-cell" style="text-align: center; padding: 2px 8px;">
             <span class="{{#if this.isDestroyed}}kl-loss{{else}}kl-kill{{/if}}">{{#if this.isDestroyed}}Destroyed{{else}}Dropped{{/if}}</span>
         </td>
     </tr>

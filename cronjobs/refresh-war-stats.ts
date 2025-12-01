@@ -2,8 +2,8 @@
  * Refresh War Statistics Materialized Views
  *
  * Periodically refreshes the war_stats, war_participants, war_ship_classes,
- * and war_most_valuable_kills materialized views to ensure war statistics
- * are up-to-date without expensive on-demand aggregations.
+ * war_most_valuable_kills, and war_top_statistics materialized views to ensure
+ * war statistics are up-to-date without expensive on-demand aggregations.
  *
  * Runs: Every hour at :05 past the hour
  */
@@ -13,7 +13,7 @@ import { logger } from '../server/helpers/logger';
 
 export const name = 'refresh-war-stats';
 export const description =
-  'Refreshes war statistics materialized views (war_stats, war_participants, war_ship_classes, war_most_valuable_kills)';
+  'Refreshes war statistics materialized views (war_stats, war_participants, war_ship_classes, war_most_valuable_kills, war_top_statistics)';
 export const schedule = '0 5 * * * *'; // Every hour at :05 past the hour
 
 const WAR_MVS = [
@@ -21,6 +21,7 @@ const WAR_MVS = [
   'war_participants',
   'war_ship_classes',
   'war_most_valuable_kills',
+  'war_top_statistics',
 ];
 
 export async function action() {

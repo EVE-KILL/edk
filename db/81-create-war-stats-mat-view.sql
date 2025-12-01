@@ -352,4 +352,341 @@ CREATE UNIQUE INDEX war_most_valuable_kills_unique_idx ON war_most_valuable_kill
 CREATE INDEX war_most_valuable_kills_war_id_idx ON war_most_valuable_kills("warId");
 CREATE INDEX war_most_valuable_kills_value_idx ON war_most_valuable_kills("warId", "totalValue" DESC);
 
+-- ============================================================================
+-- WAR TOP STATISTICS MATERIALIZED VIEW
+-- Pre-aggregates top 10 entities per war for fast sidebar display
+-- ============================================================================
+
+DROP MATERIALIZED VIEW IF EXISTS war_top_statistics CASCADE;
+
+-- Create materialized view for top 10 statistics per war
+CREATE MATERIALIZED VIEW war_top_statistics AS
+SELECT
+    ROW_NUMBER() OVER (ORDER BY "warId", category, kills DESC, "iskValue" DESC) AS id,
+    "warId",
+    category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+-- Top 10 Characters (attackers)
+SELECT
+    "warId",
+    'character' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        k."warId",
+        a."characterId" AS "entityId",
+        COALESCE(c.name, 'Character #' || a."characterId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY k."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM killmails k
+    JOIN attackers a ON k."killmailId" = a."killmailId"
+    LEFT JOIN characters c ON c."characterId" = a."characterId"
+    WHERE k."warId" IS NOT NULL
+      AND a."characterId" IS NOT NULL
+    GROUP BY k."warId", a."characterId", c.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- Top 10 Corporations (attackers)
+SELECT
+    "warId",
+    'corporation' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        k."warId",
+        a."corporationId" AS "entityId",
+        COALESCE(corp.name, 'Corporation #' || a."corporationId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY k."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM killmails k
+    JOIN attackers a ON k."killmailId" = a."killmailId"
+    LEFT JOIN corporations corp ON corp."corporationId" = a."corporationId"
+    WHERE k."warId" IS NOT NULL
+      AND a."corporationId" IS NOT NULL
+    GROUP BY k."warId", a."corporationId", corp.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- Top 10 Alliances (attackers)
+SELECT
+    "warId",
+    'alliance' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        k."warId",
+        a."allianceId" AS "entityId",
+        COALESCE(ally.name, 'Alliance #' || a."allianceId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY k."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM killmails k
+    JOIN attackers a ON k."killmailId" = a."killmailId"
+    LEFT JOIN alliances ally ON ally."allianceId" = a."allianceId"
+    WHERE k."warId" IS NOT NULL
+      AND a."allianceId" IS NOT NULL
+    GROUP BY k."warId", a."allianceId", ally.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- Top 10 Ships (victims)
+SELECT
+    "warId",
+    'ship' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        k."warId",
+        k."victimShipTypeId" AS "entityId",
+        COALESCE(t.name, 'Ship #' || k."victimShipTypeId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY k."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM killmails k
+    LEFT JOIN types t ON t."typeId" = k."victimShipTypeId"
+    WHERE k."warId" IS NOT NULL
+      AND k."victimShipTypeId" IS NOT NULL
+    GROUP BY k."warId", k."victimShipTypeId", t.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- Top 10 Systems
+SELECT
+    "warId",
+    'system' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        k."warId",
+        k."solarSystemId" AS "entityId",
+        COALESCE(sys.name, 'System #' || k."solarSystemId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY k."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM killmails k
+    LEFT JOIN solarsystems sys ON sys."solarSystemId" = k."solarSystemId"
+    WHERE k."warId" IS NOT NULL
+      AND k."solarSystemId" IS NOT NULL
+    GROUP BY k."warId", k."solarSystemId", sys.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- Top 10 Regions
+SELECT
+    "warId",
+    'region' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        k."warId",
+        k."regionId" AS "entityId",
+        COALESCE(reg.name, 'Region #' || k."regionId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY k."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM killmails k
+    LEFT JOIN regions reg ON reg."regionId" = k."regionId"
+    WHERE k."warId" IS NOT NULL
+      AND k."regionId" IS NOT NULL
+    GROUP BY k."warId", k."regionId", reg.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- FACTION WARS: Top 10 Characters (attackers)
+SELECT
+    "warId",
+    'character' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        w."warId",
+        a."characterId" AS "entityId",
+        COALESCE(c.name, 'Character #' || a."characterId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY w."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM wars w
+    JOIN killmails k ON k."victimFactionId" IN (w."aggressorAllianceId", w."defenderAllianceId") AND k."warId" IS NULL
+    JOIN attackers a ON k."killmailId" = a."killmailId"
+    LEFT JOIN characters c ON c."characterId" = a."characterId"
+    WHERE w."warId" IN (999999999999999, 999999999999998)
+      AND a."characterId" IS NOT NULL
+    GROUP BY w."warId", a."characterId", c.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- FACTION WARS: Top 10 Corporations (attackers)
+SELECT
+    "warId",
+    'corporation' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        w."warId",
+        a."corporationId" AS "entityId",
+        COALESCE(corp.name, 'Corporation #' || a."corporationId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY w."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM wars w
+    JOIN killmails k ON k."victimFactionId" IN (w."aggressorAllianceId", w."defenderAllianceId") AND k."warId" IS NULL
+    JOIN attackers a ON k."killmailId" = a."killmailId"
+    LEFT JOIN corporations corp ON corp."corporationId" = a."corporationId"
+    WHERE w."warId" IN (999999999999999, 999999999999998)
+      AND a."corporationId" IS NOT NULL
+    GROUP BY w."warId", a."corporationId", corp.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- FACTION WARS: Top 10 Alliances (attackers)
+SELECT
+    "warId",
+    'alliance' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        w."warId",
+        a."allianceId" AS "entityId",
+        COALESCE(ally.name, 'Alliance #' || a."allianceId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY w."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM wars w
+    JOIN killmails k ON k."victimFactionId" IN (w."aggressorAllianceId", w."defenderAllianceId") AND k."warId" IS NULL
+    JOIN attackers a ON k."killmailId" = a."killmailId"
+    LEFT JOIN alliances ally ON ally."allianceId" = a."allianceId"
+    WHERE w."warId" IN (999999999999999, 999999999999998)
+      AND a."allianceId" IS NOT NULL
+    GROUP BY w."warId", a."allianceId", ally.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- FACTION WARS: Top 10 Ships (victims)
+SELECT
+    "warId",
+    'ship' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        w."warId",
+        k."victimShipTypeId" AS "entityId",
+        COALESCE(t.name, 'Ship #' || k."victimShipTypeId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY w."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM wars w
+    JOIN killmails k ON k."victimFactionId" IN (w."aggressorAllianceId", w."defenderAllianceId") AND k."warId" IS NULL
+    LEFT JOIN types t ON t."typeId" = k."victimShipTypeId"
+    WHERE w."warId" IN (999999999999999, 999999999999998)
+      AND k."victimShipTypeId" IS NOT NULL
+    GROUP BY w."warId", k."victimShipTypeId", t.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- FACTION WARS: Top 10 Systems
+SELECT
+    "warId",
+    'system' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        w."warId",
+        k."solarSystemId" AS "entityId",
+        COALESCE(sys.name, 'System #' || k."solarSystemId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY w."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM wars w
+    JOIN killmails k ON k."victimFactionId" IN (w."aggressorAllianceId", w."defenderAllianceId") AND k."warId" IS NULL
+    LEFT JOIN solarsystems sys ON sys."solarSystemId" = k."solarSystemId"
+    WHERE w."warId" IN (999999999999999, 999999999999998)
+      AND k."solarSystemId" IS NOT NULL
+    GROUP BY w."warId", k."solarSystemId", sys.name
+) sub WHERE rn <= 10
+
+UNION ALL
+
+-- FACTION WARS: Top 10 Regions
+SELECT
+    "warId",
+    'region' AS category,
+    "entityId",
+    "entityName",
+    kills,
+    "iskValue"
+FROM (
+    SELECT
+        w."warId",
+        k."regionId" AS "entityId",
+        COALESCE(reg.name, 'Region #' || k."regionId") AS "entityName",
+        COUNT(DISTINCT k."killmailId")::int AS kills,
+        COALESCE(SUM(k."totalValue"), 0)::float AS "iskValue",
+        ROW_NUMBER() OVER (PARTITION BY w."warId" ORDER BY COUNT(DISTINCT k."killmailId") DESC, SUM(k."totalValue") DESC) as rn
+    FROM wars w
+    JOIN killmails k ON k."victimFactionId" IN (w."aggressorAllianceId", w."defenderAllianceId") AND k."warId" IS NULL
+    LEFT JOIN regions reg ON reg."regionId" = k."regionId"
+    WHERE w."warId" IN (999999999999999, 999999999999998)
+      AND k."regionId" IS NOT NULL
+    GROUP BY w."warId", k."regionId", reg.name
+) sub WHERE rn <= 10
+) all_stats;
+
+-- Create unique index on id (required for REFRESH MATERIALIZED VIEW CONCURRENTLY)
+CREATE UNIQUE INDEX war_top_statistics_id_idx ON war_top_statistics(id);
+
+-- Create indexes for efficient queries
+CREATE INDEX war_top_statistics_war_category_idx ON war_top_statistics("warId", category);
+CREATE INDEX war_top_statistics_war_id_idx ON war_top_statistics("warId");
+CREATE INDEX war_top_statistics_category_idx ON war_top_statistics(category);
+
 SET client_min_messages TO NOTICE;

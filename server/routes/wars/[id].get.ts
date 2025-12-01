@@ -25,6 +25,7 @@ import {
   hasWarStats,
   getMostValuableKillmailIds,
 } from '../../models/war-stats';
+import { getWarTopStatistics } from '../../models/warTopStatistics';
 
 const PER_PAGE = 25;
 
@@ -95,6 +96,7 @@ export default defineEventHandler(async (event: H3Event) => {
       topDefenderParticipantsRaw,
       aggressorShipClassStatsRaw,
       defenderShipClassStatsRaw,
+      topStats,
     ] = await track('war:stats', 'database', async () => {
       const allies = await database.query<any>(
         `SELECT wa.*, c.name as "corporationName", a.name as "allianceName"
@@ -311,6 +313,9 @@ export default defineEventHandler(async (event: H3Event) => {
                  ORDER BY "count" DESC`
             );
 
+      // Get top 10 statistics from materialized view (always try to fetch)
+      const topStats = await getWarTopStatistics(warId);
+
       return [
         allies,
         stats,
@@ -318,6 +323,7 @@ export default defineEventHandler(async (event: H3Event) => {
         topDefenderParticipants,
         aggressorShipClassStats,
         defenderShipClassStats,
+        topStats,
       ];
     });
 
@@ -378,6 +384,63 @@ export default defineEventHandler(async (event: H3Event) => {
         return { ...s, groupName: group?.groupName };
       })
     );
+
+    // Format top statistics for template
+    const hasTopStatsData =
+      topStats &&
+      (topStats.characters.length > 0 ||
+        topStats.corporations.length > 0 ||
+        topStats.alliances.length > 0 ||
+        topStats.ships.length > 0 ||
+        topStats.systems.length > 0 ||
+        topStats.regions.length > 0);
+
+    const formattedTopStats = hasTopStatsData
+      ? {
+          characters: topStats.characters.map((c) => ({
+            link: `/character/${c.entityId}`,
+            imageType: 'character',
+            imageId: c.entityId,
+            name: c.entityName,
+            kills: c.kills,
+          })),
+          corporations: topStats.corporations.map((c) => ({
+            link: `/corporation/${c.entityId}`,
+            imageType: 'corporation',
+            imageId: c.entityId,
+            name: c.entityName,
+            kills: c.kills,
+          })),
+          alliances: topStats.alliances.map((a) => ({
+            link: `/alliance/${a.entityId}`,
+            imageType: 'alliance',
+            imageId: a.entityId,
+            name: a.entityName,
+            kills: a.kills,
+          })),
+          ships: topStats.ships.map((s) => ({
+            link: `/ship/${s.entityId}`,
+            imageType: 'type',
+            imageId: s.entityId,
+            name: s.entityName,
+            kills: s.kills,
+          })),
+          systems: topStats.systems.map((s) => ({
+            link: `/system/${s.entityId}`,
+            imageType: null,
+            imageId: null,
+            name: s.entityName,
+            kills: s.kills,
+          })),
+          regions: topStats.regions.map((r) => ({
+            link: `/region/${r.entityId}`,
+            imageType: null,
+            imageId: null,
+            name: r.entityName,
+            kills: r.kills,
+          })),
+        }
+      : null;
 
     // Parse filter parameters from existing query object
     const minTotalValue = query.minTotalValue
@@ -928,6 +991,7 @@ export default defineEventHandler(async (event: H3Event) => {
         showLast: page < totalPages - 2,
         pages: generatePageNumbers(page, totalPages),
       },
+      topStats: formattedTopStats,
     };
 
     return await render('pages/war-detail.hbs', pageContext, data, event);

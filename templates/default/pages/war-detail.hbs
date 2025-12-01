@@ -165,6 +165,7 @@
 {{/if}}
 
 <!-- Split Screen: Aggressor vs Defender -->
+{{#> components/collapsible-section id=(concat "war-forces-" war.warId) title="Aggressor vs Defender Forces"}}
 <div class="war-versus">
   <!-- Aggressor Side -->
   <div class="war-versus__side war-versus__side--aggressor">
@@ -379,6 +380,7 @@
     </div>
   </div>
 </div>
+{{/components/collapsible-section}}
 
 <!-- Most Valuable Kills (Full Width) -->
 {{#if mostValuable.length}}
@@ -387,7 +389,41 @@
 </div>
 {{/if}}
 
-<!-- All War Killmails -->
+<!-- Two Column Layout: Sidebar + Killmail List -->
+{{#if topStats}}
+<div style="display: grid; grid-template-columns: minmax(200px, 225px) 1fr; gap: 12px; width: 100%; box-sizing: border-box; margin-top: var(--spacing-lg);">
+  <!-- Sidebar: Top 10 Stats -->
+  <aside style="min-width: 0;">
+    {{> components/top-10-stats 
+      stats=topStats 
+      characterTitle="Most Active Characters" 
+      corporationTitle="Most Active Corporations" 
+      allianceTitle="Most Active Alliances" 
+      shipTitle="Most Destroyed Ships" 
+      systemTitle="Most Active Systems" 
+      regionTitle="Most Active Regions"}}
+  </aside>
+
+  <!-- Main Content: Killmails -->
+  <section style="min-width: 0;">
+    {{> components/section-header title="All War Killmails" bordered=false}}
+
+    <!-- Killlist Filters -->
+    {{> partials/killlist-filters baseUrl=(concat "/wars/" war.warId) filterDefaults=filterDefaults}}
+
+    {{#if killmails.length}}
+      <div data-killmail-list data-ws-updates="false">
+        {{> partials/killmail-list killmails=killmails}}
+      </div>
+    {{else}}
+      <div style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border-dark); border-radius: var(--radius-sm); padding: 40px; text-align: center; margin-top: 12px;">
+        <div style="color: var(--color-text-secondary); font-size: 12px;">No killmails found matching your filters.</div>
+      </div>
+    {{/if}}
+  </section>
+</div>
+{{else}}
+<!-- Full Width Layout: No Sidebar -->
 <div style="margin-top: var(--spacing-lg);">
   {{> components/section-header title="All War Killmails" bordered=false}}
 
@@ -404,6 +440,7 @@
     </div>
   {{/if}}
 </div>
+{{/if}}
 
 <style>
 /* War Hero Section */

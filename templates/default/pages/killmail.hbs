@@ -16,11 +16,13 @@
     <div id="kl-detail-left">
 
         <!-- Fitting Wheel -->
+        {{#if (or data.fittingWheel.highSlots data.fittingWheel.medSlots data.fittingWheel.lowSlots data.fittingWheel.rigSlots data.fittingWheel.subSlots)}}
         <div class="mb-lg">
-            {{#if (or data.fittingWheel.highSlots data.fittingWheel.medSlots data.fittingWheel.lowSlots data.fittingWheel.rigSlots data.fittingWheel.subSlots)}}
-            {{> partials/fitting-wheel victim=data.victim fittingWheel=data.fittingWheel}}
-            {{/if}}
+            {{#> components/collapsible-section id="fitting-wheel" title="Fitting Wheel" compact=true transparent=true}}
+                {{> partials/fitting-wheel victim=data.victim fittingWheel=data.fittingWheel}}
+            {{/components/collapsible-section}}
         </div>
+        {{/if}}
 
         <!-- Items Destroyed/Dropped -->
         <div class="kl-detail-fitting">
