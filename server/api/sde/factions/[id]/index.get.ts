@@ -9,7 +9,7 @@ import type { Faction } from '~/models/factions';
  *     summary: Get faction by ID
  *     description: Returns a single faction from the Static Data Export.
  *     tags:
- *       - SDE - Characters
+ *       - SDE - Factions
  *     parameters:
  *       - name: id
  *         in: path
@@ -24,6 +24,32 @@ import type { Faction } from '~/models/factions';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - factionId
+ *                 - name
+ *                 - corporationId
+ *               properties:
+ *                 factionId:
+ *                   type: integer
+ *                   description: Unique faction identifier
+ *                 name:
+ *                   type: string
+ *                   description: Faction name
+ *                 description:
+ *                   type: string
+ *                   description: Faction description
+ *                 shortDescription:
+ *                   type: string
+ *                   description: Short description
+ *                 corporationId:
+ *                   type: integer
+ *                   description: Faction corporation ID
+ *                 militiaCorporationId:
+ *                   type: integer
+ *                   description: Militia corporation ID
+ *                 solarSystemId:
+ *                   type: integer
+ *                   description: Home solar system ID
  *       '404':
  *         description: Faction not found
  */

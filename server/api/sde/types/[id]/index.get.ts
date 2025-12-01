@@ -17,6 +17,7 @@ import type { Type } from '~/models/types';
  *         description: The type ID
  *         schema:
  *           type: integer
+ *           example: 34
  *     responses:
  *       '200':
  *         description: Type details
@@ -24,6 +25,63 @@ import type { Type } from '~/models/types';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - typeId
+ *                 - name
+ *                 - groupId
+ *                 - published
+ *               properties:
+ *                 typeId:
+ *                   type: integer
+ *                   description: Unique type identifier
+ *                 name:
+ *                   type: string
+ *                   description: Type name
+ *                 description:
+ *                   type: [string, 'null']
+ *                   description: Type description (HTML formatted)
+ *                 groupId:
+ *                   type: integer
+ *                   description: Group this type belongs to
+ *                 capacity:
+ *                   type: [number, 'null']
+ *                   description: Capacity (for containers)
+ *                 factionId:
+ *                   type: [integer, 'null']
+ *                   description: Associated faction ID
+ *                 graphicId:
+ *                   type: [integer, 'null']
+ *                   description: Graphic ID
+ *                 iconId:
+ *                   type: [integer, 'null']
+ *                   description: Icon ID
+ *                 marketGroupId:
+ *                   type: [integer, 'null']
+ *                   description: Market group ID
+ *                 mass:
+ *                   type: [number, 'null']
+ *                   description: Mass in kg
+ *                 metaGroupId:
+ *                   type: [integer, 'null']
+ *                   description: Meta group ID (tech level, faction, etc.)
+ *                 portionSize:
+ *                   type: integer
+ *                   description: Portion size for reprocessing
+ *                 published:
+ *                   type: boolean
+ *                   description: Whether type is published
+ *                 raceId:
+ *                   type: [integer, 'null']
+ *                   description: Associated race ID
+ *                 radius:
+ *                   type: [number, 'null']
+ *                   description: Radius in meters
+ *                 soundId:
+ *                   type: [integer, 'null']
+ *                   description: Sound ID
+ *                 volume:
+ *                   type: [number, 'null']
+ *                   description: Volume in m³
  *       '404':
  *         description: Type not found
  */

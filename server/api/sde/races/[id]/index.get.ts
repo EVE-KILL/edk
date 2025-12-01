@@ -9,7 +9,7 @@ import type { Race } from '~/models/races';
  *     summary: Get race by ID
  *     description: Returns a single race from the Static Data Export.
  *     tags:
- *       - SDE - Characters
+ *       - SDE - Races
  *     parameters:
  *       - name: id
  *         in: path
@@ -24,6 +24,24 @@ import type { Race } from '~/models/races';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - raceId
+ *                 - name
+ *                 - description
+ *                 - iconId
+ *               properties:
+ *                 raceId:
+ *                   type: integer
+ *                   description: Unique race identifier
+ *                 name:
+ *                   type: string
+ *                   description: Race name
+ *                 description:
+ *                   type: string
+ *                   description: Race description
+ *                 iconId:
+ *                   type: integer
+ *                   description: Icon ID
  *       '404':
  *         description: Race not found
  */

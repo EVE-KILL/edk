@@ -9,7 +9,7 @@ import type { Category } from '~/models/categories';
  *     summary: Get category by ID
  *     description: Returns a single category from the Static Data Export.
  *     tags:
- *       - SDE - Types
+ *       - SDE - Categories
  *     parameters:
  *       - name: id
  *         in: path
@@ -17,6 +17,7 @@ import type { Category } from '~/models/categories';
  *         description: The category ID
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
  *       '200':
  *         description: Category details
@@ -24,6 +25,23 @@ import type { Category } from '~/models/categories';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - categoryId
+ *                 - name
+ *                 - published
+ *               properties:
+ *                 categoryId:
+ *                   type: integer
+ *                   description: Unique category identifier
+ *                 name:
+ *                   type: string
+ *                   description: Category name
+ *                 iconId:
+ *                   type: [integer, 'null']
+ *                   description: Icon ID
+ *                 published:
+ *                   type: boolean
+ *                   description: Whether category is published
  *       '404':
  *         description: Category not found
  */

@@ -9,7 +9,7 @@ import type { Group } from '~/models/groups';
  *     summary: Get group by ID
  *     description: Returns a single group from the Static Data Export.
  *     tags:
- *       - SDE - Types
+ *       - SDE - Groups
  *     parameters:
  *       - name: id
  *         in: path
@@ -17,6 +17,7 @@ import type { Group } from '~/models/groups';
  *         description: The group ID
  *         schema:
  *           type: integer
+ *           example: 1
  *     responses:
  *       '200':
  *         description: Group details
@@ -24,6 +25,27 @@ import type { Group } from '~/models/groups';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - groupId
+ *                 - categoryId
+ *                 - name
+ *                 - published
+ *               properties:
+ *                 groupId:
+ *                   type: integer
+ *                   description: Unique group identifier
+ *                 categoryId:
+ *                   type: integer
+ *                   description: Parent category ID
+ *                 name:
+ *                   type: string
+ *                   description: Group name
+ *                 iconId:
+ *                   type: [integer, 'null']
+ *                   description: Icon ID
+ *                 published:
+ *                   type: boolean
+ *                   description: Whether group is published
  *       '404':
  *         description: Group not found
  */

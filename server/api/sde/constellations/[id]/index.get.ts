@@ -9,7 +9,7 @@ import type { Constellation } from '~/models/constellations';
  *     summary: Get constellation by ID
  *     description: Returns a single constellation from the Static Data Export.
  *     tags:
- *       - SDE - Map
+ *       - SDE - Regions
  *     parameters:
  *       - name: id
  *         in: path
@@ -17,6 +17,7 @@ import type { Constellation } from '~/models/constellations';
  *         description: The constellation ID
  *         schema:
  *           type: integer
+ *           example: 20000001
  *     responses:
  *       '200':
  *         description: Constellation details
@@ -24,6 +25,45 @@ import type { Constellation } from '~/models/constellations';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - constellationId
+ *                 - regionId
+ *                 - name
+ *                 - factionId
+ *               properties:
+ *                 constellationId:
+ *                   type: integer
+ *                   description: Unique constellation identifier
+ *                 regionId:
+ *                   type: integer
+ *                   description: Parent region ID
+ *                 name:
+ *                   type: string
+ *                   description: Constellation name
+ *                 factionId:
+ *                   type: integer
+ *                   description: Faction ID
+ *                 solarSystemIds:
+ *                   type: array
+ *                   items:
+ *                     type: integer
+ *                   description: Array of solar system IDs in constellation
+ *                 positionX:
+ *                   type: number
+ *                   description: X coordinate
+ *                 positionY:
+ *                   type: number
+ *                   description: Y coordinate
+ *                 positionZ:
+ *                   type: number
+ *                   description: Z coordinate
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Last update timestamp
+ *                 wormholeClassId:
+ *                   type: integer
+ *                   description: Wormhole class ID
  *       '404':
  *         description: Constellation not found
  */

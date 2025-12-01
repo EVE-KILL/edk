@@ -9,7 +9,7 @@ import type { Bloodline } from '~/models/bloodlines';
  *     summary: Get bloodline by ID
  *     description: Returns a single bloodline from the Static Data Export.
  *     tags:
- *       - SDE - Characters
+ *       - SDE - Bloodlines
  *     parameters:
  *       - name: id
  *         in: path
@@ -24,6 +24,48 @@ import type { Bloodline } from '~/models/bloodlines';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - bloodlineId
+ *                 - raceId
+ *                 - name
+ *                 - corporationId
+ *               properties:
+ *                 bloodlineId:
+ *                   type: integer
+ *                   description: Unique bloodline identifier
+ *                 raceId:
+ *                   type: integer
+ *                   description: Parent race ID
+ *                 name:
+ *                   type: string
+ *                   description: Bloodline name
+ *                 description:
+ *                   type: string
+ *                   description: Bloodline description
+ *                 corporationId:
+ *                   type: integer
+ *                   description: Starting corporation ID
+ *                 charisma:
+ *                   type: [integer, 'null']
+ *                   description: Charisma attribute bonus
+ *                 constitution:
+ *                   type: [integer, 'null']
+ *                   description: Constitution attribute bonus
+ *                 intelligence:
+ *                   type: [integer, 'null']
+ *                   description: Intelligence attribute bonus
+ *                 memory:
+ *                   type: [integer, 'null']
+ *                   description: Memory attribute bonus
+ *                 perception:
+ *                   type: [integer, 'null']
+ *                   description: Perception attribute bonus
+ *                 willpower:
+ *                   type: [integer, 'null']
+ *                   description: Willpower attribute bonus
+ *                 shipTypeId:
+ *                   type: [integer, 'null']
+ *                   description: Starting ship type ID
  *       '404':
  *         description: Bloodline not found
  */
