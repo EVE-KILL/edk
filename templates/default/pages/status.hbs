@@ -35,7 +35,7 @@
           <div class="status-eyebrow">Database</div>
           <h3 class="status-panel-title">Tables & Storage</h3>
         </div>
-        <span class="status-pill">Top tables</span>
+        <span class="status-pill">{{data.snapshot.database.groupedTables.length}} tables ({{data.snapshot.database.tables.length}} total with partitions)</span>
       </div>
       <div class="status-panel-body">
         <div class="status-panel-meta">
@@ -49,7 +49,7 @@
           </div>
         </div>
         <div class="status-table-wrapper">
-          <table class="status-table">
+          <table class="status-table status-table-grouped">
             <thead>
               <tr>
                 <th>Table</th>
@@ -58,12 +58,39 @@
               </tr>
             </thead>
             <tbody data-table-rows>
-              {{#each data.snapshot.database.tables}}
-                {{#if (lt @index 8)}}
-                  <tr>
-                    <td>{{this.name}}</td>
-                    <td class="numeric">{{formatNumber this.count}}</td>
-                    <td class="numeric">{{this.size}}</td>
+              {{#each data.snapshot.database.groupedTables}}
+                <tr class="table-row-base {{#if this.isPartitioned}}has-partitions{{/if}}" data-table="{{this.name}}">
+                  <td>
+                    {{#if this.isPartitioned}}
+                      <button class="partition-toggle" data-target="{{this.name}}-partitions" aria-expanded="false">
+                        <svg class="partition-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M4 3L8 6L4 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <strong>{{this.name}}</strong>
+                        <span class="partition-badge">{{this.partitionCount}} partitions</span>
+                      </button>
+                    {{else}}
+                      {{this.name}}
+                    {{/if}}
+                  </td>
+                  <td class="numeric">{{formatNumber this.count}}</td>
+                  <td class="numeric">{{this.size}}</td>
+                </tr>
+                {{#if this.isPartitioned}}
+                  <tr class="partition-rows-container" id="{{this.name}}-partitions" style="display: none;">
+                    <td colspan="3" style="padding: 0;">
+                      <table class="partition-table">
+                        <tbody>
+                          {{#each this.partitions}}
+                            <tr class="partition-row">
+                              <td class="partition-name">↳ {{this.name}}</td>
+                              <td class="numeric">{{formatNumber this.count}}</td>
+                              <td class="numeric">{{this.size}}</td>
+                            </tr>
+                          {{/each}}
+                        </tbody>
+                      </table>
+                    </td>
                   </tr>
                 {{/if}}
               {{/each}}
@@ -390,6 +417,76 @@
   width: 15%;
 }
 
+/* Partition table styles */
+.table-row-base.has-partitions td:first-child {
+  padding: 6px 10px;
+}
+
+.partition-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.partition-toggle:hover {
+  color: var(--color-text-white);
+}
+
+.partition-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.partition-toggle[aria-expanded="true"] .partition-icon {
+  transform: rotate(90deg);
+}
+
+.partition-badge {
+  font-size: 9px;
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.partition-rows-container {
+  background: var(--color-bg-elevated, #0f0f0f);
+}
+
+.partition-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  background: var(--color-bg-elevated, #0f0f0f);
+}
+
+.partition-row td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border-darker, #1a1a1a);
+  color: var(--color-text-secondary);
+}
+
+.partition-row:last-child td {
+  border-bottom: none;
+}
+
+.partition-row:hover td {
+  background: rgba(74, 158, 255, 0.04);
+}
+
+.partition-name {
+  padding-left: 30px !important;
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+}
+
 @media (max-width: 720px) {
   .status-hero {
     flex-direction: column;
@@ -465,13 +562,61 @@
   const renderDatabaseTable = (snapshot) => {
     const tbody = document.querySelector('[data-table-rows]');
     if (!tbody) return;
-    const rows = (snapshot.database?.tables || []).slice(0, 8)
-      .map(
-        (table) =>
-          `<tr><td>${table.name}</td><td class="numeric">${formatNumber(table.count)}</td><td class="numeric">${table.size}</td></tr>`
-      )
-      .join('');
-    tbody.innerHTML = rows || '<tr><td colspan="3">No data</td></tr>';
+    
+    const groupedTables = snapshot.database?.groupedTables || [];
+    if (groupedTables.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3">No data</td></tr>';
+      return;
+    }
+    
+    const rows = groupedTables.map((table) => {
+      let html = `<tr class="table-row-base ${table.isPartitioned ? 'has-partitions' : ''}" data-table="${table.name}">
+        <td>`;
+      
+      if (table.isPartitioned) {
+        html += `<button class="partition-toggle" data-target="${table.name}-partitions" aria-expanded="false">
+          <svg class="partition-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 3L8 6L4 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <strong>${table.name}</strong>
+          <span class="partition-badge">${table.partitionCount} partitions</span>
+        </button>`;
+      } else {
+        html += table.name;
+      }
+      
+      html += `</td>
+        <td class="numeric">${formatNumber(table.count)}</td>
+        <td class="numeric">${table.size}</td>
+      </tr>`;
+      
+      if (table.isPartitioned && table.partitions) {
+        html += `<tr class="partition-rows-container" id="${table.name}-partitions" style="display: none;">
+          <td colspan="3" style="padding: 0;">
+            <table class="partition-table">
+              <tbody>`;
+        
+        table.partitions.forEach((partition) => {
+          html += `<tr class="partition-row">
+            <td class="partition-name">↳ ${partition.name}</td>
+            <td class="numeric">${formatNumber(partition.count)}</td>
+            <td class="numeric">${partition.size}</td>
+          </tr>`;
+        });
+        
+        html += `</tbody>
+            </table>
+          </td>
+        </tr>`;
+      }
+      
+      return html;
+    }).join('');
+    
+    tbody.innerHTML = rows;
+    
+    // Reinitialize partition toggles after rendering
+    initPartitionToggles();
   };
 
   const renderQueues = (snapshot) => {
@@ -540,6 +685,29 @@
     }
   };
 
+  // Partition toggle functionality
+  const initPartitionToggles = () => {
+    const toggles = document.querySelectorAll('.partition-toggle');
+    toggles.forEach((toggle) => {
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = toggle.dataset.target;
+        const targetRow = document.getElementById(targetId);
+        const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+        
+        if (targetRow) {
+          if (isExpanded) {
+            targetRow.style.display = 'none';
+            toggle.setAttribute('aria-expanded', 'false');
+          } else {
+            targetRow.style.display = 'table-row';
+            toggle.setAttribute('aria-expanded', 'true');
+          }
+        }
+      });
+    });
+  };
+
   document.addEventListener('click', (event) => {
     const target = event.target;
     if (target && target.dataset && target.dataset.action === 'refresh') {
@@ -549,5 +717,6 @@
 
   state.timer = setInterval(refreshStatus, pollIntervalMs);
   renderAll();
+  initPartitionToggles();
 })();
 </script>

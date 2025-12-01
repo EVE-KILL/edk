@@ -407,21 +407,13 @@ class StatsDashboard {
   }
 
   private async getDatabaseStats(): Promise<DatabaseStats> {
-    // Get table counts and sizes for key tables (including partitions)
-    const tablesToCheck = [
-      'killmails',
-      'characters',
-      'corporations',
-      'alliances',
-      'attackers',
-      'items',
-      'prices',
-      'types',
-      'solarsystems',
-    ];
+    // Get all tables from database dynamically
+    const allTables = await database.query<{ tablename: string }>(
+      `SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`
+    );
 
     const tableStats = await Promise.all(
-      tablesToCheck.map(async (tableName) => {
+      allTables.map(async ({ tablename: tableName }) => {
         // Use approximate count from pg_class.reltuples (MUCH faster)
         const countResult = await database.findOne<{ count: number }>(
           `SELECT COALESCE(reltuples::bigint, 0) as count

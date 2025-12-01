@@ -5,8 +5,26 @@ import { QueueType } from './queue';
 import { env } from './env';
 import { logger } from './logger';
 
+export interface TablePartition {
+  name: string;
+  count: number;
+  size: string;
+  sizeBytes: number;
+}
+
+export interface GroupedTable {
+  name: string;
+  count: number;
+  size: string;
+  sizeBytes: number;
+  isPartitioned: boolean;
+  partitions?: TablePartition[];
+  partitionCount?: number;
+}
+
 export interface DatabaseStats {
   tables: Array<{ name: string; count: number; size: string }>;
+  groupedTables: GroupedTable[];
   recentKillmails24h: number;
   activeConnections: number;
   databaseSize: string;
@@ -54,45 +72,138 @@ export interface StatusSnapshot {
   system: SystemStats;
 }
 
-const TABLES_TO_CHECK = [
-  'killmails',
-  'characters',
-  'corporations',
-  'alliances',
-  'attackers',
-  'items',
-  'prices',
-  'types',
-  'solarsystems',
-];
-
 async function fetchDatabaseStats(): Promise<DatabaseStats> {
   try {
-    const tableStats = await Promise.all(
-      TABLES_TO_CHECK.map(async (tableName) => {
-        const countResult = await database.findOne<{ count: number }>(
-          `SELECT COALESCE(reltuples::bigint, 0) as count 
-           FROM pg_class 
-           WHERE relname = :tableName`,
-          { tableName }
-        );
+    // Get all tables with their sizes and counts in one query for efficiency
+    const sql = database.sql;
+    const allTablesData = await sql<
+      Array<{
+        tablename: string;
+        row_count: string;
+        size_bytes: string;
+        size_pretty: string;
+      }>
+    >`
+      SELECT 
+        t.tablename,
+        COALESCE(c.reltuples::bigint, 0)::text as row_count,
+        pg_total_relation_size(quote_ident(t.schemaname)||'.'||quote_ident(t.tablename))::text as size_bytes,
+        pg_size_pretty(pg_total_relation_size(quote_ident(t.schemaname)||'.'||quote_ident(t.tablename))) as size_pretty
+      FROM pg_tables t
+      LEFT JOIN pg_class c ON c.relname = t.tablename
+      WHERE t.schemaname = 'public'
+      ORDER BY t.tablename
+    `;
 
-        const sizeResult = await database.findOne<{ size: string }>(
-          `SELECT pg_size_pretty(SUM(pg_total_relation_size(quote_ident(tablename)))) as size
-           FROM pg_tables 
-           WHERE schemaname = 'public' 
-             AND (tablename = :tableName OR tablename LIKE :partitionPattern)`,
-          { tableName, partitionPattern: `${tableName}\\_%` }
-        );
+    // Build flat table stats (for backward compatibility)
+    const tableStats = allTablesData.map((t) => ({
+      name: t.tablename,
+      count: parseInt(t.row_count, 10) || 0,
+      size: t.size_pretty || '0 bytes',
+    }));
 
-        return {
-          name: tableName,
-          count: Number(countResult?.count) || 0,
-          size: sizeResult?.size || '0 bytes',
-        };
-      })
-    );
+    // Group tables by base name (separate partitions from base tables)
+    type TableData = {
+      tablename: string;
+      row_count: number;
+      size_bytes: number;
+      size_pretty: string;
+    };
 
+    const tableGroups = new Map<
+      string,
+      {
+        base: TableData | null;
+        partitions: TableData[];
+      }
+    >();
+
+    for (const table of allTablesData) {
+      const parsedTable: TableData = {
+        tablename: table.tablename,
+        row_count: parseInt(table.row_count, 10) || 0,
+        size_bytes: parseInt(table.size_bytes, 10) || 0,
+        size_pretty: table.size_pretty,
+      };
+
+      // Check if this is a partition
+      // Matches: tablename_2024, tablename_2024_12, tablename_2024_pre_12
+      const partitionMatch = table.tablename.match(
+        /^(.+?)_(\d{4})(?:_(?:pre_)?(\d{2}))?$/
+      );
+
+      if (partitionMatch) {
+        const baseName = partitionMatch[1];
+        // This is a partition (has a year suffix)
+        if (!tableGroups.has(baseName)) {
+          tableGroups.set(baseName, { base: null, partitions: [] });
+        }
+        tableGroups.get(baseName)!.partitions.push(parsedTable);
+      } else {
+        // This is a base table
+        if (!tableGroups.has(table.tablename)) {
+          tableGroups.set(table.tablename, {
+            base: parsedTable,
+            partitions: [],
+          });
+        } else {
+          tableGroups.get(table.tablename)!.base = parsedTable;
+        }
+      }
+    }
+
+    // Build grouped tables structure
+    const groupedTables: GroupedTable[] = [];
+
+    // Helper function to format bytes to human-readable size
+    const formatBytes = (bytes: number): string => {
+      if (bytes === 0) return '0 bytes';
+      const k = 1024;
+      const sizes = ['bytes', 'kB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
+    };
+
+    for (const [baseName, group] of tableGroups.entries()) {
+      if (group.partitions.length > 0) {
+        // This table has partitions - combine stats
+        const totalCount =
+          (group.base?.row_count || 0) +
+          group.partitions.reduce((sum, p) => sum + (p.row_count || 0), 0);
+        const totalBytes =
+          (group.base?.size_bytes || 0) +
+          group.partitions.reduce((sum, p) => sum + (p.size_bytes || 0), 0);
+
+        groupedTables.push({
+          name: baseName,
+          count: totalCount,
+          size: formatBytes(totalBytes),
+          sizeBytes: totalBytes,
+          isPartitioned: true,
+          partitionCount: group.partitions.length,
+          partitions: group.partitions
+            .map((p) => ({
+              name: p.tablename,
+              count: p.row_count,
+              size: p.size_pretty || '0 bytes',
+              sizeBytes: p.size_bytes,
+            }))
+            .sort((a, b) => b.sizeBytes - a.sizeBytes),
+        });
+      } else if (group.base) {
+        // Regular table without partitions
+        groupedTables.push({
+          name: group.base.tablename,
+          count: group.base.row_count,
+          size: group.base.size_pretty || '0 bytes',
+          sizeBytes: group.base.size_bytes,
+          isPartitioned: false,
+        });
+      }
+    }
+
+    // Sort grouped tables by size descending
+    groupedTables.sort((a, b) => b.sizeBytes - a.sizeBytes);
     tableStats.sort((a, b) => b.count - a.count);
 
     const [recentKillmails, activeConns, dbSizeResult, kmRelatedSize] =
@@ -116,6 +227,7 @@ async function fetchDatabaseStats(): Promise<DatabaseStats> {
 
     return {
       tables: tableStats,
+      groupedTables,
       recentKillmails24h: Number(recentKillmails?.count) || 0,
       activeConnections: Number(activeConns?.count) || 0,
       databaseSize: dbSizeResult?.size || 'N/A',
@@ -125,6 +237,7 @@ async function fetchDatabaseStats(): Promise<DatabaseStats> {
     logger.error('status: failed to fetch database stats', { error });
     return {
       tables: [],
+      groupedTables: [],
       recentKillmails24h: 0,
       activeConnections: 0,
       databaseSize: 'N/A',
