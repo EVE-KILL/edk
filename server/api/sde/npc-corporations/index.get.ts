@@ -6,8 +6,8 @@ import type { NpcCorporation } from '~/models/npcCorporations';
  * @openapi
  * /api/sde/npc-corporations:
  *   get:
- *     summary: Get npc-corporations
- *     description: Returns a paginated list of npc-corporations from the Static Data Export.
+ *     summary: Get NPC corporations
+ *     description: Returns a paginated list of NPC corporations from the Static Data Export. Includes mission-running corporations, incursion entities, and other NPCs.
  *     tags:
  *       - SDE - NPCs
  *     parameters:
@@ -26,20 +26,71 @@ import type { NpcCorporation } from '~/models/npcCorporations';
  *           maximum: 500
  *     responses:
  *       '200':
- *         description: List of npc-corporations
+ *         description: List of NPC corporations
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - items
+ *                 - page
+ *                 - perPage
+ *                 - total
  *               properties:
  *                 items:
  *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       corporationId:
+ *                         type: integer
+ *                         description: Unique corporation ID
+ *                         example: 1000001
+ *                       name:
+ *                         type: string
+ *                         description: Corporation name
+ *                         example: "Guristas"
+ *                       tickerName:
+ *                         type: string
+ *                         description: Corporation ticker
+ *                         example: "-GUR-"
+ *                       description:
+ *                         type: string
+ *                         description: Corporation description
+ *                         example: "Mission Running Corporation"
+ *                       ceoId:
+ *                         type: integer
+ *                         description: Character ID of CEO
+ *                         example: 3001001
+ *                       stationId:
+ *                         type: integer
+ *                         description: Home station ID
+ *                         example: 60000001
+ *                       taxRate:
+ *                         type: number
+ *                         description: Tax rate (0-1)
+ *                         example: 0.1
+ *                       factionId:
+ *                         type: [integer, "null"]
+ *                         description: Owning faction ID if applicable
+ *                         example: null
+ *                       solarSystemId:
+ *                         type: [integer, "null"]
+ *                         description: Home system ID if applicable
+ *                         example: null
+ *                       deleted:
+ *                         type: boolean
+ *                         description: Whether corporation is deleted
+ *                         example: false
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
+ *                   example: 100
  *                 total:
  *                   type: integer
+ *                   example: 5678
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

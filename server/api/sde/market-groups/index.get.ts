@@ -7,7 +7,7 @@ import type { MarketGroup } from '~/models/marketGroups';
  * /api/sde/market-groups:
  *   get:
  *     summary: Get market-groups
- *     description: Returns a paginated list of market-groups from the Static Data Export.
+ *     description: Returns a paginated list of market-groups from the Static Data Export. Market groups organize items in the market UI.
  *     tags:
  *       - SDE - Market
  *     parameters:
@@ -31,15 +31,50 @@ import type { MarketGroup } from '~/models/marketGroups';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - items
+ *                 - page
+ *                 - perPage
+ *                 - total
  *               properties:
  *                 items:
  *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       marketGroupId:
+ *                         type: integer
+ *                         description: Unique market group ID
+ *                         example: 2
+ *                       name:
+ *                         type: string
+ *                         description: Market group name
+ *                         example: "Ship"
+ *                       hasTypes:
+ *                         type: boolean
+ *                         description: Whether group contains item types
+ *                         example: false
+ *                       description:
+ *                         type: string
+ *                         description: Market group description
+ *                         example: "Everything that flies"
+ *                       iconId:
+ *                         type: [integer, "null"]
+ *                         description: Icon ID for this group
+ *                         example: null
+ *                       parentGroupId:
+ *                         type: [integer, "null"]
+ *                         description: Parent group ID if nested
+ *                         example: 1
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
+ *                   example: 100
  *                 total:
  *                   type: integer
+ *                   example: 2083
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

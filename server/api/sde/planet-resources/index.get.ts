@@ -6,8 +6,8 @@ import type { PlanetResource } from '~/models/planetResources';
  * @openapi
  * /api/sde/planet-resources:
  *   get:
- *     summary: Get planet-resources
- *     description: Returns a paginated list of planet-resources from the Static Data Export.
+ *     summary: Get planetary resources
+ *     description: Returns a paginated list of planetary resources from the Static Data Export. Includes all resources available on planets for planetary interaction.
  *     tags:
  *       - SDE - Planetary
  *     parameters:
@@ -26,20 +26,39 @@ import type { PlanetResource } from '~/models/planetResources';
  *           maximum: 500
  *     responses:
  *       '200':
- *         description: List of planet-resources
+ *         description: List of planetary resources
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - items
+ *                 - page
+ *                 - perPage
+ *                 - total
  *               properties:
  *                 items:
  *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       planetId:
+ *                         type: integer
+ *                         description: Unique planet ID
+ *                         example: 40013180
+ *                       power:
+ *                         type: number
+ *                         description: Power generation on planet
+ *                         example: 740
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
+ *                   example: 100
  *                 total:
  *                   type: integer
+ *                   example: 25798
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

@@ -6,8 +6,8 @@ import type { TranslationLanguage } from '~/models/translationLanguages';
  * @openapi
  * /api/sde/translation-languages:
  *   get:
- *     summary: Get translation-languages
- *     description: Returns a paginated list of translation-languages from the Static Data Export.
+ *     summary: Get translation languages
+ *     description: Returns a paginated list of supported translation languages from the Static Data Export.
  *     tags:
  *       - SDE - Miscellaneous
  *     parameters:
@@ -26,20 +26,39 @@ import type { TranslationLanguage } from '~/models/translationLanguages';
  *           maximum: 500
  *     responses:
  *       '200':
- *         description: List of translation-languages
+ *         description: List of translation languages
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - items
+ *                 - page
+ *                 - perPage
+ *                 - total
  *               properties:
  *                 items:
  *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       languageId:
+ *                         type: string
+ *                         description: Language code (ISO 639-1)
+ *                         example: "de"
+ *                       name:
+ *                         type: string
+ *                         description: Language name
+ *                         example: "German"
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
+ *                   example: 100
  *                 total:
  *                   type: integer
+ *                   example: 8
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

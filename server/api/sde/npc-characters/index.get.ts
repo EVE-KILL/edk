@@ -6,10 +6,10 @@ import type { NpcCharacter } from '~/models/npcCharacters';
  * @openapi
  * /api/sde/npc-characters:
  *   get:
- *     summary: Get npc-characters
- *     description: Returns a paginated list of npc-characters from the Static Data Export.
+ *     summary: Get NPC characters
+ *     description: Returns a paginated list of NPC characters from the Static Data Export. Includes mission agents, faction representatives, and NPCs.
  *     tags:
- *       - SDE - NPCs
+ *       - SDE - Characters
  *     parameters:
  *       - name: page
  *         in: query
@@ -26,20 +26,63 @@ import type { NpcCharacter } from '~/models/npcCharacters';
  *           maximum: 500
  *     responses:
  *       '200':
- *         description: List of npc-characters
+ *         description: List of NPC characters
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - items
+ *                 - page
+ *                 - perPage
+ *                 - total
  *               properties:
  *                 items:
  *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       characterId:
+ *                         type: integer
+ *                         description: Unique character ID
+ *                         example: 3000001
+ *                       name:
+ *                         type: string
+ *                         description: Character name
+ *                         example: "Dame Hel"
+ *                       corporationId:
+ *                         type: integer
+ *                         description: Corporation ID
+ *                         example: 1000001
+ *                       allianceId:
+ *                         type: [integer, "null"]
+ *                         description: Alliance ID if applicable
+ *                         example: null
+ *                       bloodlineId:
+ *                         type: integer
+ *                         description: Bloodline ID
+ *                         example: 1
+ *                       ancestryId:
+ *                         type: [integer, "null"]
+ *                         description: Ancestry ID if applicable
+ *                         example: null
+ *                       raceId:
+ *                         type: integer
+ *                         description: Race ID
+ *                         example: 1
+ *                       gender:
+ *                         type: integer
+ *                         description: Gender (0 = male, 1 = female)
+ *                         example: 0
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
+ *                   example: 100
  *                 total:
  *                   type: integer
+ *                   example: 11303
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

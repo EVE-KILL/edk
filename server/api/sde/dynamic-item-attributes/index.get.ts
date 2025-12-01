@@ -6,8 +6,8 @@ import type { DynamicItemAttribute } from '~/models/dynamicItemAttributes';
  * @openapi
  * /api/sde/dynamic-item-attributes:
  *   get:
- *     summary: Get dynamic-item-attributes
- *     description: Returns a paginated list of dynamic-item-attributes from the Static Data Export.
+ *     summary: Get dynamic item attributes
+ *     description: Returns a paginated list of dynamic item attributes from the Static Data Export. Includes attribute variation ranges and input/output mappings for item mutations.
  *     tags:
  *       - SDE - Miscellaneous
  *     parameters:
@@ -26,20 +26,66 @@ import type { DynamicItemAttribute } from '~/models/dynamicItemAttributes';
  *           maximum: 500
  *     responses:
  *       '200':
- *         description: List of dynamic-item-attributes
+ *         description: List of dynamic item attributes
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - items
+ *                 - page
+ *                 - perPage
+ *                 - total
  *               properties:
  *                 items:
  *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       typeId:
+ *                         type: integer
+ *                         description: Item type ID
+ *                         example: 47297
+ *                       attributeIds:
+ *                         type: array
+ *                         description: List of dynamic attributes with variation ranges
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                               example: 6
+ *                             min:
+ *                               type: number
+ *                               example: 0.6
+ *                             max:
+ *                               type: number
+ *                               example: 1.4
+ *                       inputOutputMapping:
+ *                         type: array
+ *                         description: Mutation mappings for item transformation
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             resultingType:
+ *                               type: integer
+ *                               description: Type ID produced by mutation
+ *                               example: 47408
+ *                             applicableTypes:
+ *                               type: array
+ *                               description: Source type IDs that can produce this result
+ *                               items:
+ *                                 type: integer
+ *                               example: [5975, 12052, 12076]
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
+ *                   example: 100
  *                 total:
  *                   type: integer
+ *                   example: 413
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {
