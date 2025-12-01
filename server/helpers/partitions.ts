@@ -245,9 +245,9 @@ async function ensurePreWindowPartition(
         for (const pre of existingPrePartitions) {
           logger.debug(`Migrating data from ${pre} to ${targetName}`);
           await tx.unsafe(
-            `INSERT INTO "${targetName}" 
-             SELECT * FROM "${pre}" 
-             WHERE "killmailTime" >= '${year}-01-01' 
+            `INSERT INTO "${targetName}"
+             SELECT * FROM "${pre}"
+             WHERE "killmailTime" >= '${year}-01-01'
                AND "killmailTime" < '${dateLiteral(monthlyStart)}'
              ON CONFLICT DO NOTHING`
           );
