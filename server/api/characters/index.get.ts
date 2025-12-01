@@ -5,61 +5,106 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/characters:
  *   get:
- *     summary: Get character list
- *     description: Returns a paginated list of characters, optionally filtered by search term.
+ *     summary: Get paginated character list
+ *     description: Returns a paginated list of characters with optional search filtering. Sorted by most recent character ID when no search term is provided.
  *     tags:
  *       - Characters
  *     parameters:
  *       - name: search
  *         in: query
- *         description: Search term to filter characters
+ *         required: false
+ *         description: Search term to filter characters by name (case-insensitive)
  *         schema:
  *           type: string
+ *           example: "Ruslan"
  *       - name: page
  *         in: query
- *         description: Page number
+ *         required: false
+ *         description: Page number (1-indexed)
  *         schema:
  *           type: integer
  *           default: 1
+ *           minimum: 1
  *       - name: perPage
  *         in: query
- *         description: Items per page (max 200)
+ *         required: false
+ *         description: Number of items per page
  *         schema:
  *           type: integer
  *           default: 50
  *           maximum: 200
  *     responses:
  *       '200':
- *         description: List of characters
+ *         description: Paginated list of characters
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - characters
+ *                 - page
+ *                 - perPage
  *               properties:
- *                 items:
+ *                 characters:
  *                   type: array
  *                   items:
  *                     type: object
+ *                     properties:
+ *                       characterId:
+ *                         type: integer
+ *                         example: 2123951681
+ *                       name:
+ *                         type: string
+ *                         example: "Kgc Twelve"
+ *                       corporationId:
+ *                         type: integer
+ *                         example: 1000166
+ *                       allianceId:
+ *                         type: [integer, "null"]
+ *                         example: null
+ *                       factionId:
+ *                         type: [integer, "null"]
+ *                         example: null
+ *                       raceId:
+ *                         type: integer
+ *                         example: 4
+ *                       bloodlineId:
+ *                         type: integer
+ *                         example: 13
+ *                       gender:
+ *                         type: string
+ *                         enum: ["male", "female"]
+ *                         example: "male"
+ *                       birthday:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-11-30T00:00:00.000Z"
+ *                       description:
+ *                         type: string
+ *                         example: ""
+ *                       title:
+ *                         type: [string, "null"]
+ *                         example: null
+ *                       securityStatus:
+ *                         type: number
+ *                         example: 0
+ *                       lastActive:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-11-30T22:30:48.000Z"
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-11-30T22:32:26.262Z"
+ *                       deleted:
+ *                         type: boolean
+ *                         example: false
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
- *                 total:
- *                   type: integer
- *             example:
- *               items:
- *                 - characterId: 2116199184
- *                   characterName: "Example Character"
- *                   corporationId: 98356193
- *                   corporationName: "Example Corp"
- *                   allianceId: 99000001
- *                   allianceName: "Example Alliance"
- *                   factionId: null
- *                   securityStatus: -5.2
- *                   updatedAt: "2025-12-01T10:30:45.000Z"
- *               page: 1
- *               perPage: 50
- *               total: 850234
+ *                   example: 50
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

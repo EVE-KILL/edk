@@ -1,3 +1,19 @@
+/**
+ * @openapi
+ * /api/test-sse:
+ *   get:
+ *     summary: Test SSE streaming with counter
+ *     description: Test endpoint for Server-Sent Events. Sends 3 numbered messages at 1-second intervals, then closes.
+ *     tags:
+ *       - Testing
+ *     responses:
+ *       '200':
+ *         description: Server-Sent Events stream with messages
+ *         content:
+ *           text/event-stream:
+ *             schema:
+ *               type: string
+ */
 export default defineEventHandler(async (event) => {
   const eventStream = createEventStream(event);
 

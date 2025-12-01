@@ -5,36 +5,45 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/alliances:
  *   get:
- *     summary: Get alliance list
- *     description: Returns a paginated list of alliances, optionally filtered by search term.
+ *     summary: Get paginated alliance list
+ *     description: Returns a paginated list of alliances with optional search filtering. Sorted by most recent alliance ID when no search term is provided.
  *     tags:
  *       - Alliances
  *     parameters:
  *       - name: search
  *         in: query
- *         description: Search term to filter alliances
+ *         required: false
+ *         description: Search term to filter alliances by name (case-insensitive)
  *         schema:
  *           type: string
+ *           example: "Imperium"
  *       - name: page
  *         in: query
- *         description: Page number
+ *         required: false
+ *         description: Page number (1-indexed)
  *         schema:
  *           type: integer
  *           default: 1
+ *           minimum: 1
  *       - name: perPage
  *         in: query
- *         description: Items per page (max 200)
+ *         required: false
+ *         description: Number of items per page
  *         schema:
  *           type: integer
  *           default: 50
  *           maximum: 200
  *     responses:
  *       '200':
- *         description: List of alliances
+ *         description: Paginated list of alliances
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - alliances
+ *                 - page
+ *                 - perPage
  *               properties:
  *                 alliances:
  *                   type: array
@@ -43,25 +52,43 @@ import { validate } from '~/utils/validation';
  *                     properties:
  *                       allianceId:
  *                         type: integer
+ *                         example: 2085230220
  *                       name:
  *                         type: string
+ *                         example: "First Church Of The Goo"
  *                       ticker:
  *                         type: string
+ *                         example: "F-GOO"
+ *                       creatorId:
+ *                         type: integer
+ *                         example: 1055395479
+ *                       creatorCorporationId:
+ *                         type: integer
+ *                         example: 0
+ *                       executorCorporationId:
+ *                         type: integer
+ *                         example: 0
  *                       dateFounded:
  *                         type: string
  *                         format: date-time
+ *                         example: "2009-12-28T00:00:00.000Z"
+ *                       factionId:
+ *                         type: [integer, "null"]
+ *                         example: null
+ *                       lastActive:
+ *                         type: [string, "null"]
+ *                         format: date-time
+ *                         example: null
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-11-28T10:12:54.506Z"
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
- *             example:
- *               alliances:
- *                 - allianceId: 2085230220
- *                   name: "First Church Of The Goo"
- *                   ticker: "F-GOO"
- *                   dateFounded: "2009-12-28T00:00:00.000Z"
- *               page: 1
- *               perPage: 50
+ *                   example: 50
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

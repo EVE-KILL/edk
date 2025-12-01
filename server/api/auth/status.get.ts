@@ -1,3 +1,48 @@
+/**
+ * @openapi
+ * /api/auth/status:
+ *   get:
+ *     summary: Get current authentication status
+ *     description: Returns the current authentication status and user information if authenticated. Always returns no-cache headers.
+ *     tags:
+ *       - Authentication
+ *     responses:
+ *       '200':
+ *         description: Authentication status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: object
+ *                   properties:
+ *                     authenticated:
+ *                       type: boolean
+ *                       example: false
+ *                 - type: object
+ *                   properties:
+ *                     authenticated:
+ *                       type: boolean
+ *                       example: true
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         characterId:
+ *                           type: integer
+ *                         characterName:
+ *                           type: string
+ *                         corporationId:
+ *                           type: integer
+ *                         corporationName:
+ *                           type: string
+ *                         allianceId:
+ *                           type: [integer, "null"]
+ *                         allianceName:
+ *                           type: [string, "null"]
+ *                         admin:
+ *                           type: boolean
+ */
 export default defineEventHandler((event) => {
   const user = event.context.authUser;
 

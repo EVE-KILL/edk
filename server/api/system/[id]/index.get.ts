@@ -1,4 +1,57 @@
 /**
+ * @openapi
+ * /api/system/{id}:
+ *   get:
+ *     summary: Get comprehensive solar system data
+ *     description: Returns complete solar system information including planets, moons, stargates, asteroid belts, stars, and all celestial relationships from the Static Data Export.
+ *     tags:
+ *       - System
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The solar system ID
+ *         schema:
+ *           type: integer
+ *           example: 30000142
+ *     responses:
+ *       '200':
+ *         description: Complete system data with celestial hierarchy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 system:
+ *                   type: object
+ *                   description: Solar system details
+ *                 region:
+ *                   type: [object, "null"]
+ *                   description: Parent region information
+ *                 constellation:
+ *                   type: [object, "null"]
+ *                   description: Parent constellation information
+ *                 star:
+ *                   type: [object, "null"]
+ *                   description: Star information
+ *                 celestials:
+ *                   type: array
+ *                   description: Planets with organized moons
+ *                 stargates:
+ *                   type: array
+ *                   description: Stargates with destination information
+ *                 asteroidBelts:
+ *                   type: array
+ *                   description: Asteroid belts
+ *                 summary:
+ *                   type: object
+ *                   description: Count summary of celestials
+ *       '400':
+ *         description: Invalid system ID
+ *       '404':
+ *         description: System not found
+ */
+/**
  * API endpoint for system data
  * Returns comprehensive system information including celestials
  */

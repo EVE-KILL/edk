@@ -5,31 +5,38 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/factions:
  *   get:
- *     summary: Get faction list
- *     description: Returns a list of factions.
+ *     summary: Get paginated faction list
+ *     description: Returns a paginated list of all factions in EVE Online. Sorted by faction ID.
  *     tags:
  *       - Factions
  *     parameters:
  *       - name: page
  *         in: query
- *         description: Page number
+ *         required: false
+ *         description: Page number (1-indexed)
  *         schema:
  *           type: integer
  *           default: 1
+ *           minimum: 1
  *       - name: perPage
  *         in: query
- *         description: Items per page (max 200)
+ *         required: false
+ *         description: Number of items per page
  *         schema:
  *           type: integer
  *           default: 50
  *           maximum: 200
  *     responses:
  *       '200':
- *         description: List of factions
+ *         description: Paginated list of factions
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - factions
+ *                 - page
+ *                 - perPage
  *               properties:
  *                 factions:
  *                   type: array
@@ -38,17 +45,31 @@ import { validate } from '~/utils/validation';
  *                     properties:
  *                       factionId:
  *                         type: integer
+ *                         example: 500001
  *                       name:
  *                         type: string
+ *                         example: "Caldari State"
  *                       description:
  *                         type: string
- *             example:
- *               factions:
- *                 - factionId: 500001
- *                   name: "Caldari State"
- *                   description: "The Caldari State is ruled by several mega-corporations..."
- *               page: 1
- *               perPage: 50
+ *                         example: "The Caldari State is ruled by several mega-corporations..."
+ *                       shortDescription:
+ *                         type: [string, "null"]
+ *                         example: "The Caldari State"
+ *                       corporationId:
+ *                         type: integer
+ *                         example: 1000125
+ *                       militiaCorporationId:
+ *                         type: [integer, "null"]
+ *                         example: null
+ *                       solarSystemId:
+ *                         type: integer
+ *                         example: 30000379
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 perPage:
+ *                   type: integer
+ *                   example: 50
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

@@ -5,8 +5,8 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/corporations/{id}:
  *   get:
- *     summary: Get corporation details
- *     description: Returns corporation information from the database.
+ *     summary: Get corporation details by ID
+ *     description: Returns comprehensive information for a specific corporation including CEO, alliance, and founding date.
  *     tags:
  *       - Corporations
  *     parameters:
@@ -24,50 +24,53 @@ import { validate } from '~/utils/validation';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - corporationId
+ *                 - name
+ *                 - updatedAt
  *               properties:
  *                 corporationId:
  *                   type: integer
+ *                   example: 98356193
  *                 name:
  *                   type: string
+ *                   example: "C C P Alliance Holding"
  *                 ticker:
- *                   type: string
- *                   nullable: true
- *                 memberCount:
- *                   type: integer
- *                   nullable: true
- *                 allianceId:
- *                   type: integer
- *                   nullable: true
+ *                   type: [string, "null"]
+ *                   example: "BSRB"
  *                 ceoId:
- *                   type: integer
- *                   nullable: true
- *                 dateFounded:
- *                   type: string
- *                   format: date-time
- *                   nullable: true
+ *                   type: [integer, "null"]
+ *                   example: 92025524
+ *                 memberCount:
+ *                   type: [integer, "null"]
+ *                   example: 0
+ *                 allianceId:
+ *                   type: [integer, "null"]
+ *                   example: null
  *                 factionId:
- *                   type: integer
- *                   nullable: true
+ *                   type: [integer, "null"]
+ *                   example: null
+ *                 dateFounded:
+ *                   type: [string, "null"]
+ *                   format: date-time
+ *                   example: "2014-11-12T00:00:00.000Z"
  *                 updatedAt:
  *                   type: string
  *                   format: date-time
- *             example:
- *               corporationId: 98356193
- *               name: "Synthetic Systems"
- *               ticker: "SYNTH"
- *               memberCount: 42
- *               allianceId: 933731581
- *               ceoId: 95465499
- *               dateFounded: "2015-03-15T00:00:00.000Z"
- *               factionId: null
- *               updatedAt: "2025-12-01T10:30:45.000Z"
+ *                   example: "2025-11-28T10:12:25.387Z"
  *       '404':
  *         description: Corporation not found
  *         content:
  *           application/json:
- *             example:
- *               statusCode: 404
- *               statusMessage: "Corporation not found"
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 404
+ *                 statusMessage:
+ *                   type: string
+ *                   example: "Corporation not found"
  */
 export default defineEventHandler(async (event) => {
   const { params } = await validate(event, {

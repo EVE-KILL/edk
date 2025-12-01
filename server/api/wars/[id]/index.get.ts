@@ -5,8 +5,8 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/wars/{id}:
  *   get:
- *     summary: Get war details
- *     description: Returns war information from the database.
+ *     summary: Get war details by ID
+ *     description: Returns comprehensive information for a specific war including aggressor and defender details, ISK destroyed, and timeline information.
  *     tags:
  *       - Wars
  *     parameters:
@@ -15,8 +15,8 @@ import { validate } from '~/utils/validation';
  *         required: true
  *         description: The war ID
  *         schema:
- *           type: integer
- *           example: 615476
+ *           type: string
+ *           example: "999999999999999"
  *     responses:
  *       '200':
  *         description: War details
@@ -24,26 +24,76 @@ import { validate } from '~/utils/validation';
  *           application/json:
  *             schema:
  *               type: object
- *             example:
- *               warId: 615476
- *               aggressorId: 98356193
- *               aggressorType: "corporation"
- *               defenderId: 98000001
- *               defenderType: "corporation"
- *               declared: "2025-11-15T12:00:00.000Z"
- *               started: "2025-11-16T12:00:00.000Z"
- *               finished: null
- *               mutual: false
- *               openForAllies: true
- *               retracted: null
- *               updatedAt: "2025-12-01T10:30:45.000Z"
+ *               required:
+ *                 - warId
+ *                 - declared
+ *               properties:
+ *                 warId:
+ *                   type: string
+ *                   example: "999999999999999"
+ *                 aggressorAllianceId:
+ *                   type: [string, "null"]
+ *                   example: "500001"
+ *                 aggressorCorporationId:
+ *                   type: [string, "null"]
+ *                   example: null
+ *                 aggressorIskDestroyed:
+ *                   type: integer
+ *                   example: 0
+ *                 aggressorShipsKilled:
+ *                   type: integer
+ *                   example: 0
+ *                 defenderAllianceId:
+ *                   type: [string, "null"]
+ *                   example: "500004"
+ *                 defenderCorporationId:
+ *                   type: [string, "null"]
+ *                   example: null
+ *                 defenderIskDestroyed:
+ *                   type: integer
+ *                   example: 0
+ *                 defenderShipsKilled:
+ *                   type: integer
+ *                   example: 0
+ *                 declared:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2003-05-06T00:00:00.000Z"
+ *                 started:
+ *                   type: [string, "null"]
+ *                   format: date-time
+ *                   example: "2003-05-06T00:00:00.000Z"
+ *                 retracted:
+ *                   type: [string, "null"]
+ *                   format: date-time
+ *                   example: null
+ *                 finished:
+ *                   type: [string, "null"]
+ *                   format: date-time
+ *                   example: null
+ *                 mutual:
+ *                   type: boolean
+ *                   example: true
+ *                 openForAllies:
+ *                   type: boolean
+ *                   example: false
+ *                 lastUpdated:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2025-11-28T10:28:45.458Z"
  *       '404':
  *         description: War not found
  *         content:
  *           application/json:
- *             example:
- *               statusCode: 404
- *               statusMessage: "War not found"
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 404
+ *                 statusMessage:
+ *                   type: string
+ *                   example: "War not found"
  */
 export default defineEventHandler(async (event) => {
   const { params } = await validate(event, {
@@ -54,7 +104,9 @@ export default defineEventHandler(async (event) => {
 
   const { id } = params;
 
-  const war = await database.findOne('wars', { warId: id });
+  const war = await database.findOne('SELECT * FROM wars WHERE "warId" = :id', {
+    id,
+  });
 
   if (!war) {
     throw createError({

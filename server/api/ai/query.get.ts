@@ -1,4 +1,59 @@
 /**
+ * @openapi
+ * /api/ai/query:
+ *   get:
+ *     summary: AI-powered EVE-KILL query
+ *     description: Uses AI to process natural language questions about killmails, items, characters, and EVE Online data. Returns formatted response with visual HTML and statistics.
+ *     tags:
+ *       - AI
+ *     parameters:
+ *       - name: query
+ *         in: query
+ *         required: true
+ *         description: Natural language question or command about EVE Online/killmails
+ *         schema:
+ *           type: string
+ *           example: "Show me the most expensive kills in Jita today"
+ *     responses:
+ *       '200':
+ *         description: AI response with data and HTML visualization
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - success
+ *                 - query
+ *                 - message
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 query:
+ *                   type: string
+ *                   example: "Show me expensive kills"
+ *                 message:
+ *                   type: string
+ *                   description: AI-generated response
+ *                   example: "Found 5 kills valued over 1 billion ISK..."
+ *                 html:
+ *                   type: string
+ *                   description: HTML visualization of results
+ *                 tools_used:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["search_killmails", "lookup_item"]
+ *                 turns:
+ *                   type: integer
+ *                   example: 2
+ *       '400':
+ *         description: Missing query parameter
+ *       '500':
+ *         description: AI processing error
+ */
+
+/**
  * AI Query Endpoint - Simple JSON Response
  *
  * GET /api/ai/query?query=your+question

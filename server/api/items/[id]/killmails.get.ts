@@ -6,34 +6,103 @@ import { getFilteredKills, type KilllistFilters } from '~/models/killlist';
  * @openapi
  * /api/items/{id}/killmails:
  *   get:
- *     summary: Get killmails featuring this item
- *     description: Returns killmails where this item type was destroyed.
+ *     summary: Get killmails featuring this item type
+ *     description: Returns a paginated list of killmails where this item type was destroyed as a victim's ship.
  *     tags:
  *       - Items
  *     parameters:
  *       - name: id
  *         in: path
  *         required: true
- *         description: The type ID
+ *         description: The item/ship type ID
  *         schema:
  *           type: integer
  *           example: 587
  *       - name: page
  *         in: query
- *         description: Page number
+ *         required: false
+ *         description: Page number (1-indexed)
  *         schema:
  *           type: integer
  *           default: 1
+ *           minimum: 1
  *       - name: perPage
  *         in: query
- *         description: Items per page (max 200)
+ *         required: false
+ *         description: Number of items per page
  *         schema:
  *           type: integer
  *           default: 50
  *           maximum: 200
  *     responses:
  *       '200':
- *         description: List of killmails
+ *         description: Paginated list of killmails
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - killmails
+ *                 - page
+ *                 - perPage
+ *               properties:
+ *                 killmails:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       killmailId:
+ *                         type: string
+ *                       killmailTime:
+ *                         type: string
+ *                         format: date-time
+ *                       solarSystemId:
+ *                         type: integer
+ *                       regionId:
+ *                         type: integer
+ *                       security:
+ *                         type: number
+ *                       victimCharacterId:
+ *                         type: string
+ *                       victimCorporationId:
+ *                         type: string
+ *                       victimAllianceId:
+ *                         type: [string, "null"]
+ *                       victimShipTypeId:
+ *                         type: integer
+ *                       victimShipGroupId:
+ *                         type: integer
+ *                       victimDamageTaken:
+ *                         type: integer
+ *                       topAttackerCharacterId:
+ *                         type: [string, "null"]
+ *                       topAttackerCorporationId:
+ *                         type: [string, "null"]
+ *                       topAttackerAllianceId:
+ *                         type: [string, "null"]
+ *                       topAttackerShipTypeId:
+ *                         type: [integer, "null"]
+ *                       totalValue:
+ *                         type: number
+ *                       attackerCount:
+ *                         type: integer
+ *                       npc:
+ *                         type: boolean
+ *                       solo:
+ *                         type: boolean
+ *                       awox:
+ *                         type: boolean
+ *                       entityId:
+ *                         type: integer
+ *                       entityType:
+ *                         type: string
+ *                         enum: ["none", "character", "corporation", "alliance"]
+ *                       isVictim:
+ *                         type: boolean
+ *                 page:
+ *                   type: integer
+ *                 perPage:
+ *                   type: integer
  */
 export default defineEventHandler(async (event) => {
   const { params, query } = await validate(event, {

@@ -5,69 +5,94 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/export/{collection}:
  *   get:
- *     summary: Export a collection
- *     description: Exports data from a specific collection (limited to 10,000 records for performance).
+ *     summary: Export a data collection
+ *     description: Exports data from a specific collection in JSON or CSV format (limited to 10,000 records for performance). Response schema varies based on the collection type.
  *     tags:
  *       - Export
  *     parameters:
  *       - name: collection
  *         in: path
  *         required: true
- *         description: The collection to export
+ *         description: The collection to export (killmails, characters, corporations, alliances, types, or prices)
  *         schema:
  *           type: string
- *           enum: [killmails, characters, corporations, alliances, types, prices]
+ *           enum: ["killmails", "characters", "corporations", "alliances", "types", "prices"]
+ *           example: "killmails"
  *       - name: format
  *         in: query
- *         description: Export format
+ *         required: false
+ *         description: Export format (JSON or CSV)
  *         schema:
  *           type: string
- *           enum: [json, csv]
- *           default: json
+ *           enum: ["json", "csv"]
+ *           default: "json"
  *       - name: limit
  *         in: query
- *         description: Maximum number of records (max 10000)
+ *         required: false
+ *         description: Maximum number of records to export (capped at 10,000)
  *         schema:
  *           type: integer
  *           default: 1000
+ *           minimum: 1
  *           maximum: 10000
  *     responses:
  *       '200':
- *         description: Exported data
+ *         description: Exported collection data. Schema varies by collection type.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - collection
+ *                 - count
+ *                 - data
+ *               properties:
+ *                 collection:
+ *                   type: string
+ *                   description: Name of the exported collection
+ *                   enum: ["killmails", "characters", "corporations", "alliances", "types", "prices"]
+ *                   example: "killmails"
+ *                 count:
+ *                   type: integer
+ *                   description: Number of records in this export
+ *                   example: 1
+ *                 data:
+ *                   type: array
+ *                   description: Array of records. Schema depends on collection type.
+ *                   items:
+ *                     type: object
+ *                   example:
+ *                     - killmailId: "380"
+ *                       killmailTime: "2007-12-05T23:56:00.000Z"
+ *                       solarSystemId: 30003283
+ *                       victimCharacterId: "339667724"
+ *                       victimCorporationId: "1000170"
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *               description: CSV file with exported data
+ *       '400':
+ *         description: Invalid collection or parameters
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 collection:
- *                   type: string
- *                 count:
+ *                 statusCode:
  *                   type: integer
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *             example:
- *               collection: "characters"
- *               count: 1000
- *               data:
- *                 - characterId: 95465499
- *                   name: "Karbowiak"
- *                   corporationId: 98356193
- *                   allianceId: 933731581
- *                   updatedAt: "2025-12-01T10:30:45.000Z"
- *                 - characterId: 1234567890
- *                   name: "Test Pilot"
- *                   corporationId: 98000001
- *                   allianceId: null
- *                   updatedAt: "2025-11-30T15:20:10.000Z"
- *       '400':
- *         description: Invalid collection
- *         content:
- *           application/json:
- *             example:
- *               statusCode: 400
- *               statusMessage: "Invalid collection"
+ *                   example: 400
+ *                 statusMessage:
+ *                   type: string
+ *                   example: "Invalid collection"
+ *
+ * Note: Each collection returns different fields:
+ *   - killmails: killmailId, killmailTime, solarSystemId, victimCharacterId, topAttackerCharacterId, totalValue, etc.
+ *   - characters: characterId, name, corporationId, allianceId, updatedAt, etc.
+ *   - corporations: corporationId, name, ticker, ceoId, allianceId, etc.
+ *   - alliances: allianceId, name, ticker, executorCorporationId, etc.
+ *   - types: typeId, name, groupId, volume, mass, etc.
+ *   - prices: typeId, regionId, priceDate, averagePrice, highestPrice, lowestPrice, etc.
  */
 export default defineEventHandler(async (event) => {
   const { params, query } = await validate(event, {

@@ -5,8 +5,8 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/alliances/{id}:
  *   get:
- *     summary: Get alliance details
- *     description: Returns alliance information from the database.
+ *     summary: Get alliance details by ID
+ *     description: Returns comprehensive information for a specific alliance including executor corporation and founding date.
  *     tags:
  *       - Alliances
  *     parameters:
@@ -16,7 +16,7 @@ import { validate } from '~/utils/validation';
  *         description: The alliance ID
  *         schema:
  *           type: integer
- *           example: 933731581
+ *           example: 99000001
  *     responses:
  *       '200':
  *         description: Alliance details
@@ -24,42 +24,47 @@ import { validate } from '~/utils/validation';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - allianceId
+ *                 - name
+ *                 - updatedAt
  *               properties:
  *                 allianceId:
  *                   type: integer
+ *                   example: 99000001
  *                 name:
  *                   type: string
+ *                   example: "Vertex Dryrun Test Corp Alliance"
  *                 ticker:
- *                   type: string
- *                   nullable: true
+ *                   type: [string, "null"]
+ *                   example: "VDTCA"
  *                 executorCorporationId:
- *                   type: integer
- *                   nullable: true
- *                 dateFounded:
- *                   type: string
- *                   format: date-time
- *                   nullable: true
+ *                   type: [integer, "null"]
+ *                   example: 0
  *                 factionId:
- *                   type: integer
- *                   nullable: true
+ *                   type: [integer, "null"]
+ *                   example: null
+ *                 dateFounded:
+ *                   type: [string, "null"]
+ *                   format: date-time
+ *                   example: "2010-11-02T00:00:00.000Z"
  *                 updatedAt:
  *                   type: string
  *                   format: date-time
- *             example:
- *               allianceId: 933731581
- *               name: "Northern Coalition."
- *               ticker: "NC."
- *               executorCorporationId: 98356193
- *               dateFounded: "2008-05-15T00:00:00.000Z"
- *               factionId: null
- *               updatedAt: "2025-12-01T10:30:45.000Z"
+ *                   example: "2025-11-28T10:12:54.085Z"
  *       '404':
  *         description: Alliance not found
  *         content:
  *           application/json:
- *             example:
- *               statusCode: 404
- *               statusMessage: "Alliance not found"
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 404
+ *                 statusMessage:
+ *                   type: string
+ *                   example: "Alliance not found"
  */
 export default defineEventHandler(async (event) => {
   const { params } = await validate(event, {

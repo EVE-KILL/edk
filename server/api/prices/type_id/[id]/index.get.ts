@@ -5,27 +5,51 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/prices/type_id/{id}:
  *   get:
- *     summary: Get price for a type ID
- *     description: Returns the price for an item using custom prices > market prices > build prices > 0.
+ *     summary: Get price for a specific item type
+ *     description: Returns the price for a specific item type using priority order - custom prices > market prices > build prices > 0. Market price defaults to Jita region (10000002) unless specified.
  *     tags:
  *       - Prices
  *     parameters:
  *       - name: id
  *         in: path
  *         required: true
- *         description: The type ID
+ *         description: The type/item ID
  *         schema:
  *           type: integer
- *           example: 587
+ *           example: 34
  *       - name: regionId
  *         in: query
- *         description: Region ID for market prices (default: Jita)
+ *         required: false
+ *         description: Region ID for market prices (default is Jita - 10000002)
  *         schema:
  *           type: integer
  *           default: 10000002
  *     responses:
  *       '200':
  *         description: Item price information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - typeId
+ *                 - price
+ *                 - source
+ *               properties:
+ *                 typeId:
+ *                   type: integer
+ *                   example: 34
+ *                 price:
+ *                   type: number
+ *                   example: 4.52
+ *                 source:
+ *                   type: string
+ *                   enum: ["custom", "market", "build", "none"]
+ *                   example: "market"
+ *                 regionId:
+ *                   type: [integer, "null"]
+ *                   description: Region ID only present if source is 'market'
+ *                   example: 10000002
  */
 export default defineEventHandler(async (event) => {
   const { params, query } = await validate(event, {
@@ -43,7 +67,10 @@ export default defineEventHandler(async (event) => {
   // Priority: custom prices > market prices > build prices > 0
 
   // 1. Check custom price
-  const customPrice = await database.findOne('customprices', { typeId: id });
+  const customPrice = await database.findOne(
+    'SELECT * FROM customprices WHERE "typeId" = :id',
+    { id }
+  );
 
   if (customPrice) {
     return {
@@ -54,10 +81,10 @@ export default defineEventHandler(async (event) => {
   }
 
   // 2. Check market price for region
-  const marketPrice = await database.findOne('prices', {
-    typeId: id,
-    regionId,
-  });
+  const marketPrice = await database.findOne(
+    'SELECT * FROM prices WHERE "typeId" = :id AND "regionId" = :regionId',
+    { id, regionId }
+  );
 
   if (marketPrice) {
     return {

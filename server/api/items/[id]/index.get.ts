@@ -5,18 +5,18 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/items/{id}:
  *   get:
- *     summary: Get item/type details
- *     description: Returns item type information from the database.
+ *     summary: Get item/type details by ID
+ *     description: Returns comprehensive item type information including metadata, icons, descriptions, and market group classification from the Static Data Export.
  *     tags:
  *       - Items
  *     parameters:
  *       - name: id
  *         in: path
  *         required: true
- *         description: The type ID
+ *         description: The type/item ID
  *         schema:
  *           type: integer
- *           example: 587
+ *           example: 34
  *     responses:
  *       '200':
  *         description: Item/type details
@@ -24,25 +24,75 @@ import { validate } from '~/utils/validation';
  *           application/json:
  *             schema:
  *               type: object
- *             example:
- *               typeId: 587
- *               groupId: 419
- *               name: "Rifter"
- *               description: "The Rifter is a versatile frigate designed for high-speed combat operations."
- *               mass: 1067000
- *               volume: 27289
- *               capacity: 140
- *               portionSize: 1
- *               published: true
- *               marketGroupId: 378
- *               iconId: 3330
+ *               required:
+ *                 - typeId
+ *                 - name
+ *                 - groupId
+ *               properties:
+ *                 typeId:
+ *                   type: integer
+ *                   example: 34
+ *                 name:
+ *                   type: string
+ *                   example: "Tritanium"
+ *                 description:
+ *                   type: string
+ *                   example: "The main building block in space structures..."
+ *                 groupId:
+ *                   type: integer
+ *                   example: 18
+ *                 capacity:
+ *                   type: [number, "null"]
+ *                   example: null
+ *                 factionId:
+ *                   type: [integer, "null"]
+ *                   example: null
+ *                 graphicId:
+ *                   type: [integer, "null"]
+ *                   example: null
+ *                 iconId:
+ *                   type: [integer, "null"]
+ *                   example: 22
+ *                 marketGroupId:
+ *                   type: [integer, "null"]
+ *                   example: 1857
+ *                 mass:
+ *                   type: [number, "null"]
+ *                   example: null
+ *                 metaGroupId:
+ *                   type: [integer, "null"]
+ *                   example: null
+ *                 portionSize:
+ *                   type: integer
+ *                   example: 1
+ *                 published:
+ *                   type: boolean
+ *                   example: true
+ *                 raceId:
+ *                   type: [integer, "null"]
+ *                   example: null
+ *                 radius:
+ *                   type: [number, "null"]
+ *                   example: null
+ *                 soundId:
+ *                   type: [integer, "null"]
+ *                   example: null
+ *                 volume:
+ *                   type: number
+ *                   example: 0.01
  *       '404':
  *         description: Item/type not found
  *         content:
  *           application/json:
- *             example:
- *               statusCode: 404
- *               statusMessage: "Item/type not found"
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 404
+ *                 statusMessage:
+ *                   type: string
+ *                   example: "Item/type not found"
  */
 export default defineEventHandler(async (event) => {
   const { params } = await validate(event, {
@@ -53,7 +103,10 @@ export default defineEventHandler(async (event) => {
 
   const { id } = params;
 
-  const type = await database.findOne('types', { typeId: id });
+  const type = await database.findOne(
+    'SELECT * FROM types WHERE "typeId" = :id',
+    { id }
+  );
 
   if (!type) {
     throw createError({

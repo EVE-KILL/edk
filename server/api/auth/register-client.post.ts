@@ -1,3 +1,48 @@
+/**
+ * @openapi
+ * /api/auth/register-client:
+ *   post:
+ *     summary: Register WebSocket client
+ *     description: Registers a client for WebSocket connections. Requires authentication. Associates a clientId with the authenticated user session.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - clientId
+ *             properties:
+ *               clientId:
+ *                 type: string
+ *                 description: Unique client identifier
+ *                 example: "client-abc123xyz"
+ *               userAgent:
+ *                 type: string
+ *                 description: Client user agent (max 180 chars)
+ *                 example: "Mozilla/5.0..."
+ *               lastSeen:
+ *                 type: number
+ *                 description: Timestamp of last activity (ms)
+ *                 example: 1701388800000
+ *     responses:
+ *       '200':
+ *         description: Client registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *       '400':
+ *         description: Missing clientId
+ *       '401':
+ *         description: Unauthorized - authentication required
+ */
 import { createError, readBody, setResponseHeaders } from 'h3';
 import { createRedisClient } from '../../helpers/redis';
 

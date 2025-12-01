@@ -5,8 +5,8 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/characters/{id}:
  *   get:
- *     summary: Get character details
- *     description: Returns character information from the database.
+ *     summary: Get character details by ID
+ *     description: Returns comprehensive information for a specific character including corporation, alliance, and security status.
  *     tags:
  *       - Characters
  *     parameters:
@@ -16,7 +16,7 @@ import { validate } from '~/utils/validation';
  *         description: The character ID
  *         schema:
  *           type: integer
- *           example: 95465499
+ *           example: 2116199184
  *     responses:
  *       '200':
  *         description: Character details
@@ -24,41 +24,47 @@ import { validate } from '~/utils/validation';
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - characterId
+ *                 - name
+ *                 - corporationId
+ *                 - updatedAt
  *               properties:
  *                 characterId:
  *                   type: integer
+ *                   example: 2116199184
  *                 name:
  *                   type: string
+ *                   example: "Ruslan Taron"
  *                 corporationId:
  *                   type: integer
- *                   nullable: true
+ *                   example: 1000172
  *                 allianceId:
- *                   type: integer
- *                   nullable: true
+ *                   type: [integer, "null"]
+ *                   example: 0
  *                 factionId:
- *                   type: integer
- *                   nullable: true
+ *                   type: [integer, "null"]
+ *                   example: null
  *                 securityStatus:
- *                   type: number
- *                   nullable: true
+ *                   type: [number, "null"]
+ *                   example: 0.022480793
  *                 updatedAt:
  *                   type: string
  *                   format: date-time
- *             example:
- *               characterId: 95465499
- *               name: "Karbowiak"
- *               corporationId: 98356193
- *               allianceId: 933731581
- *               factionId: null
- *               securityStatus: -2.345
- *               updatedAt: "2025-12-01T10:30:45.000Z"
+ *                   example: "2025-11-28T09:54:52.746Z"
  *       '404':
  *         description: Character not found
  *         content:
  *           application/json:
- *             example:
- *               statusCode: 404
- *               statusMessage: "Character not found"
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 404
+ *                 statusMessage:
+ *                   type: string
+ *                   example: "Character not found"
  */
 export default defineEventHandler(async (event) => {
   const { params } = await validate(event, {

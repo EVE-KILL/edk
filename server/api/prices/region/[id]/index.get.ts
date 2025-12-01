@@ -5,8 +5,8 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/prices/region/{id}:
  *   get:
- *     summary: Get prices for a region
- *     description: Returns all prices for items in a specific region.
+ *     summary: Get paginated prices for a region
+ *     description: Returns a paginated list of all item prices for a specific region, sorted by price date.
  *     tags:
  *       - Prices
  *     parameters:
@@ -16,23 +16,71 @@ import { validate } from '~/utils/validation';
  *         description: The region ID
  *         schema:
  *           type: integer
- *           example: 10000002
+ *           example: 10000001
  *       - name: page
  *         in: query
- *         description: Page number
+ *         required: false
+ *         description: Page number (1-indexed)
  *         schema:
  *           type: integer
  *           default: 1
+ *           minimum: 1
  *       - name: perPage
  *         in: query
- *         description: Items per page (max 200)
+ *         required: false
+ *         description: Number of items per page
  *         schema:
  *           type: integer
  *           default: 50
  *           maximum: 200
  *     responses:
  *       '200':
- *         description: List of prices for the region
+ *         description: Paginated list of prices for the region
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - prices
+ *                 - page
+ *                 - perPage
+ *               properties:
+ *                 prices:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       typeId:
+ *                         type: integer
+ *                         example: 20
+ *                       regionId:
+ *                         type: integer
+ *                         example: 10000001
+ *                       priceDate:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2024-11-25T00:00:00.000Z"
+ *                       averagePrice:
+ *                         type: number
+ *                         example: 400
+ *                       highestPrice:
+ *                         type: number
+ *                         example: 400
+ *                       lowestPrice:
+ *                         type: number
+ *                         example: 400
+ *                       orderCount:
+ *                         type: integer
+ *                         example: 1
+ *                       volume:
+ *                         type: string
+ *                         example: "5270"
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 perPage:
+ *                   type: integer
+ *                   example: 50
  */
 export default defineEventHandler(async (event) => {
   const { params, query } = await validate(event, {

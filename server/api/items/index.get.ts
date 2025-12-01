@@ -5,36 +5,45 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/items:
  *   get:
- *     summary: Get item/type list
- *     description: Returns a paginated list of item types, optionally filtered by search term.
+ *     summary: Get paginated item/type list
+ *     description: Returns a paginated list of published item types, optionally filtered by search term. Sorted by type ID when no search term is provided.
  *     tags:
  *       - Items
  *     parameters:
  *       - name: search
  *         in: query
- *         description: Search term to filter items
+ *         required: false
+ *         description: Search term to filter items by name (case-insensitive)
  *         schema:
  *           type: string
+ *           example: "Plagioclase"
  *       - name: page
  *         in: query
- *         description: Page number
+ *         required: false
+ *         description: Page number (1-indexed)
  *         schema:
  *           type: integer
  *           default: 1
+ *           minimum: 1
  *       - name: perPage
  *         in: query
- *         description: Items per page (max 200)
+ *         required: false
+ *         description: Number of items per page
  *         schema:
  *           type: integer
  *           default: 50
  *           maximum: 200
  *     responses:
  *       '200':
- *         description: List of items/types
+ *         description: Paginated list of items/types
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - items
+ *                 - page
+ *                 - perPage
  *               properties:
  *                 items:
  *                   type: array
@@ -43,27 +52,61 @@ import { validate } from '~/utils/validation';
  *                     properties:
  *                       typeId:
  *                         type: integer
+ *                         example: 18
  *                       name:
  *                         type: string
+ *                         example: "Plagioclase"
+ *                       description:
+ *                         type: string
+ *                         example: "Plagioclase is not amongst the most valuable ore types..."
  *                       groupId:
  *                         type: integer
- *                       volume:
+ *                         example: 458
+ *                       capacity:
+ *                         type: [number, "null"]
+ *                         example: null
+ *                       factionId:
+ *                         type: [integer, "null"]
+ *                         example: null
+ *                       graphicId:
+ *                         type: [integer, "null"]
+ *                         example: null
+ *                       iconId:
+ *                         type: [integer, "null"]
+ *                         example: 230
+ *                       marketGroupId:
+ *                         type: [integer, "null"]
+ *                         example: 516
+ *                       mass:
  *                         type: number
+ *                         example: 1E+35
+ *                       metaGroupId:
+ *                         type: [integer, "null"]
+ *                         example: null
+ *                       portionSize:
+ *                         type: integer
+ *                         example: 100
  *                       published:
  *                         type: boolean
+ *                         example: true
+ *                       raceId:
+ *                         type: [integer, "null"]
+ *                         example: null
+ *                       radius:
+ *                         type: [number, "null"]
+ *                         example: null
+ *                       soundId:
+ *                         type: [integer, "null"]
+ *                         example: null
+ *                       volume:
+ *                         type: number
+ *                         example: 0.35
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
- *             example:
- *               items:
- *                 - typeId: 18
- *                   name: "Plagioclase"
- *                   groupId: 458
- *                   volume: 0.35
- *                   published: true
- *               page: 1
- *               perPage: 50
+ *                   example: 50
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

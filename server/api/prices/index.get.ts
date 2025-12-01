@@ -5,42 +5,45 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/prices:
  *   get:
- *     summary: Get prices list
- *     description: Returns a paginated list of prices, optionally filtered by region and type.
+ *     summary: Get paginated price list
+ *     description: Returns a paginated list of prices from market data, optionally filtered by region. Sorted by price date in descending order.
  *     tags:
  *       - Prices
  *     parameters:
  *       - name: regionId
  *         in: query
- *         description: Filter by region ID (default is Jita - 10000002)
+ *         required: false
+ *         description: Filter by region ID (if not provided, returns prices from all regions)
  *         schema:
  *           type: integer
- *           default: 10000002
- *       - name: typeId
- *         in: query
- *         description: Filter by type ID
- *         schema:
- *           type: integer
+ *           example: 10000001
  *       - name: page
  *         in: query
- *         description: Page number
+ *         required: false
+ *         description: Page number (1-indexed)
  *         schema:
  *           type: integer
  *           default: 1
+ *           minimum: 1
  *       - name: perPage
  *         in: query
- *         description: Items per page (max 200)
+ *         required: false
+ *         description: Number of items per page
  *         schema:
  *           type: integer
  *           default: 50
  *           maximum: 200
  *     responses:
  *       '200':
- *         description: List of prices
+ *         description: Paginated list of prices
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - prices
+ *                 - page
+ *                 - perPage
  *               properties:
  *                 prices:
  *                   type: array
@@ -49,37 +52,35 @@ import { validate } from '~/utils/validation';
  *                     properties:
  *                       typeId:
  *                         type: integer
+ *                         example: 34
  *                       regionId:
  *                         type: integer
+ *                         example: 10000001
  *                       priceDate:
  *                         type: string
  *                         format: date-time
+ *                         example: "2025-11-26T00:00:00.000Z"
  *                       averagePrice:
  *                         type: number
+ *                         example: 0.99
  *                       highestPrice:
  *                         type: number
+ *                         example: 2.65
  *                       lowestPrice:
  *                         type: number
+ *                         example: 0.98
  *                       orderCount:
  *                         type: integer
+ *                         example: 31
  *                       volume:
  *                         type: string
+ *                         example: "66479257"
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
- *             example:
- *               prices:
- *                 - typeId: 2303
- *                   regionId: 10000001
- *                   priceDate: "2025-11-26T00:00:00.000Z"
- *                   averagePrice: 3945000
- *                   highestPrice: 3945000
- *                   lowestPrice: 3945000
- *                   orderCount: 1
- *                   volume: "1"
- *               page: 1
- *               perPage: 50
+ *                   example: 50
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

@@ -5,61 +5,103 @@ import { validate } from '~/utils/validation';
  * @openapi
  * /api/wars:
  *   get:
- *     summary: Get war list
- *     description: Returns a paginated list of wars.
+ *     summary: Get paginated war list
+ *     description: Returns a paginated list of wars from the database, sorted by war ID in descending order.
  *     tags:
  *       - Wars
  *     parameters:
  *       - name: page
  *         in: query
- *         description: Page number
+ *         required: false
+ *         description: Page number (1-indexed)
  *         schema:
  *           type: integer
  *           default: 1
+ *           minimum: 1
  *       - name: perPage
  *         in: query
- *         description: Items per page (max 200)
+ *         required: false
+ *         description: Number of items per page
  *         schema:
  *           type: integer
  *           default: 50
  *           maximum: 200
  *     responses:
  *       '200':
- *         description: List of wars
+ *         description: Paginated list of wars
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - wars
+ *                 - page
+ *                 - perPage
  *               properties:
  *                 wars:
  *                   type: array
  *                   items:
  *                     type: object
+ *                     properties:
+ *                       warId:
+ *                         type: string
+ *                         example: "999999999999999"
+ *                       aggressorAllianceId:
+ *                         type: [string, "null"]
+ *                         example: "500001"
+ *                       aggressorCorporationId:
+ *                         type: [string, "null"]
+ *                         example: null
+ *                       aggressorIskDestroyed:
+ *                         type: integer
+ *                         example: 0
+ *                       aggressorShipsKilled:
+ *                         type: integer
+ *                         example: 0
+ *                       defenderAllianceId:
+ *                         type: [string, "null"]
+ *                         example: "500004"
+ *                       defenderCorporationId:
+ *                         type: [string, "null"]
+ *                         example: null
+ *                       defenderIskDestroyed:
+ *                         type: integer
+ *                         example: 0
+ *                       defenderShipsKilled:
+ *                         type: integer
+ *                         example: 0
+ *                       declared:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2003-05-06T00:00:00.000Z"
+ *                       started:
+ *                         type: [string, "null"]
+ *                         format: date-time
+ *                         example: "2003-05-06T00:00:00.000Z"
+ *                       retracted:
+ *                         type: [string, "null"]
+ *                         format: date-time
+ *                         example: null
+ *                       finished:
+ *                         type: [string, "null"]
+ *                         format: date-time
+ *                         example: null
+ *                       mutual:
+ *                         type: boolean
+ *                         example: true
+ *                       openForAllies:
+ *                         type: boolean
+ *                         example: false
+ *                       lastUpdated:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-11-28T10:28:45.458Z"
  *                 page:
  *                   type: integer
+ *                   example: 1
  *                 perPage:
  *                   type: integer
- *             example:
- *               wars:
- *               wars:
- *                 - warId: "999999999999999"
- *                   aggressorAllianceId: "500001"
- *                   aggressorCorporationId: null
- *                   aggressorIskDestroyed: 0
- *                   aggressorShipsKilled: 0
- *                   defenderAllianceId: "500004"
- *                   defenderCorporationId: null
- *                   defenderIskDestroyed: 0
- *                   defenderShipsKilled: 0
- *                   declared: "2003-05-06T00:00:00.000Z"
- *                   started: "2003-05-06T00:00:00.000Z"
- *                   retracted: null
- *                   finished: null
- *                   mutual: true
- *                   openForAllies: false
- *                   lastUpdated: "2025-11-28T10:28:45.458Z"
- *               page: 1
- *               perPage: 50
+ *                   example: 50
  */
 export default defineEventHandler(async (event) => {
   const { query } = await validate(event, {

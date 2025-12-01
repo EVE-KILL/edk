@@ -6,8 +6,8 @@ import { getFilteredKills, type KilllistFilters } from '~/models/killlist';
  * @openapi
  * /api/wars/{id}/killmails:
  *   get:
- *     summary: Get killmails for a war
- *     description: Returns killmails that occurred during this war.
+ *     summary: Get paginated killmails for a war
+ *     description: Returns a paginated list of killmails that occurred during this specific war.
  *     tags:
  *       - Wars
  *     parameters:
@@ -16,56 +16,93 @@ import { getFilteredKills, type KilllistFilters } from '~/models/killlist';
  *         required: true
  *         description: The war ID
  *         schema:
- *           type: integer
- *           example: 615476
+ *           type: string
+ *           example: "999999999999999"
  *       - name: page
  *         in: query
- *         description: Page number
+ *         required: false
+ *         description: Page number (1-indexed)
  *         schema:
  *           type: integer
  *           default: 1
+ *           minimum: 1
  *       - name: perPage
  *         in: query
- *         description: Items per page (max 200)
+ *         required: false
+ *         description: Number of items per page
  *         schema:
  *           type: integer
  *           default: 50
  *           maximum: 200
  *     responses:
  *       '200':
- *         description: List of killmails
+ *         description: Paginated list of killmails
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - killmails
+ *                 - page
+ *                 - perPage
  *               properties:
  *                 killmails:
  *                   type: array
  *                   items:
  *                     type: object
+ *                     properties:
+ *                       killmailId:
+ *                         type: string
+ *                       killmailTime:
+ *                         type: string
+ *                         format: date-time
+ *                       solarSystemId:
+ *                         type: integer
+ *                       regionId:
+ *                         type: integer
+ *                       security:
+ *                         type: number
+ *                       victimCharacterId:
+ *                         type: string
+ *                       victimCorporationId:
+ *                         type: string
+ *                       victimAllianceId:
+ *                         type: [string, "null"]
+ *                       victimShipTypeId:
+ *                         type: integer
+ *                       victimShipGroupId:
+ *                         type: integer
+ *                       victimDamageTaken:
+ *                         type: integer
+ *                       topAttackerCharacterId:
+ *                         type: [string, "null"]
+ *                       topAttackerCorporationId:
+ *                         type: [string, "null"]
+ *                       topAttackerAllianceId:
+ *                         type: [string, "null"]
+ *                       topAttackerShipTypeId:
+ *                         type: [integer, "null"]
+ *                       totalValue:
+ *                         type: number
+ *                       attackerCount:
+ *                         type: integer
+ *                       npc:
+ *                         type: boolean
+ *                       solo:
+ *                         type: boolean
+ *                       awox:
+ *                         type: boolean
+ *                       entityId:
+ *                         type: integer
+ *                       entityType:
+ *                         type: string
+ *                         enum: ["none", "character", "corporation", "alliance"]
+ *                       isVictim:
+ *                         type: boolean
  *                 page:
  *                   type: integer
  *                 perPage:
  *                   type: integer
- *             example:
- *               killmails:
- *                 - killmailId: 123456789
- *                   killmailTime: "2025-11-16T15:30:22.000Z"
- *                   solarSystemId: 30000142
- *                   solarSystemName: "Jita"
- *                   victimCharacterName: "Victim Name"
- *                   victimShipTypeName: "Capsule"
- *                   totalValue: 125000000.00
- *                   warId: 615476
- *               page: 1
- *               perPage: 50
- *       '404':
- *         description: War not found
- *         content:
- *           application/json:
- *             example:
- *               statusCode: 404
- *               statusMessage: "War not found"
  */
 export default defineEventHandler(async (event) => {
   const { params, query } = await validate(event, {
