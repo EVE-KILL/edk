@@ -56,61 +56,12 @@ export default defineNitroConfig({
       },
     },
   },
-  routeRules:
-    process.env.NODE_ENV === 'production'
-      ? {
-          '/api/status': { cache: false },
-          '/api/ai/**': { cache: false, cors: true }, // Never cache AI responses
-          '/api/killmail/*/esi': {
-            cache: { maxAge: 3600, staleMaxAge: 3600, base: 'redis' },
-          },
-          '/api/auth/**': { cache: false, cors: true },
-          '/api/**': { cors: true, cache: { maxAge: 60, base: 'redis' } },
-          '/health': { cache: { maxAge: 5 } },
-
-          // Site
-          '/': { cache: { maxAge: 1, staleMaxAge: 5, base: 'redis' } },
-          '/kills/**': {
-            cache: { maxAge: 30, staleMaxAge: 30, base: 'redis' },
-          },
-          '/killmail/**': {
-            cache: { maxAge: 3600, staleMaxAge: -1, base: 'redis' },
-          },
-          '/wars': { cache: { maxAge: 300, staleMaxAge: -1, base: 'redis' } },
-          '/wars/**': {
-            cache: { maxAge: 300, staleMaxAge: -1, base: 'redis' },
-          },
-          '/character/**': {
-            cache: { maxAge: 300, staleMaxAge: -1, base: 'redis' },
-          },
-          '/corporation/**': {
-            cache: { maxAge: 300, staleMaxAge: -1, base: 'redis' },
-          },
-          '/alliance/**': {
-            cache: { maxAge: 300, staleMaxAge: -1, base: 'redis' },
-          },
-          '/item/**': {
-            cache: { maxAge: 3600, staleMaxAge: -1, base: 'redis' },
-          },
-          '/system/**': {
-            cache: { maxAge: 3600, staleMaxAge: -1, base: 'redis' },
-          },
-          '/constellation/**': {
-            cache: { maxAge: 3600, staleMaxAge: -1, base: 'redis' },
-          },
-          '/region/**': {
-            cache: { maxAge: 3600, staleMaxAge: -1, base: 'redis' },
-          },
-          '/filter': { cache: { maxAge: 5, staleMaxAge: -1, base: 'redis' } },
-          '/status': { cache: false },
-          '/docs': {
-            cache: { maxAge: 3600, staleMaxAge: 7200, base: 'redis' },
-          },
-          '/about': {
-            cache: { maxAge: 3600, staleMaxAge: 7200, base: 'redis' },
-          },
-        }
-      : {},
+  routeRules: {
+    '/api/status': { cache: false },
+    '/api/ai/**': { cache: false, cors: true }, // Never cache AI responses
+    '/api/auth/**': { cache: false, cors: true },
+    '/api/**': { cors: true, cache: { maxAge: 60, base: 'redis' } },
+  },
   imports: {
     autoImport: true,
     dirs: [

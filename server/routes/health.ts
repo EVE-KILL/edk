@@ -110,34 +110,41 @@ async function getDiskSpace() {
   }
 }
 
-export default defineEventHandler(async () => {
-  const [dbStatus, redisStatus, queues, memory, disk] = await Promise.all([
-    getDbStatus(),
-    getRedisStatus(),
-    getQueueStatus(),
-    getMemoryUsage(),
-    getDiskSpace(),
-  ]);
+export default defineCachedEventHandler(
+  async () => {
+    const [dbStatus, redisStatus, queues, memory, disk] = await Promise.all([
+      getDbStatus(),
+      getRedisStatus(),
+      getQueueStatus(),
+      getMemoryUsage(),
+      getDiskSpace(),
+    ]);
 
-  const overallStatus =
-    dbStatus.status === 'ok' && redisStatus.status === 'ok'
-      ? 'healthy'
-      : 'unhealthy';
-  const packageJson = JSON.parse(await readFile('./package.json', 'utf-8'));
+    const overallStatus =
+      dbStatus.status === 'ok' && redisStatus.status === 'ok'
+        ? 'healthy'
+        : 'unhealthy';
+    const packageJson = JSON.parse(await readFile('./package.json', 'utf-8'));
 
-  return {
-    status: overallStatus,
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: packageJson.version || 'unknown',
-    // Grab the package version from package.json
-    git_commit: packageJson.version || 'unknown',
-    checks: {
-      database: dbStatus,
-      redis: redisStatus,
-      queues,
-      memory,
-      disk,
-    },
-  };
-});
+    return {
+      status: overallStatus,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: packageJson.version || 'unknown',
+      // Grab the package version from package.json
+      git_commit: packageJson.version || 'unknown',
+      checks: {
+        database: dbStatus,
+        redis: redisStatus,
+        queues,
+        memory,
+        disk,
+      },
+    };
+  },
+  {
+    maxAge: 5,
+    base: 'redis',
+    shouldBypassCache: () => env.NODE_ENV !== 'production',
+  }
+);

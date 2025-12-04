@@ -246,7 +246,7 @@ async function fetchDatabaseStats(): Promise<DatabaseStats> {
   }
 }
 
-async function fetchQueueStats(): Promise<QueueStats> {
+async function fetchQueueStats(redisClient: any): Promise<QueueStats> {
   const stats: QueueStats = {};
   const queues: Queue[] = [];
 
@@ -254,11 +254,7 @@ async function fetchQueueStats(): Promise<QueueStats> {
     const queueTypes = Object.values(QueueType);
     for (const queueType of queueTypes) {
       const queue = new Queue(queueType, {
-        connection: {
-          host: env.REDIS_HOST,
-          port: env.REDIS_PORT,
-          password: env.REDIS_PASSWORD,
-        },
+        connection: redisClient, // Reuse the passed Redis client
       });
       queues.push(queue);
 
@@ -289,15 +285,12 @@ async function fetchQueueStats(): Promise<QueueStats> {
   return stats;
 }
 
-async function fetchRedisStats(): Promise<RedisStats> {
-  let redis = null;
+async function fetchRedisStats(redisClient: any): Promise<RedisStats> {
   try {
-    redis = createRedisClient();
-
     const [info, serverInfo, dbInfo] = await Promise.all([
-      redis.info('memory'),
-      redis.info('server'),
-      redis.info('keyspace'),
+      redisClient.info('memory'),
+      redisClient.info('server'),
+      redisClient.info('keyspace'),
     ]);
 
     const memoryMatch = info.match(/used_memory_human:([^\r\n]+)/);
@@ -309,8 +302,6 @@ async function fetchRedisStats(): Promise<RedisStats> {
     const keysMatch = dbInfo.match(/keys=(\d+)/);
     const keys = keysMatch ? Number.parseInt(keysMatch[1]) : 0;
 
-    await redis.quit();
-
     return {
       connected: true,
       usedMemory,
@@ -319,13 +310,6 @@ async function fetchRedisStats(): Promise<RedisStats> {
     };
   } catch (error) {
     logger.error('status: failed to fetch redis stats', { error });
-    if (redis) {
-      try {
-        await redis.quit();
-      } catch {
-        // ignore
-      }
-    }
     return {
       connected: false,
       usedMemory: 'N/A',
@@ -335,12 +319,9 @@ async function fetchRedisStats(): Promise<RedisStats> {
   }
 }
 
-async function fetchWebSocketStats(): Promise<WebSocketStats> {
-  let redis = null;
+async function fetchWebSocketStats(redisClient: any): Promise<WebSocketStats> {
   try {
-    redis = createRedisClient();
-    const statsJson = await redis.get('ws:stats');
-    await redis.quit();
+    const statsJson = await redisClient.get('ws:stats');
 
     if (statsJson) {
       const stats = JSON.parse(statsJson);
@@ -356,13 +337,6 @@ async function fetchWebSocketStats(): Promise<WebSocketStats> {
     return { connectedClients: 0, available: false };
   } catch (error) {
     logger.error('status: failed to fetch websocket stats', { error });
-    if (redis) {
-      try {
-        await redis.quit();
-      } catch {
-        // ignore
-      }
-    }
     return { connectedClients: 0, available: false };
   }
 }
@@ -380,21 +354,29 @@ async function fetchSystemStats(): Promise<SystemStats> {
 }
 
 export async function collectStatusSnapshot(): Promise<StatusSnapshot> {
-  const [databaseStats, queueStats, redisStats, websocketStats, systemStats] =
-    await Promise.all([
-      fetchDatabaseStats(),
-      fetchQueueStats(),
-      fetchRedisStats(),
-      fetchWebSocketStats(),
-      fetchSystemStats(),
-    ]);
+  // Create a single Redis client for this status check request
+  const redisClient = createRedisClient();
 
-  return {
-    timestamp: new Date().toISOString(),
-    database: databaseStats,
-    queues: queueStats,
-    redis: redisStats,
-    websocket: websocketStats,
-    system: systemStats,
-  };
+  try {
+    const [databaseStats, queueStats, redisStats, websocketStats, systemStats] =
+      await Promise.all([
+        fetchDatabaseStats(),
+        fetchQueueStats(redisClient),
+        fetchRedisStats(redisClient),
+        fetchWebSocketStats(redisClient),
+        fetchSystemStats(),
+      ]);
+
+    return {
+      timestamp: new Date().toISOString(),
+      database: databaseStats,
+      queues: queueStats,
+      redis: redisStats,
+      websocket: websocketStats,
+      system: systemStats,
+    };
+  } finally {
+    // Ensure the Redis client is closed after all stats are collected
+    await redisClient.quit().catch(() => {});
+  }
 }

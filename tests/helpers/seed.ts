@@ -18,7 +18,10 @@ export async function seedKillmails(count: number = 10) {
       hash: 'hash' + i,
     });
   }
-  await database.bulkUpsert('killmails', killmails, 'killmailId');
+  await database.bulkUpsert('killmails', killmails, [
+    'killmailId',
+    'killmailTime',
+  ]);
   return killmails;
 }
 

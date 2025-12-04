@@ -1,4 +1,6 @@
-import { readFile } from 'fs/promises';
+import { createReadStream } from 'fs';
+import { createInterface } from 'readline';
+import { logger } from '../logger';
 
 /**
  * SDE Parser - Handles JSON Lines format with special _key/_value encoding
@@ -49,44 +51,29 @@ export function normalizeSDERow(row: any): SDERow {
 }
 
 /**
- * Parse JSON Lines file
- */
-export async function parseJSONLines(filepath: string): Promise<any[]> {
-  const content = await readFile(filepath, 'utf-8');
-  const lines = content.split('\n').filter((l) => l.trim());
-
-  const rows: any[] = [];
-  for (const line of lines) {
-    try {
-      const data = JSON.parse(line);
-      rows.push(normalizeSDERow(data));
-    } catch {
-      logger.warn(
-        `⚠️  Skipped invalid JSON line: ${line.substring(0, 100)}...`
-      );
-    }
-  }
-
-  return rows;
-}
-
-/**
  * Stream parse JSON Lines file (for large files)
- * Yields one row at a time
+ * Yields one row at a time using readline for memory efficiency
  */
 export async function* streamParseJSONLines(
   filepath: string
 ): AsyncGenerator<any> {
-  const content = await readFile(filepath, 'utf-8');
-  const lines = content.split('\n').filter((l) => l.trim());
+  const fileStream = createReadStream(filepath, { encoding: 'utf-8' });
+  const rl = createInterface({
+    input: fileStream,
+    crlfDelay: Infinity,
+  });
 
-  for (let i = 0; i < lines.length; i++) {
+  let lineNum = 0;
+  for await (const line of rl) {
+    lineNum++;
+    if (!line.trim()) continue;
+
     try {
-      const data = JSON.parse(lines[i]);
+      const data = JSON.parse(line);
       yield normalizeSDERow(data);
     } catch {
       logger.warn(
-        `⚠️  Skipped invalid JSON line ${i + 1}: ${lines[i].substring(0, 100)}...`
+        `⚠️  Skipped invalid JSON line ${lineNum}: ${line.substring(0, 100)}...`
       );
     }
   }

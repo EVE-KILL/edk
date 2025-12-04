@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { validate } from '~/utils/validation';
+import { env } from '../../../../helpers/env';
 
 /**
  * @openapi
@@ -141,23 +142,31 @@ import { validate } from '~/utils/validation';
  *                   type: string
  *                   example: "Invalid killmail ID"
  */
-export default defineEventHandler(async (event: any) => {
-  const { params } = await validate(event, {
-    params: z.object({
-      id: z.coerce.number().int().positive(),
-    }),
-  });
-
-  const { id } = params;
-
-  const killmail = await getKillmail(id);
-
-  if (!killmail) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: `Killmail with ID ${id} not found`,
+export default defineCachedEventHandler(
+  async (event: any) => {
+    const { params } = await validate(event, {
+      params: z.object({
+        id: z.coerce.number().int().positive(),
+      }),
     });
-  }
 
-  return killmail;
-});
+    const { id } = params;
+
+    const killmail = await getKillmail(id);
+
+    if (!killmail) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: `Killmail with ID ${id} not found`,
+      });
+    }
+
+    return killmail;
+  },
+  {
+    maxAge: 3600,
+    staleMaxAge: 3600,
+    base: 'redis',
+    shouldBypassCache: () => env.NODE_ENV !== 'production',
+  }
+);

@@ -15,8 +15,8 @@ describe('Entity Stats Queue Integration', () => {
   });
 
   test('storeKillmail enqueues entity stats job', async () => {
-    // Use a date from 2024 which should have a partition already
-    const testDate = new Date('2024-06-15T12:00:00Z');
+    // Use current date which should have a partition
+    const testDate = new Date();
 
     const testKillmail: ESIKillmail = {
       killmail_id: 123456789,

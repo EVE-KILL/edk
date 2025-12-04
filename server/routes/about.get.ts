@@ -5,51 +5,64 @@ import { logger } from '../helpers/logger';
 import { render } from '../helpers/templates';
 import { handleError } from '../utils/error';
 import { track } from '../utils/performance-decorators';
+import { env } from '../helpers/env';
 
-export default defineEventHandler(async (event: H3Event) => {
-  try {
-    const query = getQuery(event);
-    const easterEggEnabled = Boolean(query.itwasallplannedbybob);
+export default defineCachedEventHandler(
+  async (event: H3Event) => {
+    try {
+      const query = getQuery(event);
+      const easterEggEnabled = Boolean(query.itwasallplannedbybob);
 
-    const pageContext = {
-      title: 'About - EVE Killboard',
-      activeNav: 'about',
-    };
-
-    const pageHeader = {
-      breadcrumbs: [
-        { label: 'Home', url: '/' },
-        { label: 'About', url: '/about' },
-      ],
-      meta: [
-        { type: 'pill', text: 'Overview' },
-        { type: 'text', text: `Updated ${new Date().toLocaleDateString()}` },
-      ],
-    };
-
-    // Get simple counts (fast queries using table statistics)
-    const counts = await track('about:get_db_counts', 'database', async () => {
-      return await getDatabaseCounts();
-    });
-
-    logger.info('About page counts', { counts });
-
-    // Build data object
-    const data = await track('about:build_data', 'application', async () => {
-      return {
-        counts,
-        updatedAt: new Date().toISOString(),
-        easterEggEnabled,
-        pageHeader,
+      const pageContext = {
+        title: 'About - EVE Killboard',
+        activeNav: 'about',
       };
-    });
 
-    // Render template
-    return render('pages/about.hbs', pageContext, data, event);
-  } catch (error) {
-    return handleError(event, error);
+      const pageHeader = {
+        breadcrumbs: [
+          { label: 'Home', url: '/' },
+          { label: 'About', url: '/about' },
+        ],
+        meta: [
+          { type: 'pill', text: 'Overview' },
+          { type: 'text', text: `Updated ${new Date().toLocaleDateString()}` },
+        ],
+      };
+
+      // Get simple counts (fast queries using table statistics)
+      const counts = await track(
+        'about:get_db_counts',
+        'database',
+        async () => {
+          return await getDatabaseCounts();
+        }
+      );
+
+      logger.info('About page counts', { counts });
+
+      // Build data object
+      const data = await track('about:build_data', 'application', async () => {
+        return {
+          counts,
+          updatedAt: new Date().toISOString(),
+          easterEggEnabled,
+          pageHeader,
+        };
+      });
+
+      // Render template
+      return render('pages/about.hbs', pageContext, data, event);
+    } catch (error) {
+      return handleError(event, error);
+    }
+  },
+  {
+    maxAge: 3600,
+    staleMaxAge: 7200,
+    base: 'redis',
+    shouldBypassCache: () => env.NODE_ENV !== 'production',
   }
-});
+);
 
 /**
  * Get database counts for all major tables (using fast estimates from pg_class)

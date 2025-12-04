@@ -1,4 +1,4 @@
-import logger from '../server/helpers/logger';
+import { logger } from '../server/helpers/logger';
 
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 import { database } from '../server/helpers/database';
@@ -31,7 +31,7 @@ describe('Schema Migration', () => {
       if (existsSync(TEST_MIGRATION_PATH)) {
         unlinkSync(TEST_MIGRATION_PATH);
       }
-    } catch {
+    } catch (e) {
       logger.error('Cleanup failed', e);
     }
   });
