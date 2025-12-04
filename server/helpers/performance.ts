@@ -52,7 +52,11 @@ export class PerformanceTracker {
   }
 
   // Start a new span
-  startSpan(name: string, category: SpanCategory, metadata?: Record<string, any>): string {
+  startSpan(
+    name: string,
+    category: SpanCategory,
+    metadata?: Record<string, any>
+  ): string {
     const id = `span_${++this.spanCounter}`;
     const span: Span = {
       id,
@@ -143,13 +147,20 @@ export class PerformanceTracker {
   getSummary() {
     const totalTime = Date.now() - this.startTime;
     const dbTimeTotal = this.queries.reduce((sum, q) => sum + q.duration, 0);
-    const dbTimeAvg = this.queries.length > 0 ? dbTimeTotal / this.queries.length : 0;
-    const dbTimeLongest = this.queries.length > 0 ? Math.max(...this.queries.map(q => q.duration)) : 0;
+    const dbTimeAvg =
+      this.queries.length > 0 ? dbTimeTotal / this.queries.length : 0;
+    const dbTimeLongest =
+      this.queries.length > 0
+        ? Math.max(...this.queries.map((q) => q.duration))
+        : 0;
     const queryCount = this.queries.length;
 
     // Calculate category breakdowns
     const spans = this.getSpans();
-    const categoryBreakdown: Record<SpanCategory, { count: number; total: number }> = {
+    const categoryBreakdown: Record<
+      SpanCategory,
+      { count: number; total: number }
+    > = {
       database: { count: 0, total: 0 },
       cache: { count: 0, total: 0 },
       search: { count: 0, total: 0 },
@@ -164,7 +175,9 @@ export class PerformanceTracker {
     const now = Date.now();
     for (const span of spans) {
       // Calculate duration for running spans (those without endTime yet)
-      const duration = span.duration || (span.endTime ? span.endTime - span.startTime : now - span.startTime);
+      const duration =
+        span.duration ||
+        (span.endTime ? span.endTime - span.startTime : now - span.startTime);
 
       if (duration > 0) {
         categoryBreakdown[span.category].count++;
@@ -231,7 +244,9 @@ export class PerformanceTracker {
             return spans
               .map((s) => {
                 // Calculate duration for running spans
-                const duration = s.duration || (s.endTime ? s.endTime - s.startTime : now - s.startTime);
+                const duration =
+                  s.duration ||
+                  (s.endTime ? s.endTime - s.startTime : now - s.startTime);
                 const depth = calculateDepth(s);
                 return {
                   ...s,

@@ -4,7 +4,10 @@ export default defineEventHandler(async (event) => {
   const user = event.context.user;
 
   if (!user) {
-    throw createError({ statusCode: 401, statusMessage: 'Authentication required' });
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Authentication required',
+    });
   }
 
   const pageContext = {
@@ -13,9 +16,7 @@ export default defineEventHandler(async (event) => {
   };
 
   const data = {
-    sidebar: [
-      { label: 'Overview', href: '/settings', active: true },
-    ],
+    sidebar: [{ label: 'Overview', href: '/settings', active: true }],
     user: {
       name: user.characterName,
       characterId: user.characterId,

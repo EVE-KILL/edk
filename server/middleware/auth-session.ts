@@ -62,8 +62,7 @@ export default defineEventHandler(async (event) => {
           allianceId: refreshed.allianceId,
           allianceName: refreshed.allianceName,
           admin: Boolean(refreshed.admin),
-          canFetchCorporationKillmails:
-            refreshed.canFetchCorporationKillmails,
+          canFetchCorporationKillmails: refreshed.canFetchCorporationKillmails,
         };
       }
     }

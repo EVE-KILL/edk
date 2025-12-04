@@ -2,7 +2,10 @@ export default defineEventHandler(async (event) => {
   const user = event.context.user;
 
   if (!user || !user.admin) {
-    throw createError({ statusCode: 403, statusMessage: 'Admin access required' });
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Admin access required',
+    });
   }
 
   const pageContext = {
@@ -11,9 +14,7 @@ export default defineEventHandler(async (event) => {
   };
 
   const data = {
-    sidebar: [
-      { label: 'Admin Home', href: '/admin', active: true },
-    ],
+    sidebar: [{ label: 'Admin Home', href: '/admin', active: true }],
     user: {
       name: user.characterName,
       characterId: user.characterId,
@@ -30,7 +31,12 @@ async function getAllUserDevices() {
   const redis = createRedisClient();
   // Scan keys matching ws:user:*:clients
   const keys = await redis.keys('ws:user:*:clients');
-  const devices: { userId: string; clientId: string; userAgent: string; lastSeen: Date | null }[] = [];
+  const devices: {
+    userId: string;
+    clientId: string;
+    userAgent: string;
+    lastSeen: Date | null;
+  }[] = [];
 
   for (const key of keys) {
     const match = key.match(/^ws:user:(\d+):clients$/);

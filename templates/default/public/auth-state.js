@@ -1,7 +1,7 @@
 (function () {
   const loggedIn = document.querySelector('[data-auth-section="in"]');
   const loggedOut = document.querySelector('[data-auth-section="out"]');
-  const imageBase = (window.__EDK_IMAGE_URL || 'https://images.eve-kill.com');
+  const imageBase = window.__EDK_IMAGE_URL || 'https://images.eve-kill.com';
 
   function setLoggedOut() {
     if (loggedIn) loggedIn.style.display = 'none';

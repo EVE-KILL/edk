@@ -93,5 +93,8 @@
     "!(chart/templates/**/*)*.{yml,yaml}": [
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "xml2js": ">=0.5.0"
   }
 }

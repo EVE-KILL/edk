@@ -2,7 +2,7 @@ import { database } from '../helpers/database';
 
 /**
  * Entity Stats Cache Model
- * 
+ *
  * High-performance pre-calculated entity statistics
  * Updated in real-time via triggers on killmails table
  * Supports all-time, 90d, 30d, and 14d time periods
@@ -56,7 +56,9 @@ function calculateDerivedStats(stats: any): EntityStatsCache {
       : 0;
 
   const killLossRatio =
-    Number(stats.losses) > 0 ? Number(stats.kills) / Number(stats.losses) : Number(stats.kills);
+    Number(stats.losses) > 0
+      ? Number(stats.kills) / Number(stats.losses)
+      : Number(stats.kills);
 
   return {
     entityId: stats.entityId,
@@ -86,15 +88,18 @@ export async function getEntityStatsFromCache(
   period: 'all' | '90d' | '30d' | '14d' = 'all'
 ): Promise<EntityStatsCache | null> {
   const suffix = getPeriodSuffix(period);
-  
+
   // When fetching 'all' stats, also include time-period breakdowns
-  const timePeriodsSelect = period === 'all' ? `
+  const timePeriodsSelect =
+    period === 'all'
+      ? `
     "kills30d",
     "losses30d",
     "kills14d",
     "losses14d",
-  ` : '';
-  
+  `
+      : '';
+
   const result = await database.findOne<any>(
     `SELECT
       "entityId",
@@ -119,12 +124,18 @@ export async function getEntityStatsFromCache(
   if (!result) return null;
 
   const baseStats = calculateDerivedStats(result);
-  
+
   // Add time period data and K/L ratios when period is 'all'
   if (period === 'all' && result.kills30d !== undefined) {
-    const killLossRatio30d = result.losses30d > 0 ? result.kills30d / result.losses30d : result.kills30d || 0;
-    const killLossRatio7d = result.losses14d > 0 ? result.kills14d / result.losses14d : result.kills14d || 0;
-    
+    const killLossRatio30d =
+      result.losses30d > 0
+        ? result.kills30d / result.losses30d
+        : result.kills30d || 0;
+    const killLossRatio7d =
+      result.losses14d > 0
+        ? result.kills14d / result.losses14d
+        : result.kills14d || 0;
+
     return {
       ...baseStats,
       kills30d: result.kills30d,
@@ -180,7 +191,7 @@ export async function getTopEntitiesByKillsFromCache(
   limit: number = 100
 ): Promise<EntityStatsCache[]> {
   const suffix = getPeriodSuffix(period);
-  
+
   const results = await database.find<any>(
     `SELECT
       "entityId",
@@ -216,7 +227,7 @@ export async function getTopEntitiesByEfficiencyFromCache(
   limit: number = 100
 ): Promise<EntityStatsCache[]> {
   const suffix = getPeriodSuffix(period);
-  
+
   const results = await database.find<any>(
     `SELECT
       "entityId",
@@ -251,24 +262,30 @@ export async function getTopEntitiesByEfficiencyFromCache(
  * Get multiple entity stats from cache in a single query
  */
 export async function getMultipleEntityStatsFromCache(
-  entities: Array<{ entityId: number; entityType: 'character' | 'corporation' | 'alliance' }>,
+  entities: Array<{
+    entityId: number;
+    entityType: 'character' | 'corporation' | 'alliance';
+  }>,
   period: 'all' | '90d' | '30d' | '14d' = 'all'
 ): Promise<EntityStatsCache[]> {
   if (entities.length === 0) return [];
 
   const suffix = getPeriodSuffix(period);
-  
+
   // Build OR conditions for each entity
-  const conditions = entities.map((_, idx) => 
-    `("entityId" = :entityId${idx} AND "entityType" = :entityType${idx})`
-  ).join(' OR ');
-  
+  const conditions = entities
+    .map(
+      (_, idx) =>
+        `("entityId" = :entityId${idx} AND "entityType" = :entityType${idx})`
+    )
+    .join(' OR ');
+
   const params: Record<string, any> = {};
   entities.forEach((entity, idx) => {
     params[`entityId${idx}`] = entity.entityId;
     params[`entityType${idx}`] = entity.entityType;
   });
-  
+
   const results = await database.find<any>(
     `SELECT
       "entityId",
@@ -323,8 +340,10 @@ export async function getStatsCacheSummary(): Promise<{
     `SELECT pg_total_relation_size('entity_stats_cache') as size`
   );
 
-  const characters = counts.find((c) => c.entityType === 'character')?.count || 0;
-  const corporations = counts.find((c) => c.entityType === 'corporation')?.count || 0;
+  const characters =
+    counts.find((c) => c.entityType === 'character')?.count || 0;
+  const corporations =
+    counts.find((c) => c.entityType === 'corporation')?.count || 0;
   const alliances = counts.find((c) => c.entityType === 'alliance')?.count || 0;
   const total = characters + corporations + alliances;
   const sizeBytes = Number(size?.size || 0);
@@ -359,7 +378,19 @@ export async function getStatsCacheSummary(): Promise<{
 export async function getEntityStatsWithPeriods(
   entityId: number,
   entityType: 'character' | 'corporation' | 'alliance'
-): Promise<EntityStatsCache & { kills30d?: number; kills14d?: number; kills7d?: number; losses30d?: number; losses14d?: number; losses7d?: number; killLossRatio30d?: number; killLossRatio7d?: number } | null> {
+): Promise<
+  | (EntityStatsCache & {
+      kills30d?: number;
+      kills14d?: number;
+      kills7d?: number;
+      losses30d?: number;
+      losses14d?: number;
+      losses7d?: number;
+      killLossRatio30d?: number;
+      killLossRatio7d?: number;
+    })
+  | null
+> {
   const result = await database.findOne<any>(
     `SELECT
       "entityId",
@@ -387,10 +418,16 @@ export async function getEntityStatsWithPeriods(
   if (!result) return null;
 
   const baseStats = calculateDerivedStats(result);
-  
+
   // Calculate K/L ratios for time periods
-  const killLossRatio30d = result.losses30d > 0 ? result.kills30d / result.losses30d : result.kills30d || 0;
-  const killLossRatio7d = result.losses14d > 0 ? result.kills14d / result.losses14d : result.kills14d || 0;
+  const killLossRatio30d =
+    result.losses30d > 0
+      ? result.kills30d / result.losses30d
+      : result.kills30d || 0;
+  const killLossRatio7d =
+    result.losses14d > 0
+      ? result.kills14d / result.losses14d
+      : result.kills14d || 0;
 
   return {
     ...baseStats,

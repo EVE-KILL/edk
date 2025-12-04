@@ -1,50 +1,51 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>WebSocket Test</title>
-</head>
-<body>
+  </head>
+  <body>
     <h1>WebSocket Test</h1>
     <div id="log"></div>
-    
+
     <script>
-        const log = document.getElementById('log');
-        function addLog(msg) {
-            const div = document.createElement('div');
-            div.textContent = `${new Date().toISOString()}: ${msg}`;
-            log.appendChild(div);
-            console.log(msg);
-        }
-        
-        addLog('Starting WebSocket test...');
-        
-        try {
-            const worker = new SharedWorker('/site-ws-worker.js', { name: 'edk-ws' });
-            const port = worker.port;
-            
-            addLog('SharedWorker created');
-            
-            port.onmessage = (event) => {
-                const msg = event.data;
-                addLog(`Received: ${JSON.stringify(msg)}`);
-            };
-            
-            port.start();
-            addLog('Port started');
-            
-            // Subscribe to latest topic
-            setTimeout(() => {
-                addLog('Subscribing to "latest" topic...');
-                port.postMessage({ 
-                    type: 'subscribeNamespace', 
-                    namespace: 'test', 
-                    topics: ['latest'] 
-                });
-            }, 1000);
-            
-        } catch (err) {
-            addLog(`Error: ${err.message}`);
-        }
+      const log = document.getElementById('log');
+      function addLog(msg) {
+        const div = document.createElement('div');
+        div.textContent = `${new Date().toISOString()}: ${msg}`;
+        log.appendChild(div);
+        console.log(msg);
+      }
+
+      addLog('Starting WebSocket test...');
+
+      try {
+        const worker = new SharedWorker('/site-ws-worker.js', {
+          name: 'edk-ws',
+        });
+        const port = worker.port;
+
+        addLog('SharedWorker created');
+
+        port.onmessage = (event) => {
+          const msg = event.data;
+          addLog(`Received: ${JSON.stringify(msg)}`);
+        };
+
+        port.start();
+        addLog('Port started');
+
+        // Subscribe to latest topic
+        setTimeout(() => {
+          addLog('Subscribing to "latest" topic...');
+          port.postMessage({
+            type: 'subscribeNamespace',
+            namespace: 'test',
+            topics: ['latest'],
+          });
+        }, 1000);
+      } catch (err) {
+        addLog(`Error: ${err.message}`);
+      }
     </script>
-</body>
+  </body>
 </html>

@@ -4,7 +4,9 @@
   const sortState = {};
 
   function initItemsSorting() {
-    const sortHeaders = document.querySelectorAll('.section-sort-header .sortable');
+    const sortHeaders = document.querySelectorAll(
+      '.section-sort-header .sortable'
+    );
 
     // Apply default sorting by name to all sections on page load
     const sectionHeaders = document.querySelectorAll('.section-sort-header');
@@ -17,8 +19,8 @@
       updateSortIndicators(sectionRow, 'name', 'asc');
     });
 
-    sortHeaders.forEach(header => {
-      header.addEventListener('click', function() {
+    sortHeaders.forEach((header) => {
+      header.addEventListener('click', function () {
         const sectionRow = this.closest('.section-sort-header');
         const sectionIndex = sectionRow.dataset.section;
         const sortBy = this.dataset.sort;
@@ -38,11 +40,19 @@
           // Numeric columns (quantity, price, totalValue) default to descending (largest first)
           // Text columns (name) default to ascending (A-Z)
           sortState[sectionIndex].direction =
-            (sortBy === 'quantity' || sortBy === 'price' || sortBy === 'totalValue') ? 'desc' : 'asc';
+            sortBy === 'quantity' ||
+            sortBy === 'price' ||
+            sortBy === 'totalValue'
+              ? 'desc'
+              : 'asc';
         }
 
         // Update UI indicators
-        updateSortIndicators(sectionRow, sortBy, sortState[sectionIndex].direction);
+        updateSortIndicators(
+          sectionRow,
+          sortBy,
+          sortState[sectionIndex].direction
+        );
 
         // Sort the items in this section
         sortSection(sectionRow, sortBy, sortState[sectionIndex].direction);
@@ -52,13 +62,15 @@
 
   function updateSortIndicators(sectionRow, activeSortBy, direction) {
     // Clear all indicators in this section
-    sectionRow.querySelectorAll('.sort-indicator').forEach(indicator => {
+    sectionRow.querySelectorAll('.sort-indicator').forEach((indicator) => {
       indicator.textContent = '';
       indicator.className = 'sort-indicator';
     });
 
     // Set the active indicator
-    const activeHeader = sectionRow.querySelector(`[data-sort="${activeSortBy}"]`);
+    const activeHeader = sectionRow.querySelector(
+      `[data-sort="${activeSortBy}"]`
+    );
     if (activeHeader) {
       const indicator = activeHeader.querySelector('.sort-indicator');
       indicator.textContent = direction === 'asc' ? '▲' : '▼';
@@ -72,13 +84,17 @@
     const itemGroups = [];
     let currentRow = sectionRow.nextElementSibling;
 
-    while (currentRow && !currentRow.classList.contains('section-sort-header') &&
-           !currentRow.classList.contains('kb-table-header')) {
+    while (
+      currentRow &&
+      !currentRow.classList.contains('section-sort-header') &&
+      !currentRow.classList.contains('kb-table-header')
+    ) {
       // Only process root-level items (not nested)
-      if ((currentRow.classList.contains('kb-table-row-odd') ||
-           currentRow.classList.contains('kb-table-row-even')) &&
-          !currentRow.classList.contains('nested-item-row')) {
-
+      if (
+        (currentRow.classList.contains('kb-table-row-odd') ||
+          currentRow.classList.contains('kb-table-row-even')) &&
+        !currentRow.classList.contains('nested-item-row')
+      ) {
         // Collect this root item and all its nested items
         const group = { root: currentRow, nested: [] };
 
@@ -106,8 +122,16 @@
 
       switch (sortBy) {
         case 'name':
-          aValue = aRoot.querySelector('.item-name')?.textContent.trim().toLowerCase() || '';
-          bValue = bRoot.querySelector('.item-name')?.textContent.trim().toLowerCase() || '';
+          aValue =
+            aRoot
+              .querySelector('.item-name')
+              ?.textContent.trim()
+              .toLowerCase() || '';
+          bValue =
+            bRoot
+              .querySelector('.item-name')
+              ?.textContent.trim()
+              .toLowerCase() || '';
           break;
 
         case 'quantity':
@@ -161,8 +185,16 @@
 
           switch (sortBy) {
             case 'name':
-              aValue = a.querySelector('.item-name')?.textContent.trim().toLowerCase() || '';
-              bValue = b.querySelector('.item-name')?.textContent.trim().toLowerCase() || '';
+              aValue =
+                a
+                  .querySelector('.item-name')
+                  ?.textContent.trim()
+                  .toLowerCase() || '';
+              bValue =
+                b
+                  .querySelector('.item-name')
+                  ?.textContent.trim()
+                  .toLowerCase() || '';
               break;
 
             case 'quantity':
@@ -202,7 +234,10 @@
 
         // Insert sorted nested items immediately after the root
         sortedNested.forEach((nestedRow) => {
-          insertAfter.parentNode.insertBefore(nestedRow, insertAfter.nextSibling);
+          insertAfter.parentNode.insertBefore(
+            nestedRow,
+            insertAfter.nextSibling
+          );
           insertAfter = nestedRow;
         });
       }

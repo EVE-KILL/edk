@@ -15,8 +15,11 @@ export default defineEventHandler(async (event: H3Event) => {
       keywords: 'eve online, losses, tracking',
     };
 
-    const { characters: charIds, corporations: corpIds, alliances: allyIds } =
-      getFollowedEntities();
+    const {
+      characters: charIds,
+      corporations: corpIds,
+      alliances: allyIds,
+    } = getFollowedEntities();
 
     const hasEntities =
       charIds.length > 0 || corpIds.length > 0 || allyIds.length > 0;

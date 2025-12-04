@@ -70,7 +70,9 @@ function syncSubscriptions(forceFull = false) {
 
   if (toUnsubscribe.length) {
     try {
-      socket.send(JSON.stringify({ type: 'unsubscribe', topics: toUnsubscribe }));
+      socket.send(
+        JSON.stringify({ type: 'unsubscribe', topics: toUnsubscribe })
+      );
     } catch {}
   }
   if (toSubscribe.length) {
@@ -128,7 +130,7 @@ function connect() {
   };
 
   socket.onclose = (event) => {
-      broadcast({ type: 'ws-close', code: event.code, reason: event.reason });
+    broadcast({ type: 'ws-close', code: event.code, reason: event.reason });
     lastClose = { code: event.code, reason: event.reason, at: Date.now() };
     scheduleReconnect();
   };

@@ -12,13 +12,13 @@
   document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('globalSearch');
     const searchResults = document.getElementById('searchResults');
-    
+
     if (!searchInput || !searchResults) return;
 
     // Handle input
     searchInput.addEventListener('input', (e) => {
       const query = e.target.value.trim();
-      
+
       // Clear timeout
       if (searchTimeout) {
         clearTimeout(searchTimeout);
@@ -43,7 +43,10 @@
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          selectedIndex = Math.min(selectedIndex + 1, currentResults.length - 1);
+          selectedIndex = Math.min(
+            selectedIndex + 1,
+            currentResults.length - 1
+          );
           updateSelection();
           break;
         case 'ArrowUp':
@@ -87,7 +90,7 @@
 
       let html = '<div class="search-group">';
       html += '<div class="search-group-label">🕒 Recent Searches</div>';
-      history.forEach(term => {
+      history.forEach((term) => {
         html += `
           <div class="search-result-item" onmousedown="event.preventDefault(); window.setSearchTerm('${escapeHtml(term)}');">
             <div class="search-result-name">${escapeHtml(term)}</div>
@@ -108,12 +111,14 @@
 
     async function performSearch(query) {
       try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=8`);
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(query)}&limit=8`
+        );
         const data = await response.json();
-        
+
         currentResults = data.results || [];
         selectedIndex = -1;
-        
+
         if (currentResults.length > 0) {
           renderResults(currentResults);
           showResults();
@@ -130,13 +135,13 @@
     function renderResults(results) {
       // Group by type
       const grouped = {};
-      results.forEach(result => {
+      results.forEach((result) => {
         if (!grouped[result.type]) grouped[result.type] = [];
         grouped[result.type].push(result);
       });
 
       let html = '';
-      
+
       // Type order and labels
       const typeOrder = [
         { key: 'character', label: 'Characters', icon: '👤' },
@@ -145,14 +150,14 @@
         { key: 'system', label: 'Systems', icon: '🌟' },
         { key: 'constellation', label: 'Constellations', icon: '🌌' },
         { key: 'region', label: 'Regions', icon: '🗺️' },
-        { key: 'item', label: 'Items', icon: '📦' }
+        { key: 'item', label: 'Items', icon: '📦' },
       ];
 
       typeOrder.forEach(({ key, label, icon }) => {
         if (grouped[key] && grouped[key].length > 0) {
           html += `<div class="search-group">`;
           html += `<div class="search-group-label">${icon} ${label}</div>`;
-          grouped[key].forEach(result => {
+          grouped[key].forEach((result) => {
             const resultIndex = results.indexOf(result);
             html += `
               <div class="search-result-item" data-index="${resultIndex}" onclick="window.location.href='${getResultUrl(result)}'">

@@ -42,12 +42,7 @@ export default {
     ],
     // Preserve dynamic patterns
     deep: [/data-.*/, /aria-.*/],
-    greedy: [
-      /.*-primary$/,
-      /.*-secondary$/,
-      /.*-tertiary$/,
-      /.*-highlight$/,
-    ],
+    greedy: [/.*-primary$/, /.*-secondary$/, /.*-tertiary$/, /.*-highlight$/],
   },
   // Don't remove keyframes, font-face, variables
   keyframes: true,

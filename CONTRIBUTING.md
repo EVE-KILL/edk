@@ -27,8 +27,8 @@ Before you begin, please make sure you have followed the **[Development Setup](.
 
 All contributions should include tests that cover the changes being made.
 
--   **Unit Tests:** For small, isolated pieces of functionality.
--   **Integration Tests:** For functionality that involves multiple components of the system.
+- **Unit Tests:** For small, isolated pieces of functionality.
+- **Integration Tests:** For functionality that involves multiple components of the system.
 
 Before submitting a pull request, please ensure that all tests pass by running:
 

@@ -216,9 +216,15 @@
     slot.addEventListener('mouseover', (e) => {
       if (ammoOverlay) {
         const isOverAmmo = e.target.closest('.ammo-overlay');
-        if (isOverAmmo && tooltipName.textContent !== ammoOverlay.dataset.name) {
+        if (
+          isOverAmmo &&
+          tooltipName.textContent !== ammoOverlay.dataset.name
+        ) {
           showTooltip(ammoOverlay);
-        } else if (!isOverAmmo && tooltipName.textContent !== slot.dataset.name) {
+        } else if (
+          !isOverAmmo &&
+          tooltipName.textContent !== slot.dataset.name
+        ) {
           showTooltip(slot);
         }
       }

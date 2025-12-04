@@ -53,8 +53,7 @@ export async function getAllConfig(): Promise<Config[]> {
  * Delete a config entry
  */
 export async function deleteConfig(key: string): Promise<void> {
-  await database.execute(
-    'DELETE FROM config WHERE "configKey" = :key',
-    { key }
-  );
+  await database.execute('DELETE FROM config WHERE "configKey" = :key', {
+    key,
+  });
 }

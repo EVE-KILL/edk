@@ -146,7 +146,10 @@ export async function consumeLoginState(
   return stored;
 }
 
-export function buildAuthorizeUrl(state: string, scopesOverride?: string): string {
+export function buildAuthorizeUrl(
+  state: string,
+  scopesOverride?: string
+): string {
   const config = getConfig();
   const scopes =
     scopesOverride && scopesOverride.trim().length > 0
@@ -194,7 +197,9 @@ async function postForm<T>(
   return data;
 }
 
-export async function exchangeCodeForToken(code: string): Promise<TokenResponse> {
+export async function exchangeCodeForToken(
+  code: string
+): Promise<TokenResponse> {
   const config = getConfig();
   const payload = {
     grant_type: 'authorization_code',

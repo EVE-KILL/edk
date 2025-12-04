@@ -59,8 +59,9 @@
 
         // Don't open if typing in input/textarea (except spotlight itself)
         const target = e.target;
-        const isTyping = (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
-                         && target.id !== 'spotlightInput';
+        const isTyping =
+          (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') &&
+          target.id !== 'spotlightInput';
 
         if (!isTyping) {
           toggleSpotlight();
@@ -111,7 +112,8 @@
     }
 
     // Show loading
-    resultsContainer.innerHTML = '<div class="spotlight-loading">Searching...</div>';
+    resultsContainer.innerHTML =
+      '<div class="spotlight-loading">Searching...</div>';
 
     searchTimeout = setTimeout(() => {
       performSearch(query);
@@ -125,7 +127,10 @@
       case 'ArrowDown':
         if (hasResults) {
           e.preventDefault();
-          selectedIndex = Math.min(selectedIndex + 1, currentResults.length - 1);
+          selectedIndex = Math.min(
+            selectedIndex + 1,
+            currentResults.length - 1
+          );
           updateSelection();
         }
         break;
@@ -147,7 +152,9 @@
 
   async function performSearch(query) {
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=10`);
+      const response = await fetch(
+        `/api/search?q=${encodeURIComponent(query)}&limit=10`
+      );
       const data = await response.json();
 
       currentResults = data.results || [];
@@ -160,7 +167,8 @@
       }
     } catch (error) {
       console.error('[spotlight] Search error:', error);
-      resultsContainer.innerHTML = '<div class="spotlight-error">Search failed</div>';
+      resultsContainer.innerHTML =
+        '<div class="spotlight-error">Search failed</div>';
     }
   }
 
@@ -171,15 +179,21 @@
     html += '<div class="spotlight-section">';
     html += '<div class="spotlight-section-title">Quick Actions</div>';
     html += '<div class="spotlight-quick-grid">';
-    html += '<a href="/" class="spotlight-quick-item" onclick="event.stopPropagation()">⚡ Latest Kills</a>';
-    html += '<a href="/kills/big" class="spotlight-quick-item" onclick="event.stopPropagation()">💰 Big Kills</a>';
-    html += '<a href="/statistics" class="spotlight-quick-item" onclick="event.stopPropagation()">📊 Statistics</a>';
-    html += '<a href="/entities" class="spotlight-quick-item" onclick="event.stopPropagation()">👥 Entities</a>';
+    html +=
+      '<a href="/" class="spotlight-quick-item" onclick="event.stopPropagation()">⚡ Latest Kills</a>';
+    html +=
+      '<a href="/kills/big" class="spotlight-quick-item" onclick="event.stopPropagation()">💰 Big Kills</a>';
+    html +=
+      '<a href="/statistics" class="spotlight-quick-item" onclick="event.stopPropagation()">📊 Statistics</a>';
+    html +=
+      '<a href="/entities" class="spotlight-quick-item" onclick="event.stopPropagation()">👥 Entities</a>';
     html += '</div>';
     html += '</div>';
 
     // Recent searches
-    const recentSearches = window.SearchHistory ? window.SearchHistory.get() : [];
+    const recentSearches = window.SearchHistory
+      ? window.SearchHistory.get()
+      : [];
     if (recentSearches.length > 0) {
       html += '<div class="spotlight-section">';
       html += '<div class="spotlight-section-title">Recent Searches</div>';
@@ -216,20 +230,21 @@
       system: { label: 'Systems', icon: '🌟' },
       constellation: { label: 'Constellations', icon: '🌌' },
       region: { label: 'Regions', icon: '🗺️' },
-      item: { label: 'Items', icon: '📦' }
+      item: { label: 'Items', icon: '📦' },
     };
 
     let html = '';
-    const imageServerUrl = window.__EDK_IMAGE_URL || 'https://images.eve-kill.com';
+    const imageServerUrl =
+      window.__EDK_IMAGE_URL || 'https://images.eve-kill.com';
 
-    Object.keys(typeConfig).forEach(type => {
+    Object.keys(typeConfig).forEach((type) => {
       if (grouped[type] && grouped[type].length > 0) {
         const config = typeConfig[type];
         html += `<div class="spotlight-section">`;
         html += `<div class="spotlight-section-title">${config.icon} ${config.label}</div>`;
         html += `<div class="spotlight-grid">`;
 
-        grouped[type].forEach(result => {
+        grouped[type].forEach((result) => {
           const resultIndex = results.indexOf(result);
           const url = getResultUrl(result);
           const id = result.id || result.rawId;
@@ -336,13 +351,13 @@
       constellation: `/constellation/${result.id}`,
       region: `/region/${result.id}`,
       item: `/item/${result.id}`,
-      killmail: `/kill/${result.id}`
+      killmail: `/kill/${result.id}`,
     };
     return routes[result.type] || '#';
   }
 
   // Global function for recent search selection
-  window.spotlightSelectRecent = function(query) {
+  window.spotlightSelectRecent = function (query) {
     searchInput.value = query;
     searchInput.dispatchEvent(new Event('input'));
   };

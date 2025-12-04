@@ -35,9 +35,8 @@ mock.module('../../server/models/killmails', () => ({
 describe('Queue Processors', () => {
   describe('killmail', () => {
     test('should process a killmail job successfully', async () => {
-      const { processor: killmailProcessor } = await import(
-        '../../queue/killmail'
-      );
+      const { processor: killmailProcessor } =
+        await import('../../queue/killmail');
 
       // Create a mock job
       const job = { data: { killmailId: 123456789, hash: 'test_hash' } } as Job;

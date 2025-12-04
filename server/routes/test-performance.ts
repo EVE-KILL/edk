@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     // Redis cache operations (tracked automatically)
     await storage.setItem('test:demo', {
       timestamp: Date.now(),
-      message: 'Performance tracking demo'
+      message: 'Performance tracking demo',
     });
     const cachedData = await storage.getItem('test:demo');
 
@@ -28,25 +28,27 @@ export default defineEventHandler(async (event) => {
 
     // Typesense search operation (tracked automatically)
     if (killmails.length > 0) {
-      await updateSearchEntity(
-        99999,
-        'Demo Character',
-        'character'
-      ).catch(() => {}); // Ignore errors for demo
+      await updateSearchEntity(99999, 'Demo Character', 'character').catch(
+        () => {}
+      ); // Ignore errors for demo
     }
 
     // Application code with trackBlock (manual tracking)
-    const results = await trackBlock('process_demo_data', 'application', async () => {
-      // Simulate some processing
-      await new Promise(resolve => setTimeout(resolve, 15));
+    const results = await trackBlock(
+      'process_demo_data',
+      'application',
+      async () => {
+        // Simulate some processing
+        await new Promise((resolve) => setTimeout(resolve, 15));
 
-      return {
-        killmails: killmails.length,
-        cached: !!cachedData,
-        system: systemInfo.data?.name || 'Unknown',
-        timestamp: new Date().toISOString(),
-      };
-    });
+        return {
+          killmails: killmails.length,
+          cached: !!cachedData,
+          system: systemInfo.data?.name || 'Unknown',
+          timestamp: new Date().toISOString(),
+        };
+      }
+    );
 
     // Render page with results
     return await render(
@@ -63,7 +65,11 @@ export default defineEventHandler(async (event) => {
           { name: 'Search', icon: '🔍', description: 'Typesense operations' },
           { name: 'HTTP', icon: '🌐', description: 'External API calls (ESI)' },
           { name: 'Template', icon: '🎨', description: 'Handlebars rendering' },
-          { name: 'Application', icon: '⚙️', description: 'Custom application code' },
+          {
+            name: 'Application',
+            icon: '⚙️',
+            description: 'Custom application code',
+          },
         ],
       },
       event

@@ -96,25 +96,16 @@ function mapUser(row: any): UserRecord {
       row.characterOwnerHash ?? row.user_characterOwnerHash ?? '',
     admin: Boolean(row.admin ?? row.user_admin ?? false),
     corporationId:
-      row.corporationId ??
-      row.user_corporationId ??
-      row.corporation_id ??
-      null,
+      row.corporationId ?? row.user_corporationId ?? row.corporation_id ?? null,
     corporationName:
       row.corporationName ??
       row.user_corporationName ??
       row.corporation_name ??
       '',
     allianceId:
-      row.allianceId ??
-      row.user_allianceId ??
-      row.alliance_id ??
-      null,
+      row.allianceId ?? row.user_allianceId ?? row.alliance_id ?? null,
     allianceName:
-      row.allianceName ??
-      row.user_allianceName ??
-      row.alliance_name ??
-      '',
+      row.allianceName ?? row.user_allianceName ?? row.alliance_name ?? '',
     tokenType: row.tokenType ?? row.user_tokenType ?? 'Bearer',
     accessToken: row.accessToken ?? row.user_accessToken ?? '',
     refreshToken: row.refreshToken ?? row.user_refreshToken ?? '',
@@ -130,7 +121,7 @@ function mapUser(row: any): UserRecord {
     canFetchCorporationKillmails:
       Boolean(
         row.canFetchCorporationKillmails ??
-          row.user_canFetchCorporationKillmails
+        row.user_canFetchCorporationKillmails
       ) || false,
     lastChecked: toDateOrNull(row.lastChecked ?? row.user_lastChecked),
     lastLoginAt: toDateOrNull(row.lastLoginAt ?? row.user_lastLoginAt),
@@ -365,10 +356,9 @@ export async function touchSession(sessionId: number): Promise<void> {
 }
 
 export async function deleteSessionById(sessionId: number): Promise<void> {
-  await database.delete(
-    `DELETE FROM userSessions WHERE "id" = :sessionId`,
-    { sessionId }
-  );
+  await database.delete(`DELETE FROM userSessions WHERE "id" = :sessionId`, {
+    sessionId,
+  });
 }
 
 export async function deleteSessionByToken(token: string): Promise<void> {

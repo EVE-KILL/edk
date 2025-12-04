@@ -115,7 +115,10 @@
     // Lazy load the previous direct implementation if SharedWorker is missing.
     // Minimal: only supports subscription forwarding for pages that depend on it.
     const wsUrl = resolveUrl();
-    console.warn('[EDK WS] SharedWorker unavailable, using direct socket', wsUrl);
+    console.warn(
+      '[EDK WS] SharedWorker unavailable, using direct socket',
+      wsUrl
+    );
     const socket = new WebSocket(wsUrl);
     let connected = false;
     let lastTopics = [];

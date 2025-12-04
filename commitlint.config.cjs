@@ -4,5 +4,5 @@ module.exports = {
     'type-empty': [0],
     'subject-empty': [0],
     'type-enum': [0],
-  }
+  },
 };

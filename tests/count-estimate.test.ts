@@ -1,5 +1,9 @@
 import { describe, test, expect } from 'bun:test';
-import { estimateCount, getTableEstimate, formatCount } from '../server/helpers/count-estimate';
+import {
+  estimateCount,
+  getTableEstimate,
+  formatCount,
+} from '../server/helpers/count-estimate';
 import { database } from '../server/helpers/database';
 
 describe('Count Estimation', () => {
@@ -8,14 +12,14 @@ describe('Count Estimation', () => {
     const estimate = await estimateCount(
       database.sql`SELECT 1 FROM killmails WHERE "killmailTime" > NOW() - INTERVAL '7 days'`
     );
-    
+
     expect(typeof estimate).toBe('number');
     expect(estimate).toBeGreaterThanOrEqual(0);
   });
 
   test('getTableEstimate returns total rows', async () => {
     const estimate = await getTableEstimate('killmails_%');
-    
+
     expect(typeof estimate).toBe('number');
     expect(estimate).toBeGreaterThanOrEqual(0);
   });
@@ -31,7 +35,7 @@ describe('Count Estimation', () => {
     const estimate = await estimateCount(
       database.sql`SELECT 1 FROM killmails WHERE 1=0`
     );
-    
+
     expect(estimate).toBe(0);
   });
 });

@@ -10,28 +10,28 @@
  */
 export function parseUtcDate(value: unknown): Date {
   if (!value) return new Date();
-  
+
   // If already a Date object, return as-is
   if (value instanceof Date) return value;
-  
+
   const str = String(value);
-  
+
   // If it already has timezone info (Z or +/-offset), parse normally
   if (/[+-]\d{2}:?\d{2}$/.test(str) || str.endsWith('Z')) {
     return new Date(str);
   }
-  
+
   // PostgreSQL format: "2025-11-24 15:48:02" (no timezone = UTC)
   // Append Z to indicate UTC
   if (str.includes(' ')) {
     return new Date(str.replace(' ', 'T') + 'Z');
   }
-  
+
   // ISO format without Z: "2025-11-24T15:48:02"
   if (str.includes('T') && !str.endsWith('Z')) {
     return new Date(str + 'Z');
   }
-  
+
   // Fallback: parse as-is
   return new Date(str);
 }

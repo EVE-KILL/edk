@@ -47,7 +47,9 @@
     let history = getHistory();
 
     // Remove any existing instances of the term to avoid duplicates
-    history = history.filter(item => item.toLowerCase() !== term.toLowerCase());
+    history = history.filter(
+      (item) => item.toLowerCase() !== term.toLowerCase()
+    );
 
     // Add the new term to the beginning of the array
     history.unshift(term);
@@ -77,5 +79,4 @@
     add: addHistory,
     clear: clearHistory,
   };
-
 })(window);
