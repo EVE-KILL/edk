@@ -7,3 +7,9 @@ bun.lockb
 .data
 oldtemplates
 *.hbs
+
+# Ignore Helm templates (they have Go templating syntax that prettier can't parse)
+chart/templates/
+
+# Ignore user-specific values file
+chart/values.yaml

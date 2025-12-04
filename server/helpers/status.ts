@@ -221,12 +221,12 @@ async function fetchDatabaseStats(): Promise<DatabaseStats> {
       await Promise.all([
         // Estimate based on partition row counts (much faster than COUNT(*))
         database.findOne<{ estimate: number }>(
-          `SELECT 
+          `SELECT
             COALESCE(
               (SELECT reltuples FROM pg_class WHERE relname = '${currentPartition}'), 0
             ) * 0.033 + -- ~1/30th of current month
             COALESCE(
-              (SELECT reltuples FROM pg_class WHERE relname = '${prevPartition}'), 0  
+              (SELECT reltuples FROM pg_class WHERE relname = '${prevPartition}'), 0
             ) * 0.033 -- ~1/30th of previous month for overlap
             as estimate`
         ),

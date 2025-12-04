@@ -21,7 +21,9 @@
     "test": "bun test --preload ./tests/setup.ts",
     "test:watch": "bun test --watch --preload ./tests/setup.ts",
     "lint": "eslint . --ext .ts,.js",
+    "lint:yaml": "yamllint .",
     "format": "prettier --write .",
+    "format:yaml": "prettier --write '**/*.{yml,yaml}'",
     "start": "bun run preview",
     "cli": "bun cli.ts",
     "cron": "bun cronjobs.ts",
@@ -31,14 +33,14 @@
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
-    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.1",
     "@types/bun": "^1.3.3",
     "@types/handlebars": "^4.1.0",
     "@types/node": "^24.10.1",
     "@types/unbzip2-stream": "^1.4.3",
-    "@typescript-eslint/eslint-plugin": "^8.48.0",
-    "@typescript-eslint/parser": "^8.48.0",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
+    "@typescript-eslint/parser": "^8.48.1",
     "commander": "^14.0.2",
     "csso-cli": "^4.0.2",
     "eslint": "^9.39.1",
@@ -49,15 +51,15 @@
     "lightningcss-cli": "^1.30.2",
     "lint-staged": "^16.2.7",
     "nitropack": "^2.12.9",
-    "prettier": "^3.7.1",
+    "prettier": "^3.7.4",
     "purgecss": "^7.0.2"
   },
   "dependencies": {
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0",
-    "bullmq": "^5.65.0",
+    "bullmq": "^5.65.1",
     "chalk": "^5.6.2",
-    "cron": "^4.3.4",
+    "cron": "^4.3.5",
     "csv-parser": "^3.2.0",
     "handlebars": "^4.7.8",
     "highlight.js": "^11.11.1",
@@ -65,7 +67,7 @@
     "markdown-it": "^14.1.0",
     "markdown-it-anchor": "^9.2.0",
     "marked": "^17.0.1",
-    "openai": "^6.9.1",
+    "openai": "^6.10.0",
     "pidusage": "^4.0.1",
     "postgres": "^3.4.7",
     "prom-client": "^15.1.3",
@@ -82,7 +84,13 @@
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{json,md,yml}": [
+    "*.{json,md}": [
+      "prettier --write"
+    ],
+    "*.{yml,yaml}": [
+      "yamllint"
+    ],
+    "!(chart/templates/**/*)*.{yml,yaml}": [
       "prettier --write"
     ]
   }

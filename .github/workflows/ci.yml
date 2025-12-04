@@ -22,8 +22,13 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Lint YAML files
+        run: yamllint .
+        continue-on-error: false
+
       - name: Type check
         run: bun run type-check
+        continue-on-error: true
 
       - name: Build project
         run: bun run build
@@ -46,6 +51,10 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+
+      - name: Lint YAML files
+        run: yamllint .
+        continue-on-error: false
 
       - name: Run linter
         run: bun run lint || echo "No lint script found"

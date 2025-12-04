@@ -88,14 +88,14 @@ async function getDatabaseCounts() {
     groups: string;
     categories: string;
   }>(`
-    SELECT 
+    SELECT
       -- Single scan with CASE for much better performance (4x faster than multiple subqueries)
       -- Partitioned tables: sum all yearly/monthly partitions (killmails_2024, killmails_2025_06, killmails_2025_pre_06)
       COALESCE(SUM(CASE WHEN relname ~ '^killmails_[0-9]{4}' AND relkind = 'r' THEN reltuples ELSE 0 END)::bigint, 0) as killmails,
       COALESCE(SUM(CASE WHEN relname ~ '^attackers_[0-9]{4}' AND relkind = 'r' THEN reltuples ELSE 0 END)::bigint, 0) as attackers,
       COALESCE(SUM(CASE WHEN relname ~ '^items_[0-9]{4}' AND relkind = 'r' THEN reltuples ELSE 0 END)::bigint, 0) as items,
       COALESCE(SUM(CASE WHEN relname ~ '^prices_[0-9]{4}' AND relkind = 'r' THEN reltuples ELSE 0 END)::bigint, 0) as prices,
-      
+
       -- Non-partitioned tables: direct lookup
       COALESCE(MAX(CASE WHEN relname = 'characters' THEN reltuples ELSE 0 END)::bigint, 0) as characters,
       COALESCE(MAX(CASE WHEN relname = 'corporations' THEN reltuples ELSE 0 END)::bigint, 0) as corporations,
@@ -110,7 +110,7 @@ async function getDatabaseCounts() {
     WHERE (
       relname ~ '^(killmails|attackers|items|prices)_[0-9]{4}' AND relkind = 'r'
     ) OR relname IN (
-      'characters', 'corporations', 'alliances', 'solarsystems', 
+      'characters', 'corporations', 'alliances', 'solarsystems',
       'regions', 'constellations', 'types', 'groups', 'categories'
     )
   `);

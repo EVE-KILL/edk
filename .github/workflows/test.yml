@@ -47,7 +47,10 @@ jobs:
         run: bun install
 
       - name: Check formatting
-        run: npx prettier --check .
+        run: npx prettier --check . --ignore-path .prettierignore
+
+      - name: Lint YAML files
+        run: yamllint .
 
       - name: Run linter
         run: bun run lint
