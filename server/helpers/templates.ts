@@ -862,6 +862,24 @@ async function registerPartials() {
     }
   }
 
+  // Register widgets from partials/widgets/ directory
+  const widgetsDir = join(partialsDir, 'widgets');
+  if (await fileExists(widgetsDir)) {
+    try {
+      const files = await readdir(widgetsDir);
+      for (const file of files) {
+        if (file.endsWith('.hbs')) {
+          const widgetName = 'widgets/' + file.replace('.hbs', '');
+          const widgetPath = join(widgetsDir, file);
+          const widgetContent = await readFile(widgetPath, 'utf-8');
+          Handlebars.registerPartial(widgetName, widgetContent);
+        }
+      }
+    } catch (error) {
+      logger.warn('Could not load widgets', { error });
+    }
+  }
+
   // Register components from components/ directory
   const componentsDir = join(templatesDir, 'components');
   if (await fileExists(componentsDir)) {

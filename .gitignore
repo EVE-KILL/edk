@@ -20,3 +20,6 @@ templates/default/public/edk.optimized.css
 
 # OpenAPI
 docs/openapi.json
+
+.gemini/
+gha-creds-*.json
