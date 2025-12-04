@@ -709,6 +709,10 @@ export async function migrateSchema() {
 // This has been removed to prevent automatic migrations on webserver start.
 // Migrations should now be run explicitly via `bun cli db:migrate`.
 
-export default defineNitroPlugin(async (_nitroApp) => {
-  // No-op plugin - migrations now run explicitly via CLI
-});
+// Only export plugin when running in Nitro context (not CLI)
+// @ts-expect-error - defineNitroPlugin may not exist in CLI context
+export default typeof defineNitroPlugin !== 'undefined'
+  ? defineNitroPlugin(async (_nitroApp) => {
+      // No-op plugin - migrations now run explicitly via CLI
+    })
+  : undefined;
