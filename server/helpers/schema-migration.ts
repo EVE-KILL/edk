@@ -7,14 +7,14 @@ import {
 } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
-import { database } from '../helpers/database';
+import { database } from './database';
 import chalk from 'chalk';
-import { logger } from '../helpers/logger';
+import { logger } from './logger';
 
 /**
- * Schema Migration Plugin for Postgres
+ * Schema Migration Helper for Postgres
  *
- * This plugin handles idempotent database schema application by:
+ * This helper handles idempotent database schema application by:
  * 1. Reading all SQL files from the db/ directory (ordered by filename)
  * 2. Calculating checksums for each file
  * 3. Comparing with stored checksums in the 'migrations' table
@@ -503,6 +503,10 @@ async function syncTableSchema(statement: string) {
   }
 }
 
+/**
+ * Run schema migration
+ * This function can be called manually from CLI commands or other places
+ */
 export async function migrateSchema() {
   try {
     logger.info(chalk.blue('🔧 Starting schema migration...'));
