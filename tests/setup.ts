@@ -67,7 +67,7 @@ beforeAll(async () => {
   // 5. Run Migrations
   try {
     const { migrateSchema } =
-      await import('../server/plugins/schema-migration');
+      await import('../server/helpers/schema-migration');
     await migrateSchema();
 
     // 6. Create Partitions

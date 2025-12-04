@@ -550,8 +550,14 @@ export async function migrateSchema() {
     // Read stored checksums from DB (and file for backward compatibility/backup)
     let storedChecksums: FileChecksums = await loadChecksumsFromDb();
 
-    // If DB is empty, try loading from file as a fallback (only for initial migration to DB storage)
+    // Check if migrations table exists - if not, this is a fresh database
+    const migrationsTableExists = await database.tableExists('migrations');
+
+    // Only load from file if the migrations table exists but is empty
+    // (This helps migrate from file-based to DB-based checksum storage)
+    // If migrations table doesn't exist, we're on a fresh DB and should run all migrations
     if (
+      migrationsTableExists &&
       Object.keys(storedChecksums).length === 0 &&
       existsSync(CHECKSUM_FILE)
     ) {

@@ -2,7 +2,7 @@ import { logger } from '../server/helpers/logger';
 
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 import { database } from '../server/helpers/database';
-import { migrateSchema } from '../server/plugins/schema-migration';
+import { migrateSchema } from '../server/helpers/schema-migration';
 import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
 
