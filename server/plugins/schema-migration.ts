@@ -704,15 +704,3 @@ export async function migrateSchema() {
     });
   }
 }
-
-// This plugin previously triggered migrateSchema on Nitro app initialization.
-// This has been removed to prevent automatic migrations on webserver start.
-// Migrations should now be run explicitly via `bun cli db:migrate`.
-
-// Only export plugin when running in Nitro context (not CLI)
-// @ts-expect-error - defineNitroPlugin may not exist in CLI context
-export default typeof defineNitroPlugin !== 'undefined'
-  ? defineNitroPlugin(async (_nitroApp) => {
-      // No-op plugin - migrations now run explicitly via CLI
-    })
-  : undefined;
