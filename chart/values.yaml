@@ -1,0 +1,438 @@
+# Default values for edk
+global:
+  image:
+    registry: ghcr.io
+    repository: eve-kill/edk
+    tag: latest
+    pullPolicy: Always
+
+  # Environment variables shared across all services
+  env:
+    NODE_ENV: production
+    THEME: default
+
+    # EVE Online
+    IMAGE_SERVER_URL: https://images.eve-kill.com
+    ESI_SERVER_URL: https://esi.evetech.net
+
+    # Redis
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+
+    # WebSocket
+    WS_PORT: "3002"
+    WS_HOST: "0.0.0.0"
+    WS_PING_INTERVAL: "30000"
+    WS_PING_TIMEOUT: "10000"
+    WS_CLEANUP_INTERVAL: "60000"
+    WS_URL: "wss://ws.eve-kill.com"
+
+    # Followed entities (comma-separated IDs)
+    FOLLOWED_CHARACTER_IDS: ""
+    FOLLOWED_CORPORATION_IDS: ""
+    FOLLOWED_ALLIANCE_IDS: "" #"1900696668,99003581"
+
+    # Sensitive values (should be overridden with secrets)
+    sensitive:
+      # Database
+      DATABASE_URL: "" # Constructed from secret
+      POSTGRES_PASSWORD: "edk_password"
+
+      # Redis
+      REDIS_PASSWORD: ""
+      REDIS_URL: "redis://redis.eve-kill.svc.cluster.local:6379"
+
+      # EVE OAuth
+      EVE_CLIENT_ID: "1ab2a8fb451848c7a3c31db10dd2c501"
+      EVE_CLIENT_SECRET: "GaUe0ABRol7iWpW9BGtopvREsWV5vdyff2II8xYk"
+      EVE_CLIENT_REDIRECT: "https://eve-kill.com/auth/callback"
+      EVE_CLIENT_ID_DEV: "e63be412f346490fa141a804c994e468"
+      EVE_CLIENT_SECRET_DEV: "Ra4GNfyAjaCOeK2aCImjS3ERVHVSTWUqHo3TxbHy"
+      EVE_CLIENT_REDIRECT_DEV: "http://localhost:3000/auth/callback"
+
+      # RedisQ
+      REDISQ_ID: "edk_redisq_3227"
+
+      # AI (optional)
+      OPENAI_API_KEY: "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"
+      AI_MODEL: "x-ai/grok-4.1-fast:free"
+      TAVILY_API_KEY: "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"
+
+# Frontend web application
+web:
+  enabled: true
+  replicaCount: 3
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 300
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# RedisQ listener pod
+redisq:
+  enabled: true
+  # If you want a long-running deployment for RedisQ, set enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+# Deploy job for running migrations and SDE import
+deployJob:
+  enabled: true
+  # Job will run the following command:
+  # bun cli db:migrate && bun cli sde:download && bun cli db:refresh
+  image:
+    repository: "{{ .Values.global.image.registry }}/{{ .Values.global.image.repository }}"
+    tag: "{{ .Values.global.image.tag }}"
+
+# Queue workers - individual pods per queue type
+queue:
+  enabled: true
+
+  # Each queue type runs as a separate deployment
+  workers:
+    alliance:
+      enabled: true
+      replicaCount: 1
+      concurrency: 5
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+
+    auth:
+      enabled: true
+      replicaCount: 1
+      concurrency: 10
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+
+    character:
+      enabled: true
+      replicaCount: 2
+      concurrency: 10
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+
+    corporation:
+      enabled: true
+      replicaCount: 1
+      concurrency: 5
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+
+    entity-stats:
+      enabled: true
+      replicaCount: 1
+      concurrency: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+
+    killmail:
+      enabled: true
+      replicaCount: 3
+      concurrency: 20
+      resources:
+        requests:
+          cpu: 200m
+          memory: 256Mi
+
+    price:
+      enabled: true
+      replicaCount: 1
+      concurrency: 5
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+
+    war:
+      enabled: true
+      replicaCount: 1
+      concurrency: 3
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+
+# Cronjob workers
+cronjobs:
+  enabled: true
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 256Mi
+
+# WebSocket listener
+websocket:
+  enabled: true
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  ingress:
+    enabled: true
+    className: nginx
+    host: ws.eve-kill.com
+    tlsSecretName: edk-ws-tls
+    annotations: {}
+
+# Redis (simple container)
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "alpine"
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 1Gi
+
+  persistence:
+    enabled: false # Ephemeral, no persistence needed
+
+# Ingress configuration (using Nginx Ingress)
+ingress:
+  enabled: true
+  className: nginx
+
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+  hosts:
+  - host: eve-kill.com
+    paths:
+    - path: /
+      pathType: Prefix
+
+  tls:
+  - secretName: edk-tls
+    hosts:
+    - eve-kill.com
+
+# CloudNativePG Database
+database:
+  # Create the PostgreSQL cluster as part of this chart
+  createCluster: true
+
+  # Cluster configuration
+  clusterName: postgres
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.2
+  instances: 3
+
+  # Database and user
+  database: evekill
+  owner: evekill
+
+  # Secret for credentials (will be created by chart)
+  secretName: postgres-app-credentials
+  password: "edk_password"
+
+  # PostgreSQL parameters (high-performance tuning)
+  parameters:
+    max_connections: "300"
+    shared_buffers: "8GB"
+    effective_cache_size: "24GB"
+    maintenance_work_mem: "2GB"
+    checkpoint_completion_target: "0.9"
+    wal_buffers: "512MB"
+    default_statistics_target: "100"
+    random_page_cost: "1.1"
+    effective_io_concurrency: "200"
+    max_locks_per_transaction: "1024"
+    default_toast_compression: "lz4"
+    work_mem: "27MB"
+    min_wal_size: "2GB"
+    max_wal_size: "8GB"
+    # WAL archiving and retention controls (prevent overflow of 50GB WAL volume)
+    wal_keep_size: "5GB" # Keep max 5GB of WAL for replication (reduced from 10GB to prevent volume overflow)
+    max_slot_wal_keep_size: "10GB" # Hard limit on WAL kept for replication slots (reduced from 15GB)
+    wal_recycle: "on" # Recycle WAL files instead of creating new ones
+    checkpoint_timeout: "5min" # Aggressive checkpoints every 5 min to limit WAL growth (vs 30min default)
+    max_wal_senders: "10" # Limit concurrent WAL senders to prevent WAL buildup
+    # CRITICAL: Abort replication if WAL exceeds limits (prevents volume overflow)
+    wal_sender_timeout: "60s" # Disconnect slow replicas after 60s
+    # Aggressive write performance tuning for bulk imports
+    synchronous_commit: "off" # Don't wait for WAL to disk (can lose ~1s of data on crash)
+    wal_writer_delay: "1000ms" # Flush WAL less frequently - 1s vs default 200ms (less I/O overhead)
+    commit_delay: "1000" # Group commits together - 1ms in microseconds
+    commit_siblings: "5" # Minimum concurrent transactions to trigger commit_delay
+    full_page_writes: "on" # REQUIRED for pg_rewind in CloudNativePG HA setup
+
+  # Storage configuration (uses custom longhorn-postgres-optimized StorageClass)
+  storage:
+    storageClass: longhorn-postgres-optimized
+    size: 250Gi
+    # Prevent PVC deletion on cluster/chart deletion (data safety)
+    pvcRetainPolicy: retain # Options: delete, retain (default: delete)
+
+  walStorage:
+    storageClass: longhorn-postgres-optimized
+    size: 50Gi
+    # Prevent PVC deletion on cluster/chart deletion (data safety)
+    pvcRetainPolicy: retain # Options: delete, retain (default: delete)
+
+  # Resources
+  resources:
+    requests:
+      memory: "10Gi"
+      cpu: "2000m"
+
+  # Monitoring
+  monitoring:
+    enablePodMonitor: false # Deprecated: manually create PodMonitor resources instead
+
+  # High availability
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: "preferred"
+
+  # Update strategy
+  primaryUpdateStrategy: unsupervised
+
+  # Keel annotations for auto-updates
+  annotations:
+    keel.sh/policy: major
+    keel.sh/trigger: poll
+
+  # Connection pooling via PgBouncer (CNPG Pooler)
+  pooler:
+    enabled: true
+    instances: 3
+    poolMode: transaction # transaction or session
+    parameters:
+      max_client_conn: "1000"
+      default_pool_size: "100"
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: false # Allow running as root for now (app writes to /app/.data)
+  # runAsUser: 1000
+
+  # Security context for containers
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false # Nitro needs to write to .output/cache and .data/
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Image Server
+imageserver:
+  enabled: true
+  replicas: 1
+
+  image:
+    repository: ghcr.io/eve-kill/imageserver
+    tag: latest
+    pullPolicy: Always
+
+  service:
+    port: 3000
+    targetPort: 3000
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 256Mi
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+
+  persistence:
+    enabled: true
+    storageClassName: longhorn
+    accessModes:
+    - ReadWriteOnce
+    size: 50Gi
+    mountPath: /app/cache
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/backend-protocol: "http"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      nginx.ingress.kubernetes.io/enable-compression: "true"
+      nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    hosts:
+    - host: "images.eve-kill.com"
+      paths:
+      - path: /
+        pathType: Prefix
+    tls:
+    - secretName: images-eve-kill-com-tls
+      hosts:
+      - images.eve-kill.com
