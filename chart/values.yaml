@@ -265,7 +265,7 @@ database:
   # Cluster configuration
   clusterName: postgres
   imageName: ghcr.io/cloudnative-pg/postgresql:17.2
-  instances: 3
+  instances: 1
 
   # Database and user
   database: evekill
