@@ -88,23 +88,23 @@ async function getDatabaseCounts() {
     categories: string;
   }>(`
     SELECT 
-      -- Sum partition reltuples for partitioned tables (pattern: tablename_YYYY_MM)
+      -- Sum partition reltuples for partitioned tables (pattern: tablename_YYYY_MM or tablename_YYYY_pre_MM)
       COALESCE((
         SELECT SUM(c.reltuples)::bigint 
         FROM pg_class c 
-        WHERE c.relname ~ '^killmails_[0-9]{4}_[0-9]{2}$'
+        WHERE c.relname ~ '^killmails_[0-9]{4}(_pre)?_[0-9]{2}$'
       ), 0) as killmails,
       
       COALESCE((
         SELECT SUM(c.reltuples)::bigint 
         FROM pg_class c 
-        WHERE c.relname ~ '^attackers_[0-9]{4}_[0-9]{2}$'
+        WHERE c.relname ~ '^attackers_[0-9]{4}(_pre)?_[0-9]{2}$'
       ), 0) as attackers,
       
       COALESCE((
         SELECT SUM(c.reltuples)::bigint 
         FROM pg_class c 
-        WHERE c.relname ~ '^items_[0-9]{4}_[0-9]{2}$'
+        WHERE c.relname ~ '^items_[0-9]{4}(_pre)?_[0-9]{2}$'
       ), 0) as items,
       
       -- Non-partitioned tables use direct lookup
