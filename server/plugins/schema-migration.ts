@@ -709,7 +709,6 @@ export async function migrateSchema() {
 // This has been removed to prevent automatic migrations on webserver start.
 // Migrations should now be run explicitly via `bun cli db:migrate`.
 
-// export default async (_nitroApp: any) => {
-//   // Wait a bit to ensure the database helper is initialized
-//   setTimeout(migrateSchema, 1000); // Wait 1 second for database connection to be established
-// };
+export default defineNitroPlugin(async (_nitroApp) => {
+  // No-op plugin - migrations now run explicitly via CLI
+});

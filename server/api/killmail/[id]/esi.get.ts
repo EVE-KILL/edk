@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { validate } from '~/utils/validation';
-import { env } from '../../../../helpers/env';
+import { env } from '../../../helpers/env';
 
 /**
  * @openapi
