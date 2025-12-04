@@ -67,7 +67,7 @@ export default {
     const tempDir = options.tempDir || '/tmp/everef-kb';
     const batchSize = options.batchSize
       ? Number.parseInt(options.batchSize)
-      : 50000;
+      : 5000;
     const parallelism = options.parallel
       ? Number.parseInt(options.parallel)
       : 4;
@@ -260,6 +260,7 @@ async function processDate(
     let processed = 0;
     let inserted = 0;
     let skipped = 0;
+    let errorCount = 0;
 
     // Chunk files for parallel processing
     const chunks: string[][] = [];
@@ -271,7 +272,14 @@ async function processDate(
       const results = await Promise.all(
         chunk.map((file) =>
           processFile(`${killmailsDir}/${file}`, batchSize).catch((err) => {
-            logger.warn(`Failed to process ${file}: ${err.message}`);
+            errorCount++;
+            if (errorCount <= 5) {
+              logger.warn(`Failed to process ${file}: ${err.message}`);
+            } else if (errorCount % 1000 === 0) {
+              logger.warn(
+                `Failed to process ${file} (suppressed ${errorCount - 5} errors)`
+              );
+            }
             return { processed: 0, inserted: 0, skipped: 0 };
           })
         )
@@ -287,6 +295,12 @@ async function processDate(
     // Cleanup
     await unlink(archivePath);
     await execAsync(`rm -rf ${extractDir}`);
+
+    if (errorCount > 0) {
+      logger.warn(
+        `Finished processing ${date} with ${errorCount} errors (check logs)`
+      );
+    }
 
     return { processed, inserted, skipped };
   } catch (error) {
@@ -515,10 +529,15 @@ async function insertKillmailsBatch(
     }
 
     // Bulk insert killmails and attackers first
-    await database.bulkInsert('killmails', killmailRecords);
+    const sql = database.sql;
+    if (killmailRecords.length > 0) {
+      const columns = Object.keys(killmailRecords[0]);
+      await sql`INSERT INTO killmails ${sql(killmailRecords, ...columns)}`;
+    }
 
     if (attackerRecords.length > 0) {
-      await database.bulkInsert('attackers', attackerRecords);
+      const columns = Object.keys(attackerRecords[0]);
+      await sql`INSERT INTO attackers ${sql(attackerRecords, ...columns)}`;
     }
 
     // Insert items in two passes to handle parent relationships
