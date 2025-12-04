@@ -176,24 +176,11 @@ export class Database {
       return true;
     }
 
+    const sql = this.sql;
     const columns = Object.keys(rows[0]);
-    const params: NamedParams = {};
-    const valuesClause = rows
-      .map((row, rowIndex) => {
-        const placeholders = columns.map((column) => {
-          const key = `${column}_${rowIndex}`;
-          params[key] = (row as Record<string, unknown>)[column];
-          return `:${key}`;
-        });
-        return `(${placeholders.join(', ')})`;
-      })
-      .join(', ');
+    await sql`INSERT INTO ${sql(table)} ${sql(rows, ...columns)}`;
 
-    const query = `INSERT INTO ${this.identifier(table)} (${columns
-      .map((column) => this.identifier(column))
-      .join(', ')}) VALUES ${valuesClause}`;
-
-    return this.execute(query, params);
+    return true;
   }
 
   async bulkUpsert(
@@ -206,6 +193,7 @@ export class Database {
       return true;
     }
 
+    const sql = this.sql;
     const columns = Object.keys(rows[0]);
     const conflicts = Array.isArray(conflictColumns)
       ? conflictColumns
@@ -213,49 +201,26 @@ export class Database {
     const updates =
       updateColumns ?? columns.filter((column) => !conflicts.includes(column));
 
-    const params: NamedParams = {};
-    const valuesClause = rows
-      .map((row, rowIndex) => {
-        const placeholders = columns.map((column) => {
-          const key = `${column}_${rowIndex}`;
-          params[key] = (row as Record<string, unknown>)[column];
-          return `:${key}`;
-        });
-        return `(${placeholders.join(', ')})`;
-      })
-      .join(', ');
-
-    const conflictList = conflicts
-      .map((column) => this.identifier(column))
-      .join(', ');
-
-    const updateList = updates.length
-      ? updates
-          .map(
-            (column) =>
-              `${this.identifier(column)} = EXCLUDED.${this.identifier(column)}`
+    if (updates.length === 0) {
+      await sql`
+        INSERT INTO ${sql(table)} ${sql(rows, ...columns)}
+        ON CONFLICT (${sql(conflicts)}) DO NOTHING
+      `;
+    } else {
+      await sql`
+        INSERT INTO ${sql(table)} ${sql(rows, ...columns)}
+        ON CONFLICT (${sql(conflicts)}) DO UPDATE SET
+        ${sql(
+          updates.reduce(
+            (acc, col) => {
+              acc[col] = sql`EXCLUDED.${sql(col)}`;
+              return acc;
+            },
+            {} as Record<string, any>
           )
-          .join(', ')
-      : '';
-
-    const query =
-      `INSERT INTO ${this.identifier(table)} (${columns
-        .map((column) => this.identifier(column))
-        .join(', ')}) VALUES ${valuesClause} ` +
-      `ON CONFLICT (${conflictList}) ` +
-      (updateList ? `DO UPDATE SET ${updateList}` : 'DO NOTHING');
-
-    // Use sql.unsafe directly to avoid array parameter expansion issues
-    const sql = this.sql;
-    const valuesData = rows.map((row) => columns.map((col) => row[col]));
-    await sql.unsafe(
-      query.replace(/:(\w+)_(\d+)/g, (_, col, idx) => {
-        const rowIdx = parseInt(idx);
-        const colIdx = columns.indexOf(col);
-        return `$${rowIdx * columns.length + colIdx + 1}`;
-      }),
-      valuesData.flat() as any[]
-    );
+        )}
+      `;
+    }
 
     return true;
   }
