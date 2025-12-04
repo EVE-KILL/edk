@@ -74,51 +74,30 @@ export interface StatusSnapshot {
 
 async function fetchDatabaseStats(): Promise<DatabaseStats> {
   try {
-    // Get all tables with their sizes and EXACT counts
-    // Note: This uses actual COUNT(*) which is accurate but slower than reltuples estimate
+    // Get all tables with their sizes and counts using reltuples
+    // Fast: Uses reltuples from pg_class (milliseconds, not seconds)
+    // Accurate: For partitioned tables, we sum partition reltuples (not parent)
+    // Note: reltuples is an estimate but is much more accurate for partitions
     const sql = database.sql;
 
-    // First get all table names and sizes
-    const tableInfo = await sql<
+    const allTablesData = await sql<
       Array<{
         tablename: string;
+        row_count: string;
         size_bytes: string;
         size_pretty: string;
       }>
     >`
       SELECT
         t.tablename,
+        COALESCE(c.reltuples::bigint, 0)::text as row_count,
         pg_total_relation_size(quote_ident(t.schemaname)||'.'||quote_ident(t.tablename))::text as size_bytes,
         pg_size_pretty(pg_total_relation_size(quote_ident(t.schemaname)||'.'||quote_ident(t.tablename))) as size_pretty
       FROM pg_tables t
+      LEFT JOIN pg_class c ON c.relname = t.tablename
       WHERE t.schemaname = 'public'
       ORDER BY t.tablename
     `;
-
-    // Get exact counts for each table in parallel (for performance)
-    const countPromises = tableInfo.map(async (table) => {
-      try {
-        const result = await sql<Array<{ count: string }>>`
-          SELECT COUNT(*)::text as count FROM ${sql(table.tablename)}
-        `;
-        return {
-          tablename: table.tablename,
-          row_count: result[0]?.count || '0',
-          size_bytes: table.size_bytes,
-          size_pretty: table.size_pretty,
-        };
-      } catch {
-        // If count fails, return 0
-        return {
-          tablename: table.tablename,
-          row_count: '0',
-          size_bytes: table.size_bytes,
-          size_pretty: table.size_pretty,
-        };
-      }
-    });
-
-    const allTablesData = await Promise.all(countPromises);
 
     // Build flat table stats (for backward compatibility)
     const tableStats = allTablesData.map((t) => ({
@@ -191,10 +170,15 @@ async function fetchDatabaseStats(): Promise<DatabaseStats> {
 
     for (const [baseName, group] of tableGroups.entries()) {
       if (group.partitions.length > 0) {
-        // This table has partitions - combine stats
-        const totalCount =
-          (group.base?.row_count || 0) +
-          group.partitions.reduce((sum, p) => sum + (p.row_count || 0), 0);
+        // This table has partitions - sum partition stats only
+        // Note: We DON'T include the parent table stats because:
+        // - Parent table is empty (just routing/inheritance)
+        // - Parent reltuples is often stale/meaningless
+        // - Partition reltuples are updated regularly and accurate
+        const totalCount = group.partitions.reduce(
+          (sum, p) => sum + (p.row_count || 0),
+          0
+        );
         const totalBytes =
           (group.base?.size_bytes || 0) +
           group.partitions.reduce((sum, p) => sum + (p.size_bytes || 0), 0);
