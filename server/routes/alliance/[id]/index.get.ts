@@ -5,32 +5,9 @@ import type { H3Event } from 'h3';
 import { timeAgo } from '../../../helpers/time';
 import { render, normalizeKillRow } from '../../../helpers/templates';
 import { renderErrorPage } from '../../../utils/error';
-import { getAllianceDetails } from '../../../models/alliances';
+import { getAlliance } from '../../../models/alliances';
 import {
   getEntityKillmails,
-  estimateEntityKillmails,
-  estimateEntityKillmails,
-} from '../../../models/killlist';
-import {
-  getEntityStatsFromCache,
-  isStatsCachePopulated,
-} from '../../../models/entityStatsCache';
-import { getEntityStatsFromView } from '../../../models/entityStatsView';
-import { getMostValuableKillsByAlliance } from '../../../models/mostValuableKills';
-import { getTopVictimsByAttacker } from '../../../models/topBoxes';
-import { track } from '../../../utils/performance-decorators';
-import { getActiveWarsForAlliance } from '../../../models/wars';
-
-import { handleError } from '../../../utils/error';
-
-import type { H3Event } from 'h3';
-import { timeAgo } from '../../../helpers/time';
-import { render, normalizeKillRow } from '../../../helpers/templates';
-import { renderErrorPage } from '../../../utils/error';
-import { getAllianceDetails } from '../../../models/alliances';
-import {
-  getEntityKillmails,
-  estimateEntityKillmails,
   estimateEntityKillmails,
 } from '../../../models/killlist';
 import {
@@ -43,7 +20,6 @@ import { getTopVictimsByAttacker } from '../../../models/topBoxes';
 import { track } from '../../../utils/performance-decorators';
 import { getActiveWarsForAlliance } from '../../../models/wars';
 import { env } from '../../../helpers/env';
-
 import { handleError } from '../../../utils/error';
 
 export default defineCachedEventHandler(

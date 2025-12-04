@@ -67,11 +67,12 @@ export default defineCachedEventHandler(
 /**
  * Get database counts for all major tables (using fast estimates from pg_class)
  * Note: These are approximate counts based on PostgreSQL statistics.
- * For partitioned tables, reltuples on the parent table includes child partitions.
+ * For partitioned tables, we sum partition reltuples (more accurate than stale parent stats).
  */
 async function getDatabaseCounts() {
-  // Use reltuples from pg_class for super fast approximate counts
-  // For partitioned tables, the parent table's reltuples includes all partitions
+  // For partitioned tables (killmails, attackers, items), sum partition reltuples
+  // For non-partitioned tables, use direct reltuples lookup
+  // This is much faster than COUNT(*) and more accurate than parent table reltuples
   const result = await database.query<{
     killmails: string;
     attackers: string;
@@ -87,9 +88,26 @@ async function getDatabaseCounts() {
     categories: string;
   }>(`
     SELECT 
-      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'killmails'), 0) as killmails,
-      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'attackers'), 0) as attackers,
-      COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'items'), 0) as items,
+      -- Sum partition reltuples for partitioned tables (pattern: tablename_YYYY_MM)
+      COALESCE((
+        SELECT SUM(c.reltuples)::bigint 
+        FROM pg_class c 
+        WHERE c.relname ~ '^killmails_[0-9]{4}_[0-9]{2}$'
+      ), 0) as killmails,
+      
+      COALESCE((
+        SELECT SUM(c.reltuples)::bigint 
+        FROM pg_class c 
+        WHERE c.relname ~ '^attackers_[0-9]{4}_[0-9]{2}$'
+      ), 0) as attackers,
+      
+      COALESCE((
+        SELECT SUM(c.reltuples)::bigint 
+        FROM pg_class c 
+        WHERE c.relname ~ '^items_[0-9]{4}_[0-9]{2}$'
+      ), 0) as items,
+      
+      -- Non-partitioned tables use direct lookup
       COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'characters'), 0) as characters,
       COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'corporations'), 0) as corporations,
       COALESCE((SELECT reltuples::bigint FROM pg_class WHERE relname = 'alliances'), 0) as alliances,

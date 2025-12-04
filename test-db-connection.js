@@ -1,6 +1,9 @@
-const postgres = require('postgres').default || require('postgres');
+/* eslint-disable no-console */
+import postgres from 'postgres';
 
-const url = process.env.DATABASE_URL || 'postgresql://evekill:edk_password@postgres-rw:5432/evekill?sslmode=disable';
+const url =
+  process.env.DATABASE_URL ||
+  'postgresql://evekill:edk_password@postgres-rw:5432/evekill?sslmode=disable';
 console.log('Testing connection to:', url.replace(/:([^:@]+)@/, ':****@'));
 
 const sql = postgres(url, {
@@ -9,12 +12,12 @@ const sql = postgres(url, {
 });
 
 sql`SELECT 1 as test, current_database() as db, current_user as user`
-  .then(result => {
+  .then((result) => {
     console.log('✅ SUCCESS! Connected to PostgreSQL');
     console.log('Result:', result);
     process.exit(0);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('❌ ERROR connecting to PostgreSQL:');
     console.error(error.message);
     console.error('Full error:', error);

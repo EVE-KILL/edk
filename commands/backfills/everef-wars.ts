@@ -123,7 +123,7 @@ export default {
       filesTotal: targetFiles.length,
     };
 
-    for (const [index, url] of targetFiles.entries()) {
+    for (const [_index, url] of targetFiles.entries()) {
       stats.filesProcessed++;
       try {
         const result = await processArchive(

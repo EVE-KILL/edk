@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     });
 
     return spec;
-  } catch (error) {
+  } catch {
     throw createError({
       statusCode: 404,
       statusMessage:

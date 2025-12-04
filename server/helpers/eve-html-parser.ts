@@ -166,7 +166,7 @@ export function convertEveHtml(
     content = content.replace(/\r\n|\r|\n/g, '<br>');
 
     return content;
-  } catch (error) {
+  } catch {
     return htmlContent;
   }
 }

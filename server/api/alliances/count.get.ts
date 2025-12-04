@@ -20,7 +20,7 @@ import { getApproximateCount } from '~/helpers/approximate-count';
  *                   type: integer
  *                   example: 12345
  */
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (_event) => {
   const count = await getApproximateCount('alliances');
 
   return {

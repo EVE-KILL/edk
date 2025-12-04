@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3';
-import { createError, getRouterParams } from 'h3';
+import { getRouterParams } from 'h3';
 import { getDocsIndex, getDocPage } from '../../helpers/docs';
 import { render } from '../../helpers/templates';
 import { handleError } from '../../utils/error';

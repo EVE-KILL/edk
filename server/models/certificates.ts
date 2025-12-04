@@ -1,5 +1,4 @@
 import { database } from '../helpers/database';
-import type { LanguageField } from '../types/sde';
 
 /**
  * Certificate interface - EVE skill certification

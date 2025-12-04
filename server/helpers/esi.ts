@@ -14,7 +14,6 @@ import {
   getRateLimitGroup,
   getTokenCost,
 } from './esi-rate-limiter';
-import { logger } from './logger';
 
 const ESI_SERVER = env.ESI_SERVER_URL;
 let errorLimitRemain = 100;

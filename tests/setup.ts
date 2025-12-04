@@ -1,7 +1,5 @@
 /* eslint-disable no-console */
 import postgres from 'postgres';
-import { unlinkSync, existsSync } from 'fs';
-import { join } from 'path';
 import { refreshEnv } from '../server/helpers/env';
 import { randomUUID } from 'crypto';
 

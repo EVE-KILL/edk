@@ -20,7 +20,6 @@ import {
   getTopShipsFiltered,
 } from '../../models/topBoxes';
 import { generatePageNumbers } from '../../helpers/pagination';
-import { getLegendaryWarForFaction } from '../../models/wars';
 
 const TOP_BOX_LOOKBACK_DAYS = 7;
 const MOST_VALUABLE_LOOKBACK_DAYS = 7;
@@ -172,22 +171,15 @@ export default defineEventHandler(async (event: H3Event) => {
     });
 
     // Get legendary war for this faction
-    const legendaryWar = await getLegendaryWarForFaction(factionId);
-    const activeWars = legendaryWar
-      ? [
-          {
-            warId: legendaryWar.warId,
-            aggressorName: faction.name,
-            aggressorId: factionId,
-            aggressorType: 'faction' as const,
-            defenderName: legendaryWar.opponentFactionName,
-            defenderId: legendaryWar.opponentFactionId,
-            defenderType: 'faction' as const,
-            started: null,
-            mutual: false,
-          },
-        ]
-      : [];
+    // const legendaryWar = await getLegendaryWarForFaction(factionId);
+    // const activeWars = legendaryWar
+    //   ? [
+    //       {
+    //         warId: legendaryWar.warId,
+    //         aggressorName: faction.name,
+    //       },
+    //     ]
+    //   : [];
 
     // Build filters for this faction (victims in this faction)
     const filters: KilllistFilters = {

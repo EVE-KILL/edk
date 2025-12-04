@@ -1,7 +1,16 @@
 {
-  "name": "nitro-app",
+  "name": "edk",
   "version": "0.1.0",
+  "description": "EVE-KILL EDK - Real-time EVE Online killmail tracking and analytics system",
+  "author": "Karbowiak",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EVE-KILL/edk.git"
+  },
+  "homepage": "https://eve-kill.com",
+  "license": "MIT",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "bun run build:css && bun run build:openapi && nitro build",
     "build:css": "lightningcss --minify --bundle templates/default/public/edk.css -o templates/default/public/edk.optimized.css && purgecss --config purgecss.config.js && csso templates/default/public/edk.optimized.css --output templates/default/public/edk.optimized.css",

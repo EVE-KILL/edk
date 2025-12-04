@@ -1,4 +1,3 @@
-import { defineEventHandler } from 'h3';
 import { database } from '../helpers/database';
 import { cache } from '../helpers/cache';
 import { statfs, readFile } from 'fs/promises';

@@ -20,12 +20,10 @@
  *                   type: integer
  *                   example: 26264
  */
-export default defineEventHandler(async (event) => {
-  const result = await database.findOne<{ count: number }>(
-    'SELECT COUNT(*) as count FROM types WHERE published = true'
-  );
+export default defineEventHandler(async (_event) => {
+  const count = await getApproximateCount('items');
 
   return {
-    count: result?.count || 0,
+    count,
   };
 });

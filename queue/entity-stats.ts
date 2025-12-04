@@ -60,7 +60,7 @@ export async function processor(job: Job): Promise<void> {
  */
 export function createWorker(
   connection: any,
-  options?: { concurrency?: number }
+  _options?: { concurrency?: number }
 ) {
   return new Worker(name, processor, {
     connection,
