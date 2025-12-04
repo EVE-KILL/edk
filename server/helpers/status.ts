@@ -74,26 +74,51 @@ export interface StatusSnapshot {
 
 async function fetchDatabaseStats(): Promise<DatabaseStats> {
   try {
-    // Get all tables with their sizes and counts in one query for efficiency
+    // Get all tables with their sizes and EXACT counts
+    // Note: This uses actual COUNT(*) which is accurate but slower than reltuples estimate
     const sql = database.sql;
-    const allTablesData = await sql<
+
+    // First get all table names and sizes
+    const tableInfo = await sql<
       Array<{
         tablename: string;
-        row_count: string;
         size_bytes: string;
         size_pretty: string;
       }>
     >`
       SELECT
         t.tablename,
-        COALESCE(c.reltuples::bigint, 0)::text as row_count,
         pg_total_relation_size(quote_ident(t.schemaname)||'.'||quote_ident(t.tablename))::text as size_bytes,
         pg_size_pretty(pg_total_relation_size(quote_ident(t.schemaname)||'.'||quote_ident(t.tablename))) as size_pretty
       FROM pg_tables t
-      LEFT JOIN pg_class c ON c.relname = t.tablename
       WHERE t.schemaname = 'public'
       ORDER BY t.tablename
     `;
+
+    // Get exact counts for each table in parallel (for performance)
+    const countPromises = tableInfo.map(async (table) => {
+      try {
+        const result = await sql<Array<{ count: string }>>`
+          SELECT COUNT(*)::text as count FROM ${sql(table.tablename)}
+        `;
+        return {
+          tablename: table.tablename,
+          row_count: result[0]?.count || '0',
+          size_bytes: table.size_bytes,
+          size_pretty: table.size_pretty,
+        };
+      } catch {
+        // If count fails, return 0
+        return {
+          tablename: table.tablename,
+          row_count: '0',
+          size_bytes: table.size_bytes,
+          size_pretty: table.size_pretty,
+        };
+      }
+    });
+
+    const allTablesData = await Promise.all(countPromises);
 
     // Build flat table stats (for backward compatibility)
     const tableStats = allTablesData.map((t) => ({

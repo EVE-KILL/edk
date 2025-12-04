@@ -569,12 +569,20 @@
       return;
     }
 
+    // Save current expanded state before re-rendering
+    const expandedPartitions = new Set();
+    document.querySelectorAll('.partition-toggle[aria-expanded="true"]').forEach((toggle) => {
+      expandedPartitions.add(toggle.dataset.target);
+    });
+
     const rows = groupedTables.map((table) => {
+      const isExpanded = expandedPartitions.has(`${table.name}-partitions`);
+      
       let html = `<tr class="table-row-base ${table.isPartitioned ? 'has-partitions' : ''}" data-table="${table.name}">
         <td>`;
 
       if (table.isPartitioned) {
-        html += `<button class="partition-toggle" data-target="${table.name}-partitions" aria-expanded="false">
+        html += `<button class="partition-toggle" data-target="${table.name}-partitions" aria-expanded="${isExpanded}">
           <svg class="partition-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4 3L8 6L4 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -591,7 +599,7 @@
       </tr>`;
 
       if (table.isPartitioned && table.partitions) {
-        html += `<tr class="partition-rows-container" id="${table.name}-partitions" style="display: none;">
+        html += `<tr class="partition-rows-container" id="${table.name}-partitions" style="display: ${isExpanded ? 'table-row' : 'none'};">
           <td colspan="3" style="padding: 0;">
             <table class="partition-table">
               <tbody>`;
