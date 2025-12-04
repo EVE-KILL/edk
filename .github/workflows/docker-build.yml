@@ -85,10 +85,17 @@ jobs:
         run: |
           tailscale configure kubeconfig tailscale-operator-1
 
-      - name: Deploy with kubectl rollout restart
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy with Helm
         run: |
-          kubectl rollout restart deployment -n eve-kill -l app.kubernetes.io/name=edk,app.kubernetes.io/component!=redis
-          kubectl rollout status deployment -n eve-kill -l app.kubernetes.io/name=edk,app.kubernetes.io/component!=redis --timeout=5m
+          helm upgrade --install edk ./chart \
+            --namespace eve-kill \
+            --reuse-values \
+            --set global.image.tag=sha-${{ github.sha }} \
+            --set deployJob.enabled=true \
+            --wait
 
   purge-cloudflare-cache:
     name: Purge Cloudflare Cache
