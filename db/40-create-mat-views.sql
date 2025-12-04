@@ -1,4 +1,5 @@
 -- Drop existing views in reverse order of dependency
+-- Force migration rerun
 SET client_min_messages TO WARNING;
 DROP MATERIALIZED VIEW IF EXISTS top_characters_weekly CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS top_corporations_weekly CASCADE;
@@ -50,7 +51,7 @@ SELECT
 FROM killmails k
 LEFT JOIN characters c ON k."topAttackerCharacterId" = c."characterId"
 LEFT JOIN npcCharacters npc ON k."topAttackerCharacterId" = npc."characterId"
-WHERE k."killmailTime" >= NOW() - INTERVAL '7 days' AND k."topAttackerCharacterId" IS NOT NULL
+WHERE k."killmailTime" >= NOW() - INTERVAL '7 days' AND k."topAttackerCharacterId" IS NOT NULL AND k."topAttackerCharacterId" != 0
 GROUP BY k."topAttackerCharacterId", c.name, npc.name
 ORDER BY kills DESC
 LIMIT 10;
@@ -66,7 +67,7 @@ SELECT
 FROM killmails k
 LEFT JOIN corporations corp ON k."topAttackerCorporationId" = corp."corporationId"
 LEFT JOIN npcCorporations npc_corp ON k."topAttackerCorporationId" = npc_corp."corporationId"
-WHERE k."killmailTime" >= NOW() - INTERVAL '7 days' AND k."topAttackerCorporationId" IS NOT NULL
+WHERE k."killmailTime" >= NOW() - INTERVAL '7 days' AND k."topAttackerCorporationId" IS NOT NULL AND k."topAttackerCorporationId" != 0
 GROUP BY k."topAttackerCorporationId", corp.name, npc_corp.name
 ORDER BY kills DESC
 LIMIT 10;
@@ -81,7 +82,7 @@ SELECT
     SUM(k."totalValue") AS "iskDestroyed"
 FROM killmails k
 LEFT JOIN alliances ally ON k."topAttackerAllianceId" = ally."allianceId"
-WHERE k."killmailTime" >= NOW() - INTERVAL '7 days' AND k."topAttackerAllianceId" IS NOT NULL
+WHERE k."killmailTime" >= NOW() - INTERVAL '7 days' AND k."topAttackerAllianceId" IS NOT NULL AND k."topAttackerAllianceId" != 0
 GROUP BY k."topAttackerAllianceId", ally.name
 ORDER BY kills DESC
 LIMIT 10;
@@ -96,7 +97,7 @@ SELECT
     SUM(k."totalValue") AS "iskDestroyed"
 FROM killmails k
 LEFT JOIN solarSystems ss ON k."solarSystemId" = ss."solarSystemId"
-WHERE k."killmailTime" >= NOW() - INTERVAL '7 days'
+WHERE k."killmailTime" >= NOW() - INTERVAL '7 days' AND k."solarSystemId" != 0
 GROUP BY k."solarSystemId", ss.name
 ORDER BY kills DESC
 LIMIT 10;
@@ -111,7 +112,7 @@ SELECT
     SUM(k."totalValue") AS "iskDestroyed"
 FROM killmails k
 LEFT JOIN regions r ON k."regionId" = r."regionId"
-WHERE k."killmailTime" >= NOW() - INTERVAL '7 days'
+WHERE k."killmailTime" >= NOW() - INTERVAL '7 days' AND k."regionId" != 0
 GROUP BY k."regionId", r.name
 ORDER BY kills DESC
 LIMIT 10;

@@ -1,6 +1,7 @@
 -- Group Stats View
 -- Creates view for group (ship group) statistics
 -- PostgreSQL query planner will optimize these views when filtered by group ID
+-- Force migration rerun
 
 SET client_min_messages TO WARNING;
 
@@ -23,7 +24,7 @@ WITH group_kills AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcKills",
     MAX(k."killmailTime") AS "lastKillTime"
   FROM killmails k
-  WHERE k."topAttackerShipGroupId" IS NOT NULL
+  WHERE k."topAttackerShipGroupId" IS NOT NULL AND k."topAttackerShipGroupId" != 0
   GROUP BY k."topAttackerShipGroupId"
 ),
 group_losses AS (
@@ -35,7 +36,7 @@ group_losses AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcLosses",
     MAX(k."killmailTime") AS "lastLossTime"
   FROM killmails k
-  WHERE k."victimShipGroupId" IS NOT NULL
+  WHERE k."victimShipGroupId" IS NOT NULL AND k."victimShipGroupId" != 0
   GROUP BY k."victimShipGroupId"
 )
 SELECT

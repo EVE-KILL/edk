@@ -1,6 +1,7 @@
 -- Entity Stats Views
 -- Creates unified views for character, corporation, and alliance statistics
 -- PostgreSQL query planner will optimize these views when filtered by entity ID
+-- Force migration rerun
 
 SET client_min_messages TO WARNING;
 
@@ -27,7 +28,7 @@ WITH character_kills AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcKills",
     MAX(k."killmailTime") AS "lastKillTime"
   FROM killmails k
-  WHERE k."topAttackerCharacterId" IS NOT NULL
+  WHERE k."topAttackerCharacterId" IS NOT NULL AND k."topAttackerCharacterId" != 0
   GROUP BY k."topAttackerCharacterId"
 ),
 character_losses AS (
@@ -39,7 +40,7 @@ character_losses AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcLosses",
     MAX(k."killmailTime") AS "lastLossTime"
   FROM killmails k
-  WHERE k."victimCharacterId" IS NOT NULL
+  WHERE k."victimCharacterId" IS NOT NULL AND k."victimCharacterId" != 0
   GROUP BY k."victimCharacterId"
 )
 SELECT
@@ -86,7 +87,7 @@ WITH corporation_kills AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcKills",
     MAX(k."killmailTime") AS "lastKillTime"
   FROM killmails k
-  WHERE k."topAttackerCorporationId" IS NOT NULL
+  WHERE k."topAttackerCorporationId" IS NOT NULL AND k."topAttackerCorporationId" != 0
   GROUP BY k."topAttackerCorporationId"
 ),
 corporation_losses AS (
@@ -98,7 +99,7 @@ corporation_losses AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcLosses",
     MAX(k."killmailTime") AS "lastLossTime"
   FROM killmails k
-  WHERE k."victimCorporationId" IS NOT NULL
+  WHERE k."victimCorporationId" IS NOT NULL AND k."victimCorporationId" != 0
   GROUP BY k."victimCorporationId"
 )
 SELECT
@@ -144,7 +145,7 @@ WITH alliance_kills AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcKills",
     MAX(k."killmailTime") AS "lastKillTime"
   FROM killmails k
-  WHERE k."topAttackerAllianceId" IS NOT NULL
+  WHERE k."topAttackerAllianceId" IS NOT NULL AND k."topAttackerAllianceId" != 0
   GROUP BY k."topAttackerAllianceId"
 ),
 alliance_losses AS (
@@ -156,7 +157,7 @@ alliance_losses AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcLosses",
     MAX(k."killmailTime") AS "lastLossTime"
   FROM killmails k
-  WHERE k."victimAllianceId" IS NOT NULL
+  WHERE k."victimAllianceId" IS NOT NULL AND k."victimAllianceId" != 0
   GROUP BY k."victimAllianceId"
 )
 SELECT
@@ -202,7 +203,7 @@ WITH faction_kills AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcKills",
     MAX(k."killmailTime") AS "lastKillTime"
   FROM killmails k
-  WHERE k."topAttackerFactionId" IS NOT NULL
+  WHERE k."topAttackerFactionId" IS NOT NULL AND k."topAttackerFactionId" != 0
   GROUP BY k."topAttackerFactionId"
 ),
 faction_losses AS (
@@ -214,7 +215,7 @@ faction_losses AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcLosses",
     MAX(k."killmailTime") AS "lastLossTime"
   FROM killmails k
-  WHERE k."victimFactionId" IS NOT NULL
+  WHERE k."victimFactionId" IS NOT NULL AND k."victimFactionId" != 0
   GROUP BY k."victimFactionId"
 )
 SELECT

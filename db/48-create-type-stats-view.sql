@@ -1,6 +1,7 @@
 -- Type Stats View
 -- Creates view for type (item/ship) statistics
 -- PostgreSQL query planner will optimize these views when filtered by type ID
+-- Force migration rerun
 
 SET client_min_messages TO WARNING;
 
@@ -23,7 +24,7 @@ WITH type_kills AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcKills",
     MAX(k."killmailTime") AS "lastKillTime"
   FROM killmails k
-  WHERE k."topAttackerShipTypeId" IS NOT NULL
+  WHERE k."topAttackerShipTypeId" IS NOT NULL AND k."topAttackerShipTypeId" != 0
   GROUP BY k."topAttackerShipTypeId"
 ),
 type_losses AS (
@@ -35,7 +36,7 @@ type_losses AS (
     SUM(CASE WHEN k.npc THEN 1 ELSE 0 END) AS "npcLosses",
     MAX(k."killmailTime") AS "lastLossTime"
   FROM killmails k
-  WHERE k."victimShipTypeId" IS NOT NULL
+  WHERE k."victimShipTypeId" IS NOT NULL AND k."victimShipTypeId" != 0
   GROUP BY k."victimShipTypeId"
 )
 SELECT

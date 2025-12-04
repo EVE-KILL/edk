@@ -113,6 +113,7 @@ FROM (
     JOIN killmails k ON k."warId" = w."warId"
     WHERE (k."victimCorporationId" = w."defenderCorporationId" OR k."victimAllianceId" = w."defenderAllianceId")
       AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
+      AND k."topAttackerCorporationId" != 0
       AND w."warId" NOT IN (999999999999999, 999999999999998) -- Exclude faction wars
     GROUP BY w."warId", k."topAttackerAllianceId", k."topAttackerCorporationId"
 
@@ -130,6 +131,7 @@ FROM (
     JOIN killmails k ON k."warId" = w."warId"
     WHERE (k."victimCorporationId" = w."aggressorCorporationId" OR k."victimAllianceId" = w."aggressorAllianceId")
       AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
+      AND k."topAttackerCorporationId" != 0
       AND w."warId" NOT IN (999999999999999, 999999999999998) -- Exclude faction wars
     GROUP BY w."warId", k."topAttackerAllianceId", k."topAttackerCorporationId"
 
@@ -150,6 +152,7 @@ FROM (
     )
     WHERE w."warId" IN (999999999999999, 999999999999998)
       AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
+      AND k."topAttackerCorporationId" != 0
     GROUP BY w."warId", k."topAttackerAllianceId", k."topAttackerCorporationId"
 
     UNION ALL
@@ -169,6 +172,7 @@ FROM (
     )
     WHERE w."warId" IN (999999999999999, 999999999999998)
       AND (k."topAttackerAllianceId" IS NOT NULL OR k."topAttackerCorporationId" IS NOT NULL)
+      AND k."topAttackerCorporationId" != 0
     GROUP BY w."warId", k."topAttackerAllianceId", k."topAttackerCorporationId"
 ) subquery;
 
@@ -209,6 +213,7 @@ FROM (
     JOIN groups g ON g."groupId" = t."groupId"
     WHERE (k."victimCorporationId" = w."defenderCorporationId" OR k."victimAllianceId" = w."defenderAllianceId")
       AND w."warId" NOT IN (999999999999999, 999999999999998)
+      AND g."groupId" != 0
     GROUP BY w."warId", g."groupId"
 
     UNION ALL
@@ -225,6 +230,7 @@ FROM (
     JOIN groups g ON g."groupId" = t."groupId"
     WHERE (k."victimCorporationId" = w."aggressorCorporationId" OR k."victimAllianceId" = w."aggressorAllianceId")
       AND w."warId" NOT IN (999999999999999, 999999999999998)
+      AND g."groupId" != 0
     GROUP BY w."warId", g."groupId"
 
     UNION ALL
@@ -243,6 +249,7 @@ FROM (
     JOIN types t ON t."typeId" = k."victimShipTypeId"
     JOIN groups g ON g."groupId" = t."groupId"
     WHERE w."warId" IN (999999999999999, 999999999999998)
+      AND g."groupId" != 0
     GROUP BY w."warId", g."groupId"
 
     UNION ALL
@@ -261,6 +268,7 @@ FROM (
     JOIN types t ON t."typeId" = k."victimShipTypeId"
     JOIN groups g ON g."groupId" = t."groupId"
     WHERE w."warId" IN (999999999999999, 999999999999998)
+      AND g."groupId" != 0
     GROUP BY w."warId", g."groupId"
 ) subquery;
 
@@ -391,6 +399,7 @@ FROM (
     LEFT JOIN characters c ON c."characterId" = a."characterId"
     WHERE k."warId" IS NOT NULL
       AND a."characterId" IS NOT NULL
+      AND a."characterId" != 0
     GROUP BY k."warId", a."characterId", c.name
 ) sub WHERE rn <= 10
 
@@ -417,6 +426,7 @@ FROM (
     LEFT JOIN corporations corp ON corp."corporationId" = a."corporationId"
     WHERE k."warId" IS NOT NULL
       AND a."corporationId" IS NOT NULL
+      AND a."corporationId" != 0
     GROUP BY k."warId", a."corporationId", corp.name
 ) sub WHERE rn <= 10
 
@@ -443,6 +453,7 @@ FROM (
     LEFT JOIN alliances ally ON ally."allianceId" = a."allianceId"
     WHERE k."warId" IS NOT NULL
       AND a."allianceId" IS NOT NULL
+      AND a."allianceId" != 0
     GROUP BY k."warId", a."allianceId", ally.name
 ) sub WHERE rn <= 10
 
@@ -468,6 +479,7 @@ FROM (
     LEFT JOIN types t ON t."typeId" = k."victimShipTypeId"
     WHERE k."warId" IS NOT NULL
       AND k."victimShipTypeId" IS NOT NULL
+      AND k."victimShipTypeId" != 0
     GROUP BY k."warId", k."victimShipTypeId", t.name
 ) sub WHERE rn <= 10
 
@@ -493,6 +505,7 @@ FROM (
     LEFT JOIN solarsystems sys ON sys."solarSystemId" = k."solarSystemId"
     WHERE k."warId" IS NOT NULL
       AND k."solarSystemId" IS NOT NULL
+      AND k."solarSystemId" != 0
     GROUP BY k."warId", k."solarSystemId", sys.name
 ) sub WHERE rn <= 10
 
@@ -518,6 +531,7 @@ FROM (
     LEFT JOIN regions reg ON reg."regionId" = k."regionId"
     WHERE k."warId" IS NOT NULL
       AND k."regionId" IS NOT NULL
+      AND k."regionId" != 0
     GROUP BY k."warId", k."regionId", reg.name
 ) sub WHERE rn <= 10
 
@@ -545,6 +559,7 @@ FROM (
     LEFT JOIN characters c ON c."characterId" = a."characterId"
     WHERE w."warId" IN (999999999999999, 999999999999998)
       AND a."characterId" IS NOT NULL
+      AND a."characterId" != 0
     GROUP BY w."warId", a."characterId", c.name
 ) sub WHERE rn <= 10
 
@@ -572,6 +587,7 @@ FROM (
     LEFT JOIN corporations corp ON corp."corporationId" = a."corporationId"
     WHERE w."warId" IN (999999999999999, 999999999999998)
       AND a."corporationId" IS NOT NULL
+      AND a."corporationId" != 0
     GROUP BY w."warId", a."corporationId", corp.name
 ) sub WHERE rn <= 10
 
@@ -599,6 +615,7 @@ FROM (
     LEFT JOIN alliances ally ON ally."allianceId" = a."allianceId"
     WHERE w."warId" IN (999999999999999, 999999999999998)
       AND a."allianceId" IS NOT NULL
+      AND a."allianceId" != 0
     GROUP BY w."warId", a."allianceId", ally.name
 ) sub WHERE rn <= 10
 
@@ -625,6 +642,7 @@ FROM (
     LEFT JOIN types t ON t."typeId" = k."victimShipTypeId"
     WHERE w."warId" IN (999999999999999, 999999999999998)
       AND k."victimShipTypeId" IS NOT NULL
+      AND k."victimShipTypeId" != 0
     GROUP BY w."warId", k."victimShipTypeId", t.name
 ) sub WHERE rn <= 10
 
@@ -651,6 +669,7 @@ FROM (
     LEFT JOIN solarsystems sys ON sys."solarSystemId" = k."solarSystemId"
     WHERE w."warId" IN (999999999999999, 999999999999998)
       AND k."solarSystemId" IS NOT NULL
+      AND k."solarSystemId" != 0
     GROUP BY w."warId", k."solarSystemId", sys.name
 ) sub WHERE rn <= 10
 
@@ -677,6 +696,7 @@ FROM (
     LEFT JOIN regions reg ON reg."regionId" = k."regionId"
     WHERE w."warId" IN (999999999999999, 999999999999998)
       AND k."regionId" IS NOT NULL
+      AND k."regionId" != 0
     GROUP BY w."warId", k."regionId", reg.name
 ) sub WHERE rn <= 10
 ) all_stats;

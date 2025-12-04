@@ -948,7 +948,7 @@ export async function getTopVictimsByAttacker(
     WHERE ${attackerColumn} = :attackerId
       AND k."killmailTime" >= :startTime
       AND k."killmailTime" < :endTime
-      AND ${groupColumn} IS NOT NULL
+      AND ${groupColumn} > 0
     GROUP BY ${groupColumn}
     ORDER BY kills DESC
     LIMIT :limit
