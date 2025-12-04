@@ -309,13 +309,13 @@ database:
   # Storage configuration (uses custom longhorn-postgres-optimized StorageClass)
   storage:
     storageClass: longhorn-postgres-optimized
-    size: 250Gi
+    size: 350Gi
     # Prevent PVC deletion on cluster/chart deletion (data safety)
     pvcRetainPolicy: retain # Options: delete, retain (default: delete)
 
   walStorage:
     storageClass: longhorn-postgres-optimized
-    size: 50Gi
+    size: 100Gi
     # Prevent PVC deletion on cluster/chart deletion (data safety)
     pvcRetainPolicy: retain # Options: delete, retain (default: delete)
 
