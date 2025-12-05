@@ -88,7 +88,7 @@ async function fetchDatabaseStats(): Promise<DatabaseStats> {
       SELECT
         t.tablename,
         COALESCE(c.reltuples::bigint, 0)::text as row_count,
-        COALESCE((c.relpages::bigint * 8192), 0)::text as size_bytes
+        pg_total_relation_size(quote_ident(t.schemaname) || '.' || quote_ident(t.tablename))::text as size_bytes
       FROM pg_tables t
       LEFT JOIN pg_class c ON c.relname = t.tablename
       WHERE t.schemaname = 'public'
