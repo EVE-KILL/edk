@@ -587,11 +587,7 @@ async function insertKillmailsBatch(
       inserted: newKillmails.length,
       skipped: uniqueKillmails.length - newKillmails.length,
     };
-  } catch (error) {
-    logger.error('Batch insert failed', {
-      error: error instanceof Error ? error.message : String(error),
-      batchSize: killmails.length,
-    });
+  } catch {
     return { inserted: 0, skipped: killmails.length };
   }
 }
