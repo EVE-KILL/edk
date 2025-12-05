@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import { database } from '../../server/helpers/database';
 import { logger } from '../../server/helpers/logger';
 
@@ -25,7 +24,7 @@ export default {
 
     const rows = await database.query<any>(query);
 
-    console.table(rows);
+    logger.info('Top 20 Largest Tables (Data + Indexes):', rows);
 
     // Also check index usage explicitly
     const indexQuery = `
@@ -41,7 +40,7 @@ export default {
 
     logger.info('Top 10 Largest Indexes:');
     const indexRows = await database.query<any>(indexQuery);
-    console.table(indexRows);
+    logger.info(indexRows);
 
     process.exit(0);
   },
