@@ -32,8 +32,8 @@ spec:
               bun cli db:migrate
               echo "Downloading SDE"
               bun cli sde:download
-              echo "Refreshing DB materialized views"
-              bun cli db:refresh
+              echo "Refreshing DB materialized views (skipping heavy faction stats)"
+              bun cli db:refresh --exclude war_top_statistics_faction
           env:
             {{- include "edk.commonEnv" . | nindent 12 }}
           volumeMounts:

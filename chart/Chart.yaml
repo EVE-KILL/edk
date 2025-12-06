@@ -6,9 +6,9 @@ type: application
 version: 0.1.0
 appVersion: '0.1.0'
 keywords:
-  - eve-online
-  - killboard
-  - gaming
+- eve-online
+- killboard
+- gaming
 maintainers:
-  - name: EVE-KILL Team
-    email: admin@eve-kill.com
+- name: EVE-KILL Team
+  email: admin@eve-kill.com

@@ -1,11 +1,12 @@
-{{- if .Values.redis.enabled }}
+{{- if .Values.redisCache.enabled }}
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis
+  name: redis-cache
   labels:
     {{- include "edk.labels" . | nindent 4 }}
-    app.kubernetes.io/component: redis
+    app.kubernetes.io/component: redis-cache
 spec:
   type: ClusterIP
   ports:
@@ -15,45 +16,197 @@ spec:
       name: redis
   selector:
     {{- include "edk.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: redis
+    app.kubernetes.io/component: redis-cache
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "edk.fullname" . }}-redis
+  name: {{ include "edk.fullname" . }}-redis-cache
   labels:
     {{- include "edk.labels" . | nindent 4 }}
-    app.kubernetes.io/component: redis
+    app.kubernetes.io/component: redis-cache
 spec:
   replicas: 1
   selector:
     matchLabels:
       {{- include "edk.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: redis
+      app.kubernetes.io/component: redis-cache
   template:
     metadata:
       labels:
         {{- include "edk.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: redis
+        app.kubernetes.io/component: redis-cache
     spec:
       containers:
       - name: redis
-        image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
-        imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+        image: "{{ .Values.redisCache.image.repository }}:{{ .Values.redisCache.image.tag }}"
+        imagePullPolicy: {{ .Values.redisCache.image.pullPolicy }}
+        args:
+          - redis-server
+          - --requirepass
+          - $(REDIS_PASSWORD)
+          - --maxmemory
+          - {{ .Values.redisCache.maxMemory }}
+          - --maxmemory-policy
+          - {{ .Values.redisCache.maxMemoryPolicy }}
+          - --save
+          - ""
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "edk.fullname" . }}-secret
+              key: REDIS_PASSWORD
         ports:
         - name: redis
           containerPort: 6379
           protocol: TCP
         resources:
-          {{- toYaml .Values.redis.resources | nindent 10 }}
+          {{- toYaml .Values.redisCache.resources | nindent 10 }}
         livenessProbe:
-          tcpSocket:
-            port: 6379
+          exec:
+            command:
+            - redis-cli
+            - --raw
+            - incr
+            - ping
           initialDelaySeconds: 5
           periodSeconds: 10
         readinessProbe:
-          tcpSocket:
-            port: 6379
+          exec:
+            command:
+            - redis-cli
+            - --raw
+            - incr
+            - ping
           initialDelaySeconds: 5
           periodSeconds: 5
+{{- end }}
+
+{{- if .Values.redisQueue.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-queue
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-queue
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
+      name: redis
+  selector:
+    {{- include "edk.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-queue
+---
+{{- if .Values.redisQueue.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "edk.fullname" . }}-redis-queue-data
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-queue
+spec:
+  accessModes:
+    - {{ .Values.redisQueue.persistence.accessMode }}
+  {{- if .Values.redisQueue.persistence.storageClass }}
+  storageClassName: {{ .Values.redisQueue.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.redisQueue.persistence.size }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "edk.fullname" . }}-redis-queue
+  labels:
+    {{- include "edk.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-queue
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Ensure single instance for persistence
+  selector:
+    matchLabels:
+      {{- include "edk.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis-queue
+  template:
+    metadata:
+      labels:
+        {{- include "edk.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis-queue
+    spec:
+      containers:
+      - name: redis
+        image: "{{ .Values.redisQueue.image.repository }}:{{ .Values.redisQueue.image.tag }}"
+        imagePullPolicy: {{ .Values.redisQueue.image.pullPolicy }}
+        args:
+          - redis-server
+          - --requirepass
+          - $(REDIS_PASSWORD)
+          {{- if .Values.redisQueue.rdbEnabled }}
+          - --save
+          - "900"
+          - "1"
+          - --save
+          - "300"
+          - "10"
+          - --save
+          - "60"
+          - "10000"
+          {{- end }}
+          {{- if .Values.redisQueue.aofEnabled }}
+          - --appendonly
+          - "yes"
+          - --appendfsync
+          - everysec
+          {{- end }}
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "edk.fullname" . }}-secret
+              key: REDIS_QUEUE_PASSWORD
+        ports:
+        - name: redis
+          containerPort: 6379
+          protocol: TCP
+        {{- if .Values.redisQueue.persistence.enabled }}
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        {{- end }}
+        resources:
+          {{- toYaml .Values.redisQueue.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --raw
+            - incr
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --raw
+            - incr
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      {{- if .Values.redisQueue.persistence.enabled }}
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ include "edk.fullname" . }}-redis-queue-data
+      {{- end }}
 {{- end }}

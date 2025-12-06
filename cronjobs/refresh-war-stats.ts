@@ -21,6 +21,7 @@ const WAR_MVS = [
   'war_participants',
   'war_ship_classes',
   'war_most_valuable_kills',
+  'war_top_statistics_regular',
 ];
 
 export async function action() {

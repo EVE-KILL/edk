@@ -8,7 +8,13 @@ This Helm chart deploys the EVE-KILL EDK application on Kubernetes with the foll
   - High-availability with automatic failover
   - PgBouncer connection pooling
   - Persistent storage with Longhorn
-- **Redis** (via Bitnami chart dependency)
+- **Redis Cache** (4GB memory limit, LRU eviction, ephemeral)
+  - Used for application caching, route cache, WebSocket pub/sub
+  - No persistence (data cleared on pod restart)
+- **Redis Queue** (persistent with RDB + AOF)
+  - Dedicated instance for BullMQ job queues
+  - Persistent storage to survive pod restarts
+  - RDB snapshots + AOF for durability
 - **Web Frontend** (3 replicas with HPA)
 - **Queue Workers** (separate pods per queue type):
   - Alliance queue (1 replica)

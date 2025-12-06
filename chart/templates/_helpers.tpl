@@ -84,11 +84,16 @@ Common environment variables
   value: {{ .Values.global.env.IMAGE_SERVER_URL | quote }}
 - name: ESI_SERVER_URL
   value: {{ .Values.global.env.ESI_SERVER_URL | quote }}
-# Redis
+# Redis Cache
 - name: REDIS_HOST
   value: {{ .Values.global.env.REDIS_HOST | quote }}
 - name: REDIS_PORT
   value: {{ .Values.global.env.REDIS_PORT | quote }}
+# Redis Queue
+- name: REDIS_QUEUE_HOST
+  value: {{ .Values.global.env.REDIS_QUEUE_HOST | quote }}
+- name: REDIS_QUEUE_PORT
+  value: {{ .Values.global.env.REDIS_QUEUE_PORT | quote }}
 # WebSocket
 - name: WS_PORT
   value: {{ .Values.global.env.WS_PORT | quote }}

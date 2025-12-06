@@ -15,9 +15,13 @@ global:
     IMAGE_SERVER_URL: https://images.eve-kill.com
     ESI_SERVER_URL: https://esi.evetech.net
 
-    # Redis
-    REDIS_HOST: redis
+    # Redis Cache
+    REDIS_HOST: redis-cache
     REDIS_PORT: "6379"
+
+    # Redis Queue
+    REDIS_QUEUE_HOST: redis-queue
+    REDIS_QUEUE_PORT: "6379"
 
     # WebSocket
     WS_PORT: "3002"
@@ -39,6 +43,7 @@ global:
 
       # Redis
       REDIS_PASSWORD: ""
+      REDIS_QUEUE_PASSWORD: ""
       REDIS_URL: ""
 
       # EVE OAuth
@@ -203,13 +208,47 @@ websocket:
       cpu: 1000m
       memory: 512Mi
 
-# Redis (simple container)
-redis:
+# Redis Cache (4GB limit, LRU eviction, no persistence)
+redisCache:
   enabled: true
   image:
     repository: redis
     tag: "7-alpine"
     pullPolicy: IfNotPresent
+
+  # Redis configuration
+  maxMemory: 4gb
+  maxMemoryPolicy: allkeys-lru
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 4.5Gi  # Slightly more than maxMemory for overhead
+
+  persistence:
+    enabled: false # Ephemeral, no persistence needed
+
+# Redis Queue (BullMQ with persistence)
+redisQueue:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+
+  # Persistence settings
+  persistence:
+    enabled: true
+    storageClass: ""  # Use default storage class
+    size: 10Gi
+    accessMode: ReadWriteOnce
+
+  # RDB and AOF configuration
+  rdbEnabled: true
+  aofEnabled: true
 
   resources:
     requests:
@@ -217,10 +256,7 @@ redis:
       memory: 256Mi
     limits:
       cpu: 500m
-      memory: 512Mi
-
-  persistence:
-    enabled: false # Ephemeral, no persistence needed
+      memory: 1Gi
 
 # Ingress configuration (using Nginx Ingress)
 ingress:

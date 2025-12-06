@@ -17,7 +17,7 @@ export const description =
   'Refreshes the heavy war_top_statistics materialized view daily';
 export const schedule = '0 5 3 * * *'; // Daily at 03:05
 
-const VIEW_NAME = 'war_top_statistics';
+const VIEW_NAME = 'war_top_statistics_faction';
 
 export async function action() {
   logger.info(`Starting ${VIEW_NAME} materialized view refresh`);

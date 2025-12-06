@@ -23,9 +23,9 @@ const __dirname = dirname(__filename);
 const QUEUE_DIR = join(__dirname, 'queue');
 
 const REDIS_CONFIG = {
-  host: env.REDIS_HOST,
-  port: env.REDIS_PORT,
-  password: env.REDIS_PASSWORD || 'redis_password',
+  host: env.REDIS_QUEUE_HOST,
+  port: env.REDIS_QUEUE_PORT,
+  password: env.REDIS_QUEUE_PASSWORD || env.REDIS_PASSWORD || 'redis_password',
   db: 0,
 };
 

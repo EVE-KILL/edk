@@ -5,26 +5,26 @@ rules:
   line-length:
     max: 120
     level: warning
-  
+
   # Don't require document start markers (Helm templates have conditionals)
   document-start: disable
-  
+
   # Allow both 2 and 4 space indentation for flexibility
   indentation:
     spaces: 2
     indent-sequences: consistent
-  
+
   # Reasonable comment spacing
   comments:
     min-spaces-from-content: 1
-  
+
   # Allow trailing spaces (some editors add them)
   trailing-spaces: disable
-  
+
   # Allow truthy values like 'on'/'off' in YAML
   truthy:
-    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
-  
+    allowed-values: [ 'true', 'false', 'yes', 'no', 'on', 'off' ]
+
   # Allow new lines at end of file
   new-line-at-end-of-file: disable
 

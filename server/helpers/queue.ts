@@ -48,15 +48,15 @@ export interface QueueJobData {
 }
 
 /**
- * Redis connection config
+ * Redis connection config for BullMQ (dedicated queue instance)
  */
 const REDIS_CONFIG: any = {
-  host: env.REDIS_HOST,
-  port: env.REDIS_PORT,
+  host: env.REDIS_QUEUE_HOST,
+  port: env.REDIS_QUEUE_PORT,
   db: 0,
 };
-if (env.REDIS_PASSWORD) {
-  REDIS_CONFIG.password = env.REDIS_PASSWORD;
+if (env.REDIS_QUEUE_PASSWORD) {
+  REDIS_CONFIG.password = env.REDIS_QUEUE_PASSWORD;
 }
 
 /**

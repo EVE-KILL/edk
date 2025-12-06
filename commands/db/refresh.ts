@@ -21,9 +21,24 @@ async function refreshView(viewName: string): Promise<void> {
   logger.info(`Refreshing materialized view: ${viewName}`);
   const startTime = Date.now();
 
-  await database.execute(
-    `REFRESH MATERIALIZED VIEW CONCURRENTLY ${database.identifier(viewName)}`
+  // Check if view is populated
+  const status = await database.findOne<{ ispopulated: boolean }>(
+    `SELECT ispopulated FROM pg_matviews WHERE matviewname = :viewName AND schemaname = 'public'`,
+    { viewName }
   );
+
+  if (status?.ispopulated) {
+    await database.execute(
+      `REFRESH MATERIALIZED VIEW CONCURRENTLY ${database.identifier(viewName)}`
+    );
+  } else {
+    logger.warn(
+      `View '${viewName}' is not populated. Running non-concurrent refresh (this may lock the view)...`
+    );
+    await database.execute(
+      `REFRESH MATERIALIZED VIEW ${database.identifier(viewName)}`
+    );
+  }
 
   const duration = Date.now() - startTime;
   logger.success(
@@ -34,7 +49,10 @@ async function refreshView(viewName: string): Promise<void> {
 /**
  * Main action - refresh specified view(s) or all views
  */
-async function action(viewName?: string, options?: { list?: boolean }) {
+async function action(
+  viewName?: string,
+  options?: { list?: boolean; exclude?: string }
+) {
   try {
     // Get all materialized views from database
     const allViews = await getMaterializedViews();
@@ -65,13 +83,21 @@ async function action(viewName?: string, options?: { list?: boolean }) {
       process.exit(0);
     }
 
+    // Filter excluded views
+    const excluded = options?.exclude ? options.exclude.split(',') : [];
+    const viewsToRefresh = allViews.filter((v) => !excluded.includes(v));
+
+    if (excluded.length > 0) {
+      logger.info(`Skipping views: ${excluded.join(', ')}`);
+    }
+
     // Refresh all views
-    logger.info(`Refreshing ${allViews.length} materialized views...`);
-    for (const view of allViews) {
+    logger.info(`Refreshing ${viewsToRefresh.length} materialized views...`);
+    for (const view of viewsToRefresh) {
       await refreshView(view);
     }
     logger.success(
-      `✅ All ${allViews.length} materialized views refreshed successfully.`
+      `✅ All ${viewsToRefresh.length} materialized views refreshed successfully.`
     );
     process.exit(0);
   } catch (error) {
@@ -89,6 +115,10 @@ export default () => ({
     {
       flags: '--list',
       description: 'List all materialized views in the database',
+    },
+    {
+      flags: '--exclude <views>',
+      description: 'Comma-separated list of views to exclude from refresh',
     },
   ],
   arguments: [
