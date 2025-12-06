@@ -3,6 +3,7 @@ import { createStorage } from 'unstorage';
 import redisDriver from 'unstorage/drivers/redis';
 import { requestContext } from '../utils/request-context';
 import { env } from './env';
+import { logger } from './logger';
 
 const REDIS_HOST = env.REDIS_HOST;
 const REDIS_PORT = env.REDIS_PORT;

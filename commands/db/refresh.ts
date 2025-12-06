@@ -53,6 +53,7 @@ async function action(
   viewName?: string,
   options?: { list?: boolean; exclude?: string }
 ) {
+  logger.info('DB Refresh CLI loaded.');
   try {
     // Get all materialized views from database
     const allViews = await getMaterializedViews();
