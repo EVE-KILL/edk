@@ -4,7 +4,7 @@ global:
     registry: ghcr.io
     repository: eve-kill/edk
     tag: latest
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
   # Environment variables shared across all services
   env:
@@ -29,30 +29,32 @@ global:
     WS_PING_INTERVAL: "30000"
     WS_PING_TIMEOUT: "10000"
     WS_CLEANUP_INTERVAL: "60000"
+    WS_URL: "wss://ws.eve-kill.com"
 
     # Followed entities (comma-separated IDs)
     FOLLOWED_CHARACTER_IDS: ""
     FOLLOWED_CORPORATION_IDS: ""
-    FOLLOWED_ALLIANCE_IDS: ""
+    FOLLOWED_ALLIANCE_IDS: "" #"1900696668,99003581"
 
-    # Sensitive values (should be overridden with secrets)
+    # Sensitive values (injected via GitHub Secrets in CI/CD)
+    # For local deployment, override these with --set flags or a local values override file
     sensitive:
       # Database
-      DATABASE_URL: "" # Constructed from secret
+      DATABASE_URL: "" # Constructed from CloudNativePG secret
       POSTGRES_PASSWORD: ""
 
       # Redis
       REDIS_PASSWORD: ""
       REDIS_QUEUE_PASSWORD: ""
-      REDIS_URL: ""
+      REDIS_URL: "redis://redis-cache.eve-kill.svc.cluster.local:6379"
 
       # EVE OAuth
       EVE_CLIENT_ID: ""
       EVE_CLIENT_SECRET: ""
-      EVE_CLIENT_REDIRECT: ""
+      EVE_CLIENT_REDIRECT: "https://eve-kill.com/auth/callback"
       EVE_CLIENT_ID_DEV: ""
       EVE_CLIENT_SECRET_DEV: ""
-      EVE_CLIENT_REDIRECT_DEV: ""
+      EVE_CLIENT_REDIRECT_DEV: "http://localhost:3000/auth/callback"
 
       # RedisQ
       REDISQ_ID: ""
@@ -69,18 +71,14 @@ web:
 
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 1000m
-      memory: 512Mi
+      cpu: 500m
+      memory: 1Gi
 
   autoscaling:
     enabled: true
     minReplicas: 3
     maxReplicas: 10
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
+    targetCPUUtilizationPercentage: 300
 
   service:
     type: ClusterIP
@@ -104,6 +102,25 @@ web:
     timeoutSeconds: 3
     failureThreshold: 3
 
+# RedisQ listener pod
+redisq:
+  enabled: true
+  # If you want a long-running deployment for RedisQ, set enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+# Deploy job for running migrations and SDE import
+deployJob:
+  enabled: true
+  # Job will run the following command:
+  # bun cli db:migrate && bun cli sde:download && bun cli db:refresh
+  image:
+    repository: "{{ .Values.global.image.registry }}/{{ .Values.global.image.repository }}"
+    tag: "{{ .Values.global.image.tag }}"
+
 # Queue workers - individual pods per queue type
 queue:
   enabled: true
@@ -118,9 +135,6 @@ queue:
         requests:
           cpu: 50m
           memory: 128Mi
-        limits:
-          cpu: 500m
-          memory: 256Mi
 
     auth:
       enabled: true
@@ -130,9 +144,6 @@ queue:
         requests:
           cpu: 50m
           memory: 128Mi
-        limits:
-          cpu: 500m
-          memory: 256Mi
 
     character:
       enabled: true
@@ -142,9 +153,6 @@ queue:
         requests:
           cpu: 100m
           memory: 128Mi
-        limits:
-          cpu: 500m
-          memory: 256Mi
 
     corporation:
       enabled: true
@@ -154,9 +162,15 @@ queue:
         requests:
           cpu: 50m
           memory: 128Mi
-        limits:
-          cpu: 500m
-          memory: 256Mi
+
+    entity-stats:
+      enabled: true
+      replicaCount: 1
+      concurrency: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
 
     killmail:
       enabled: true
@@ -166,9 +180,6 @@ queue:
         requests:
           cpu: 200m
           memory: 256Mi
-        limits:
-          cpu: 1000m
-          memory: 512Mi
 
     price:
       enabled: true
@@ -178,9 +189,15 @@ queue:
         requests:
           cpu: 50m
           memory: 128Mi
-        limits:
-          cpu: 300m
-          memory: 256Mi
+
+    war:
+      enabled: true
+      replicaCount: 1
+      concurrency: 3
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
 
 # Cronjob workers
 cronjobs:
@@ -189,9 +206,6 @@ cronjobs:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
       cpu: 500m
       memory: 256Mi
 
@@ -204,9 +218,13 @@ websocket:
     requests:
       cpu: 100m
       memory: 256Mi
-    limits:
-      cpu: 1000m
-      memory: 512Mi
+
+  ingress:
+    enabled: true
+    className: nginx
+    host: ws.eve-kill.com
+    tlsSecretName: edk-ws-tls
+    annotations: {}
 
 # Redis Cache (4GB limit, LRU eviction, no persistence)
 redisCache:
@@ -222,11 +240,11 @@ redisCache:
 
   resources:
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 512Mi
     limits:
       cpu: 500m
-      memory: 4.5Gi  # Slightly more than maxMemory for overhead
+      memory: 4.5Gi # Slightly more than maxMemory for overhead
 
   persistence:
     enabled: false # Ephemeral, no persistence needed
@@ -242,7 +260,7 @@ redisQueue:
   # Persistence settings
   persistence:
     enabled: true
-    storageClass: ""  # Use default storage class
+    storageClass: "longhorn" # Use longhorn storage class
     size: 10Gi
     accessMode: ReadWriteOnce
 
@@ -252,11 +270,8 @@ redisQueue:
 
   resources:
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 1Gi
 
 # Ingress configuration (using Nginx Ingress)
 ingress:
@@ -287,7 +302,7 @@ database:
   # Cluster configuration
   clusterName: postgres
   imageName: ghcr.io/cloudnative-pg/postgresql:17.2
-  instances: 3
+  instances: 1
 
   # Database and user
   database: evekill
@@ -295,7 +310,7 @@ database:
 
   # Secret for credentials (will be created by chart)
   secretName: postgres-app-credentials
-  password: "changeme-evekill-password" # CHANGE THIS IN PRODUCTION
+  password: "" # Set via GitHub Secrets or --set flag
 
   # PostgreSQL parameters (high-performance tuning)
   parameters:
@@ -304,7 +319,7 @@ database:
     effective_cache_size: "24GB"
     maintenance_work_mem: "2GB"
     checkpoint_completion_target: "0.9"
-    wal_buffers: "16MB"
+    wal_buffers: "512MB"
     default_statistics_target: "100"
     random_page_cost: "1.1"
     effective_io_concurrency: "200"
@@ -313,28 +328,43 @@ database:
     work_mem: "27MB"
     min_wal_size: "2GB"
     max_wal_size: "8GB"
+    # WAL archiving and retention controls (prevent overflow of 50GB WAL volume)
+    wal_keep_size: "5GB" # Keep max 5GB of WAL for replication (reduced from 10GB to prevent volume overflow)
+    max_slot_wal_keep_size: "10GB" # Hard limit on WAL kept for replication slots (reduced from 15GB)
+    wal_recycle: "on" # Recycle WAL files instead of creating new ones
+    checkpoint_timeout: "5min" # Aggressive checkpoints every 5 min to limit WAL growth (vs 30min default)
+    max_wal_senders: "10" # Limit concurrent WAL senders to prevent WAL buildup
+    # CRITICAL: Abort replication if WAL exceeds limits (prevents volume overflow)
+    wal_sender_timeout: "60s" # Disconnect slow replicas after 60s
+    # Aggressive write performance tuning for bulk imports
+    synchronous_commit: "off" # Don't wait for WAL to disk (can lose ~1s of data on crash)
+    wal_writer_delay: "1000ms" # Flush WAL less frequently - 1s vs default 200ms (less I/O overhead)
+    commit_delay: "1000" # Group commits together - 1ms in microseconds
+    commit_siblings: "5" # Minimum concurrent transactions to trigger commit_delay
+    full_page_writes: "on" # REQUIRED for pg_rewind in CloudNativePG HA setup
 
-  # Storage configuration
+  # Storage configuration (uses custom longhorn-postgres-optimized StorageClass)
   storage:
-    storageClass: longhorn
-    size: 200Gi
+    storageClass: longhorn-postgres-optimized
+    size: 400Gi
+    # Prevent PVC deletion on cluster/chart deletion (data safety)
+    pvcRetainPolicy: retain # Options: delete, retain (default: delete)
 
   walStorage:
-    storageClass: longhorn
-    size: 20Gi
+    storageClass: longhorn-postgres-optimized
+    size: 100Gi
+    # Prevent PVC deletion on cluster/chart deletion (data safety)
+    pvcRetainPolicy: retain # Options: delete, retain (default: delete)
 
   # Resources
   resources:
     requests:
       memory: "10Gi"
       cpu: "2000m"
-    limits:
-      memory: "32Gi"
-      cpu: "14000m"
 
   # Monitoring
   monitoring:
-    enablePodMonitor: true
+    enablePodMonitor: false # Deprecated: manually create PodMonitor resources instead
 
   # High availability
   affinity:
@@ -356,7 +386,7 @@ database:
     poolMode: transaction # transaction or session
     parameters:
       max_client_conn: "1000"
-      default_pool_size: "25"
+      default_pool_size: "100"
 
 # Service Account
 serviceAccount:
@@ -389,3 +419,57 @@ tolerations: []
 
 # Affinity
 affinity: {}
+
+# Image Server
+imageserver:
+  enabled: true
+  replicas: 1
+
+  image:
+    repository: ghcr.io/eve-kill/imageserver
+    tag: latest
+    pullPolicy: Always
+
+  service:
+    port: 3000
+    targetPort: 3000
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 256Mi
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+
+  persistence:
+    enabled: true
+    storageClassName: longhorn
+    accessModes:
+    - ReadWriteOnce
+    size: 50Gi
+    mountPath: /app/cache
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/backend-protocol: "http"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      nginx.ingress.kubernetes.io/enable-compression: "true"
+      nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    hosts:
+    - host: "images.eve-kill.com"
+      paths:
+      - path: /
+        pathType: Prefix
+    tls:
+    - secretName: images-eve-kill-com-tls
+      hosts:
+      - images.eve-kill.com

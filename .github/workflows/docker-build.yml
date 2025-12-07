@@ -92,9 +92,21 @@ jobs:
         run: |
           helm upgrade --install edk ./chart \
             --namespace eve-kill \
-            --reuse-values \
+            --values chart/values.yaml \
             --set global.image.tag=sha-${{ github.sha }} \
             --set deployJob.enabled=true \
+            --set global.env.sensitive.POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+            --set global.env.sensitive.REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}" \
+            --set global.env.sensitive.REDIS_QUEUE_PASSWORD="${{ secrets.REDIS_QUEUE_PASSWORD }}" \
+            --set global.env.sensitive.EVE_CLIENT_ID="${{ secrets.EVE_CLIENT_ID }}" \
+            --set global.env.sensitive.EVE_CLIENT_SECRET="${{ secrets.EVE_CLIENT_SECRET }}" \
+            --set global.env.sensitive.EVE_CLIENT_ID_DEV="${{ secrets.EVE_CLIENT_ID_DEV }}" \
+            --set global.env.sensitive.EVE_CLIENT_SECRET_DEV="${{ secrets.EVE_CLIENT_SECRET_DEV }}" \
+            --set global.env.sensitive.REDISQ_ID="${{ secrets.REDISQ_ID }}" \
+            --set global.env.sensitive.OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            --set global.env.sensitive.AI_MODEL="${{ secrets.AI_MODEL }}" \
+            --set global.env.sensitive.TAVILY_API_KEY="${{ secrets.TAVILY_API_KEY }}" \
+            --set database.password="${{ secrets.POSTGRES_PASSWORD }}" \
             --wait
 
   purge-cloudflare-cache:

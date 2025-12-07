@@ -12,9 +12,8 @@ data/*
 *.log
 Thessia/
 
-# Helm chart
-chart/values.yaml
-values.yaml
+# Helm chart - local overrides
+chart/values.local.yaml
 
 # Generated/minified assets
 templates/default/public/edk.optimized.css

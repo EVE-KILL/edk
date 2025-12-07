@@ -36,6 +36,47 @@ This Helm chart deploys the EVE-KILL EDK application on Kubernetes with the foll
 - CloudNativePG operator installed
 - Longhorn storage class (or adjust `database.storage.storageClass` in values)
 
+## Values Configuration
+
+### Files
+
+- **`values.yaml`** - Main values file (committed to git, no secrets)
+
+### For Local Deployment
+
+1. Override secrets using `--set` flags:
+
+   ```bash
+   helm upgrade --install edk ./chart \
+     --namespace eve-kill \
+     --values chart/values.yaml \
+     --set global.env.sensitive.POSTGRES_PASSWORD="your-password" \
+     --set global.env.sensitive.EVE_CLIENT_ID="your-client-id" \
+     # ... other secrets
+   ```
+
+2. Or create a local override file (gitignored):
+   ```bash
+   # Create values.local.yaml with your secrets
+   helm upgrade --install edk ./chart \
+     --namespace eve-kill \
+     --values chart/values.yaml \
+     --values chart/values.local.yaml
+   ```
+
+### For GitHub Actions (CI/CD)
+
+Secrets are injected automatically from GitHub Secrets. No `values.yaml` file needed.
+
+**Required GitHub Secrets:**
+
+- `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `REDIS_QUEUE_PASSWORD`
+- `EVE_CLIENT_ID`, `EVE_CLIENT_SECRET` (production)
+- `EVE_CLIENT_ID_DEV`, `EVE_CLIENT_SECRET_DEV` (dev)
+- `REDISQ_ID`
+
+**Optional:** `OPENAI_API_KEY`, `AI_MODEL`, `TAVILY_API_KEY`
+
 ## Installation
 
 ### 1. Add Bitnami Helm Repository
