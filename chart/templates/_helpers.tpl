@@ -171,14 +171,11 @@ Common environment variables
       key: eve-client-redirect
       optional: true
 {{- end }}
-{{- if .Values.global.env.sensitive.REDISQ_ID }}
 - name: REDISQ_ID
   valueFrom:
     secretKeyRef:
       name: {{ include "edk.fullname" . }}-secrets
       key: redisq-id
-      optional: true
-{{- end }}
 {{- if .Values.global.env.sensitive.OPENAI_API_KEY }}
 - name: OPENAI_API_KEY
   valueFrom:
