@@ -6,7 +6,7 @@ import { enqueueJob, QueueType, getQueueStats } from '../server/helpers/queue';
 export const name = 'affiliation-update';
 export const description =
   'Updates character affiliations and queues entity updates';
-export const schedule = '0 */5 * * * *'; // Every 5 minutes
+export const schedule = '0 * * * * *'; // Every 1 minute
 
 export async function action() {
   logger.info('Starting character affiliation update');
