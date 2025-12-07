@@ -87,10 +87,8 @@
     "*.{json,md}": [
       "prettier --write"
     ],
-    "*.{yml,yaml}": [
-      "yamllint"
-    ],
     "!(chart/templates/**/*)*.{yml,yaml}": [
+      "yamllint",
       "prettier --write"
     ]
   },

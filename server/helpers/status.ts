@@ -1,8 +1,10 @@
 import { Queue } from 'bullmq';
+import Redis from 'ioredis';
 import { database } from './database';
 import { createRedisClient } from './redis';
 import { QueueType } from './queue';
 import { logger } from './logger';
+import { env } from './env';
 
 export interface TablePartition {
   name: string;
@@ -69,6 +71,31 @@ export interface StatusSnapshot {
   redis: RedisStats;
   websocket: WebSocketStats;
   system: SystemStats;
+}
+
+/**
+ * Create a Redis client for the queue instance (separate from cache)
+ */
+function createQueueRedisClient(): Redis {
+  const config: any = {
+    host: env.REDIS_QUEUE_HOST,
+    port: env.REDIS_QUEUE_PORT,
+    db: 0,
+    lazyConnect: true,
+  };
+  if (env.REDIS_QUEUE_PASSWORD) {
+    config.password = env.REDIS_QUEUE_PASSWORD;
+  }
+  const client = new Redis(config);
+
+  // Handle connection errors
+  client.on('error', (err) => {
+    logger.error('Queue Redis connection error in status helper', {
+      error: err.message,
+    });
+  });
+
+  return client;
 }
 
 async function fetchDatabaseStats(): Promise<DatabaseStats> {
@@ -389,16 +416,17 @@ async function fetchSystemStats(): Promise<SystemStats> {
 }
 
 export async function collectStatusSnapshot(): Promise<StatusSnapshot> {
-  // Create a single Redis client for this status check request
-  const redisClient = createRedisClient();
+  // Create Redis clients for cache and queue (separate instances)
+  const cacheRedisClient = createRedisClient();
+  const queueRedisClient = createQueueRedisClient();
 
   try {
     const [databaseStats, queueStats, redisStats, websocketStats, systemStats] =
       await Promise.all([
         fetchDatabaseStats(),
-        fetchQueueStats(redisClient),
-        fetchRedisStats(redisClient),
-        fetchWebSocketStats(redisClient),
+        fetchQueueStats(queueRedisClient),
+        fetchRedisStats(cacheRedisClient),
+        fetchWebSocketStats(cacheRedisClient),
         fetchSystemStats(),
       ]);
 
@@ -411,7 +439,10 @@ export async function collectStatusSnapshot(): Promise<StatusSnapshot> {
       system: systemStats,
     };
   } finally {
-    // Ensure the Redis client is closed after all stats are collected
-    await redisClient.quit().catch(() => {});
+    // Ensure both Redis clients are closed after all stats are collected
+    await Promise.all([
+      cacheRedisClient.quit().catch(() => {}),
+      queueRedisClient.quit().catch(() => {}),
+    ]);
   }
 }
