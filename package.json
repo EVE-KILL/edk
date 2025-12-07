@@ -1,6 +1,6 @@
 {
   "name": "edk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "EVE-KILL EDK - Real-time EVE Online killmail tracking and analytics system",
   "author": "Karbowiak",
   "repository": {

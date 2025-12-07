@@ -147,46 +147,46 @@ Common environment variables
 - name: REDIS_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ include "edk.fullname" . }}-secrets
-      key: redis-password
+      name: {{ include "edk.fullname" . }}-secret
+      key: REDIS_PASSWORD
       optional: true
 {{- end }}
 {{- if .Values.global.env.sensitive.EVE_CLIENT_ID }}
 - name: EVE_CLIENT_ID
   valueFrom:
     secretKeyRef:
-      name: {{ include "edk.fullname" . }}-secrets
+      name: {{ include "edk.fullname" . }}-secret
       key: eve-client-id
       optional: true
 - name: EVE_CLIENT_SECRET
   valueFrom:
     secretKeyRef:
-      name: {{ include "edk.fullname" . }}-secrets
+      name: {{ include "edk.fullname" . }}-secret
       key: eve-client-secret
       optional: true
 - name: EVE_CLIENT_REDIRECT
   valueFrom:
     secretKeyRef:
-      name: {{ include "edk.fullname" . }}-secrets
+      name: {{ include "edk.fullname" . }}-secret
       key: eve-client-redirect
       optional: true
 {{- end }}
 - name: REDISQ_ID
   valueFrom:
     secretKeyRef:
-      name: {{ include "edk.fullname" . }}-secrets
+      name: {{ include "edk.fullname" . }}-secret
       key: redisq-id
 {{- if .Values.global.env.sensitive.OPENAI_API_KEY }}
 - name: OPENAI_API_KEY
   valueFrom:
     secretKeyRef:
-      name: {{ include "edk.fullname" . }}-secrets
+      name: {{ include "edk.fullname" . }}-secret
       key: openai-api-key
       optional: true
 - name: AI_MODEL
   valueFrom:
     secretKeyRef:
-      name: {{ include "edk.fullname" . }}-secrets
+      name: {{ include "edk.fullname" . }}-secret
       key: ai-model
       optional: true
 {{- end }}
