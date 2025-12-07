@@ -7,7 +7,7 @@ export const schedule = '*/5 * * * * *'; // Every 5 seconds
 export const description = 'Collects database connection metrics';
 
 export const action = async () => {
-  if (env.NODE_ENV !== 'test') {
+  if (env.NODE_ENV === 'production') {
     const result = await database.findOne<{ count: number }>(
       `SELECT count(*) as count FROM pg_stat_activity`
     );
